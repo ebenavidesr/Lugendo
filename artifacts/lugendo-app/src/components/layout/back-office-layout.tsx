@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Compass, LayoutDashboard, Map, Bed, Plane, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Map, Bed, Plane, Users, LogOut } from "lucide-react";
+import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,12 +35,12 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background text-foreground w-full">
       {/* Sidebar */}
       <aside className="w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col hidden md:flex shrink-0">
-        <div className="p-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-serif text-2xl font-bold text-sidebar-primary-foreground tracking-tight">
-            <Compass className="w-6 h-6 text-accent" />
-            Lugendo
+        <div className="px-5 py-4 border-b border-white/[0.06] mb-2">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <LugendoCompass size={22} variant="dark" />
+            <LugendoWordmark variant="dark" size="sm" />
           </Link>
-          <div className="mt-1 text-xs text-sidebar-foreground/70 font-medium tracking-wide uppercase">
+          <div className="mt-1 text-[11px] font-medium tracking-wide uppercase" style={{ color: "rgba(250,242,235,0.35)" }}>
             {user?.agencyName || "Agency Workspace"}
           </div>
         </div>
@@ -91,9 +92,9 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         <header className="md:hidden h-16 border-b border-border flex items-center px-4 justify-between bg-card shrink-0">
-          <Link href="/dashboard" className="flex items-center gap-2 font-serif text-xl font-bold">
-            <Compass className="w-5 h-5 text-primary" />
-            Lugendo
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <LugendoCompass size={20} variant="light" />
+            <LugendoWordmark variant="light" size="sm" />
           </Link>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="w-5 h-5" />

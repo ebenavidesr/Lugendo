@@ -69,7 +69,7 @@
   --elevate-2: rgba(45,31,14,0.08);
 
   /* Lugendo — Arena/Terracota/Índigo */
-  --background: 30 43% 95%;        /* Arena #FAF2EB */
+  --background: 32 28% 91%;        /* #F0E8DE — fondo página */
   --foreground: 25 52% 12%;        /* Noche #2D1F0E */
   --border: 33 38% 80%;            /* #E5D4BF */
 
@@ -118,7 +118,7 @@
   --app-font-sans: 'DM Sans', sans-serif;
   --app-font-serif: 'DM Serif Display', serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0.625rem;
+  --radius: 0.875rem;
 
   --shadow-sm: 0 1px 2px 0 rgba(45,31,14,0.05);
   --shadow: 0 2px 12px rgba(45,31,14,0.08);

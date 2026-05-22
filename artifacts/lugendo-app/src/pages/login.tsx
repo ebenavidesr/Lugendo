@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLogin, useRegister } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Compass } from "lucide-react";
+import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -77,12 +77,16 @@ export function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4 font-sans">
       <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-8 text-primary">
-          <div className="w-12 h-12 bg-primary text-primary-foreground rounded-lg flex items-center justify-center shadow-lg mb-4">
-            <Compass className="w-8 h-8" />
-          </div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Lugendo</h1>
-          <p className="text-muted-foreground font-medium text-sm tracking-wide uppercase mt-1">Platform</p>
+        <div className="flex flex-col items-center mb-8">
+          <LugendoCompass size={56} variant="light" className="mb-3" />
+          <h1 className="font-sans font-medium text-[2rem] leading-none" style={{ letterSpacing: "-0.02em" }}>
+            <span style={{ color: "#2D1F0E" }}>Lu</span>
+            <span style={{ color: "#C4793A" }}>g</span>
+            <span style={{ color: "#2D1F0E" }}>endo</span>
+          </h1>
+          <p className="mt-2 text-sm font-normal italic" style={{ color: "#7A5C3A" }}>
+            your journey starts here
+          </p>
         </div>
 
         <Card className="shadow-xl border-border/50">

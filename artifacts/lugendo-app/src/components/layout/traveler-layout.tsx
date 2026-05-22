@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Compass, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,17 +23,17 @@ export function TravelerLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-serif flex flex-col">
-      <header className="h-16 bg-white border-b border-stone-200 flex items-center justify-between px-4 max-w-3xl w-full mx-auto">
-        <Link href="/traveler" className="flex items-center gap-2 font-serif text-xl font-bold tracking-tight">
-          <Compass className="w-6 h-6 text-stone-700" />
-          <span>Passport</span>
+    <div className="min-h-screen bg-background text-foreground font-sans flex flex-col">
+      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 max-w-3xl w-full mx-auto">
+        <Link href="/traveler" className="flex items-center gap-2">
+          <LugendoCompass size={22} variant="light" />
+          <LugendoWordmark variant="light" size="sm" />
         </Link>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-sans text-stone-500 hidden sm:inline-block">
+          <span className="text-sm font-sans hidden sm:inline-block" style={{ color: "#7A5C3A" }}>
             {user?.name}
           </span>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-stone-500 hover:text-stone-900" data-testid="button-logout">
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-foreground" data-testid="button-logout">
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
@@ -42,7 +43,7 @@ export function TravelerLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
       
-      <footer className="py-8 text-center text-stone-400 text-sm font-sans">
+      <footer className="py-8 text-center text-sm font-sans" style={{ color: "#9C7A58" }}>
         Powered by Lugendo
       </footer>
     </div>
