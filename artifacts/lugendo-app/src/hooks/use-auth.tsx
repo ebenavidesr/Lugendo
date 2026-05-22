@@ -13,11 +13,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { data: user, isLoading, isError, error } = useGetMe({
-    query: {
-      retry: false,
-    }
-  });
+  const { data: user, isLoading, isError } = useGetMe();
 
   useEffect(() => {
     if (!isLoading) {

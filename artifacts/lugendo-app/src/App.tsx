@@ -15,7 +15,18 @@ const Dashboard = () => <div className="p-8"><h1 className="text-3xl font-bold">
 const Trips = () => <div className="p-8"><h1 className="text-3xl font-bold">Trips</h1></div>;
 const TravelerHome = () => <div className="p-8"><h1 className="text-3xl font-serif">My Trips</h1></div>;
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: unknown) => {
+        const status = (error as { status?: number })?.status;
+        if (status === 401 || status === 403) return false;
+        return failureCount < 2;
+      },
+      staleTime: 30_000,
+    },
+  },
+});
 
 function ProtectedBackOffice({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();

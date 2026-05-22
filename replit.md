@@ -1,44 +1,63 @@
-# [Project name]
+# Lugendo
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+B2B2C travel platform — back office for travel agencies (admin/manager/agent roles) and a traveler-facing passport view.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, path `/api`)
+- `pnpm --filter @workspace/lugendo-app run dev` — run the React frontend (port 18147, path `/`)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL`, `SESSION_SECRET`
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- API: Express 5, express-session + connect-pg-simple, bcrypt
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
+- Frontend: React 19, Vite, Wouter (routing), TanStack Query, shadcn/ui
+- Build: esbuild (CJS bundle for API)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for API contract
+- `lib/api-client-react/src/generated/` — generated React Query hooks + Zod schemas
+- `lib/db/src/schema/` — Drizzle schema (agencies, users, hotels, itineraries, trips, invitations)
+- `artifacts/api-server/src/routes/` — all API route handlers
+- `artifacts/api-server/src/middlewares/auth.ts` — requireAuth, requireRoles
+- `artifacts/lugendo-app/src/` — React frontend
+- `artifacts/lugendo-app/src/index.css` — Lugendo brand design tokens (Arena/Duna/Terracota/Índigo/Noche palette)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Contract-first: OpenAPI → Orval codegen → typed hooks + Zod schemas used on both client and server
+- Session auth (not JWT): express-session with connect-pg-simple storage; `sessions` table pre-created in DB
+- Roles enforced via middleware: `requireRoles('admin','manager')` on protected routes
+- `customFetch` configured with `credentials: 'include'` for cookie-based auth through Replit proxy
+- TanStack Query configured with no-retry on 401/403 to prevent blank-screen loading loops
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Back Office**: Agency admins manage hotels, itineraries, trips, team members. Dashboard with summary stats.
+- **Traveler Portal ("Passport")**: Travelers view their assigned trips and day-by-day itineraries.
+- Phase 0 MVP: full login/register flow, role-based routing, stub dashboard and traveler home.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Brand: DM Sans (body), DM Serif Display (headings/serif). Colors: Arena #FAF2EB bg, Duna #ECD5B8 cards, Terracota #C4793A CTA, Ocre #8B4420 hover, Índigo #3D2F6B accent, Noche #2D1F0E sidebar/text.
+- Use the brand CSS variables (`--terra`, `--indigo`, `--noche`, etc.) directly in components rather than hardcoding hex values.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Always run `pnpm --filter @workspace/api-spec run codegen` after changing `openapi.yaml`
+- The `sessions` table must exist before starting the API server (already created — do not drop it)
+- `connect-pg-simple` with `createTableIfMissing: true` is BROKEN when bundled (can't find `table.sql`). The `sessions` table is pre-created manually; keep `createTableIfMissing` omitted.
+- Google Fonts `@import url(...)` must be the FIRST line in `index.css` — before any other `@import` or `@plugin` rules.
+- Seed admin: `admin@lugendo.app` / `admin1234` (agencyId=1, role=admin)
 
 ## Pointers
 

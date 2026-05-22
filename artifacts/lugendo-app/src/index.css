@@ -1,6 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&display=swap');
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -62,103 +62,135 @@
 }
 
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
-
+  --button-outline: rgba(45,31,14,0.10);
+  --badge-outline: rgba(45,31,14,0.05);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(45,31,14,0.03);
+  --elevate-2: rgba(45,31,14,0.08);
 
-  /* Deep Emerald / Sage Aesthetic */
-  --background: 160 20% 98%; /* Soft sage tint */
-  --foreground: 160 50% 10%; /* Very dark green/black */
-  --border: 160 20% 90%;
-  
+  /* Lugendo — Arena/Terracota/Índigo */
+  --background: 30 43% 95%;        /* Arena #FAF2EB */
+  --foreground: 25 52% 12%;        /* Noche #2D1F0E */
+  --border: 33 38% 80%;            /* #E5D4BF */
+
   --card: 0 0% 100%;
-  --card-foreground: 160 50% 10%;
-  --card-border: 160 20% 90%;
+  --card-foreground: 25 52% 12%;
+  --card-border: 33 38% 80%;
 
-  --sidebar: 160 39% 15%; /* Deep commanding green */
-  --sidebar-foreground: 160 20% 90%;
-  --sidebar-border: 160 39% 15%;
-  --sidebar-primary: 160 20% 90%;
-  --sidebar-primary-foreground: 160 50% 10%;
-  --sidebar-accent: 160 39% 20%;
-  --sidebar-accent-foreground: 160 20% 98%;
-  --sidebar-ring: 160 39% 40%;
+  --sidebar: 25 52% 12%;           /* Noche #2D1F0E */
+  --sidebar-foreground: 30 43% 95%;
+  --sidebar-border: 25 40% 18%;
+  --sidebar-primary: 24 55% 50%;   /* Terra #C4793A */
+  --sidebar-primary-foreground: 30 43% 95%;
+  --sidebar-primary-border: 24 50% 45%;
+  --sidebar-accent: 25 40% 18%;
+  --sidebar-accent-foreground: 30 43% 95%;
+  --sidebar-accent-border: 25 40% 18%;
+  --sidebar-ring: 24 55% 50%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 160 50% 10%;
-  --popover-border: 160 20% 90%;
+  --popover-foreground: 25 52% 12%;
+  --popover-border: 33 38% 80%;
 
-  --primary: 160 39% 28%; /* Bold Emerald */
-  --primary-foreground: 0 0% 100%;
-  
-  --secondary: 160 10% 85%;
-  --secondary-foreground: 160 50% 15%;
-  
-  --muted: 160 15% 92%;
-  --muted-foreground: 160 15% 45%;
+  --primary: 24 55% 50%;           /* Terracota #C4793A */
+  --primary-foreground: 30 43% 95%;
+  --primary-border: hsl(24 50% 40%);
 
-  --accent: 38 90% 55%; /* Warm gold accent */
-  --accent-foreground: 38 90% 15%;
+  --secondary: 33 45% 83%;         /* Duna #ECD5B8 */
+  --secondary-foreground: 25 52% 12%;
+  --secondary-border: 33 35% 70%;
 
-  --destructive: 0 84% 60%;
+  --muted: 33 40% 90%;
+  --muted-foreground: 28 35% 45%;  /* text-sec #7A5C3A */
+  --muted-border: 33 38% 80%;
+
+  --accent: 250 39% 30%;           /* Índigo #3D2F6B */
+  --accent-foreground: 30 43% 95%;
+  --accent-border: 250 35% 25%;
+
+  --destructive: 4 65% 47%;        /* Red #C0392B */
   --destructive-foreground: 0 0% 100%;
+  --destructive-border: 4 60% 40%;
 
-  --input: 160 20% 85%;
-  --ring: 160 39% 28%;
+  --input: 33 38% 80%;
+  --ring: 24 55% 50%;
 
-  --app-font-sans: 'Outfit', sans-serif;
-  --app-font-serif: 'Playfair Display', serif;
+  --app-font-sans: 'DM Sans', sans-serif;
+  --app-font-serif: 'DM Serif Display', serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(45,31,14,0.05);
+  --shadow: 0 2px 12px rgba(45,31,14,0.08);
+  --shadow-md: 0 4px 20px rgba(45,31,14,0.10);
+  --shadow-lg: 0 8px 32px rgba(45,31,14,0.12);
+
+  /* Lugendo brand tokens — use directly in components */
+  --arena:    #FAF2EB;
+  --duna:     #ECD5B8;
+  --terra:    #C4793A;
+  --ocre:     #8B4420;
+  --indigo:   #3D2F6B;
+  --noche:    #2D1F0E;
+  --indigo-light: #EAE6F5;
+  --terra-light:  #FAEEE4;
+  --green:    #2E7D5A;
+  --green-light:  #E4F3EC;
+  --amber:    #C47A00;
+  --amber-light:  #FFF3D6;
+  --red:      #C0392B;
+  --red-light:    #FDECEA;
+  --text-sec: #7A5C3A;
+  --text-ter: #9C7A58;
+  --lg-border: #E5D4BF;
 }
 
 .dark {
-  --background: 160 50% 6%;
-  --foreground: 160 20% 98%;
-  --border: 160 30% 15%;
-  
-  --card: 160 45% 8%;
-  --card-foreground: 160 20% 98%;
-  --card-border: 160 30% 15%;
+  --background: 25 52% 7%;
+  --foreground: 30 43% 95%;
+  --border: 25 40% 18%;
 
-  --sidebar: 160 45% 8%;
-  --sidebar-foreground: 160 20% 90%;
-  --sidebar-border: 160 30% 15%;
-  --sidebar-primary: 160 39% 40%;
-  --sidebar-primary-foreground: 160 10% 90%;
-  --sidebar-accent: 160 30% 15%;
-  --sidebar-accent-foreground: 160 20% 98%;
-  --sidebar-ring: 160 39% 40%;
+  --card: 25 45% 10%;
+  --card-foreground: 30 43% 95%;
+  --card-border: 25 40% 18%;
 
-  --popover: 160 45% 8%;
-  --popover-foreground: 160 20% 98%;
-  --popover-border: 160 30% 15%;
+  --sidebar: 25 52% 7%;
+  --sidebar-foreground: 30 43% 85%;
+  --sidebar-border: 25 40% 14%;
+  --sidebar-primary: 24 55% 50%;
+  --sidebar-primary-foreground: 30 43% 95%;
+  --sidebar-primary-border: 24 50% 45%;
+  --sidebar-accent: 25 40% 14%;
+  --sidebar-accent-foreground: 30 43% 85%;
+  --sidebar-accent-border: 25 40% 14%;
+  --sidebar-ring: 24 55% 50%;
 
-  --primary: 160 39% 45%;
-  --primary-foreground: 160 50% 10%;
-  
-  --secondary: 160 20% 20%;
-  --secondary-foreground: 160 20% 98%;
-  
-  --muted: 160 20% 15%;
-  --muted-foreground: 160 15% 65%;
+  --popover: 25 45% 10%;
+  --popover-foreground: 30 43% 95%;
+  --popover-border: 25 40% 18%;
 
-  --accent: 38 90% 55%;
-  --accent-foreground: 160 50% 10%;
+  --primary: 24 55% 50%;
+  --primary-foreground: 30 43% 95%;
+  --primary-border: hsl(24 50% 40%);
 
-  --destructive: 0 62% 30%;
+  --secondary: 25 40% 18%;
+  --secondary-foreground: 30 43% 95%;
+  --secondary-border: 25 40% 25%;
+
+  --muted: 25 40% 15%;
+  --muted-foreground: 28 25% 60%;
+  --muted-border: 25 40% 18%;
+
+  --accent: 250 39% 45%;
+  --accent-foreground: 30 43% 95%;
+  --accent-border: 250 35% 38%;
+
+  --destructive: 4 65% 47%;
   --destructive-foreground: 0 0% 100%;
+  --destructive-border: 4 60% 40%;
 
-  --input: 160 30% 20%;
-  --ring: 160 39% 45%;
+  --input: 25 40% 18%;
+  --ring: 24 55% 50%;
 }
 
 @layer base {
