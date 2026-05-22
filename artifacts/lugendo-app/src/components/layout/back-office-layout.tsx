@@ -25,10 +25,10 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/trips", label: "Trips", icon: Plane },
-    { href: "/itineraries", label: "Itineraries", icon: Map },
-    { href: "/hotels", label: "Hotels", icon: Bed },
-    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/users", label: "Team", icon: Users }] : []),
+    { href: "/trips", label: "Viajes", icon: Plane },
+    { href: "/itineraries", label: "Itinerarios", icon: Map },
+    { href: "/hotels", label: "Hoteles", icon: Bed },
+    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/team", label: "Equipo", icon: Users }] : []),
   ];
 
   return (
@@ -52,15 +52,16 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
               <Link 
                 key={item.href} 
                 href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors",
-                  isActive 
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-                )}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-[13px] font-medium transition-colors"
+                style={{
+                  background: isActive ? "rgba(196,121,58,0.12)" : "transparent",
+                  color: isActive ? "#C4793A" : "rgba(250,242,235,0.65)",
+                  borderLeft: isActive ? "3px solid #C4793A" : "3px solid transparent",
+                  paddingLeft: "9px",
+                }}
                 data-testid={`nav-${item.label.toLowerCase()}`}
               >
-                <item.icon className={cn("w-5 h-5", isActive ? "text-accent" : "opacity-70")} />
+                <item.icon className="w-4.5 h-4.5 shrink-0" style={{ opacity: isActive ? 1 : 0.6 }} />
                 {item.label}
               </Link>
             );
@@ -79,12 +80,13 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
           </div>
           <Button 
             variant="ghost" 
-            className="w-full justify-start mt-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" 
+            className="w-full justify-start mt-2 text-[13px]"
+            style={{ color: "rgba(250,242,235,0.5)" }}
             onClick={handleLogout}
             data-testid="button-logout"
           >
-            <LogOut className="w-4 h-4 mr-2 opacity-70" />
-            Sign out
+            <LogOut className="w-4 h-4 mr-2 opacity-60" />
+            Cerrar sesión
           </Button>
         </div>
       </aside>

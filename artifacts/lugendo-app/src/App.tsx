@@ -9,11 +9,15 @@ import { TravelerLayout } from "@/components/layout/traveler-layout";
 // Pages
 import NotFound from "@/pages/not-found";
 import { Login } from "@/pages/login";
-
-// Stub pages
-const Dashboard = () => <div className="p-8"><h1 className="text-3xl font-bold">Dashboard</h1><p>Welcome to Lugendo Back Office.</p></div>;
-const Trips = () => <div className="p-8"><h1 className="text-3xl font-bold">Trips</h1></div>;
-const TravelerHome = () => <div className="p-8"><h1 className="text-3xl font-serif">My Trips</h1></div>;
+import Dashboard from "@/pages/dashboard";
+import Trips from "@/pages/trips";
+import TripDetail from "@/pages/trip-detail";
+import Hotels from "@/pages/hotels";
+import Itineraries from "@/pages/itineraries";
+import ItineraryDetail from "@/pages/itinerary-detail";
+import Team from "@/pages/team";
+import TravelerHome from "@/pages/traveler-home";
+import TravelerTrip from "@/pages/traveler-trip";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,15 +34,15 @@ const queryClient = new QueryClient({
 
 function ProtectedBackOffice({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  if (!user || user.role === "traveler") return null; // handled by AuthProvider redirect
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
+  if (!user || user.role === "traveler") return null;
   return <BackOfficeLayout>{children}</BackOfficeLayout>;
 }
 
 function ProtectedTraveler({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  if (!user || user.role !== "traveler") return null; // handled by AuthProvider redirect
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
+  if (!user || user.role !== "traveler") return null;
   return <TravelerLayout>{children}</TravelerLayout>;
 }
 
@@ -48,22 +52,46 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />
 
-      {/* Back Office Routes */}
+      {/* Back Office */}
       <Route path="/dashboard">
         <ProtectedBackOffice><Dashboard /></ProtectedBackOffice>
+      </Route>
+      <Route path="/trips/:id">
+        {(params) => (
+          <ProtectedBackOffice><TripDetail /></ProtectedBackOffice>
+        )}
       </Route>
       <Route path="/trips">
         <ProtectedBackOffice><Trips /></ProtectedBackOffice>
       </Route>
-      
-      {/* Traveler Routes */}
+      <Route path="/itineraries/:id">
+        {() => (
+          <ProtectedBackOffice><ItineraryDetail /></ProtectedBackOffice>
+        )}
+      </Route>
+      <Route path="/itineraries">
+        <ProtectedBackOffice><Itineraries /></ProtectedBackOffice>
+      </Route>
+      <Route path="/hotels">
+        <ProtectedBackOffice><Hotels /></ProtectedBackOffice>
+      </Route>
+      <Route path="/team">
+        <ProtectedBackOffice><Team /></ProtectedBackOffice>
+      </Route>
+
+      {/* Traveler Portal */}
+      <Route path="/traveler/trips/:id">
+        {() => (
+          <ProtectedTraveler><TravelerTrip /></ProtectedTraveler>
+        )}
+      </Route>
       <Route path="/traveler">
         <ProtectedTraveler><TravelerHome /></ProtectedTraveler>
       </Route>
 
       {/* Default */}
       <Route path="/">
-        <div /> {/* Redirected in AuthProvider */}
+        <div />
       </Route>
 
       <Route component={NotFound} />
