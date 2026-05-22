@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1800" width="1200" height="1800">
+
+  
+  <rect width="1200" height="1800" fill="#F5F0EB"/>
+
+  
+  
+  
+  <rect x="0" y="0" width="1200" height="36" fill="#ECD5B8"/>
+  <text x="40" y="24" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#8B4420" letter-spacing="2">FONDO CLARO</text>
+
+  
+  <rect x="20" y="52" width="560" height="220" rx="16" fill="#FAF2EB" stroke="#E0C9A8" stroke-width="1"/>
+  <text x="40" y="80" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" letter-spacing="1.5">SÍMBOLO + WORDMARK · FONDO ARENA</text>
+  <circle cx="130" cy="162" r="52" fill="#ECD5B8" stroke="#C4793A" stroke-width="3"/>
+  <g transform="rotate(60,130,162)">
+    <polygon points="130,110 121,162 130,154 139,162" fill="#3D2F6B"/>
+    <polygon points="130,214 139,162 130,170 121,162" fill="#C4793A"/>
+  </g>
+  <circle cx="130" cy="162" r="6" fill="#2D1F0E"/>
+  <text x="196" y="178" font-family="Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">
+    <tspan fill="#2D1F0E">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#2D1F0E">endo</tspan>
+  </text>
+
+  
+  <rect x="600" y="52" width="580" height="220" rx="16" fill="#FFFFFF" stroke="#E0C9A8" stroke-width="1"/>
+  <text x="620" y="80" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" letter-spacing="1.5">SÍMBOLO + WORDMARK · FONDO BLANCO</text>
+  <circle cx="710" cy="162" r="52" fill="#ECD5B8" stroke="#C4793A" stroke-width="3"/>
+  <g transform="rotate(60,710,162)">
+    <polygon points="710,110 701,162 710,154 719,162" fill="#3D2F6B"/>
+    <polygon points="710,214 719,162 710,170 701,162" fill="#C4793A"/>
+  </g>
+  <circle cx="710" cy="162" r="6" fill="#2D1F0E"/>
+  <text x="776" y="178" font-family="Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">
+    <tspan fill="#2D1F0E">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#2D1F0E">endo</tspan>
+  </text>
+
+  
+  
+  
+  <rect x="0" y="294" width="1200" height="36" fill="#4A3520"/>
+  <text x="40" y="318" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ECD5B8" letter-spacing="2">FONDO OSCURO</text>
+
+  
+  <rect x="20" y="346" width="560" height="220" rx="16" fill="#2D1F0E"/>
+  <text x="40" y="374" font-family="Arial, sans-serif" font-size="11" fill="#8B6545" letter-spacing="1.5">SÍMBOLO + WORDMARK · NOCHE</text>
+  <circle cx="130" cy="456" r="52" fill="#3D2410" stroke="#C4793A" stroke-width="3"/>
+  <g transform="rotate(60,130,456)">
+    <polygon points="130,404 121,456 130,448 139,456" fill="#C4B5E8"/>
+    <polygon points="130,508 139,456 130,464 121,456" fill="#C4793A"/>
+  </g>
+  <circle cx="130" cy="456" r="6" fill="#ECD5B8"/>
+  <text x="196" y="472" font-family="Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">
+    <tspan fill="#FAF2EB">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#FAF2EB">endo</tspan>
+  </text>
+
+  
+  <rect x="600" y="346" width="580" height="220" rx="16" fill="#3D2F6B"/>
+  <text x="620" y="374" font-family="Arial, sans-serif" font-size="11" fill="#C4B5E8" letter-spacing="1.5">SÍMBOLO + WORDMARK · ÍNDIGO</text>
+  <circle cx="710" cy="456" r="52" fill="#4A3880" stroke="#C4B5E8" stroke-width="3"/>
+  <g transform="rotate(60,710,456)">
+    <polygon points="710,404 701,456 710,448 719,456" fill="#FAF2EB"/>
+    <polygon points="710,508 719,456 710,464 701,456" fill="#C4793A"/>
+  </g>
+  <circle cx="710" cy="456" r="6" fill="#FAF2EB"/>
+  <text x="776" y="472" font-family="Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">
+    <tspan fill="#FAF2EB">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#FAF2EB">endo</tspan>
+  </text>
+
+  
+  
+  
+  <rect x="0" y="588" width="1200" height="36" fill="#8B4420"/>
+  <text x="40" y="612" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#FAF2EB" letter-spacing="2">FONDO TERRACOTA</text>
+
+  <rect x="20" y="640" width="1160" height="220" rx="16" fill="#C4793A"/>
+  <text x="40" y="668" font-family="Arial, sans-serif" font-size="11" fill="#FAF2EB" letter-spacing="1.5" opacity="0.7">SÍMBOLO + WORDMARK · TERRACOTA</text>
+  <circle cx="200" cy="750" r="52" fill="#B06830" stroke="#FAF2EB" stroke-width="3"/>
+  <g transform="rotate(60,200,750)">
+    <polygon points="200,698 191,750 200,742 209,750" fill="#FAF2EB"/>
+    <polygon points="200,802 209,750 200,758 191,750" fill="#2D1F0E"/>
+  </g>
+  <circle cx="200" cy="750" r="6" fill="#FAF2EB"/>
+  <text x="266" y="766" font-family="Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="-1">
+    <tspan fill="#FAF2EB">Lu</tspan><tspan fill="#2D1F0E">g</tspan><tspan fill="#FAF2EB">endo</tspan>
+  </text>
+
+  
+  
+  
+  <rect x="0" y="882" width="1200" height="36" fill="#ECD5B8"/>
+  <text x="40" y="906" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#8B4420" letter-spacing="2">SOLO WORDMARK · SIN SÍMBOLO</text>
+
+  
+  <rect x="20" y="934" width="560" height="160" rx="16" fill="#FAF2EB" stroke="#E0C9A8" stroke-width="1"/>
+  <text x="40" y="962" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" letter-spacing="1.5">WORDMARK SOLO · FONDO CLARO</text>
+  <text x="60" y="1046" font-family="Arial, sans-serif" font-size="60" font-weight="500" letter-spacing="-1">
+    <tspan fill="#2D1F0E">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#2D1F0E">endo</tspan>
+  </text>
+
+  
+  <rect x="600" y="934" width="580" height="160" rx="16" fill="#2D1F0E"/>
+  <text x="620" y="962" font-family="Arial, sans-serif" font-size="11" fill="#8B6545" letter-spacing="1.5">WORDMARK SOLO · FONDO OSCURO</text>
+  <text x="640" y="1046" font-family="Arial, sans-serif" font-size="60" font-weight="500" letter-spacing="-1">
+    <tspan fill="#FAF2EB">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#FAF2EB">endo</tspan>
+  </text>
+
+  
+  
+  
+  <rect x="0" y="1116" width="1200" height="36" fill="#4A3520"/>
+  <text x="40" y="1140" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ECD5B8" letter-spacing="2">SOLO SÍMBOLO · SIN WORDMARK</text>
+
+  
+  <rect x="20" y="1168" width="260" height="260" rx="16" fill="#FAF2EB" stroke="#E0C9A8" stroke-width="1"/>
+  <text x="150" y="1196" font-family="Arial, sans-serif" font-size="10" fill="#9C7355" letter-spacing="1" text-anchor="middle">ARENA</text>
+  <circle cx="150" cy="1300" r="70" fill="#ECD5B8" stroke="#C4793A" stroke-width="3.5"/>
+  <g transform="rotate(60,150,1300)">
+    <polygon points="150,1230 138,1300 150,1289 162,1300" fill="#3D2F6B"/>
+    <polygon points="150,1370 162,1300 150,1311 138,1300" fill="#C4793A"/>
+  </g>
+  <circle cx="150" cy="1300" r="8" fill="#2D1F0E"/>
+
+  
+  <rect x="300" y="1168" width="260" height="260" rx="16" fill="#FFFFFF" stroke="#E0C9A8" stroke-width="1"/>
+  <text x="430" y="1196" font-family="Arial, sans-serif" font-size="10" fill="#9C7355" letter-spacing="1" text-anchor="middle">BLANCO</text>
+  <circle cx="430" cy="1300" r="70" fill="#ECD5B8" stroke="#C4793A" stroke-width="3.5"/>
+  <g transform="rotate(60,430,1300)">
+    <polygon points="430,1230 418,1300 430,1289 442,1300" fill="#3D2F6B"/>
+    <polygon points="430,1370 442,1300 430,1311 418,1300" fill="#C4793A"/>
+  </g>
+  <circle cx="430" cy="1300" r="8" fill="#2D1F0E"/>
+
+  
+  <rect x="580" y="1168" width="260" height="260" rx="16" fill="#2D1F0E"/>
+  <text x="710" y="1196" font-family="Arial, sans-serif" font-size="10" fill="#8B6545" letter-spacing="1" text-anchor="middle">NOCHE</text>
+  <circle cx="710" cy="1300" r="70" fill="#3D2410" stroke="#C4793A" stroke-width="3.5"/>
+  <g transform="rotate(60,710,1300)">
+    <polygon points="710,1230 698,1300 710,1289 722,1300" fill="#C4B5E8"/>
+    <polygon points="710,1370 722,1300 710,1311 698,1300" fill="#C4793A"/>
+  </g>
+  <circle cx="710" cy="1300" r="8" fill="#ECD5B8"/>
+
+  
+  <rect x="860" y="1168" width="320" height="260" rx="16" fill="#3D2F6B"/>
+  <text x="1020" y="1196" font-family="Arial, sans-serif" font-size="10" fill="#C4B5E8" letter-spacing="1" text-anchor="middle">ÍNDIGO</text>
+  <circle cx="1020" cy="1300" r="70" fill="#4A3880" stroke="#C4B5E8" stroke-width="3.5"/>
+  <g transform="rotate(60,1020,1300)">
+    <polygon points="1020,1230 1008,1300 1020,1289 1032,1300" fill="#FAF2EB"/>
+    <polygon points="1020,1370 1032,1300 1020,1311 1008,1300" fill="#C4793A"/>
+  </g>
+  <circle cx="1020" cy="1300" r="8" fill="#FAF2EB"/>
+
+  
+  
+  
+  <rect x="0" y="1450" width="1200" height="36" fill="#ECD5B8"/>
+  <text x="40" y="1474" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#8B4420" letter-spacing="2">ESCALAS · LEGIBILIDAD</text>
+
+  <rect x="20" y="1502" width="1160" height="260" rx="16" fill="#FAF2EB" stroke="#E0C9A8" stroke-width="1"/>
+
+  
+  <circle cx="120" cy="1610" r="64" fill="#ECD5B8" stroke="#C4793A" stroke-width="3"/>
+  <g transform="rotate(60,120,1610)">
+    <polygon points="120,1546 110,1610 120,1601 130,1610" fill="#3D2F6B"/>
+    <polygon points="120,1674 130,1610 120,1619 110,1610" fill="#C4793A"/>
+  </g>
+  <circle cx="120" cy="1610" r="7" fill="#2D1F0E"/>
+  <text x="120" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" text-anchor="middle">128px</text>
+
+  
+  <circle cx="275" cy="1620" r="32" fill="#ECD5B8" stroke="#C4793A" stroke-width="2"/>
+  <g transform="rotate(60,275,1620)">
+    <polygon points="275,1588 268,1620 275,1613 282,1620" fill="#3D2F6B"/>
+    <polygon points="275,1652 282,1620 275,1627 268,1620" fill="#C4793A"/>
+  </g>
+  <circle cx="275" cy="1620" r="4" fill="#2D1F0E"/>
+  <text x="275" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" text-anchor="middle">64px</text>
+
+  
+  <circle cx="370" cy="1626" r="24" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/>
+  <g transform="rotate(60,370,1626)">
+    <polygon points="370,1602 364,1626 370,1620 376,1626" fill="#3D2F6B"/>
+    <polygon points="370,1650 376,1626 370,1632 364,1626" fill="#C4793A"/>
+  </g>
+  <circle cx="370" cy="1626" r="3" fill="#2D1F0E"/>
+  <text x="370" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" text-anchor="middle">48px</text>
+
+  
+  <circle cx="440" cy="1630" r="16" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/>
+  <g transform="rotate(60,440,1630)">
+    <polygon points="440,1614 435,1630 440,1625 445,1630" fill="#3D2F6B"/>
+    <polygon points="440,1646 445,1630 440,1635 435,1630" fill="#C4793A"/>
+  </g>
+  <circle cx="440" cy="1630" r="2.5" fill="#2D1F0E"/>
+  <text x="440" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" text-anchor="middle">32px</text>
+
+  
+  <circle cx="496" cy="1634" r="12" fill="#ECD5B8" stroke="#C4793A" stroke-width="1"/>
+  <g transform="rotate(60,496,1634)">
+    <polygon points="496,1622 491,1634 496,1629 501,1634" fill="#3D2F6B"/>
+    <polygon points="496,1646 501,1634 496,1639 491,1634" fill="#C4793A"/>
+  </g>
+  <circle cx="496" cy="1634" r="2" fill="#2D1F0E"/>
+  <text x="496" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355" text-anchor="middle">24px</text>
+
+  
+  <circle cx="620" cy="1595" r="30" fill="#ECD5B8" stroke="#C4793A" stroke-width="2"/>
+  <g transform="rotate(60,620,1595)">
+    <polygon points="620,1565 613,1595 620,1588 627,1595" fill="#3D2F6B"/>
+    <polygon points="620,1625 627,1595 620,1602 613,1595" fill="#C4793A"/>
+  </g>
+  <circle cx="620" cy="1595" r="4" fill="#2D1F0E"/>
+  <text x="660" y="1607" font-family="Arial, sans-serif" font-size="28" font-weight="500" letter-spacing="-0.5">
+    <tspan fill="#2D1F0E">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#2D1F0E">endo</tspan>
+  </text>
+
+  
+  <circle cx="620" cy="1650" r="16" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/>
+  <g transform="rotate(60,620,1650)">
+    <polygon points="620,1634 615,1650 620,1645 625,1650" fill="#3D2F6B"/>
+    <polygon points="620,1666 625,1650 620,1655 615,1650" fill="#C4793A"/>
+  </g>
+  <circle cx="620" cy="1650" r="2.5" fill="#2D1F0E"/>
+  <text x="644" y="1657" font-family="Arial, sans-serif" font-size="16" font-weight="500" letter-spacing="-0.3">
+    <tspan fill="#2D1F0E">Lu</tspan><tspan fill="#C4793A">g</tspan><tspan fill="#2D1F0E">endo</tspan>
+  </text>
+
+  <text x="620" y="1730" font-family="Arial, sans-serif" font-size="11" fill="#9C7355">Logo horizontal · escalas</text>
+
+  
+  
+  
+  <rect x="0" y="1770" width="1200" height="30" fill="#2D1F0E"/>
+  <text x="40" y="1790" font-family="Arial, sans-serif" font-size="11" fill="#8B6545">Lugendo Brand Assets · v1.0 · 2026</text>
+  <text x="1160" y="1790" font-family="Arial, sans-serif" font-size="11" fill="#8B6545" text-anchor="end">lugendo.app</text>
+
+</svg>

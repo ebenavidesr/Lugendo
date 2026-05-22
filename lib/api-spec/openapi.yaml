@@ -3,20 +3,37 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Lugendo — Travel agency management platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: agencies
+    description: Agency management (Admin)
+  - name: users
+    description: User management
+  - name: itineraries
+    description: Itinerary templates
+  - name: hotels
+    description: Hotel catalog
+  - name: trips
+    description: Trip instances
+  - name: invitations
+    description: Traveler invitations
+  - name: traveler
+    description: Traveler front desk
+  - name: dashboard
+    description: Dashboard aggregates
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +41,1505 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Unauthorized
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new traveler account (optionally with invite code)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Validation error
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out
+      responses:
+        "204":
+          description: Logged out
+
+  # ─── AGENCIES ───────────────────────────────────────────────────────────────
+  /agencies:
+    get:
+      operationId: listAgencies
+      tags: [agencies]
+      summary: List all agencies (Admin only)
+      responses:
+        "200":
+          description: List of agencies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agency"
+    post:
+      operationId: createAgency
+      tags: [agencies]
+      summary: Create a new agency (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyInput"
+      responses:
+        "201":
+          description: Agency created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+
+  /agencies/{agencyId}:
+    get:
+      operationId: getAgency
+      tags: [agencies]
+      summary: Get agency by ID
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Agency detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateAgency
+      tags: [agencies]
+      summary: Update agency
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyUpdate"
+      responses:
+        "200":
+          description: Updated agency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+
+  # ─── USERS ──────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users (scoped to agency for Manager/Agent)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create agency user (Admin/Manager)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ─── ITINERARIES ─────────────────────────────────────────────────────────────
+  /itineraries:
+    get:
+      operationId: listItineraries
+      tags: [itineraries]
+      summary: List itineraries for the agency
+      responses:
+        "200":
+          description: List of itineraries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Itinerary"
+    post:
+      operationId: createItinerary
+      tags: [itineraries]
+      summary: Create itinerary template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItineraryInput"
+      responses:
+        "201":
+          description: Itinerary created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Itinerary"
+
+  /itineraries/{itineraryId}:
+    get:
+      operationId: getItinerary
+      tags: [itineraries]
+      summary: Get itinerary detail with days
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Itinerary detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateItinerary
+      tags: [itineraries]
+      summary: Update itinerary
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItineraryUpdate"
+      responses:
+        "200":
+          description: Updated itinerary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Itinerary"
+    delete:
+      operationId: deleteItinerary
+      tags: [itineraries]
+      summary: Delete itinerary (Admin only)
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /itineraries/{itineraryId}/days:
+    get:
+      operationId: listItineraryDays
+      tags: [itineraries]
+      summary: List days for an itinerary
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of days
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItineraryDay"
+    post:
+      operationId: createItineraryDay
+      tags: [itineraries]
+      summary: Add a day to an itinerary
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItineraryDayInput"
+      responses:
+        "201":
+          description: Day created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryDay"
+
+  /itineraries/{itineraryId}/days/{dayId}:
+    patch:
+      operationId: updateItineraryDay
+      tags: [itineraries]
+      summary: Update an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItineraryDayUpdate"
+      responses:
+        "200":
+          description: Updated day
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryDay"
+    delete:
+      operationId: deleteItineraryDay
+      tags: [itineraries]
+      summary: Delete an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── HOTELS ─────────────────────────────────────────────────────────────────
+  /hotels:
+    get:
+      operationId: listHotels
+      tags: [hotels]
+      summary: List hotels in the agency catalog
+      responses:
+        "200":
+          description: List of hotels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Hotel"
+    post:
+      operationId: createHotel
+      tags: [hotels]
+      summary: Add hotel to agency catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HotelInput"
+      responses:
+        "201":
+          description: Hotel created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hotel"
+
+  /hotels/{hotelId}:
+    get:
+      operationId: getHotel
+      tags: [hotels]
+      summary: Get hotel detail
+      parameters:
+        - name: hotelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Hotel detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hotel"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateHotel
+      tags: [hotels]
+      summary: Update hotel
+      parameters:
+        - name: hotelId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HotelUpdate"
+      responses:
+        "200":
+          description: Updated hotel
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Hotel"
+
+  # ─── TRIPS ──────────────────────────────────────────────────────────────────
+  /trips:
+    get:
+      operationId: listTrips
+      tags: [trips]
+      summary: List trips for the agency
+      responses:
+        "200":
+          description: List of trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trip"
+    post:
+      operationId: createTrip
+      tags: [trips]
+      summary: Create a trip from an itinerary or from scratch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Trip created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+
+  /trips/{tripId}:
+    get:
+      operationId: getTrip
+      tags: [trips]
+      summary: Get trip detail with days and invitations
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTrip
+      tags: [trips]
+      summary: Update trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripUpdate"
+      responses:
+        "200":
+          description: Updated trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trip"
+    delete:
+      operationId: deleteTrip
+      tags: [trips]
+      summary: Delete trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── INVITATIONS ─────────────────────────────────────────────────────────────
+  /trips/{tripId}/invitations:
+    get:
+      operationId: listInvitations
+      tags: [invitations]
+      summary: List invitations for a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+    post:
+      operationId: sendInvitations
+      tags: [invitations]
+      summary: Send invitations to travelers for a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationInput"
+      responses:
+        "201":
+          description: Invitations sent
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+
+  /invitations/{code}/accept:
+    post:
+      operationId: acceptInvitation
+      tags: [invitations]
+      summary: Accept an invitation using the unique code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invitation accepted, trip linked to traveler
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "404":
+          description: Code not found
+        "409":
+          description: Already accepted
+
+  # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────────
+  /me/trips:
+    get:
+      operationId: listMyTrips
+      tags: [traveler]
+      summary: Get all trips for the logged-in traveler
+      responses:
+        "200":
+          description: List of traveler trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TravelerTrip"
+
+  /me/trips/{tripId}:
+    get:
+      operationId: getMyTrip
+      tags: [traveler]
+      summary: Get traveler's trip detail with full itinerary
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip detail for traveler
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelerTripDetail"
+        "404":
+          description: Not found
+
+  /me/trips/{tripId}/notes:
+    get:
+      operationId: listMyTripNotes
+      tags: [traveler]
+      summary: Get personal notes for a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripNote"
+    post:
+      operationId: createTripNote
+      tags: [traveler]
+      summary: Create a personal note for a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripNoteInput"
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripNote"
+
+  /me/trips/{tripId}/notes/{noteId}:
+    patch:
+      operationId: updateTripNote
+      tags: [traveler]
+      summary: Update a personal note
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripNoteUpdate"
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripNote"
+    delete:
+      operationId: deleteTripNote
+      tags: [traveler]
+      summary: Delete a personal note
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── DASHBOARD ───────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Agency dashboard summary — trips by status, occupancy, recent activity
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    # ─── AUTH ─────────────────────────────────────────────────────────────────
+    AuthUser:
+      type: object
+      required: [id, email, name, role]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, agent, traveler]
+        agencyId:
+          type: ["integer", "null"]
+        agencyName:
+          type: ["string", "null"]
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    RegisterInput:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+        inviteCode:
+          type: string
+
+    # ─── AGENCY ───────────────────────────────────────────────────────────────
+    Agency:
+      type: object
+      required: [id, name, slug, active, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+        primaryColor:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    AgencyInput:
+      type: object
+      required: [name, slug]
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: string
+        primaryColor:
+          type: string
+
+    AgencyUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        logoUrl:
+          type: string
+        primaryColor:
+          type: string
+        active:
+          type: boolean
+
+    # ─── USER ─────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, email, name, role, active, createdAt]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [admin, manager, agent, traveler]
+        agencyId:
+          type: ["integer", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    UserInput:
+      type: object
+      required: [email, name, role]
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [manager, agent]
+        agencyId:
+          type: integer
+
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+          enum: [manager, agent]
+        active:
+          type: boolean
+
+    # ─── ITINERARY ────────────────────────────────────────────────────────────
+    Itinerary:
+      type: object
+      required: [id, agencyId, name, numDays, active, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        name:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        region:
+          type: ["string", "null"]
+        numDays:
+          type: integer
+        difficulty:
+          type: ["string", "null"]
+          enum: ["easy", "moderate", "demanding", null]
+        description:
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        tripCount:
+          type: integer
+        createdAt:
+          type: string
+
+    ItineraryDetail:
+      type: object
+      required: [id, agencyId, name, numDays, active, createdAt, days]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        name:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        region:
+          type: ["string", "null"]
+        numDays:
+          type: integer
+        difficulty:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        videoUrl:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryDay"
+
+    ItineraryInput:
+      type: object
+      required: [name, numDays]
+      properties:
+        name:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        region:
+          type: string
+        numDays:
+          type: integer
+        difficulty:
+          type: string
+          enum: [easy, moderate, demanding]
+        description:
+          type: string
+        videoUrl:
+          type: string
+
+    ItineraryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        region:
+          type: string
+        numDays:
+          type: integer
+        difficulty:
+          type: string
+          enum: [easy, moderate, demanding]
+        description:
+          type: string
+        videoUrl:
+          type: string
+        active:
+          type: boolean
+
+    ItineraryDay:
+      type: object
+      required: [id, itineraryId, dayNumber, createdAt]
+      properties:
+        id:
+          type: integer
+        itineraryId:
+          type: integer
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        transport:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        hotelId:
+          type: ["integer", "null"]
+        hotelName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    ItineraryDayInput:
+      type: object
+      required: [dayNumber]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: string
+        cityTo:
+          type: string
+        transport:
+          type: string
+        description:
+          type: string
+        hotelId:
+          type: integer
+
+    ItineraryDayUpdate:
+      type: object
+      properties:
+        cityFrom:
+          type: string
+        cityTo:
+          type: string
+        transport:
+          type: string
+        description:
+          type: string
+        hotelId:
+          type: integer
+
+    # ─── HOTEL ────────────────────────────────────────────────────────────────
+    Hotel:
+      type: object
+      required: [id, agencyId, name, city, country, active, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        address:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+        stars:
+          type: ["integer", "null"]
+        segment:
+          type: ["string", "null"]
+          enum: ["basic", "standard", "premium", null]
+        description:
+          type: ["string", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    HotelInput:
+      type: object
+      required: [name, city, country]
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        website:
+          type: string
+        type:
+          type: string
+        stars:
+          type: integer
+        segment:
+          type: string
+          enum: [basic, standard, premium]
+        description:
+          type: string
+
+    HotelUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        website:
+          type: string
+        type:
+          type: string
+        stars:
+          type: integer
+        segment:
+          type: string
+          enum: [basic, standard, premium]
+        description:
+          type: string
+        active:
+          type: boolean
+
+    # ─── TRIP ─────────────────────────────────────────────────────────────────
+    Trip:
+      type: object
+      required: [id, agencyId, name, status, startDate, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        itineraryId:
+          type: ["integer", "null"]
+        itineraryName:
+          type: ["string", "null"]
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        maxCapacity:
+          type: ["integer", "null"]
+        invitedCount:
+          type: integer
+        acceptedCount:
+          type: integer
+        airline:
+          type: ["string", "null"]
+        flightNumber:
+          type: ["string", "null"]
+        reservationCode:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    TripDetail:
+      type: object
+      required: [id, agencyId, name, status, startDate, createdAt, days, invitations]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        itineraryId:
+          type: ["integer", "null"]
+        itineraryName:
+          type: ["string", "null"]
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        maxCapacity:
+          type: ["integer", "null"]
+        airline:
+          type: ["string", "null"]
+        flightNumber:
+          type: ["string", "null"]
+        flightTime:
+          type: ["string", "null"]
+        reservationCode:
+          type: ["string", "null"]
+        flightNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripDay"
+        invitations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invitation"
+
+    TripInput:
+      type: object
+      required: [name, startDate]
+      properties:
+        name:
+          type: string
+        itineraryId:
+          type: integer
+        startDate:
+          type: string
+        endDate:
+          type: string
+        maxCapacity:
+          type: integer
+        airline:
+          type: string
+        flightNumber:
+          type: string
+        flightTime:
+          type: string
+        reservationCode:
+          type: string
+        flightNotes:
+          type: string
+
+    TripUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        maxCapacity:
+          type: integer
+        airline:
+          type: string
+        flightNumber:
+          type: string
+        flightTime:
+          type: string
+        reservationCode:
+          type: string
+        flightNotes:
+          type: string
+
+    TripDay:
+      type: object
+      required: [id, tripId, dayNumber, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        transport:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        hotelId:
+          type: ["integer", "null"]
+        hotelName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    # ─── INVITATION ──────────────────────────────────────────────────────────
+    Invitation:
+      type: object
+      required: [id, tripId, email, inviteCode, status, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        email:
+          type: string
+        inviteCode:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        travelerId:
+          type: ["integer", "null"]
+        travelerName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        acceptedAt:
+          type: ["string", "null"]
+
+    InvitationInput:
+      type: object
+      required: [emails]
+      properties:
+        emails:
+          type: array
+          items:
+            type: string
+
+    # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────
+    TravelerTrip:
+      type: object
+      required: [id, name, status, startDate, agencyName, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        agencyName:
+          type: string
+        agencyLogoUrl:
+          type: ["string", "null"]
+        countries:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+
+    TravelerTripDetail:
+      type: object
+      required: [id, name, status, startDate, agencyName, createdAt, days]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        agencyName:
+          type: string
+        agencyLogoUrl:
+          type: ["string", "null"]
+        airline:
+          type: ["string", "null"]
+        flightNumber:
+          type: ["string", "null"]
+        flightTime:
+          type: ["string", "null"]
+        reservationCode:
+          type: ["string", "null"]
+        flightNotes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripDay"
+
+    TripNote:
+      type: object
+      required: [id, tripId, userId, content, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        userId:
+          type: integer
+        dayNumber:
+          type: ["integer", "null"]
+        content:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    TripNoteInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        dayNumber:
+          type: integer
+
+    TripNoteUpdate:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+
+    # ─── DASHBOARD ───────────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [tripsByStatus, totalTravelers, upcomingTrips, recentInvitations]
+      properties:
+        tripsByStatus:
+          type: object
+          required: [draft, scheduled, active, finished, cancelled]
+          properties:
+            draft:
+              type: integer
+            scheduled:
+              type: integer
+            active:
+              type: integer
+            finished:
+              type: integer
+            cancelled:
+              type: integer
+        totalTravelers:
+          type: integer
+        upcomingTrips:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trip"
+        recentInvitations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Invitation"
+        occupancyAlerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Trip"

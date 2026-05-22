@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lugendo"
+version = "1.0.0"
+id = "artifacts/lugendo-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18147
+
+[services.development]
+run = "pnpm --filter @workspace/lugendo-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lugendo-app", "run", "build" ]
+publicDir = "artifacts/lugendo-app/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18147"
+BASE_PATH = "/"
