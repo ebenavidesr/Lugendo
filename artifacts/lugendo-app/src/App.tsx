@@ -17,6 +17,7 @@ import Itineraries from "@/pages/itineraries";
 import ItineraryDetail from "@/pages/itinerary-detail";
 import Team from "@/pages/team";
 import Activities from "@/pages/activities";
+import TripWizard from "@/pages/trip-wizard";
 import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
 
@@ -56,6 +57,9 @@ function Router() {
       {/* Back Office */}
       <Route path="/dashboard">
         <ProtectedBackOffice><Dashboard /></ProtectedBackOffice>
+      </Route>
+      <Route path="/trips/new">
+        <ProtectedBackOffice><TripWizard /></ProtectedBackOffice>
       </Route>
       <Route path="/trips/:id">
         {(params) => (

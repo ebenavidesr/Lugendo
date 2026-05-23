@@ -903,6 +903,105 @@ paths:
         "204":
           description: Deleted
 
+  # ─── DAY ACTIVITIES ─────────────────────────────────────────────────────────
+  /itineraries/parse-pdf:
+    post:
+      operationId: parseItineraryPdf
+      tags: [itineraries]
+      summary: Parse a PDF/text document to extract itinerary structure via AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParsePdfInput"
+      responses:
+        "200":
+          description: Parsed itinerary structure
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedItinerary"
+
+  /itineraries/{itineraryId}/days/{dayId}/activities:
+    get:
+      operationId: listDayActivities
+      tags: [itineraries]
+      summary: List activities linked to an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of day activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DayActivity"
+    post:
+      operationId: addDayActivity
+      tags: [itineraries]
+      summary: Link an activity to an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DayActivityInput"
+      responses:
+        "201":
+          description: Activity linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayActivity"
+
+  /itineraries/{itineraryId}/days/{dayId}/activities/{linkId}:
+    delete:
+      operationId: removeDayActivity
+      tags: [itineraries]
+      summary: Unlink an activity from an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Unlinked
+
   # ─── DASHBOARD ───────────────────────────────────────────────────────────────
   /dashboard/summary:
     get:
@@ -1686,6 +1785,87 @@ components:
       required: [content]
       properties:
         content:
+          type: string
+
+    # ─── PDF PARSE / DAY ACTIVITIES ─────────────────────────────────────────
+    ParsePdfInput:
+      type: object
+      required: [fileBase64, fileName]
+      properties:
+        fileBase64:
+          type: string
+          description: Base64-encoded PDF or text file content
+        fileName:
+          type: string
+
+    ParsedItinerary:
+      type: object
+      required: [name, numDays, days]
+      properties:
+        name:
+          type: string
+        numDays:
+          type: integer
+        description:
+          type: ["string", "null"]
+        countries:
+          type: array
+          items:
+            type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedDay"
+
+    ParsedDay:
+      type: object
+      required: [dayNumber]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        transport:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        activities:
+          type: array
+          items:
+            type: string
+
+    DayActivity:
+      type: object
+      required: [id, dayId, activityId, sortOrder, createdAt]
+      properties:
+        id:
+          type: integer
+        dayId:
+          type: integer
+        activityId:
+          type: integer
+        activityName:
+          type: string
+        activityCategory:
+          type: ["string", "null"]
+        sortOrder:
+          type: integer
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    DayActivityInput:
+      type: object
+      required: [activityId]
+      properties:
+        activityId:
+          type: integer
+        sortOrder:
+          type: integer
+        notes:
           type: string
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────

@@ -1,0 +1,1452 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap');
+
+  :root {
+    --arena:    #FAF2EB;
+    --duna:     #ECD5B8;
+    --terra:    #C4793A;
+    --ocre:     #8B4420;
+    --indigo:   #3D2F6B;
+    --noche:    #2D1F0E;
+    --sand-mid: #D9C4A0;
+    --indigo-light: #EAE6F5;
+    --terra-light:  #FAEEE4;
+    --green:    #2E7D5A;
+    --green-light: #E4F3EC;
+    --amber:    #C47A00;
+    --amber-light: #FFF3D6;
+    --red:      #C0392B;
+    --red-light: #FDECEA;
+    --white:    #FFFFFF;
+    --text-sec: #7A5C3A;
+    --text-ter: #9C7A58;
+    --border:   #E5D4BF;
+    --radius-sm: 8px;
+    --radius:   14px;
+    --radius-lg: 20px;
+    --shadow:   0 2px 12px rgba(45,31,14,0.08);
+    --shadow-lg: 0 8px 32px rgba(45,31,14,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #F0E8DE;
+    color: var(--noche);
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--noche);
+    padding: 0 2rem;
+    display: flex; align-items: center; gap: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 0;
+    margin-right: 2rem;
+    text-decoration: none;
+  }
+  .compass {
+    width: 28px; height: 28px; flex-shrink: 0;
+  }
+  .nav-wordmark {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px; font-weight: 500;
+    letter-spacing: -0.3px;
+    color: var(--arena);
+  }
+  .nav-wordmark span { color: var(--terra); }
+  .nav-tabs {
+    display: flex; gap: 0;
+    flex: 1;
+  }
+  .nav-tab {
+    padding: 18px 20px;
+    font-size: 13px; font-weight: 500;
+    color: rgba(250,242,235,0.5);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .nav-tab:hover { color: rgba(250,242,235,0.8); }
+  .nav-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
+
+  /* ── SECTIONS ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px; color: var(--noche);
+    margin-bottom: 0.25rem;
+  }
+  .section-sub {
+    font-size: 14px; color: var(--text-sec);
+    margin-bottom: 2rem;
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-size: 14px; font-weight: 500; color: var(--noche);
+  }
+  .card-body { padding: 1.5rem; }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+  .gap { margin-bottom: 1.25rem; }
+
+  /* ── STAT WIDGET ── */
+  .stat-widget {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; font-weight: 500; color: var(--text-ter); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+  .stat-value { font-size: 32px; font-weight: 500; color: var(--noche); line-height: 1; margin-bottom: 4px; }
+  .stat-meta { font-size: 12px; color: var(--text-sec); }
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .pill-green { background: var(--green-light); color: var(--green); }
+  .pill-amber { background: var(--amber-light); color: var(--amber); }
+  .pill-red   { background: var(--red-light);   color: var(--red);   }
+  .pill-indigo { background: var(--indigo-light); color: var(--indigo); }
+  .pill-terra { background: var(--terra-light); color: var(--ocre); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500;
+    border: none; cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--terra); color: var(--arena); }
+  .btn-primary:hover { background: var(--ocre); }
+  .btn-secondary { background: var(--duna); color: var(--noche); border: 1px solid var(--sand-mid); }
+  .btn-ghost { background: transparent; color: var(--terra); border: 1.5px solid var(--terra); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-icon { padding: 8px; border-radius: var(--radius-sm); background: var(--duna); color: var(--noche); border: 1px solid var(--sand-mid); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+    letter-spacing: 0.02em;
+  }
+  .badge-green   { background: var(--green-light);  color: var(--green); }
+  .badge-amber   { background: var(--amber-light);  color: var(--amber); }
+  .badge-red     { background: var(--red-light);    color: var(--red); }
+  .badge-indigo  { background: var(--indigo-light); color: var(--indigo); }
+  .badge-terra   { background: var(--terra-light);  color: var(--ocre); }
+  .badge-neutral { background: var(--duna);         color: var(--text-sec); }
+
+  /* ── SIDEBAR LAYOUT ── */
+  .app-layout { display: flex; gap: 0; height: 580px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
+  .sidebar {
+    width: 200px; flex-shrink: 0;
+    background: var(--noche);
+    display: flex; flex-direction: column;
+    padding: 1.25rem 0;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0 1.25rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 0.75rem;
+  }
+  .sidebar-logo .wm { font-size: 16px; font-weight: 500; color: var(--arena); letter-spacing: -0.2px; }
+  .sidebar-logo .wm span { color: var(--terra); }
+  .sidebar-nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 1.25rem;
+    font-size: 13px; color: rgba(250,242,235,0.5);
+    cursor: pointer; transition: all 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-nav-item:hover { color: rgba(250,242,235,0.8); background: rgba(255,255,255,0.03); }
+  .sidebar-nav-item.active { color: var(--terra); border-left-color: var(--terra); background: rgba(196,121,58,0.08); }
+  .sidebar-nav-item svg { flex-shrink: 0; }
+  .sidebar-section-label {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: rgba(250,242,235,0.25);
+    padding: 1rem 1.25rem 0.4rem; margin-top: 0.5rem;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1rem 1.25rem 0;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .sidebar-user {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar-sm {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--indigo); color: var(--arena);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; flex-shrink: 0;
+  }
+  .sidebar-user-name { font-size: 12px; color: rgba(250,242,235,0.7); }
+  .sidebar-user-role { font-size: 11px; color: rgba(250,242,235,0.35); }
+
+  /* ── MAIN CONTENT AREA ── */
+  .main-content {
+    flex: 1; background: var(--arena);
+    overflow-y: auto; padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 1.25rem;
+  }
+  .main-header {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .main-title { font-size: 18px; font-weight: 500; color: var(--noche); }
+  .main-sub { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 10px 14px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-ter);
+    background: var(--arena); border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    color: var(--noche); vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(236,213,184,0.2); }
+  .td-name { font-weight: 500; }
+  .td-sub { font-size: 12px; color: var(--text-sec); margin-top: 1px; }
+
+  /* ── GANTT ── */
+  .gantt { display: flex; flex-direction: column; gap: 6px; }
+  .gantt-row { display: flex; align-items: center; gap: 10px; }
+  .gantt-label { width: 90px; font-size: 12px; color: var(--text-sec); text-align: right; flex-shrink: 0; }
+  .gantt-track { flex: 1; height: 26px; background: var(--duna); border-radius: 6px; position: relative; overflow: hidden; }
+  .gantt-bar {
+    position: absolute; height: 100%; border-radius: 6px;
+    display: flex; align-items: center; padding: 0 8px;
+    font-size: 11px; font-weight: 500; color: white;
+    white-space: nowrap; overflow: hidden;
+  }
+  .gantt-bar.active  { background: var(--terra); }
+  .gantt-bar.planned { background: var(--indigo); }
+  .gantt-bar.done    { background: var(--sand-mid); }
+
+  /* ── ALERT ITEM ── */
+  .alert-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid;
+  }
+  .alert-item.red    { background: var(--red-light);   border-color: rgba(192,57,43,0.2); }
+  .alert-item.amber  { background: var(--amber-light); border-color: rgba(196,122,0,0.2); }
+  .alert-icon { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-text { font-size: 13px; color: var(--noche); line-height: 1.4; }
+  .alert-meta { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+
+  /* ── SEMAFORO ── */
+  .semaforo { display: flex; gap: 6px; align-items: center; }
+  .sem-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .sem-green { background: var(--green); }
+  .sem-amber { background: var(--amber); }
+  .sem-red   { background: var(--red); }
+
+  /* ── PROGRESS BAR ── */
+  .prog-wrap { background: var(--duna); border-radius: 4px; height: 6px; overflow: hidden; }
+  .prog-bar  { height: 100%; border-radius: 4px; transition: width 0.3s; }
+  .prog-green { background: var(--green); }
+  .prog-amber { background: var(--amber); }
+  .prog-red   { background: var(--red); }
+
+  /* ── MOBILE FRAME ── */
+  .mobile-frame {
+    width: 340px; flex-shrink: 0;
+    background: var(--noche);
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow: 0 20px 60px rgba(45,31,14,0.25), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+  .mobile-screen {
+    background: var(--arena);
+    border-radius: 30px;
+    overflow: hidden;
+    height: 620px;
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .mobile-status-bar {
+    background: var(--arena);
+    padding: 12px 20px 8px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 500; color: var(--noche);
+  }
+  .mobile-header {
+    background: var(--arena);
+    padding: 0 20px 14px;
+  }
+  .mobile-header-row { display: flex; align-items: center; justify-content: space-between; }
+  .mobile-title { font-size: 22px; font-weight: 500; color: var(--noche); letter-spacing: -0.3px; }
+  .mobile-sub { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+  .mobile-scroll { flex: 1; overflow-y: auto; padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .mobile-bottom-nav {
+    background: var(--white);
+    border-top: 1px solid var(--border);
+    padding: 10px 0 14px;
+    display: flex; justify-content: space-around;
+  }
+  .mobile-nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--text-ter); cursor: pointer;
+  }
+  .mobile-nav-item.active { color: var(--terra); }
+  .mobile-nav-item svg { flex-shrink: 0; }
+
+  /* ── TRIP CARD (mobile) ── */
+  .trip-card {
+    background: var(--white);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(45,31,14,0.06);
+  }
+  .trip-card-img {
+    height: 100px;
+    display: flex; align-items: flex-end;
+    padding: 10px 14px;
+    position: relative;
+  }
+  .trip-card-img-agency { background: linear-gradient(135deg, var(--indigo) 0%, #5B4A9B 100%); }
+  .trip-card-img-personal { background: linear-gradient(135deg, #2E6B5A 0%, #4A9B7A 100%); }
+  .trip-card-img-shared { background: linear-gradient(135deg, var(--ocre) 0%, var(--terra) 100%); }
+  .trip-card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%); }
+  .trip-card-img-content { position: relative; z-index: 1; }
+  .trip-card-country { font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.08em; }
+  .trip-card-name { font-size: 16px; font-weight: 500; color: white; margin-top: 1px; }
+  .trip-card-body { padding: 12px 14px; }
+  .trip-card-dates { font-size: 12px; color: var(--text-sec); margin-bottom: 8px; }
+  .trip-card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .trip-card-tag {
+    font-size: 10px; font-weight: 500;
+    padding: 3px 8px; border-radius: 20px;
+  }
+  .agency-tag { background: var(--indigo-light); color: var(--indigo); }
+  .personal-tag { background: var(--green-light); color: var(--green); }
+  .shared-tag { background: var(--terra-light); color: var(--ocre); }
+  .trip-avatar-row { display: flex; gap: -4px; }
+  .micro-avatar {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1.5px solid white;
+    margin-left: -4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; font-weight: 500; color: white;
+  }
+  .micro-avatar:first-child { margin-left: 0; }
+  .av1 { background: var(--indigo); }
+  .av2 { background: var(--terra); }
+  .av3 { background: var(--green); }
+
+  /* ── DAY CARD (mobile) ── */
+  .day-card {
+    background: var(--white);
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .day-num { font-size: 11px; font-weight: 500; color: var(--terra); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .day-city { font-size: 16px; font-weight: 500; color: var(--noche); }
+  .day-route { font-size: 12px; color: var(--text-sec); margin-bottom: 10px; }
+  .day-hotel { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--arena); border-radius: 8px; margin-bottom: 8px; }
+  .day-hotel-name { font-size: 12px; font-weight: 500; color: var(--noche); }
+  .day-hotel-cat { font-size: 11px; color: var(--text-sec); }
+  .day-activities { display: flex; flex-wrap: wrap; gap: 5px; }
+  .day-act-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--duna); color: var(--text-sec); }
+
+  /* ── DOC ITEM ── */
+  .doc-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: var(--white);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .doc-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .doc-icon-pdf { background: var(--red-light); }
+  .doc-icon-img { background: var(--terra-light); }
+  .doc-name { font-size: 13px; font-weight: 500; color: var(--noche); }
+  .doc-meta { font-size: 11px; color: var(--text-sec); }
+
+  /* ── ICONS ── */
+  .icon-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1rem; }
+  .icon-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .icon-box { width: 52px; height: 52px; border-radius: 14px; background: var(--white); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
+  .icon-label { font-size: 11px; color: var(--text-sec); text-align: center; }
+
+  /* ── COLOR SYSTEM ── */
+  .color-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .color-chip { border-radius: 10px; padding: 1rem; min-width: 100px; }
+  .chip-name { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
+  .chip-hex  { font-size: 11px; opacity: 0.7; font-family: monospace; }
+
+  /* ── FORM ELEMENTS ── */
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--noche); }
+  .form-input {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 14px; color: var(--noche);
+    font-family: 'DM Sans', sans-serif;
+    transition: border-color 0.15s;
+    outline: none;
+    width: 100%;
+  }
+  .form-input:focus { border-color: var(--terra); }
+  .form-input.has-value { border-color: var(--sand-mid); }
+  .form-select {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 14px; color: var(--noche);
+    font-family: 'DM Sans', sans-serif;
+    width: 100%; outline: none;
+  }
+  .form-hint { font-size: 11px; color: var(--text-ter); }
+
+  /* ── STEP INDICATOR ── */
+  .steps { display: flex; align-items: center; gap: 0; margin-bottom: 1.5rem; }
+  .step { display: flex; align-items: center; flex: 1; }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; flex-shrink: 0;
+  }
+  .step-dot.done { background: var(--terra); color: white; }
+  .step-dot.active { background: var(--indigo); color: white; }
+  .step-dot.pending { background: var(--duna); color: var(--text-ter); }
+  .step-line { flex: 1; height: 2px; background: var(--duna); margin: 0 4px; }
+  .step-line.done { background: var(--terra); }
+  .step-label { font-size: 10px; color: var(--text-sec); margin-top: 4px; text-align: center; }
+
+  /* ── NOTIFICATION ── */
+  .notif-item {
+    display: flex; gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--terra); flex-shrink: 0; margin-top: 4px; }
+  .notif-dot.read { background: transparent; border: 1.5px solid var(--border); }
+  .notif-content { flex: 1; }
+  .notif-title { font-size: 13px; font-weight: 500; color: var(--noche); }
+  .notif-text  { font-size: 12px; color: var(--text-sec); margin-top: 2px; line-height: 1.4; }
+  .notif-time  { font-size: 11px; color: var(--text-ter); margin-top: 4px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--sand-mid); border-radius: 10px; }
+
+  .flex { display: flex; }
+  .gap-1 { gap: 0.5rem; }
+  .gap-2 { gap: 1rem; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .flex-col { flex-direction: column; }
+  .mt-1 { margin-top: 0.5rem; }
+  .mt-2 { margin-top: 1rem; }
+  .flex-wrap { flex-wrap: wrap; }
+  .w-full { width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a class="nav-logo" href="#">
+    <svg class="compass" viewBox="0 0 56 56" fill="none">
+      <circle cx="28" cy="28" r="26" fill="#3D2410" stroke="#C4793A" stroke-width="1.5"/>
+      <g transform="rotate(60,28,28)">
+        <polygon points="28,8 21,28 28,22 35,28" fill="#C4B5E8"/>
+        <polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/>
+      </g>
+      <circle cx="28" cy="28" r="4" fill="#ECD5B8"/>
+    </svg>
+    <span class="nav-wordmark">Lu<span>g</span>endo</span>
+  </a>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showSection('backoffice', this)">Back Office · Agencia</div>
+    <div class="nav-tab" onclick="showSection('frontdesk', this)">Front Desk · Viajero</div>
+    <div class="nav-tab" onclick="showSection('components', this)">Sistema de Diseño</div>
+    <div class="nav-tab" onclick="showSection('icons', this)">Iconografía</div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- BACK OFFICE -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section active" id="backoffice">
+<div class="page">
+  <div class="section-title">Back Office · Vista de Agencia</div>
+  <div class="section-sub">Panel de gestión para Admin, Manager y Agent — Centro de Control</div>
+
+  <!-- Full app layout -->
+  <div class="app-layout gap">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <svg width="22" height="22" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="26" fill="#3D2410" stroke="#C4793A" stroke-width="1.5"/>
+          <g transform="rotate(60,28,28)">
+            <polygon points="28,8 21,28 28,22 35,28" fill="#C4B5E8"/>
+            <polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/>
+          </g>
+          <circle cx="28" cy="28" r="4" fill="#ECD5B8"/>
+        </svg>
+        <div class="wm">Lu<span>g</span>endo</div>
+      </div>
+
+      <div class="sidebar-nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Centro de Control
+      </div>
+      <div class="sidebar-section-label">Gestión</div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>
+        Itinerarios
+      </div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Viajes
+      </div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Hoteles
+      </div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Actividades
+      </div>
+      <div class="sidebar-section-label">Análisis</div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        CRM Viajeros
+      </div>
+      <div class="sidebar-nav-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        Facturación
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="avatar-sm">ML</div>
+          <div>
+            <div class="sidebar-user-name">María L.</div>
+            <div class="sidebar-user-role">Manager</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+      <div class="main-header">
+        <div>
+          <div class="main-title">Centro de Control</div>
+          <div class="main-sub">Viernes, 23 de mayo de 2026</div>
+        </div>
+        <div class="flex gap-1">
+          <button class="btn btn-secondary btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/></svg>
+            Filtrar
+          </button>
+          <button class="btn btn-primary btn-sm">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo viaje
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="grid-4">
+        <div class="stat-widget">
+          <div class="stat-label">Viajes activos</div>
+          <div class="stat-value">8</div>
+          <div class="stat-meta"><span class="stat-pill pill-green">↑ 2 vs mes anterior</span></div>
+        </div>
+        <div class="stat-widget">
+          <div class="stat-label">Viajeros este mes</div>
+          <div class="stat-value">134</div>
+          <div class="stat-meta"><span class="stat-pill pill-green">↑ 18 %</span></div>
+        </div>
+        <div class="stat-widget">
+          <div class="stat-label">Ingresos mes</div>
+          <div class="stat-value">1.340€</div>
+          <div class="stat-meta"><span class="stat-pill pill-amber">Fee viajeros</span></div>
+        </div>
+        <div class="stat-widget">
+          <div class="stat-label">Alertas activas</div>
+          <div class="stat-value" style="color:var(--red)">3</div>
+          <div class="stat-meta"><span class="stat-pill pill-red">Requieren acción</span></div>
+        </div>
+      </div>
+
+      <!-- Middle row -->
+      <div class="grid-2">
+        <!-- Alertas -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Alertas activas</div>
+            <span class="badge badge-red">3</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+            <div class="alert-item red">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <div>
+                <div class="alert-text">Tanzania Safari · solo 22 % de ocupación</div>
+                <div class="alert-meta">Salida en 18 días · 4/18 viajeros confirmados</div>
+              </div>
+            </div>
+            <div class="alert-item amber">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div>
+                <div class="alert-text">Japón Primavera · 3 viajeros sin aceptar</div>
+                <div class="alert-meta">Invitaciones enviadas hace 8 días</div>
+              </div>
+            </div>
+            <div class="alert-item amber">
+              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <div>
+                <div class="alert-text">Marruecos Desierto · sin guía asignado</div>
+                <div class="alert-meta">Salida en 31 días</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- GANTT -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Cronograma de viajes</div>
+            <div class="flex gap-1 items-center">
+              <span style="width:10px;height:10px;border-radius:2px;background:var(--terra);display:inline-block;"></span><span style="font-size:11px;color:var(--text-ter)">En curso</span>
+              <span style="width:10px;height:10px;border-radius:2px;background:var(--indigo);display:inline-block;margin-left:6px;"></span><span style="font-size:11px;color:var(--text-ter)">Programado</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="gantt">
+              <div class="gantt-row">
+                <div class="gantt-label">Tanzania</div>
+                <div class="gantt-track"><div class="gantt-bar active" style="left:5%;width:35%">En curso</div></div>
+              </div>
+              <div class="gantt-row">
+                <div class="gantt-label">Japón</div>
+                <div class="gantt-track"><div class="gantt-bar active" style="left:20%;width:25%">En curso</div></div>
+              </div>
+              <div class="gantt-row">
+                <div class="gantt-label">Marruecos</div>
+                <div class="gantt-track"><div class="gantt-bar planned" style="left:40%;width:20%">Jun 10</div></div>
+              </div>
+              <div class="gantt-row">
+                <div class="gantt-label">Islandia</div>
+                <div class="gantt-track"><div class="gantt-bar planned" style="left:55%;width:18%">Jul 2</div></div>
+              </div>
+              <div class="gantt-row">
+                <div class="gantt-label">Perú</div>
+                <div class="gantt-track"><div class="gantt-bar planned" style="left:65%;width:22%">Jul 15</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trips table -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Viajes activos y programados</div>
+          <button class="btn btn-secondary btn-sm">Ver todos</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Viaje</th>
+                <th>Fechas</th>
+                <th>Viajeros</th>
+                <th>Ocupación</th>
+                <th>Estado</th>
+                <th>Agente</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="td-name">Tanzania Gran Safari</div><div class="td-sub">África · 12 días</div></td>
+                <td><div style="font-size:13px;">15 May – 27 May</div></td>
+                <td>4 / 18</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="prog-wrap" style="width:80px;"><div class="prog-bar prog-red" style="width:22%"></div></div>
+                    <span style="font-size:12px;color:var(--red)">22%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-red">⚠ Alerta</span></td>
+                <td><div style="font-size:12px;">Carlos R.</div></td>
+                <td><button class="btn btn-sm btn-ghost">Ver</button></td>
+              </tr>
+              <tr>
+                <td><div class="td-name">Japón Primavera</div><div class="td-sub">Asia · 10 días</div></td>
+                <td><div style="font-size:13px;">20 May – 30 May</div></td>
+                <td>14 / 20</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="prog-wrap" style="width:80px;"><div class="prog-bar prog-amber" style="width:70%"></div></div>
+                    <span style="font-size:12px;color:var(--amber)">70%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-terra">En curso</span></td>
+                <td><div style="font-size:12px;">Ana M.</div></td>
+                <td><button class="btn btn-sm btn-ghost">Ver</button></td>
+              </tr>
+              <tr>
+                <td><div class="td-name">Marruecos Desierto</div><div class="td-sub">África · 8 días</div></td>
+                <td><div style="font-size:13px;">10 Jun – 18 Jun</div></td>
+                <td>18 / 22</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="prog-wrap" style="width:80px;"><div class="prog-bar prog-green" style="width:82%"></div></div>
+                    <span style="font-size:12px;color:var(--green)">82%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-indigo">Programado</span></td>
+                <td><div style="font-size:12px;">Carlos R.</div></td>
+                <td><button class="btn btn-sm btn-ghost">Ver</button></td>
+              </tr>
+              <tr>
+                <td><div class="td-name">Islandia Norte</div><div class="td-sub">Europa · 7 días</div></td>
+                <td><div style="font-size:13px;">2 Jul – 9 Jul</div></td>
+                <td>9 / 16</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div class="prog-wrap" style="width:80px;"><div class="prog-bar prog-amber" style="width:56%"></div></div>
+                    <span style="font-size:12px;color:var(--amber)">56%</span>
+                  </div>
+                </td>
+                <td><span class="badge badge-indigo">Programado</span></td>
+                <td><div style="font-size:12px;">Ana M.</div></td>
+                <td><button class="btn btn-sm btn-ghost">Ver</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trip creation flow -->
+  <div class="section-title" style="margin-top:2rem;">Creación de viaje · Flujo paso a paso</div>
+  <div class="section-sub">7 pasos desde la selección del itinerario hasta el envío de invitaciones</div>
+  <div class="card gap">
+    <div class="card-body">
+      <div class="steps">
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot done">✓</div>
+            <div class="step-label">Origen</div>
+          </div>
+          <div class="step-line done"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot done">✓</div>
+            <div class="step-label">Itinerario</div>
+          </div>
+          <div class="step-line done"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot active">3</div>
+            <div class="step-label">Fechas</div>
+          </div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot pending">4</div>
+            <div class="step-label">Vuelo</div>
+          </div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot pending">5</div>
+            <div class="step-label">Ajustes</div>
+          </div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot pending">6</div>
+            <div class="step-label">Hoteles</div>
+          </div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step">
+          <div style="display:flex;flex-direction:column;align-items:center;">
+            <div class="step-dot pending">7</div>
+            <div class="step-label">Invitaciones</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <div style="font-size:16px;font-weight:500;color:var(--noche);margin-bottom:1rem;">Paso 3 · Fechas del viaje</div>
+          <div class="form-group">
+            <label class="form-label">Fecha de salida</label>
+            <input class="form-input has-value" type="text" value="15 de junio de 2026">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Llegada al destino</label>
+            <input class="form-input has-value" type="text" value="16 de junio de 2026">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha de regreso</label>
+            <input class="form-input" type="text" placeholder="Selecciona fecha...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Capacidad máxima</label>
+            <input class="form-input has-value" type="text" value="20 viajeros">
+            <span class="form-hint">El semáforo se activará automáticamente según este valor</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:16px;font-weight:500;color:var(--noche);margin-bottom:1rem;">Itinerario seleccionado</div>
+          <div style="background:var(--arena);border-radius:12px;padding:1rem;border:1px solid var(--border);">
+            <div style="font-size:11px;font-weight:500;color:var(--terra);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">MARRUECOS · 8 días</div>
+            <div style="font-size:18px;font-weight:500;color:var(--noche);margin-bottom:8px;">Desierto del Sáhara</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+              <span class="badge badge-terra">Aventura</span>
+              <span class="badge badge-neutral">Cultura</span>
+              <span class="badge badge-neutral">Moderado</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-sec);line-height:1.6;">Marrakech → Ouarzazate → Merzouga → Fez → Casablanca</div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:1.5rem;">
+            <button class="btn btn-secondary">← Anterior</button>
+            <button class="btn btn-primary">Siguiente · Vuelo →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- FRONT DESK -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="frontdesk">
+<div class="page">
+  <div class="section-title">Front Desk · Vista del Viajero</div>
+  <div class="section-sub">Interfaz móvil — tres pantallas principales: Mis Viajes, Detalle de Viaje y Documentos</div>
+
+  <div class="flex gap-2 flex-wrap">
+
+    <!-- SCREEN 1: Mis viajes -->
+    <div class="mobile-frame">
+      <div class="mobile-screen">
+        <div class="mobile-status-bar">
+          <span>9:41</span>
+          <span>●●●</span>
+        </div>
+        <div class="mobile-header">
+          <div class="mobile-header-row">
+            <div>
+              <div class="mobile-title">Mis viajes</div>
+              <div class="mobile-sub">Bienvenida, Sara</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--indigo);display:flex;align-items:center;justify-content:center;color:var(--arena);font-size:13px;font-weight:500;">SG</div>
+            </div>
+          </div>
+          <!-- Filter pills -->
+          <div style="display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px;">
+            <span style="background:var(--noche);color:var(--arena);font-size:11px;font-weight:500;padding:5px 12px;border-radius:20px;white-space:nowrap;">Todos</span>
+            <span style="background:var(--white);color:var(--text-sec);font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;">Agencia</span>
+            <span style="background:var(--white);color:var(--text-sec);font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;">Propios</span>
+            <span style="background:var(--white);color:var(--text-sec);font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);white-space:nowrap;">Compartidos</span>
+          </div>
+        </div>
+        <div class="mobile-scroll">
+          <!-- Próximo viaje highlight -->
+          <div style="background:var(--indigo);border-radius:16px;padding:14px;color:white;">
+            <div style="font-size:10px;font-weight:500;opacity:0.7;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Próximo viaje · en 18 días</div>
+            <div style="font-size:18px;font-weight:500;margin-bottom:6px;">Japón Primavera</div>
+            <div style="font-size:12px;opacity:0.75;margin-bottom:12px;">20 May – 30 May · Tokio, Kioto, Osaka</div>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <div class="trip-avatar-row">
+                <div class="micro-avatar av1">SG</div>
+                <div class="micro-avatar av2">JP</div>
+                <div class="micro-avatar av3">LM</div>
+                <div class="micro-avatar" style="background:rgba(255,255,255,0.3);">+11</div>
+              </div>
+              <span style="font-size:11px;opacity:0.7;">14 viajeros confirmados</span>
+            </div>
+          </div>
+
+          <div class="trip-card">
+            <div class="trip-card-img trip-card-img-personal">
+              <div class="trip-card-overlay"></div>
+              <div class="trip-card-img-content">
+                <div class="trip-card-country">Italia</div>
+                <div class="trip-card-name">Toscana en moto</div>
+              </div>
+            </div>
+            <div class="trip-card-body">
+              <div class="trip-card-dates">3 – 10 Ago 2026 · 7 días</div>
+              <div class="trip-card-footer">
+                <span class="trip-card-tag personal-tag">Viaje propio</span>
+                <div class="trip-avatar-row">
+                  <div class="micro-avatar av1">SG</div>
+                  <div class="micro-avatar av2">JP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="trip-card">
+            <div class="trip-card-img trip-card-img-shared">
+              <div class="trip-card-overlay"></div>
+              <div class="trip-card-img-content">
+                <div class="trip-card-country">Perú</div>
+                <div class="trip-card-name">Machu Picchu Trek</div>
+              </div>
+            </div>
+            <div class="trip-card-body">
+              <div class="trip-card-dates">Sep 2026 · Compartido por Laura</div>
+              <div class="trip-card-footer">
+                <span class="trip-card-tag shared-tag">Compartido</span>
+                <div class="trip-avatar-row">
+                  <div class="micro-avatar av3">LM</div>
+                  <div class="micro-avatar av1">SG</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-bottom-nav">
+          <div class="mobile-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Mis viajes
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Compartidos
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Perfil
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: Detalle viaje -->
+    <div class="mobile-frame">
+      <div class="mobile-screen">
+        <div class="mobile-status-bar">
+          <span>9:41</span><span>●●●</span>
+        </div>
+        <div style="background:var(--indigo);padding:14px 20px 18px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(250,242,235,0.6)" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span style="font-size:12px;color:rgba(250,242,235,0.6);">Mis viajes</span>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:rgba(250,242,235,0.6);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">Agencia Viajes Sur · Japón</div>
+          <div style="font-size:22px;font-weight:500;color:white;margin-bottom:6px;">Japón Primavera</div>
+          <div style="font-size:13px;color:rgba(250,242,235,0.75);margin-bottom:12px;">20 May – 30 May 2026 · 10 días</div>
+          <div style="display:flex;gap:6px;">
+            <span style="background:rgba(255,255,255,0.15);color:white;font-size:11px;padding:3px 10px;border-radius:20px;">Tokio</span>
+            <span style="background:rgba(255,255,255,0.15);color:white;font-size:11px;padding:3px 10px;border-radius:20px;">Kioto</span>
+            <span style="background:rgba(255,255,255,0.15);color:white;font-size:11px;padding:3px 10px;border-radius:20px;">Osaka</span>
+          </div>
+        </div>
+        <!-- Tab bar -->
+        <div style="display:flex;background:var(--white);border-bottom:1px solid var(--border);">
+          <div style="flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:500;color:var(--terra);border-bottom:2px solid var(--terra);">Itinerario</div>
+          <div style="flex:1;padding:10px 0;text-align:center;font-size:12px;color:var(--text-ter);">Docs</div>
+          <div style="flex:1;padding:10px 0;text-align:center;font-size:12px;color:var(--text-ter);">Viajeros</div>
+          <div style="flex:1;padding:10px 0;text-align:center;font-size:12px;color:var(--text-ter);">Info</div>
+        </div>
+        <div class="mobile-scroll">
+          <div class="day-card">
+            <div class="day-num">Día 1 · 20 Mayo</div>
+            <div class="day-city">Tokio</div>
+            <div class="day-route">Madrid → Tokio (Narita) · IB 6827</div>
+            <div class="day-hotel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <div><div class="day-hotel-name">Shinjuku Granbell Hotel</div><div class="day-hotel-cat">★★★★ · Check-in desde 15:00</div></div>
+            </div>
+            <div class="day-activities">
+              <span class="day-act-tag">Llegada libre</span>
+              <span class="day-act-tag">Shibuya crossing</span>
+            </div>
+          </div>
+          <div class="day-card">
+            <div class="day-num">Día 2 · 21 Mayo</div>
+            <div class="day-city">Tokio</div>
+            <div class="day-route">Día completo en Tokio</div>
+            <div class="day-hotel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <div><div class="day-hotel-name">Shinjuku Granbell Hotel</div><div class="day-hotel-cat">★★★★ · Misma noche</div></div>
+            </div>
+            <div class="day-activities">
+              <span class="day-act-tag">Templo Senso-ji</span>
+              <span class="day-act-tag">Harajuku</span>
+              <span class="day-act-tag">Akihabara</span>
+            </div>
+          </div>
+          <div class="day-card">
+            <div class="day-num">Día 3 · 22 Mayo</div>
+            <div class="day-city">Kioto</div>
+            <div class="day-route">Tokio → Kioto · Shinkansen 2h20</div>
+            <div class="day-hotel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <div><div class="day-hotel-name">Kyoto Century Hotel</div><div class="day-hotel-cat">★★★★ · Centro histórico</div></div>
+            </div>
+            <div class="day-activities">
+              <span class="day-act-tag">Fushimi Inari</span>
+              <span class="day-act-tag">Gion</span>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-bottom-nav">
+          <div class="mobile-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Mis viajes
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Compartidos
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Perfil
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: Documentos -->
+    <div class="mobile-frame">
+      <div class="mobile-screen">
+        <div class="mobile-status-bar"><span>9:41</span><span>●●●</span></div>
+        <div class="mobile-header">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-sec)" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <span style="font-size:12px;color:var(--text-sec);">Japón Primavera</span>
+          </div>
+          <div class="mobile-title">Documentos</div>
+        </div>
+        <div class="mobile-scroll">
+          <div style="font-size:12px;font-weight:500;color:var(--text-ter);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Compartidos por la agencia</div>
+          <div class="doc-item">
+            <div class="doc-icon doc-icon-pdf">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div class="doc-name">Programa del viaje.pdf</div>
+              <div class="doc-meta">Agencia Viajes Sur · 2,3 MB</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="doc-item">
+            <div class="doc-icon doc-icon-pdf">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div class="doc-name">Seguro de viaje grupal.pdf</div>
+              <div class="doc-meta">Agencia Viajes Sur · 890 KB</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div style="font-size:12px;font-weight:500;color:var(--text-ter);text-transform:uppercase;letter-spacing:0.07em;margin:14px 0 8px;">Mis documentos</div>
+          <div class="doc-item">
+            <div class="doc-icon doc-icon-img">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ocre)" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div class="doc-name">Billete de avión IB6827.pdf</div>
+              <div class="doc-meta">Personal · 1,1 MB</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <div class="doc-item">
+            <div class="doc-icon doc-icon-pdf">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div class="doc-name">Visado Japón.pdf</div>
+              <div class="doc-meta">Personal · 540 KB</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <button class="btn btn-ghost w-full" style="margin-top:8px;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Añadir documento
+          </button>
+          <!-- Notificaciones -->
+          <div style="font-size:12px;font-weight:500;color:var(--text-ter);text-transform:uppercase;letter-spacing:0.07em;margin:14px 0 8px;">Actividad reciente</div>
+          <div class="notif-item">
+            <div class="notif-dot"></div>
+            <div class="notif-content">
+              <div class="notif-title">Nuevo documento compartido</div>
+              <div class="notif-text">La agencia ha compartido el programa definitivo del viaje.</div>
+              <div class="notif-time">Hace 2 horas</div>
+            </div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-dot read"></div>
+            <div class="notif-content">
+              <div class="notif-title">Recordatorio · 18 días</div>
+              <div class="notif-text">Tu viaje a Japón sale en 18 días. ¿Tienes todo listo?</div>
+              <div class="notif-time">Ayer</div>
+            </div>
+          </div>
+        </div>
+        <div class="mobile-bottom-nav">
+          <div class="mobile-nav-item active">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Mis viajes
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Compartidos
+          </div>
+          <div class="mobile-nav-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Perfil
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- DESIGN SYSTEM -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="components">
+<div class="page">
+  <div class="section-title">Sistema de Diseño</div>
+  <div class="section-sub">Paleta, tipografía, botones, badges, formularios y notificaciones</div>
+
+  <!-- Colors -->
+  <div class="card gap">
+    <div class="card-header"><div class="card-title">Paleta de color</div></div>
+    <div class="card-body">
+      <div class="color-row">
+        <div class="color-chip" style="background:#FAF2EB;border:1px solid var(--border);"><div class="chip-name" style="color:var(--noche);">Arena</div><div class="chip-hex" style="color:var(--text-sec);">#FAF2EB</div></div>
+        <div class="color-chip" style="background:#ECD5B8;"><div class="chip-name" style="color:var(--noche);">Duna</div><div class="chip-hex" style="color:var(--text-sec);">#ECD5B8</div></div>
+        <div class="color-chip" style="background:#C4793A;"><div class="chip-name" style="color:white;">Terracota</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#C4793A</div></div>
+        <div class="color-chip" style="background:#8B4420;"><div class="chip-name" style="color:white;">Ocre</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#8B4420</div></div>
+        <div class="color-chip" style="background:#3D2F6B;"><div class="chip-name" style="color:white;">Índigo</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#3D2F6B</div></div>
+        <div class="color-chip" style="background:#2D1F0E;"><div class="chip-name" style="color:white;">Noche</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#2D1F0E</div></div>
+        <div class="color-chip" style="background:#2E7D5A;"><div class="chip-name" style="color:white;">Verde</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#2E7D5A</div></div>
+        <div class="color-chip" style="background:#C0392B;"><div class="chip-name" style="color:white;">Rojo</div><div class="chip-hex" style="color:rgba(255,255,255,0.7);">#C0392B</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap">
+    <!-- Buttons -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Botones</div></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+        <div class="flex gap-1 flex-wrap">
+          <button class="btn btn-primary">Explorar destinos</button>
+          <button class="btn btn-secondary">Guardar viaje</button>
+          <button class="btn btn-ghost">Ver más</button>
+        </div>
+        <div class="flex gap-1 flex-wrap">
+          <button class="btn btn-primary btn-sm">Nuevo viaje</button>
+          <button class="btn btn-secondary btn-sm">Filtrar</button>
+          <button class="btn btn-ghost btn-sm">Exportar</button>
+        </div>
+        <div class="flex gap-1">
+          <button class="btn btn-primary" style="opacity:0.4;cursor:not-allowed;">Desactivado</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Badges y estados</div></div>
+      <div class="card-body" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;">
+        <span class="badge badge-green">En curso</span>
+        <span class="badge badge-indigo">Programado</span>
+        <span class="badge badge-amber">⚠ Alerta</span>
+        <span class="badge badge-red">Cancelado</span>
+        <span class="badge badge-terra">Aventura</span>
+        <span class="badge badge-neutral">Cultura</span>
+        <span class="badge badge-green">✓ Confirmado</span>
+        <span class="badge badge-indigo">Premium</span>
+        <span class="badge badge-neutral">Agencia</span>
+        <span class="badge badge-terra">Nuevo</span>
+        <span class="badge badge-amber">Pendiente</span>
+        <span class="badge badge-red">Vencido</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typography -->
+  <div class="card gap">
+    <div class="card-header"><div class="card-title">Tipografía · DM Sans</div></div>
+    <div class="card-body">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-ter);margin-bottom:4px;">Display · 32px · 500</div>
+          <div style="font-family:'DM Sans';font-size:32px;font-weight:500;color:var(--noche);letter-spacing:-0.5px;">Discover your next journey</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-ter);margin-bottom:4px;">Heading 1 · 24px · 500</div>
+          <div style="font-family:'DM Sans';font-size:24px;font-weight:500;color:var(--noche);">Centro de Control</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-ter);margin-bottom:4px;">Heading 2 · 18px · 500</div>
+          <div style="font-family:'DM Sans';font-size:18px;font-weight:500;color:var(--noche);">Viajes activos y programados</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-ter);margin-bottom:4px;">Body · 15px · 400</div>
+          <div style="font-family:'DM Sans';font-size:15px;color:#6B4F35;line-height:1.6;max-width:500px;">Lugendo te ayuda a organizar y compartir tus viajes de forma eficiente, con toda la información en un único lugar y siempre disponible.</div>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--text-ter);margin-bottom:4px;">Label · 11px · 500 · uppercase</div>
+          <div style="font-family:'DM Sans';font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.09em;color:var(--text-ter);">Viajes activos · Filtrar por estado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 gap">
+    <!-- Form -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Formularios</div></div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Nombre del viaje</label>
+          <input class="form-input has-value" type="text" value="Tanzania Gran Safari">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destino</label>
+          <select class="form-select"><option>Tanzania, África Oriental</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Segmento de precio</label>
+          <select class="form-select"><option>Premium · ★★★★+</option></select>
+          <span class="form-hint">Determina la asignación automática de hoteles</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción interna</label>
+          <input class="form-input" type="text" placeholder="Añade notas para el equipo...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card">
+      <div class="card-header"><div class="card-title">Notificaciones</div></div>
+      <div class="card-body">
+        <div class="notif-item">
+          <div class="notif-dot"></div>
+          <div class="notif-content">
+            <div class="notif-title">Viaje aprobado por Manager</div>
+            <div class="notif-text">Tanzania Gran Safari ha sido aprobado y las invitaciones están siendo enviadas a los viajeros.</div>
+            <div class="notif-time">Hace 5 minutos</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-dot"></div>
+          <div class="notif-content">
+            <div class="notif-title">Nueva viajera confirmada</div>
+            <div class="notif-text">Sara García ha aceptado la invitación para Japón Primavera.</div>
+            <div class="notif-time">Hace 1 hora</div>
+          </div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-dot read"></div>
+          <div class="notif-content">
+            <div class="notif-title">Factura mensual disponible</div>
+            <div class="notif-text">La factura de mayo está lista para su revisión y envío.</div>
+            <div class="notif-time">Ayer, 9:00</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- ICONS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="section" id="icons">
+<div class="page">
+  <div class="section-title">Iconografía</div>
+  <div class="section-sub">Estilo outline · stroke 1.8px · rounded caps · grid 24×24px</div>
+
+  <div class="card gap">
+    <div class="card-header"><div class="card-title">Navegación y acciones principales</div></div>
+    <div class="card-body">
+      <div class="icon-grid">
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><div class="icon-label">Dashboard</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="icon-label">Destino</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="icon-label">Viajeros</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></div><div class="icon-label">Itinerario</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><div class="icon-label">Hotel</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="icon-label">Documento</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="icon-label">Calendario</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--noche)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5 19.79 19.79 0 0 1 1.61 4.93 2 2 0 0 1 3.59 2.72h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 17z"/></svg></div><div class="icon-label">Contacto</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card gap">
+    <div class="card-header"><div class="card-title">Viaje y transporte</div></div>
+    <div class="card-body">
+      <div class="icon-grid">
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4s-2 1-3.5 2.5L8 11 .8 9.2c-.5-.1-.9.5-.6.9l3.8 3.8c.2.2.5.3.8.2l2.4-.5L8 16 6 17.6l.5 1.9 1.9.5L10 18l2.2 1.2-.5 2.4c-.1.3 0 .6.2.8l3.8 3.8c.4.3 1-.1.9-.6L17.8 19.2z"/></svg></div><div class="icon-label">Vuelo</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div class="icon-label">Traslado</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l2-9 5 3 4-6 3 4 4-2-2 10H3z"/></svg></div><div class="icon-label">Montaña</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg></div><div class="icon-label">Punto</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="icon-label">Mundial</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="icon-label">Alojamiento</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="icon-label">Favorito</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--terra)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><div class="icon-label">Destacado</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card gap">
+    <div class="card-header"><div class="card-title">Sistema y UI</div></div>
+    <div class="card-body">
+      <div class="icon-grid">
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><div class="icon-label">Analytics</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></div><div class="icon-label">Notif. push</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div><div class="icon-label">Alerta</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="icon-label">Buscar</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="icon-label">Ajustes</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div><div class="icon-label">Facturación</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div><div class="icon-label">Descarga</div></div>
+        <div class="icon-item"><div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--indigo)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div><div class="icon-label">Compartir</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App icon variants -->
+  <div class="card">
+    <div class="card-header"><div class="card-title">Ícono de app · variantes</div></div>
+    <div class="card-body">
+      <div class="flex gap-2 flex-wrap items-center">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:80px;height:80px;border-radius:20px;background:var(--duna);display:flex;align-items:center;justify-content:center;border:1px solid var(--sand-mid);">
+            <svg width="52" height="52" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#3D2F6B"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#2D1F0E"/></svg>
+          </div>
+          <div class="icon-label">iOS 80px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:60px;height:60px;border-radius:14px;background:var(--duna);display:flex;align-items:center;justify-content:center;border:1px solid var(--sand-mid);">
+            <svg width="40" height="40" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#3D2F6B"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#2D1F0E"/></svg>
+          </div>
+          <div class="icon-label">60px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:44px;height:44px;border-radius:10px;background:var(--duna);display:flex;align-items:center;justify-content:center;border:1px solid var(--sand-mid);">
+            <svg width="30" height="30" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#3D2F6B"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#2D1F0E"/></svg>
+          </div>
+          <div class="icon-label">44px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:32px;height:32px;border-radius:8px;background:var(--duna);display:flex;align-items:center;justify-content:center;border:1px solid var(--sand-mid);">
+            <svg width="22" height="22" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#3D2F6B"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#2D1F0E"/></svg>
+          </div>
+          <div class="icon-label">32px</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:20px;height:20px;border-radius:5px;background:var(--duna);display:flex;align-items:center;justify-content:center;border:1px solid var(--sand-mid);">
+            <svg width="14" height="14" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#ECD5B8" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#3D2F6B"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#2D1F0E"/></svg>
+          </div>
+          <div class="icon-label">Favicon</div>
+        </div>
+        <div style="width:1px;height:60px;background:var(--border);margin:0 8px;"></div>
+        <!-- Dark variant -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:80px;height:80px;border-radius:20px;background:var(--noche);display:flex;align-items:center;justify-content:center;">
+            <svg width="52" height="52" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#3D2410" stroke="#C4793A" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#C4B5E8"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#ECD5B8"/></svg>
+          </div>
+          <div class="icon-label">Dark mode</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="width:80px;height:80px;border-radius:20px;background:var(--indigo);display:flex;align-items:center;justify-content:center;">
+            <svg width="52" height="52" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" fill="#4A3880" stroke="#C4B5E8" stroke-width="1.5"/><g transform="rotate(60,28,28)"><polygon points="28,8 21,28 28,22 35,28" fill="#FAF2EB"/><polygon points="28,48 35,28 28,34 21,28" fill="#C4793A"/></g><circle cx="28" cy="28" r="4" fill="#FAF2EB"/></svg>
+          </div>
+          <div class="icon-label">Índigo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function showSection(id, tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  tab.classList.add('active');
+}
+</script>
+</body>
+</html>

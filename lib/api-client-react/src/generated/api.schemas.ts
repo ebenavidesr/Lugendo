@@ -655,6 +655,53 @@ export interface TripNoteUpdate {
   content: string;
 }
 
+export interface ParsePdfInput {
+  /** Base64-encoded PDF or text file content */
+  fileBase64: string;
+  fileName: string;
+}
+
+export interface ParsedDay {
+  dayNumber: number;
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  transport?: string | null;
+  /** @nullable */
+  description?: string | null;
+  activities?: string[];
+}
+
+export interface ParsedItinerary {
+  name: string;
+  numDays: number;
+  /** @nullable */
+  description?: string | null;
+  countries?: string[];
+  days: ParsedDay[];
+}
+
+export interface DayActivity {
+  id: number;
+  dayId: number;
+  activityId: number;
+  activityName?: string;
+  /** @nullable */
+  activityCategory?: string | null;
+  sortOrder: number;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface DayActivityInput {
+  activityId: number;
+  sortOrder?: number;
+  notes?: string;
+}
+
 export type DashboardSummaryTripsByStatus = {
   draft: number;
   scheduled: number;

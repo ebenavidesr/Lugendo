@@ -903,6 +903,76 @@ export const DeleteTripNoteParams = zod.object({
 
 
 /**
+ * @summary Parse a PDF/text document to extract itinerary structure via AI
+ */
+export const ParseItineraryPdfBody = zod.object({
+  "fileBase64": zod.string().describe('Base64-encoded PDF or text file content'),
+  "fileName": zod.string()
+})
+
+export const ParseItineraryPdfResponse = zod.object({
+  "name": zod.string(),
+  "numDays": zod.number(),
+  "description": zod.string().nullish(),
+  "countries": zod.array(zod.string()).optional(),
+  "days": zod.array(zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "activities": zod.array(zod.string()).optional()
+}))
+})
+
+
+/**
+ * @summary List activities linked to an itinerary day
+ */
+export const ListDayActivitiesParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const ListDayActivitiesResponseItem = zod.object({
+  "id": zod.number(),
+  "dayId": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string().optional(),
+  "activityCategory": zod.string().nullish(),
+  "sortOrder": zod.number(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListDayActivitiesResponse = zod.array(ListDayActivitiesResponseItem)
+
+
+/**
+ * @summary Link an activity to an itinerary day
+ */
+export const AddDayActivityParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const AddDayActivityBody = zod.object({
+  "activityId": zod.number(),
+  "sortOrder": zod.number().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Unlink an activity from an itinerary day
+ */
+export const RemoveDayActivityParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+
+/**
  * @summary Agency dashboard summary — trips by status, occupancy, recent activity
  */
 export const GetDashboardSummaryResponse = zod.object({

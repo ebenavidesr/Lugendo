@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { Plus, ArrowRight } from "lucide-react";
+import { Plus, ArrowRight, Pencil } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useListItineraries, useCreateItinerary } from "@workspace/api-client-react";
+import { useListItineraries, useCreateItinerary, useUpdateItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Itinerary, ItineraryDifficulty } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -39,23 +39,121 @@ const schema = z.object({
   description: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof schema>;
+
+function ItineraryForm({
+  title,
+  defaultValues,
+  onSubmit,
+  isPending,
+  onCancel,
+}: {
+  title: string;
+  defaultValues: FormValues;
+  onSubmit: (v: FormValues) => void;
+  isPending: boolean;
+  onCancel: () => void;
+}) {
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    values: defaultValues,
+  });
+
+  return (
+    <Dialog open onOpenChange={v => !v && onCancel()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nombre</FormLabel>
+                <FormControl><Input placeholder="Marruecos Imperial — 8 días" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormField control={form.control} name="numDays" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número de días</FormLabel>
+                  <FormControl><Input type="number" placeholder="8" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="difficulty" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dificultad</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="easy">Fácil</SelectItem>
+                      <SelectItem value="moderate">Moderado</SelectItem>
+                      <SelectItem value="demanding">Exigente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+
+            <FormField control={form.control} name="countries" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Países (separados por coma)</FormLabel>
+                <FormControl><Input placeholder="Marruecos, España" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="region" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Región (opcional)</FormLabel>
+                <FormControl><Input placeholder="Norte de África" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descripción (opcional)</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Un viaje por las ciudades imperiales de Marruecos…" rows={3} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
+              <Button type="submit" disabled={isPending}
+                style={{ background: "#C4793A", color: "#FAF2EB" }}>
+                {isPending ? "Guardando…" : "Guardar itinerario"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Itineraries() {
-  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editItinerary, setEditItinerary] = useState<Itinerary | null>(null);
   const { data: itineraries, isLoading } = useListItineraries();
   const create = useCreateItinerary();
+  const update = useUpdateItinerary();
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { name: "", numDays: "", countries: "", region: "", description: "" },
-  });
-
-  const onSubmit = (values: z.infer<typeof schema>) => {
+  const handleCreate = (values: FormValues) => {
     const countries = values.countries?.trim()
       ? values.countries.split(",").map(s => s.trim()).filter(Boolean)
       : undefined;
-
     create.mutate({
       data: {
         name: values.name,
@@ -69,10 +167,35 @@ export default function Itineraries() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
         toast({ title: "Itinerario creado" });
-        setOpen(false);
-        form.reset();
+        setCreateOpen(false);
       },
       onError: () => toast({ variant: "destructive", title: "Error al crear el itinerario" }),
+    });
+  };
+
+  const handleEdit = (values: FormValues) => {
+    if (!editItinerary) return;
+    const countries = values.countries?.trim()
+      ? values.countries.split(",").map(s => s.trim()).filter(Boolean)
+      : [];
+    update.mutate({
+      itineraryId: editItinerary.id,
+      data: {
+        name: values.name,
+        numDays: parseInt(values.numDays),
+        countries,
+        ...(values.region ? { region: values.region } : {}),
+        ...(values.difficulty ? { difficulty: values.difficulty } : {}),
+        ...(values.description ? { description: values.description } : {}),
+      },
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+        qc.invalidateQueries({ queryKey: [`/api/itineraries/${editItinerary.id}`] });
+        toast({ title: "Itinerario actualizado" });
+        setEditItinerary(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al actualizar el itinerario" }),
     });
   };
 
@@ -83,7 +206,7 @@ export default function Itineraries() {
           <h1 className="text-xl font-medium" style={{ color: "#2D1F0E" }}>Itinerarios</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Plantillas de ruta reutilizables en múltiples viajes</p>
         </div>
-        <button onClick={() => setOpen(true)}
+        <button onClick={() => setCreateOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
           style={{ background: "#C4793A", color: "#FAF2EB" }}
           onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
@@ -98,7 +221,7 @@ export default function Itineraries() {
         ) : !itineraries?.length ? (
           <div className="p-12 text-center">
             <p className="text-sm text-muted-foreground mb-3">No hay itinerarios todavía</p>
-            <button onClick={() => setOpen(true)} className="text-[13px] font-medium" style={{ color: "#C4793A" }}>
+            <button onClick={() => setCreateOpen(true)} className="text-[13px] font-medium" style={{ color: "#C4793A" }}>
               Crea el primer itinerario →
             </button>
           </div>
@@ -114,7 +237,7 @@ export default function Itineraries() {
             </thead>
             <tbody>
               {itineraries.map((it: Itinerary) => (
-                <tr key={it.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors">
+                <tr key={it.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
                     <span className="font-medium" style={{ color: "#2D1F0E" }}>{it.name}</span>
                     {it.region && <div className="text-[11px] text-muted-foreground mt-0.5">{it.region}</div>}
@@ -125,11 +248,18 @@ export default function Itineraries() {
                   <td className="px-5 py-3 text-muted-foreground">{it.numDays}d</td>
                   <td className="px-5 py-3"><DiffBadge diff={it.difficulty ?? null} /></td>
                   <td className="px-5 py-3 text-muted-foreground">{it.tripCount ?? 0}</td>
-                  <td className="px-5 py-3 text-right">
-                    <Link href={`/itineraries/${it.id}`}
-                      className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "#C4793A" }}>
-                      Ver <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setEditItinerary(it)}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <Link href={`/itineraries/${it.id}`}
+                        className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "#C4793A" }}>
+                        Ver <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -138,84 +268,32 @@ export default function Itineraries() {
         )}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nuevo itinerario</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre</FormLabel>
-                  <FormControl><Input placeholder="Marruecos Imperial — 8 días" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+      {createOpen && (
+        <ItineraryForm
+          title="Nuevo itinerario"
+          defaultValues={{ name: "", numDays: "", countries: "", region: "", description: "" }}
+          onSubmit={handleCreate}
+          isPending={create.isPending}
+          onCancel={() => setCreateOpen(false)}
+        />
+      )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="numDays" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Número de días</FormLabel>
-                    <FormControl><Input type="number" placeholder="8" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="difficulty" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dificultad</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="easy">Fácil</SelectItem>
-                        <SelectItem value="moderate">Moderado</SelectItem>
-                        <SelectItem value="demanding">Exigente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              <FormField control={form.control} name="countries" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Países (separados por coma)</FormLabel>
-                  <FormControl><Input placeholder="Marruecos, España" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="region" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Región (opcional)</FormLabel>
-                  <FormControl><Input placeholder="Norte de África" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Un viaje por las ciudades imperiales de Marruecos…" rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={create.isPending}
-                  style={{ background: "#C4793A", color: "#FAF2EB" }}>
-                  {create.isPending ? "Creando…" : "Crear itinerario"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {editItinerary && (
+        <ItineraryForm
+          title={`Editar: ${editItinerary.name}`}
+          defaultValues={{
+            name: editItinerary.name,
+            numDays: String(editItinerary.numDays),
+            countries: editItinerary.countries?.join(", ") ?? "",
+            region: editItinerary.region ?? "",
+            difficulty: editItinerary.difficulty ?? undefined,
+            description: editItinerary.description ?? "",
+          }}
+          onSubmit={handleEdit}
+          isPending={update.isPending}
+          onCancel={() => setEditItinerary(null)}
+        />
+      )}
     </div>
   );
 }
