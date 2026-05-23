@@ -19,9 +19,10 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  email: z.string().email(),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  firstName: z.string().min(1, "El nombre es obligatorio"),
+  lastName: z.string().min(1, "Los apellidos son obligatorios"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(8, "Mínimo 8 caracteres"),
   inviteCode: z.string().optional(),
 });
 
@@ -41,7 +42,7 @@ export function Login() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "", inviteCode: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", password: "", inviteCode: "" },
   });
 
   const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
@@ -60,8 +61,9 @@ export function Login() {
   };
 
   const onRegisterSubmit = (values: z.infer<typeof registerSchema>) => {
+    const { firstName, lastName, ...rest } = values;
     registerMutation.mutate(
-      { data: values },
+      { data: { ...rest, name: `${firstName.trim()} ${lastName.trim()}` } },
       {
         onSuccess: (user) => {
           queryClient.setQueryData(["/api/auth/me"], user);
@@ -104,19 +106,34 @@ export function Login() {
             {isRegister ? (
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                  <FormField
-                    control={registerForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre completo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ana García" autoComplete="name" autoFocus {...field} data-testid="input-register-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={registerForm.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ana" autoComplete="given-name" autoFocus {...field} data-testid="input-register-firstname" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Apellidos</FormLabel>
+                          <FormControl>
+                            <Input placeholder="García" autoComplete="family-name" {...field} data-testid="input-register-lastname" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     control={registerForm.control}
                     name="email"
