@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Mail, Pencil, UserPlus, KeyRound } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Mail, Pencil, UserPlus, KeyRound, Search } from "lucide-react";
 import {
   useListUsers, useCreateUser, useUpdateUser,
   useSendInvitations, useListTrips,
@@ -391,9 +391,19 @@ export default function Team() {
   const [createOpen, setCreateOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [query, setQuery] = useState("");
 
-  const staff    = users?.filter(u => u.role !== "traveler") ?? [];
-  const travelers = users?.filter(u => u.role === "traveler") ?? [];
+  const filtered = useMemo(() => {
+    if (!users) return [];
+    const q = query.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(u =>
+      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+    );
+  }, [users, query]);
+
+  const staff     = filtered.filter(u => u.role !== "traveler");
+  const travelers = filtered.filter(u => u.role === "traveler");
 
   const colHeaders = isAdmin
     ? ["Nombre", "Email", "Rol", "Estado", "Alta", ""]
@@ -434,6 +444,27 @@ export default function Team() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Buscar por nombre o email…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-[13px] rounded-[8px] border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#3D2F6B]/20 focus:border-[#3D2F6B]"
+          style={{ color: "#2D1F0E" }}
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-[11px]"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Staff table */}
