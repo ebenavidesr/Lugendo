@@ -85,7 +85,12 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
 // ─── Create personal trip ────────────────────────────────────────────────────
 router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
-  const { name, startDate, endDate } = req.body;
+  const {
+    name, startDate, endDate,
+    itineraryId, maxCapacity,
+    airline, flightNumber, flightTime, reservationCode,
+    returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
+  } = req.body;
 
   if (!name || !startDate) {
     res.status(400).json({ error: "name y startDate son obligatorios" });
@@ -100,6 +105,16 @@ router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<voi
       endDate: endDate ?? null,
       ownerId: userId,
       status: "draft",
+      ...(itineraryId ? { itineraryId } : {}),
+      ...(maxCapacity ? { maxCapacity } : {}),
+      ...(airline ? { airline } : {}),
+      ...(flightNumber ? { flightNumber } : {}),
+      ...(flightTime ? { flightTime } : {}),
+      ...(reservationCode ? { reservationCode } : {}),
+      ...(returnAirline ? { returnAirline } : {}),
+      ...(returnFlightNumber ? { returnFlightNumber } : {}),
+      ...(returnFlightTime ? { returnFlightTime } : {}),
+      ...(returnReservationCode ? { returnReservationCode } : {}),
     })
     .returning();
 

@@ -115,14 +115,13 @@ Rules:
   }
 });
 
-router.post("/itineraries", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries", requireAuth, async (req, res): Promise<void> => {
   const { name, countries, region, numDays, difficulty, description, videoUrl } = req.body;
   if (!name || !numDays) {
     res.status(400).json({ error: "name and numDays are required" });
     return;
   }
-  const agencyId = req.session.agencyId;
-  if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
+  const agencyId = req.session.agencyId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
     .values({ agencyId, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl })
@@ -195,7 +194,7 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
   res.json(days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
 });
 
-router.post("/itineraries/:itineraryId/days", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber is required" }); return; }
@@ -243,7 +242,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
   })));
 });
 
-router.post("/itineraries/:itineraryId/days/:dayId/activities", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const { activityId, sortOrder = 0, notes } = req.body as { activityId: number; sortOrder?: number; notes?: string };
   if (!activityId) { res.status(400).json({ error: "activityId is required" }); return; }

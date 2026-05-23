@@ -11,4 +11,24 @@ export interface CreatePersonalTripInput {
   startDate: string;
   /** @nullable */
   endDate?: string | null;
+  /** @nullable */
+  itineraryId?: number | null;
+  /** @nullable */
+  maxCapacity?: number | null;
+  /** @nullable */
+  airline?: string | null;
+  /** @nullable */
+  flightNumber?: string | null;
+  /** @nullable */
+  flightTime?: string | null;
+  /** @nullable */
+  reservationCode?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
 }

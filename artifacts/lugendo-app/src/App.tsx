@@ -20,6 +20,7 @@ import Activities from "@/pages/activities";
 import TripWizard from "@/pages/trip-wizard";
 import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
+import TravelerTripWizard from "@/pages/traveler-trip-wizard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -88,6 +89,9 @@ function Router() {
       </Route>
 
       {/* Traveler Portal */}
+      <Route path="/traveler/trips/new">
+        <ProtectedTraveler><TravelerTripWizard /></ProtectedTraveler>
+      </Route>
       <Route path="/traveler/trips/:id">
         {() => (
           <ProtectedTraveler><TravelerTrip /></ProtectedTraveler>

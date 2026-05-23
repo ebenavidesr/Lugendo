@@ -831,7 +831,17 @@ export const ListMyTripsResponse = zod.array(ListMyTripsResponseItem)
 export const CreateMyTripBody = zod.object({
   "name": zod.string(),
   "startDate": zod.string(),
-  "endDate": zod.string().nullish()
+  "endDate": zod.string().nullish(),
+  "itineraryId": zod.number().nullish(),
+  "maxCapacity": zod.number().nullish(),
+  "airline": zod.string().nullish(),
+  "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
+  "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish()
 })
 
 

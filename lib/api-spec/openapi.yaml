@@ -1819,6 +1819,26 @@ components:
           type: string
         endDate:
           type: ["string", "null"]
+        itineraryId:
+          type: ["integer", "null"]
+        maxCapacity:
+          type: ["integer", "null"]
+        airline:
+          type: ["string", "null"]
+        flightNumber:
+          type: ["string", "null"]
+        flightTime:
+          type: ["string", "null"]
+        reservationCode:
+          type: ["string", "null"]
+        returnAirline:
+          type: ["string", "null"]
+        returnFlightNumber:
+          type: ["string", "null"]
+        returnFlightTime:
+          type: ["string", "null"]
+        returnReservationCode:
+          type: ["string", "null"]
 
     TripNote:
       type: object
