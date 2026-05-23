@@ -922,6 +922,112 @@ paths:
         "204":
           description: Deleted
 
+  # ─── TRIP SHARES ─────────────────────────────────────────────────────────────
+
+  /me/trips/{tripId}/shares:
+    get:
+      operationId: listTripShares
+      tags: [traveler]
+      summary: List shares for a trip owned by the current traveler
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of shares
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripShare"
+    post:
+      operationId: shareTrip
+      tags: [traveler]
+      summary: Share a trip with another user by email
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareTripInput"
+      responses:
+        "201":
+          description: Share created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripShare"
+        "400":
+          description: Validation error
+        "403":
+          description: Not the trip owner
+
+  /me/trips/{tripId}/shares/{shareId}:
+    delete:
+      operationId: revokeTripShare
+      tags: [traveler]
+      summary: Revoke a trip share
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shareId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Revoked
+
+  /me/shared-trips:
+    get:
+      operationId: listSharedWithMe
+      tags: [traveler]
+      summary: List trips shared with the current traveler (all statuses)
+      responses:
+        "200":
+          description: List of share entries with trip info
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SharedTripEntry"
+
+  /me/shares/{shareCode}/accept:
+    post:
+      operationId: acceptTripShare
+      tags: [traveler]
+      summary: Accept a trip share by code
+      parameters:
+        - name: shareCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Share accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripShare"
+        "404":
+          description: Share not found or already handled
+
   # ─── DAY ACTIVITIES ─────────────────────────────────────────────────────────
   /itineraries/parse-pdf:
     post:
@@ -1880,6 +1986,63 @@ components:
       properties:
         content:
           type: string
+
+    # ─── TRIP SHARES ─────────────────────────────────────────────────────────
+    TripShare:
+      type: object
+      required: [id, tripId, ownerId, sharedWithEmail, shareCode, permission, status, createdAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        ownerId:
+          type: integer
+        sharedWithEmail:
+          type: string
+        sharedWithUserId:
+          type: ["integer", "null"]
+        shareCode:
+          type: string
+        permission:
+          type: string
+          enum: [full, read]
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+
+    ShareTripInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        permission:
+          type: string
+          enum: [full, read]
+          default: read
+
+    SharedTripEntry:
+      type: object
+      required: [shareId, shareCode, permission, status, createdAt, trip]
+      properties:
+        shareId:
+          type: integer
+        shareCode:
+          type: string
+        permission:
+          type: string
+          enum: [full, read]
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        createdAt:
+          type: string
+        trip:
+          $ref: "#/components/schemas/TravelerTrip"
 
     # ─── PDF PARSE / DAY ACTIVITIES ─────────────────────────────────────────
     ParsePdfInput:

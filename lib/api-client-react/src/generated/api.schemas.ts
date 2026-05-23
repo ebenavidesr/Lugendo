@@ -720,6 +720,75 @@ export interface TripNoteUpdate {
   content: string;
 }
 
+export type TripSharePermission = typeof TripSharePermission[keyof typeof TripSharePermission];
+
+
+export const TripSharePermission = {
+  full: 'full',
+  read: 'read',
+} as const;
+
+export type TripShareStatus = typeof TripShareStatus[keyof typeof TripShareStatus];
+
+
+export const TripShareStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
+export interface TripShare {
+  id: number;
+  tripId: number;
+  ownerId: number;
+  sharedWithEmail: string;
+  /** @nullable */
+  sharedWithUserId?: number | null;
+  shareCode: string;
+  permission: TripSharePermission;
+  status: TripShareStatus;
+  createdAt: string;
+}
+
+export type ShareTripInputPermission = typeof ShareTripInputPermission[keyof typeof ShareTripInputPermission];
+
+
+export const ShareTripInputPermission = {
+  full: 'full',
+  read: 'read',
+} as const;
+
+export interface ShareTripInput {
+  email: string;
+  permission?: ShareTripInputPermission;
+}
+
+export type SharedTripEntryPermission = typeof SharedTripEntryPermission[keyof typeof SharedTripEntryPermission];
+
+
+export const SharedTripEntryPermission = {
+  full: 'full',
+  read: 'read',
+} as const;
+
+export type SharedTripEntryStatus = typeof SharedTripEntryStatus[keyof typeof SharedTripEntryStatus];
+
+
+export const SharedTripEntryStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  rejected: 'rejected',
+} as const;
+
+export interface SharedTripEntry {
+  shareId: number;
+  shareCode: string;
+  permission: SharedTripEntryPermission;
+  status: SharedTripEntryStatus;
+  createdAt: string;
+  trip: TravelerTrip;
+}
+
 export interface ParsePdfInput {
   /** Base64-encoded PDF or text file content */
   fileBase64: string;

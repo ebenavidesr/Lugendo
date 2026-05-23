@@ -950,6 +950,96 @@ export const DeleteTripNoteParams = zod.object({
 
 
 /**
+ * @summary List shares for a trip owned by the current traveler
+ */
+export const ListTripSharesParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripSharesResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "ownerId": zod.number(),
+  "sharedWithEmail": zod.string(),
+  "sharedWithUserId": zod.number().nullish(),
+  "shareCode": zod.string(),
+  "permission": zod.enum(['full', 'read']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "createdAt": zod.string()
+})
+export const ListTripSharesResponse = zod.array(ListTripSharesResponseItem)
+
+
+/**
+ * @summary Share a trip with another user by email
+ */
+export const ShareTripParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const shareTripBodyPermissionDefault = `read`;
+
+export const ShareTripBody = zod.object({
+  "email": zod.string().email(),
+  "permission": zod.enum(['full', 'read']).default(shareTripBodyPermissionDefault)
+})
+
+
+/**
+ * @summary Revoke a trip share
+ */
+export const RevokeTripShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "shareId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List trips shared with the current traveler (all statuses)
+ */
+export const ListSharedWithMeResponseItem = zod.object({
+  "shareId": zod.number(),
+  "shareCode": zod.string(),
+  "permission": zod.enum(['full', 'read']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "createdAt": zod.string(),
+  "trip": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isPersonal": zod.boolean(),
+  "agencyName": zod.string().nullish(),
+  "agencyLogoUrl": zod.string().nullish(),
+  "countries": zod.array(zod.string()).optional(),
+  "createdAt": zod.string()
+})
+})
+export const ListSharedWithMeResponse = zod.array(ListSharedWithMeResponseItem)
+
+
+/**
+ * @summary Accept a trip share by code
+ */
+export const AcceptTripShareParams = zod.object({
+  "shareCode": zod.coerce.string()
+})
+
+export const AcceptTripShareResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "ownerId": zod.number(),
+  "sharedWithEmail": zod.string(),
+  "sharedWithUserId": zod.number().nullish(),
+  "shareCode": zod.string(),
+  "permission": zod.enum(['full', 'read']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Parse a PDF/text document to extract itinerary structure via AI
  */
 export const ParseItineraryPdfBody = zod.object({
