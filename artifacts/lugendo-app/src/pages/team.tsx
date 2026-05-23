@@ -86,7 +86,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const qc = useQueryClient();
   const createUser = useCreateUser();
 
-  const empty = { name: "", email: "", role: "agent" as UserRole, password: "", confirm: "" };
+  const empty = { firstName: "", lastName: "", email: "", role: "agent" as UserRole, password: "", confirm: "" };
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
@@ -95,7 +95,8 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const passwordsMatch = form.password === form.confirm;
 
   const canSubmit =
-    form.name.trim() &&
+    form.firstName.trim() &&
+    form.lastName.trim() &&
     form.email.trim() &&
     form.role &&
     passwordStrong &&
@@ -104,15 +105,17 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   const handleSubmit = () => {
     const errs: typeof errors = {};
-    if (!form.name.trim()) errs.name = "El nombre es obligatorio";
+    if (!form.firstName.trim()) errs.firstName = "El nombre es obligatorio";
+    if (!form.lastName.trim()) errs.lastName = "Los apellidos son obligatorios";
     if (!form.email.trim()) errs.email = "El email es obligatorio";
     if (!passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (!passwordsMatch) errs.confirm = "Las contraseñas no coinciden";
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
 
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     createUser.mutate(
-      { data: { name: form.name.trim(), email: form.email.trim(), role: form.role, password: form.password } },
+      { data: { name: fullName, email: form.email.trim(), role: form.role, password: form.password } },
       {
         onSuccess: (u) => {
           qc.invalidateQueries({ queryKey: ["/api/users"] });
@@ -138,16 +141,27 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
         </DialogHeader>
 
         <div className="space-y-3 py-1">
-          {/* Name */}
-          <div>
-            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo *</label>
-            <Input
-              placeholder="Ana García"
-              value={form.name}
-              onChange={e => { set({ name: e.target.value }); setErrors(er => ({ ...er, name: undefined })); }}
-              autoFocus
-            />
-            {errors.name && <p className="text-[11px] text-destructive mt-1">{errors.name}</p>}
+          {/* Name + Last name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre *</label>
+              <Input
+                placeholder="Ana"
+                value={form.firstName}
+                onChange={e => { set({ firstName: e.target.value }); setErrors(er => ({ ...er, firstName: undefined })); }}
+                autoFocus
+              />
+              {errors.firstName && <p className="text-[11px] text-destructive mt-1">{errors.firstName}</p>}
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Apellidos *</label>
+              <Input
+                placeholder="García López"
+                value={form.lastName}
+                onChange={e => { set({ lastName: e.target.value }); setErrors(er => ({ ...er, lastName: undefined })); }}
+              />
+              {errors.lastName && <p className="text-[11px] text-destructive mt-1">{errors.lastName}</p>}
+            </div>
           </div>
 
           {/* Email + Role */}
