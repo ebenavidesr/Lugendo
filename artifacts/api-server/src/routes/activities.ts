@@ -39,14 +39,14 @@ router.post("/activities", requireRoles("admin", "manager", "agent"), async (req
 });
 
 router.get("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {
-  const id = parseInt(req.params.activityId, 10);
+  const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   const [activity] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, id));
   if (!activity) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serialize(activity));
 });
 
 router.patch("/activities/:activityId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.activityId, 10);
+  const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   const fields = req.body;
   const [activity] = await db.update(activitiesTable).set(fields).where(eq(activitiesTable.id, id)).returning();
   if (!activity) { res.status(404).json({ error: "Not found" }); return; }
@@ -54,7 +54,7 @@ router.patch("/activities/:activityId", requireRoles("admin", "manager", "agent"
 });
 
 router.delete("/activities/:activityId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
-  const id = parseInt(req.params.activityId, 10);
+  const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   await db.delete(activitiesTable).where(eq(activitiesTable.id, id));
   res.status(204).send();
 });

@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings, Hotel, Mail, ChevronRight } from "lucide-react";
+import { Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings, Hotel, Mail, ChevronRight, Zap, Search, Plus } from "lucide-react";
 import {
   useListItineraries,
   useListItineraryDays,
@@ -10,6 +10,10 @@ import {
   useSendInvitations,
   useListHotels,
   useParseItineraryPdf,
+  useListActivities,
+  useCreateActivity,
+  useCreateHotel,
+  useAddDayActivity,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -36,6 +40,7 @@ interface WizardData {
   scratchDescription: string;
   parsedItinerary: ParsedItinerary | null;
   dayHotels: Record<number, string>;
+  dayActivities: Record<number, number[]>;
   startDate: string;
   endDate: string;
   maxCapacity: string;
@@ -51,7 +56,7 @@ interface WizardData {
   emails: string;
 }
 
-const STEP_LABELS = ["Origen", "Itinerario", "Fechas", "Vuelos", "Nombre", "Hoteles", "Invitaciones"];
+const STEP_LABELS = ["Origen", "Programa", "Fechas", "Vuelos", "Nombre", "Itinerario", "Invitaciones"];
 const STEP_ICONS = [MapPin, FileText, Calendar, Plane, Settings, Hotel, Mail];
 
 // ── Stepper ──────────────────────────────────────────────────────────────────
@@ -102,7 +107,7 @@ export default function TripWizard() {
     origin: null, selectedItineraryId: null,
     newMode: null,
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
-    parsedItinerary: null, dayHotels: {},
+    parsedItinerary: null, dayHotels: {}, dayActivities: {},
     startDate: "", endDate: "", maxCapacity: "",
     airline: "", flightNumber: "", flightTime: "", reservationCode: "",
     returnAirline: "", returnFlightNumber: "", returnFlightTime: "", returnReservationCode: "",
@@ -112,8 +117,25 @@ export default function TripWizard() {
   const [isParsing, setIsParsing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // ── Inline hotel form state ───────────────────────────────────────────────
+  const [inlineHotelDay, setInlineHotelDay] = useState<number | null>(null);
+  const [hotelSearchQ, setHotelSearchQ] = useState("");
+  const [hotelLookupLoading, setHotelLookupLoading] = useState(false);
+  type HotelSuggestion = { name: string; city: string; country: string; address: string; phone: string; website: string };
+  const [hotelLookupResults, setHotelLookupResults] = useState<HotelSuggestion[]>([]);
+  const [newHotelForm, setNewHotelForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
+  const [creatingHotel, setCreatingHotel] = useState(false);
+
+  // ── Inline activity form state ────────────────────────────────────────────
+  const [inlineActivityDay, setInlineActivityDay] = useState<number | null>(null);
+  const [activitySearchQ, setActivitySearchQ] = useState("");
+  const [newActivityMode, setNewActivityMode] = useState(false);
+  const [newActivityForm, setNewActivityForm] = useState({ name: "", category: "", city: "" });
+  const [creatingActivity, setCreatingActivity] = useState(false);
+
   const { data: itineraries } = useListItineraries();
   const { data: hotels } = useListHotels();
+  const { data: activities } = useListActivities();
   const { data: existingDays } = useListItineraryDays(
     data.selectedItineraryId ?? 0
   );
@@ -122,6 +144,9 @@ export default function TripWizard() {
   const createDay = useCreateItineraryDay();
   const createTrip = useCreateTrip();
   const sendInvitations = useSendInvitations();
+  const createHotel = useCreateHotel();
+  const createActivity = useCreateActivity();
+  const addDayActivity = useAddDayActivity();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
@@ -185,6 +210,61 @@ export default function TripWizard() {
     reader.readAsDataURL(pdfFile);
   };
 
+  // ── Hotel lookup (Google Places or DB fallback) ───────────────────────────
+  const handleHotelLookup = async () => {
+    if (!hotelSearchQ.trim()) return;
+    setHotelLookupLoading(true);
+    try {
+      const res = await fetch(`/api/hotels/lookup?q=${encodeURIComponent(hotelSearchQ)}`, { credentials: "include" });
+      if (res.ok) setHotelLookupResults(await res.json());
+    } finally {
+      setHotelLookupLoading(false);
+    }
+  };
+
+  const handleCreateHotel = async (dayNum: number) => {
+    if (!newHotelForm.name || !newHotelForm.city || !newHotelForm.country) return;
+    setCreatingHotel(true);
+    try {
+      const hotel = await createHotel.mutateAsync({ data: {
+        name: newHotelForm.name, city: newHotelForm.city, country: newHotelForm.country,
+        ...(newHotelForm.address ? { address: newHotelForm.address } : {}),
+        ...(newHotelForm.phone ? { phone: newHotelForm.phone } : {}),
+        ...(newHotelForm.website ? { website: newHotelForm.website } : {}),
+      }});
+      qc.invalidateQueries({ queryKey: ["/api/hotels"] });
+      set({ dayHotels: { ...data.dayHotels, [dayNum]: String(hotel.id) } });
+      setInlineHotelDay(null);
+      setHotelLookupResults([]);
+      toast({ title: `Hotel "${hotel.name}" creado y asignado` });
+    } catch {
+      toast({ variant: "destructive", title: "Error al crear el hotel" });
+    } finally {
+      setCreatingHotel(false);
+    }
+  };
+
+  const handleCreateActivity = async (dayNum: number) => {
+    if (!newActivityForm.name) return;
+    setCreatingActivity(true);
+    try {
+      const act = await createActivity.mutateAsync({ data: {
+        name: newActivityForm.name,
+        ...(newActivityForm.city ? { city: newActivityForm.city } : {}),
+        ...(newActivityForm.category && newActivityForm.category !== "none" ? { category: newActivityForm.category as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
+      }});
+      qc.invalidateQueries({ queryKey: ["/api/activities"] });
+      set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), act.id] } });
+      setNewActivityMode(false);
+      setNewActivityForm({ name: "", category: "", city: "" });
+      toast({ title: `Actividad "${act.name}" creada` });
+    } catch {
+      toast({ variant: "destructive", title: "Error al crear la actividad" });
+    } finally {
+      setCreatingActivity(false);
+    }
+  };
+
   const handleCreate = async () => {
     if (!data.tripName || !data.startDate) {
       toast({ variant: "destructive", title: "Nombre y fecha de inicio son obligatorios" });
@@ -212,9 +292,10 @@ export default function TripWizard() {
         itineraryId = newItin.id;
 
         if (data.parsedItinerary?.days.length) {
+          const createdDayMap: Record<number, number> = {};
           for (const day of data.parsedItinerary.days) {
             const hotelId = data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
-            await createDay.mutateAsync({
+            const created = await createDay.mutateAsync({
               itineraryId: newItin.id,
               data: {
                 dayNumber: day.dayNumber,
@@ -225,9 +306,18 @@ export default function TripWizard() {
                 ...(hotelId ? { hotelId } : {}),
               },
             });
+            createdDayMap[day.dayNumber] = created.id;
+          }
+          for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {
+            const dayNum = parseInt(dayNumStr);
+            const dayId = createdDayMap[dayNum];
+            if (!dayId || !actIds.length) continue;
+            for (let i = 0; i < actIds.length; i++) {
+              await addDayActivity.mutateAsync({ itineraryId: newItin.id, dayId, data: { activityId: actIds[i] } });
+            }
           }
         }
-      } else if (data.origin === "existing" && hasDays && Object.keys(data.dayHotels).length > 0) {
+      } else if (data.origin === "existing" && hasDays) {
         for (const [dayNumStr, hotelIdStr] of Object.entries(data.dayHotels)) {
           const dayNum = parseInt(dayNumStr);
           const hotelId = parseInt(hotelIdStr);
@@ -240,6 +330,16 @@ export default function TripWizard() {
               credentials: "include",
               body: JSON.stringify({ hotelId }),
             });
+          }
+        }
+        if (itineraryId) {
+          for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {
+            const dayNum = parseInt(dayNumStr);
+            const existingDay = existingDays?.find(d => d.dayNumber === dayNum);
+            if (!existingDay || !actIds.length) continue;
+            for (let i = 0; i < actIds.length; i++) {
+              await addDayActivity.mutateAsync({ itineraryId, dayId: existingDay.id, data: { activityId: actIds[i] } });
+            }
           }
         }
       }
@@ -597,50 +697,250 @@ export default function TripWizard() {
           </div>
         );
 
-      // ── STEP 6: Hoteles ─────────────────────────────────────────────────────
+      // ── STEP 6: Itinerario detallado ────────────────────────────────────────
       case 6:
         return (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Asignar hoteles por día</h2>
-              <p className="text-[13px] text-muted-foreground">Opcional — puedes completarlo después desde el detalle del itinerario.</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Itinerario detallado</h2>
+              <p className="text-[13px] text-muted-foreground">Hoteles y actividades por día. Opcional — puedes completarlo después.</p>
             </div>
             {!hasDays ? (
               <div className="p-6 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
                 <Hotel className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                 <div className="text-[13px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Sin días definidos</div>
-                <div className="text-[12px] text-muted-foreground">Añade días al itinerario después de crear el viaje para asignar hoteles.</div>
+                <div className="text-[12px] text-muted-foreground">Los días se configuran desde el detalle del viaje.</div>
               </div>
             ) : (
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {days.map(day => (
-                  <div key={day.dayNumber} className="flex items-center gap-3 p-3 rounded-[10px] border border-border" style={{ background: "white" }}>
-                    <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 text-[12px] font-medium"
-                      style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                      {day.dayNumber}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>
-                        {day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
+              <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                {days.map(day => {
+                  const dayDate = data.startDate ? new Date(data.startDate + "T00:00:00") : null;
+                  if (dayDate) dayDate.setDate(dayDate.getDate() + (day.dayNumber - 1));
+                  const dateStr = dayDate
+                    ? dayDate.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
+                    : null;
+                  const dayActs = (data.dayActivities[day.dayNumber] ?? [])
+                    .map(id => activities?.find(a => a.id === id))
+                    .filter((a): a is NonNullable<typeof a> => Boolean(a));
+                  const isHotelOpen = inlineHotelDay === day.dayNumber;
+                  const isActOpen = inlineActivityDay === day.dayNumber;
+                  const assignedHotel = data.dayHotels[day.dayNumber];
+
+                  return (
+                    <div key={day.dayNumber} className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
+                      {/* Header */}
+                      <div className="flex items-center gap-3 px-3 pt-3 pb-2">
+                        <div className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 text-[12px] font-semibold"
+                          style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                          {day.dayNumber}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>
+                            {day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
+                          </div>
+                          {dateStr && <div className="text-[11px] capitalize" style={{ color: "#9C7A58" }}>{dateStr}</div>}
+                        </div>
                       </div>
-                    </div>
-                    <div className="w-44">
-                      <Select
-                        value={data.dayHotels[day.dayNumber] ?? "none"}
-                        onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}>
-                        <SelectTrigger className="text-[12px] h-8">
-                          <SelectValue placeholder="Sin hotel" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin hotel</SelectItem>
-                          {hotels?.map(h => (
-                            <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
+
+                      {/* Hotel row */}
+                      <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">
+                        <Hotel className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9C7A58" }} />
+                        <div className="flex-1 min-w-0">
+                          <Select
+                            value={assignedHotel || "none"}
+                            onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}>
+                            <SelectTrigger className="text-[12px] h-7 border-0 bg-transparent px-0 focus:ring-0 shadow-none w-full">
+                              <SelectValue placeholder="Sin hotel asignado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Sin hotel</SelectItem>
+                              {hotels?.map(h => (
+                                <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <button
+                          className="flex-shrink-0 text-[11px] font-medium flex items-center gap-0.5 px-2 py-1 rounded-[6px] transition-colors"
+                          style={{ color: "#C4793A", background: isHotelOpen ? "#FAEEE4" : "transparent" }}
+                          onClick={() => {
+                            setInlineHotelDay(isHotelOpen ? null : day.dayNumber);
+                            setInlineActivityDay(null);
+                            setHotelSearchQ("");
+                            setHotelLookupResults([]);
+                            setNewHotelForm({ name: "", city: day.cityTo ?? day.cityFrom ?? "", country: "", address: "", phone: "", website: "" });
+                          }}>
+                          <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
+                        </button>
+                      </div>
+
+                      {/* Activities row */}
+                      <div className="px-3 pb-3 flex items-start gap-2">
+                        <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#9C7A58" }} />
+                        <div className="flex-1 flex flex-wrap gap-1 items-center">
+                          {dayActs.map(a => (
+                            <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                              style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                              {a.name}
+                              <button
+                                onClick={() => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: (data.dayActivities[day.dayNumber] ?? []).filter(id => id !== a.id) } })}
+                                className="opacity-60 hover:opacity-100 ml-0.5">
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </span>
                           ))}
-                        </SelectContent>
-                      </Select>
+                          <button
+                            className="text-[11px] font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full transition-colors"
+                            style={{ color: "#3D2F6B", background: isActOpen ? "#EDE9F8" : "#F5F3FB" }}
+                            onClick={() => {
+                              setInlineActivityDay(isActOpen ? null : day.dayNumber);
+                              setInlineHotelDay(null);
+                              setActivitySearchQ("");
+                              setNewActivityMode(false);
+                            }}>
+                            <Plus className="w-3 h-3" /> Actividad
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ── Inline hotel creation panel ─────────────────────── */}
+                      {isHotelOpen && (
+                        <div className="border-t border-border p-3 space-y-3" style={{ background: "#FAF8F5" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
+                            Buscar o crear hotel
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Nombre del hotel…"
+                              value={hotelSearchQ}
+                              onChange={e => setHotelSearchQ(e.target.value)}
+                              onKeyDown={e => e.key === "Enter" && handleHotelLookup()}
+                              className="h-8 text-[12px] flex-1"
+                            />
+                            <Button type="button" size="sm" className="h-8 text-[11px] gap-1 flex-shrink-0"
+                              style={{ background: "#C4793A", color: "white" }}
+                              onClick={handleHotelLookup}
+                              disabled={hotelLookupLoading || !hotelSearchQ.trim()}>
+                              <Search className="w-3 h-3" />
+                              {hotelLookupLoading ? "Buscando…" : "Buscar"}
+                            </Button>
+                          </div>
+                          {hotelLookupResults.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-[11px]" style={{ color: "#9C7A58" }}>Selecciona para pre-rellenar:</div>
+                              {hotelLookupResults.map((r, i) => (
+                                <button key={i}
+                                  onClick={() => setNewHotelForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website })}
+                                  className="w-full text-left p-2 rounded-[8px] border border-border hover:border-[#C4793A] text-[12px] transition-colors">
+                                  <div className="font-medium" style={{ color: "#2D1F0E" }}>{r.name}</div>
+                                  <div style={{ color: "#9C7A58" }}>{r.city}{r.country ? `, ${r.country}` : ""}</div>
+                                  {r.address && <div className="text-[11px] truncate" style={{ color: "#9C7A58" }}>{r.address}</div>}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Datos del hotel</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input placeholder="Nombre *" value={newHotelForm.name} onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
+                            <Input placeholder="Ciudad *" value={newHotelForm.city} onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
+                            <Input placeholder="País *" value={newHotelForm.country} onChange={e => setNewHotelForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
+                            <Input placeholder="Dirección" value={newHotelForm.address} onChange={e => setNewHotelForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
+                            <Input placeholder="Teléfono" value={newHotelForm.phone} onChange={e => setNewHotelForm(f => ({ ...f, phone: e.target.value }))} className="h-7 text-[12px]" />
+                            <Input placeholder="Web" value={newHotelForm.website} onChange={e => setNewHotelForm(f => ({ ...f, website: e.target.value }))} className="h-7 text-[12px]" />
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" variant="ghost" size="sm" className="h-7 text-[12px]"
+                              onClick={() => setInlineHotelDay(null)}>Cancelar</Button>
+                            <Button type="button" size="sm" className="h-7 text-[12px]"
+                              style={{ background: "#C4793A", color: "white" }}
+                              disabled={!newHotelForm.name || !newHotelForm.city || !newHotelForm.country || creatingHotel}
+                              onClick={() => handleCreateHotel(day.dayNumber)}>
+                              {creatingHotel ? "Guardando…" : "Guardar hotel"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Inline activity picker panel ────────────────────── */}
+                      {isActOpen && (
+                        <div className="border-t border-border p-3 space-y-2" style={{ background: "#F8F6FC" }}>
+                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+                            Añadir actividad
+                          </div>
+                          <Input
+                            placeholder="Buscar en el catálogo…"
+                            value={activitySearchQ}
+                            onChange={e => setActivitySearchQ(e.target.value)}
+                            className="h-7 text-[12px]"
+                          />
+                          <div className="max-h-36 overflow-y-auto space-y-0.5">
+                            {(activities ?? [])
+                              .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
+                              .filter(a => !(data.dayActivities[day.dayNumber] ?? []).includes(a.id))
+                              .slice(0, 12)
+                              .map(a => (
+                                <button key={a.id}
+                                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
+                                  style={{ color: "#2D1F0E" }}
+                                  onClick={() => {
+                                    set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...(data.dayActivities[day.dayNumber] ?? []), a.id] } });
+                                  }}>
+                                  {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
+                                </button>
+                              ))}
+                            {(activities ?? []).filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase())).length === 0 && (
+                              <div className="text-[11px] py-2 text-center" style={{ color: "#9C7A58" }}>Sin resultados</div>
+                            )}
+                          </div>
+                          {!newActivityMode ? (
+                            <button className="w-full text-[11px] font-medium py-1 rounded-[6px] flex items-center justify-center gap-1 transition-colors"
+                              style={{ color: "#3D2F6B", background: "#EDE9F8" }}
+                              onClick={() => setNewActivityMode(true)}>
+                              <Plus className="w-3 h-3" /> Nueva actividad
+                            </button>
+                          ) : (
+                            <div className="space-y-2 pt-2 border-t border-border">
+                              <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Nueva actividad</div>
+                              <Input placeholder="Nombre *" value={newActivityForm.name}
+                                onChange={e => setNewActivityForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
+                              <div className="grid grid-cols-2 gap-2">
+                                <Input placeholder="Ciudad" value={newActivityForm.city}
+                                  onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
+                                <Select value={newActivityForm.category || "none"}
+                                  onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>
+                                  <SelectTrigger className="h-7 text-[12px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">Sin categoría</SelectItem>
+                                    <SelectItem value="cultural">Cultural</SelectItem>
+                                    <SelectItem value="gastronomic">Gastronómica</SelectItem>
+                                    <SelectItem value="adventure">Aventura</SelectItem>
+                                    <SelectItem value="nature">Naturaleza</SelectItem>
+                                    <SelectItem value="beach">Playa</SelectItem>
+                                    <SelectItem value="city">Ciudad</SelectItem>
+                                    <SelectItem value="excursion">Excursión</SelectItem>
+                                    <SelectItem value="other">Otra</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px]"
+                                  onClick={() => { setNewActivityMode(false); setNewActivityForm({ name: "", category: "", city: "" }); }}>
+                                  Cancelar
+                                </Button>
+                                <Button type="button" size="sm" className="h-6 text-[11px]"
+                                  style={{ background: "#3D2F6B", color: "white" }}
+                                  disabled={!newActivityForm.name || creatingActivity}
+                                  onClick={() => handleCreateActivity(day.dayNumber)}>
+                                  {creatingActivity ? "…" : "Crear"}
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
