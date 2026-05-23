@@ -11,5 +11,7 @@ export interface UserInput {
   email: string;
   name: string;
   role: UserInputRole;
-  agencyId?: number;
+  password?: string;
+  /** @nullable */
+  agencyId?: number | null;
 }

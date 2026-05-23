@@ -1,18 +1,24 @@
 import { useState } from "react";
-import { Plus, Mail } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useListUsers, useSendInvitations } from "@workspace/api-client-react";
+import { Plus, Mail, Pencil, UserPlus, KeyRound } from "lucide-react";
+import {
+  useListUsers, useCreateUser, useUpdateUser,
+  useSendInvitations, useListTrips,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User, UserRole } from "@workspace/api-client-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<UserRole, { bg: string; color: string; label: string }> = {
   admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },
@@ -20,6 +26,13 @@ const roleBadge: Record<UserRole, { bg: string; color: string; label: string }> 
   agent:    { bg: "#FAEEE4", color: "#8B4420", label: "Agente" },
   traveler: { bg: "#ECD5B8", color: "#7A5C3A", label: "Viajero" },
 };
+
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
+  { value: "admin",    label: "Admin" },
+  { value: "manager",  label: "Manager" },
+  { value: "agent",    label: "Agente" },
+  { value: "traveler", label: "Viajero" },
+];
 
 function RoleBadge({ role }: { role: UserRole }) {
   const s = roleBadge[role] ?? roleBadge.agent;
@@ -33,67 +46,402 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-const schema = z.object({
-  emails: z.string().min(1, "Introduce al menos un email"),
-  tripId: z.string().optional(),
-});
+// ── Create User Dialog ────────────────────────────────────────────────────────
 
-export default function Team() {
-  const [open, setOpen] = useState(false);
-  const { data: users, isLoading } = useListUsers();
-  const invite = useSendInvitations();
-  const qc = useQueryClient();
+function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
-  const { user: me } = useAuth();
+  const qc = useQueryClient();
+  const createUser = useCreateUser();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: { emails: "", tripId: "" },
-  });
+  const [form, setForm] = useState({ name: "", email: "", role: "agent" as UserRole, password: "" });
+  const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
-  const onSubmit = (values: z.infer<typeof schema>) => {
-    if (!values.tripId) {
-      toast({ variant: "destructive", title: "Selecciona un viaje para invitar viajeros" });
+  const handleSubmit = () => {
+    if (!form.name.trim() || !form.email.trim() || !form.role) {
+      toast({ variant: "destructive", title: "Nombre, email y rol son obligatorios" });
       return;
     }
-    const emails = values.emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
-    invite.mutate({
-      tripId: parseInt(values.tripId),
-      data: { emails },
-    }, {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: ["/api/trips"] });
-        toast({ title: `${emails.length} invitación${emails.length > 1 ? "es" : ""} enviada${emails.length > 1 ? "s" : ""}` });
-        setOpen(false);
-        form.reset();
-      },
-      onError: () => toast({ variant: "destructive", title: "Error al enviar invitaciones" }),
-    });
+    createUser.mutate(
+      { data: { name: form.name.trim(), email: form.email.trim(), role: form.role, ...(form.password ? { password: form.password } : {}) } },
+      {
+        onSuccess: (u) => {
+          qc.invalidateQueries({ queryKey: ["/api/users"] });
+          toast({ title: `Usuario "${u.name}" creado correctamente` });
+          setForm({ name: "", email: "", role: "agent", password: "" });
+          onClose();
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al crear el usuario. El email puede estar en uso." }),
+      }
+    );
   };
 
-  const staff = users?.filter(u => u.role !== "traveler") ?? [];
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif flex items-center gap-2">
+            <UserPlus className="w-4 h-4" style={{ color: "#C4793A" }} />
+            Crear usuario
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo *</label>
+              <Input placeholder="Ana García" value={form.name} onChange={e => set({ name: e.target.value })} autoFocus />
+            </div>
+            <div className="col-span-2">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
+              <Input type="email" placeholder="ana@agencia.com" value={form.email} onChange={e => set({ email: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Rol *</label>
+              <Select value={form.role} onValueChange={v => set({ role: v as UserRole })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
+                Contraseña <span className="font-normal text-muted-foreground">(opcional)</span>
+              </label>
+              <Input
+                type="password"
+                placeholder="Autogenerada si se deja vacío"
+                value={form.password}
+                onChange={e => set({ password: e.target.value })}
+              />
+            </div>
+          </div>
+          {!form.password && (
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              <KeyRound className="w-3 h-3" />
+              Si no introduces contraseña, se generará una automáticamente. Compártela con el usuario.
+            </p>
+          )}
+        </div>
+
+        <DialogFooter className="pt-2">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            disabled={createUser.isPending || !form.name.trim() || !form.email.trim()}
+            onClick={handleSubmit}
+            style={{ background: "#C4793A", color: "#FAF2EB" }}
+          >
+            {createUser.isPending ? "Creando…" : "Crear usuario"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Edit User Dialog ──────────────────────────────────────────────────────────
+
+function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const updateUser = useUpdateUser();
+  const { user: me } = useAuth();
+
+  const [form, setForm] = useState({
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    active: user.active,
+    password: "",
+  });
+  const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
+
+  const handleSave = () => {
+    const patch: Record<string, unknown> = {};
+    if (form.name !== user.name) patch.name = form.name.trim();
+    if (form.email !== user.email) patch.email = form.email.trim();
+    if (form.role !== user.role) patch.role = form.role;
+    if (form.active !== user.active) patch.active = form.active;
+    if (form.password) patch.password = form.password;
+
+    if (Object.keys(patch).length === 0) { onClose(); return; }
+
+    updateUser.mutate(
+      { userId: user.id, data: patch },
+      {
+        onSuccess: (u) => {
+          qc.invalidateQueries({ queryKey: ["/api/users"] });
+          toast({ title: `Usuario "${u.name}" actualizado` });
+          onClose();
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al actualizar el usuario" }),
+      }
+    );
+  };
+
+  const isSelf = me?.id === user.id;
+
+  return (
+    <Dialog open onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif flex items-center gap-2">
+            <Pencil className="w-4 h-4" style={{ color: "#3D2F6B" }} />
+            Editar usuario
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo</label>
+              <Input value={form.name} onChange={e => set({ name: e.target.value })} autoFocus />
+            </div>
+            <div className="col-span-2">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email</label>
+              <Input type="email" value={form.email} onChange={e => set({ email: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Rol</label>
+              <Select value={form.role} onValueChange={v => set({ role: v as UserRole })} disabled={isSelf}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map(o => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {isSelf && <p className="text-[11px] text-muted-foreground mt-1">No puedes cambiar tu propio rol</p>}
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Estado</label>
+              <Select value={form.active ? "active" : "inactive"} onValueChange={v => set({ active: v === "active" })} disabled={isSelf}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Activo</SelectItem>
+                  <SelectItem value="inactive">Inactivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
+                Nueva contraseña <span className="font-normal text-muted-foreground">(dejar vacío para no cambiar)</span>
+              </label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => set({ password: e.target.value })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="pt-2">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            disabled={updateUser.isPending || !form.name.trim() || !form.email.trim()}
+            onClick={handleSave}
+            style={{ background: "#3D2F6B", color: "white" }}
+          >
+            {updateUser.isPending ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Invite Travelers Dialog ───────────────────────────────────────────────────
+
+function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const invite = useSendInvitations();
+  const { data: trips } = useListTrips();
+
+  const [tripId, setTripId] = useState("");
+  const [emails, setEmails] = useState("");
+
+  const handleSend = () => {
+    if (!tripId) { toast({ variant: "destructive", title: "Selecciona un viaje" }); return; }
+    const list = emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
+    if (!list.length) { toast({ variant: "destructive", title: "Introduce al menos un email" }); return; }
+    invite.mutate(
+      { tripId: parseInt(tripId), data: { emails: list } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["/api/trips"] });
+          toast({ title: `${list.length} invitación${list.length > 1 ? "es" : ""} enviada${list.length > 1 ? "s" : ""}` });
+          setTripId(""); setEmails(""); onClose();
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al enviar invitaciones" }),
+      }
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif flex items-center gap-2">
+            <Mail className="w-4 h-4" style={{ color: "#C4793A" }} />
+            Invitar viajeros
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-1">
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Viaje *</label>
+            <Select value={tripId} onValueChange={setTripId}>
+              <SelectTrigger><SelectValue placeholder="Selecciona un viaje" /></SelectTrigger>
+              <SelectContent>
+                {trips?.map(t => (
+                  <SelectItem key={t.id} value={String(t.id)}>
+                    {t.name}{t.startDate ? ` · ${new Date(t.startDate).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Emails de los viajeros *</label>
+            <Textarea
+              placeholder={"ana@ejemplo.com\ncarlo@ejemplo.com"}
+              rows={4}
+              value={emails}
+              onChange={e => setEmails(e.target.value)}
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">Un email por línea o separados por coma</p>
+          </div>
+        </div>
+
+        <DialogFooter className="pt-2">
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button
+            disabled={invite.isPending || !tripId || !emails.trim()}
+            onClick={handleSend}
+            style={{ background: "#C4793A", color: "#FAF2EB" }}
+          >
+            {invite.isPending ? "Enviando…" : "Enviar invitaciones"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── User Row ──────────────────────────────────────────────────────────────────
+
+function UserRow({
+  user, isAdmin, onEdit, avatarColor,
+}: {
+  user: User; isAdmin: boolean; onEdit: (u: User) => void; avatarColor: string;
+}) {
+  return (
+    <tr className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
+      <td className="px-5 py-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0"
+            style={{ background: avatarColor, color: "#FAF2EB" }}
+          >
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <span className="font-medium" style={{ color: "#2D1F0E" }}>{user.name}</span>
+        </div>
+      </td>
+      <td className="px-5 py-3 text-muted-foreground">{user.email}</td>
+      <td className="px-5 py-3"><RoleBadge role={user.role} /></td>
+      <td className="px-5 py-3">
+        <span
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+          style={{ background: user.active ? "#E4F3EC" : "#ECD5B8", color: user.active ? "#2E7D5A" : "#7A5C3A" }}
+        >
+          {user.active ? "Activo" : "Inactivo"}
+        </span>
+      </td>
+      <td className="px-5 py-3 text-muted-foreground">{fmt(user.createdAt)}</td>
+      {isAdmin && (
+        <td className="px-5 py-3">
+          <button
+            onClick={() => onEdit(user)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[6px] hover:bg-[#EAE6F5]"
+            title="Editar usuario"
+          >
+            <Pencil className="w-3.5 h-3.5" style={{ color: "#3D2F6B" }} />
+          </button>
+        </td>
+      )}
+    </tr>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
+export default function Team() {
+  const { data: users, isLoading } = useListUsers();
+  const { user: me } = useAuth();
+  const isAdmin = me?.role === "admin";
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const staff    = users?.filter(u => u.role !== "traveler") ?? [];
   const travelers = users?.filter(u => u.role === "traveler") ?? [];
+
+  const colHeaders = isAdmin
+    ? ["Nombre", "Email", "Rol", "Estado", "Alta", ""]
+    : ["Nombre", "Email", "Rol", "Estado", "Alta"];
 
   return (
     <div className="p-6 max-w-5xl space-y-5">
+      {/* Dialogs */}
+      <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+      {editingUser && <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />}
+      <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} />
+
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-medium" style={{ color: "#2D1F0E" }}>Equipo</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Gestiona los miembros de la agencia</p>
         </div>
-        <button onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
-          style={{ background: "#C4793A", color: "#FAF2EB" }}
-          onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
-          onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
-          <Mail className="w-4 h-4" /> Invitar viajeros
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setInviteOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors"
+            style={{ borderColor: "#E5D4BF", color: "#7A5C3A", background: "white" }}
+            onMouseOver={e => (e.currentTarget.style.background = "#FAF2EB")}
+            onMouseOut={e => (e.currentTarget.style.background = "white")}
+          >
+            <Mail className="w-4 h-4" /> Invitar viajeros
+          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
+              style={{ background: "#C4793A", color: "#FAF2EB" }}
+              onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
+              onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}
+            >
+              <Plus className="w-4 h-4" /> Crear usuario
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Staff */}
+      {/* Staff table */}
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
-          <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>Personal de agencia</span>
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+            Personal de agencia <span className="text-muted-foreground font-normal">({staff.length})</span>
+          </span>
         </div>
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Cargando…</div>
@@ -103,128 +451,61 @@ export default function Team() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Nombre", "Email", "Rol", "Estado", "Alta"].map(h => (
-                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
-                    style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
+                {colHeaders.map(h => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
+                    style={{ color: "#9C7A58", background: "#FAF2EB" }}
+                  >{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {staff.map((u: User) => (
-                <tr key={u.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0"
-                        style={{ background: "#3D2F6B", color: "#FAF2EB" }}>
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium" style={{ color: "#2D1F0E" }}>{u.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-5 py-3"><RoleBadge role={u.role} /></td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                      style={{ background: u.active ? "#E4F3EC" : "#ECD5B8", color: u.active ? "#2E7D5A" : "#7A5C3A" }}>
-                      {u.active ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{fmt(u.createdAt)}</td>
-                </tr>
+              {staff.map(u => (
+                <UserRow key={u.id} user={u} isAdmin={isAdmin} onEdit={setEditingUser} avatarColor="#3D2F6B" />
               ))}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* Travelers */}
-      {travelers.length > 0 && (
-        <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-border">
-            <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
-              Viajeros registrados <span className="text-muted-foreground font-normal">({travelers.length})</span>
-            </span>
+      {/* Travelers table */}
+      <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-border">
+          <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+            Viajeros <span className="text-muted-foreground font-normal">({travelers.length})</span>
+          </span>
+        </div>
+        {isLoading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Cargando…</div>
+        ) : !travelers.length ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            Aún no hay viajeros.{" "}
+            <button className="font-medium hover:underline" style={{ color: "#C4793A" }} onClick={() => setInviteOpen(true)}>
+              Invita a los primeros
+            </button>
           </div>
+        ) : (
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Nombre", "Email", "Estado", "Alta"].map(h => (
-                  <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
-                    style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
+                {colHeaders.map(h => (
+                  <th
+                    key={h}
+                    className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
+                    style={{ color: "#9C7A58", background: "#FAF2EB" }}
+                  >{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {travelers.map((u: User) => (
-                <tr key={u.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0"
-                        style={{ background: "#C4793A", color: "#FAF2EB" }}>
-                        {u.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-medium" style={{ color: "#2D1F0E" }}>{u.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{u.email}</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                      style={{ background: u.active ? "#E4F3EC" : "#ECD5B8", color: u.active ? "#2E7D5A" : "#7A5C3A" }}>
-                      {u.active ? "Activo" : "Inactivo"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-muted-foreground">{fmt(u.createdAt)}</td>
-                </tr>
+              {travelers.map(u => (
+                <UserRow key={u.id} user={u} isAdmin={isAdmin} onEdit={setEditingUser} avatarColor="#C4793A" />
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invitar viajeros a un viaje</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField control={form.control} name="tripId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ID del viaje</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="Ej: 1" {...field} />
-                  </FormControl>
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Puedes copiar el ID desde la lista de viajes
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="emails" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Emails de los viajeros</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={"ana@ejemplo.com\ncarlo@ejemplo.com"}
-                      rows={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <p className="text-[11px] text-muted-foreground mt-1">Un email por línea o separados por coma</p>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={invite.isPending}
-                  style={{ background: "#C4793A", color: "#FAF2EB" }}>
-                  {invite.isPending ? "Enviando…" : "Enviar invitaciones"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+        )}
+      </div>
     </div>
   );
 }

@@ -94,29 +94,37 @@ export type UserInputRole = typeof UserInputRole[keyof typeof UserInputRole];
 
 
 export const UserInputRole = {
+  admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  traveler: 'traveler',
 } as const;
 
 export interface UserInput {
   email: string;
   name: string;
   role: UserInputRole;
-  agencyId?: number;
+  password?: string;
+  /** @nullable */
+  agencyId?: number | null;
 }
 
 export type UserUpdateRole = typeof UserUpdateRole[keyof typeof UserUpdateRole];
 
 
 export const UserUpdateRole = {
+  admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  traveler: 'traveler',
 } as const;
 
 export interface UserUpdate {
+  email?: string;
   name?: string;
   role?: UserUpdateRole;
   active?: boolean;
+  password?: string;
 }
 
 /**

@@ -25,14 +25,14 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.post("/users", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
-  const { email, name, role, agencyId } = req.body;
+  const { email, name, role, agencyId, password } = req.body;
   if (!email || !name || !role) {
     res.status(400).json({ error: "email, name, role are required" });
     return;
   }
-  const tempPassword = Math.random().toString(36).slice(-10);
-  const passwordHash = await bcrypt.hash(tempPassword, 12);
-  const targetAgencyId = req.session.role === "admin" ? agencyId : req.session.agencyId;
+  const rawPassword = password || Math.random().toString(36).slice(-10);
+  const passwordHash = await bcrypt.hash(rawPassword, 12);
+  const targetAgencyId = req.session.role === "admin" ? (agencyId ?? req.session.agencyId) : req.session.agencyId;
   const [user] = await db
     .insert(usersTable)
     .values({ email: email.toLowerCase().trim(), passwordHash, name, role, agencyId: targetAgencyId })
@@ -52,10 +52,18 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
 router.patch("/users/:userId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId, 10);
-  const { name, role, active } = req.body;
+  const { name, email, role, active, password } = req.body;
+
+  const updateFields: Partial<typeof usersTable.$inferInsert> = {};
+  if (name) updateFields.name = name;
+  if (email) updateFields.email = email.toLowerCase().trim();
+  if (role) updateFields.role = role;
+  if (active !== undefined) updateFields.active = active;
+  if (password) updateFields.passwordHash = await bcrypt.hash(password, 12);
+
   const [user] = await db
     .update(usersTable)
-    .set({ ...(name && { name }), ...(role && { role }), ...(active !== undefined && { active }) })
+    .set(updateFields)
     .where(eq(usersTable.id, id))
     .returning();
   if (!user) { res.status(404).json({ error: "Not found" }); return; }

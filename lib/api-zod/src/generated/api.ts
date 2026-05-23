@@ -152,8 +152,9 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 export const CreateUserBody = zod.object({
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['manager', 'agent']),
-  "agencyId": zod.number().optional()
+  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "password": zod.string().optional(),
+  "agencyId": zod.number().nullish()
 })
 
 
@@ -183,9 +184,11 @@ export const UpdateUserParams = zod.object({
 })
 
 export const UpdateUserBody = zod.object({
+  "email": zod.string().optional(),
   "name": zod.string().optional(),
-  "role": zod.enum(['manager', 'agent']).optional(),
-  "active": zod.boolean().optional()
+  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']).optional(),
+  "active": zod.boolean().optional(),
+  "password": zod.string().optional()
 })
 
 export const UpdateUserResponse = zod.object({

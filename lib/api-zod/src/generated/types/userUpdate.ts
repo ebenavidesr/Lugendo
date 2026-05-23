@@ -8,7 +8,9 @@
 import type { UserUpdateRole } from './userUpdateRole';
 
 export interface UserUpdate {
+  email?: string;
   name?: string;
   role?: UserUpdateRole;
   active?: boolean;
+  password?: string;
 }

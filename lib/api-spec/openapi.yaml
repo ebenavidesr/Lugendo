@@ -1162,20 +1162,26 @@ components:
           type: string
         role:
           type: string
-          enum: [manager, agent]
+          enum: [admin, manager, agent, traveler]
+        password:
+          type: string
         agencyId:
-          type: integer
+          type: ["integer", "null"]
 
     UserUpdate:
       type: object
       properties:
+        email:
+          type: string
         name:
           type: string
         role:
           type: string
-          enum: [manager, agent]
+          enum: [admin, manager, agent, traveler]
         active:
           type: boolean
+        password:
+          type: string
 
     # ─── ITINERARY ────────────────────────────────────────────────────────────
     Itinerary:
