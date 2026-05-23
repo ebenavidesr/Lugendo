@@ -54,10 +54,10 @@ function PasswordRequirements({ password }: { password: string }) {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<UserRole, { bg: string; color: string; label: string }> = {
-  admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },
-  manager:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Manager" },
-  agent:    { bg: "#FAEEE4", color: "#8B4420", label: "Agente" },
-  traveler: { bg: "#ECD5B8", color: "#7A5C3A", label: "Viajero" },
+  admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },    // Rojo — acceso máximo
+  manager:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Manager" },  // Índigo — rol relevante
+  agent:    { bg: "#FFF3D6", color: "#C47A00", label: "Agente" },   // Ámbar — rol operativo
+  traveler: { bg: "#E4F3EC", color: "#2E7D5A", label: "Viajero" },  // Verde — usuario final
 };
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
