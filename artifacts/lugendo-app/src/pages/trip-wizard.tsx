@@ -166,6 +166,8 @@ export default function TripWizard() {
           scratchCountries: result.countries?.join(", ") ?? "",
           scratchDescription: result.description ?? "",
           tripName: result.name,
+          ...(result.startDate ? { startDate: result.startDate } : {}),
+          ...(result.endDate ? { endDate: result.endDate } : {}),
         });
         toast({ title: `Itinerario extraído: ${result.numDays} días detectados` });
       } catch {

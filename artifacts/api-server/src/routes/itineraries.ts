@@ -73,6 +73,8 @@ The JSON must match this structure exactly:
   "numDays": number,
   "description": "string or null",
   "countries": ["array of country names"],
+  "startDate": "YYYY-MM-DD or null - the trip start date if mentioned in the document",
+  "endDate": "YYYY-MM-DD or null - the trip end date if mentioned in the document",
   "days": [
     {
       "dayNumber": 1,
@@ -90,6 +92,7 @@ Rules:
 - Extract all activities, excursions, and tours mentioned per day
 - If city doesn't change, cityFrom and cityTo can be the same city or null for cityFrom
 - Keep descriptions concise but informative
+- For startDate/endDate: look for explicit dates in the document header or first/last day entries. Format as YYYY-MM-DD (e.g. "4 de agosto, 2026" → "2026-08-04"). If not found, use null.
 - Return ONLY the JSON object, no markdown, no explanation`;
 
   try {

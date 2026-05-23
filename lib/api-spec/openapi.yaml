@@ -1812,6 +1812,12 @@ components:
           type: array
           items:
             type: string
+        startDate:
+          type: ["string", "null"]
+          description: "ISO date string (YYYY-MM-DD) if the document specifies a start date"
+        endDate:
+          type: ["string", "null"]
+          description: "ISO date string (YYYY-MM-DD) if the document specifies an end date"
         days:
           type: array
           items:

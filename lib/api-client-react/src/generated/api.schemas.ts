@@ -680,6 +680,16 @@ export interface ParsedItinerary {
   /** @nullable */
   description?: string | null;
   countries?: string[];
+  /**
+     * ISO date string (YYYY-MM-DD) if the document specifies a start date
+     * @nullable
+     */
+  startDate?: string | null;
+  /**
+     * ISO date string (YYYY-MM-DD) if the document specifies an end date
+     * @nullable
+     */
+  endDate?: string | null;
   days: ParsedDay[];
 }
 

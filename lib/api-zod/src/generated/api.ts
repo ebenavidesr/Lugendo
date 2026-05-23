@@ -915,6 +915,8 @@ export const ParseItineraryPdfResponse = zod.object({
   "numDays": zod.number(),
   "description": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
+  "startDate": zod.string().nullish().describe('ISO date string (YYYY-MM-DD) if the document specifies a start date'),
+  "endDate": zod.string().nullish().describe('ISO date string (YYYY-MM-DD) if the document specifies an end date'),
   "days": zod.array(zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
