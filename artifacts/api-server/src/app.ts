@@ -7,6 +7,11 @@ import { sessionMiddleware } from "./lib/session";
 
 const app: Express = express();
 
+// Trust the first proxy (Replit's reverse proxy). Without this, Express
+// doesn't see the X-Forwarded-Proto: https header and refuses to set
+// secure cookies, breaking sessions in production.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
