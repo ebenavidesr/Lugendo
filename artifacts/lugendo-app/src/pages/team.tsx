@@ -271,22 +271,54 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
   const updateUser = useUpdateUser();
   const { user: me } = useAuth();
 
+  // Split existing full name into first / last
+  const [firstInit, ...restInit] = user.name.split(" ");
+  const lastInit = restInit.join(" ");
+
   const [form, setForm] = useState({
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    active: user.active,
-    password: "",
+    firstName: firstInit ?? "",
+    lastName:  lastInit  ?? "",
+    email:     user.email,
+    role:      user.role,
+    active:    user.active,
+    password:  "",
+    confirm:   "",
   });
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
+  const isSelf = me?.id === user.id;
+
+  // Password validation only when the user is setting a new one
+  const changingPwd    = form.password.length > 0;
+  const passwordStrong = changingPwd ? isStrongPassword(form.password) : true;
+  const passwordsMatch = changingPwd ? form.password === form.confirm  : true;
+
+  const canSave =
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+    form.email.trim() &&
+    passwordStrong &&
+    passwordsMatch &&
+    !updateUser.isPending;
+
   const handleSave = () => {
+    const errs: typeof errors = {};
+    if (!form.firstName.trim()) errs.firstName = "El nombre es obligatorio";
+    if (!form.lastName.trim())  errs.lastName  = "Los apellidos son obligatorios";
+    if (!form.email.trim())     errs.email     = "El email es obligatorio";
+    if (changingPwd && !passwordStrong) errs.password = "La contraseña no cumple los requisitos";
+    if (changingPwd && !passwordsMatch) errs.confirm  = "Las contraseñas no coinciden";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+
+    const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     const patch: Record<string, unknown> = {};
-    if (form.name !== user.name) patch.name = form.name.trim();
-    if (form.email !== user.email) patch.email = form.email.trim();
-    if (form.role !== user.role) patch.role = form.role;
+    if (fullName    !== user.name)   patch.name   = fullName;
+    if (form.email  !== user.email)  patch.email  = form.email.trim();
+    if (form.role   !== user.role)   patch.role   = form.role;
     if (form.active !== user.active) patch.active = form.active;
-    if (form.password) patch.password = form.password;
+    if (changingPwd)                 patch.password = form.password;
 
     if (Object.keys(patch).length === 0) { onClose(); return; }
 
@@ -303,8 +335,6 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     );
   };
 
-  const isSelf = me?.id === user.id;
-
   return (
     <Dialog open onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -315,17 +345,42 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="space-y-3 py-1">
+          {/* Nombre + Apellidos */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo</label>
-              <Input value={form.name} onChange={e => set({ name: e.target.value })} autoFocus />
-            </div>
-            <div className="col-span-2">
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email</label>
-              <Input type="email" value={form.email} onChange={e => set({ email: e.target.value })} />
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre *</label>
+              <Input
+                placeholder="Ana"
+                value={form.firstName}
+                autoFocus
+                onChange={e => { set({ firstName: e.target.value }); setErrors(er => ({ ...er, firstName: undefined })); }}
+              />
+              {errors.firstName && <p className="text-[11px] text-destructive mt-1">{errors.firstName}</p>}
             </div>
             <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Apellidos *</label>
+              <Input
+                placeholder="García López"
+                value={form.lastName}
+                onChange={e => { set({ lastName: e.target.value }); setErrors(er => ({ ...er, lastName: undefined })); }}
+              />
+              {errors.lastName && <p className="text-[11px] text-destructive mt-1">{errors.lastName}</p>}
+            </div>
+          </div>
+
+          {/* Email + Rol */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 sm:col-span-1">
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
+              />
+              {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
+            </div>
+            <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Rol</label>
               <Select value={form.role} onValueChange={v => set({ role: v as UserRole })} disabled={isSelf}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -337,36 +392,89 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
               </Select>
               {isSelf && <p className="text-[11px] text-muted-foreground mt-1">No puedes cambiar tu propio rol</p>}
             </div>
-            <div>
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Estado</label>
-              <Select value={form.active ? "active" : "inactive"} onValueChange={v => set({ active: v === "active" })} disabled={isSelf}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="inactive">Inactivo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="col-span-2">
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
-                Nueva contraseña <span className="font-normal text-muted-foreground">(dejar vacío para no cambiar)</span>
+          </div>
+
+          {/* Estado */}
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Estado</label>
+            <Select value={form.active ? "active" : "inactive"} onValueChange={v => set({ active: v === "active" })} disabled={isSelf}>
+              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Activo</SelectItem>
+                <SelectItem value="inactive">Inactivo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Nueva contraseña (opcional) */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>
+                Nueva contraseña
               </label>
+              <span className="text-[11px] text-muted-foreground">(dejar vacío para no cambiar)</span>
+              {changingPwd && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button type="button" className="text-muted-foreground hover:text-foreground">
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 p-3" side="right">
+                    <p className="text-[12px] font-medium mb-2" style={{ color: "#2D1F0E" }}>Requisitos</p>
+                    <PasswordRequirements password={form.password} />
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={e => { set({ password: e.target.value, confirm: "" }); setErrors(er => ({ ...er, password: undefined, confirm: undefined })); }}
+            />
+            {errors.password && <p className="text-[11px] text-destructive mt-1">{errors.password}</p>}
+            {changingPwd && (
+              <div className="mt-2 flex gap-1">
+                {PASSWORD_RULES.map(r => (
+                  <div
+                    key={r.label}
+                    className="flex-1 h-1 rounded-full transition-colors"
+                    style={{ background: r.test(form.password) ? "#C4793A" : "#ECD5B8" }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Confirmar contraseña — solo visible si se está cambiando */}
+          {changingPwd && (
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Repetir contraseña *</label>
               <Input
                 type="password"
+                autoComplete="new-password"
                 placeholder="••••••••"
-                value={form.password}
-                onChange={e => set({ password: e.target.value })}
+                value={form.confirm}
+                onChange={e => { set({ confirm: e.target.value }); setErrors(er => ({ ...er, confirm: undefined })); }}
               />
+              {form.confirm && !passwordsMatch && (
+                <p className="text-[11px] text-destructive mt-1">Las contraseñas no coinciden</p>
+              )}
+              {form.confirm && passwordsMatch && (
+                <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: "#2E7D5A" }}>
+                  <Check className="w-3 h-3" /> Las contraseñas coinciden
+                </p>
+              )}
             </div>
-          </div>
+          )}
         </div>
 
         <DialogFooter className="pt-2">
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
-            disabled={updateUser.isPending || !form.name.trim() || !form.email.trim()}
+            disabled={!canSave}
             onClick={handleSave}
             style={{ background: "#3D2F6B", color: "white" }}
           >
