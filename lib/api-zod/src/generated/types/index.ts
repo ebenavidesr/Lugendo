@@ -6,6 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './activity';
+export * from './activityCategory';
+export * from './activityInput';
+export * from './activityInputCategory';
+export * from './activityUpdate';
+export * from './activityUpdateCategory';
 export * from './agency';
 export * from './agencyInput';
 export * from './agencyUpdate';

@@ -26,6 +26,8 @@ tags:
     description: Traveler invitations
   - name: traveler
     description: Traveler front desk
+  - name: activities
+    description: Activity catalog
   - name: dashboard
     description: Dashboard aggregates
 paths:
@@ -521,6 +523,96 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Hotel"
+
+  # ─── ACTIVITIES ─────────────────────────────────────────────────────────────
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activities]
+      summary: List activities in the agency catalog
+      responses:
+        "200":
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: createActivity
+      tags: [activities]
+      summary: Add activity to agency catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "201":
+          description: Activity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  /activities/{activityId}:
+    get:
+      operationId: getActivity
+      tags: [activities]
+      summary: Get activity detail
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateActivity
+      tags: [activities]
+      summary: Update activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityUpdate"
+      responses:
+        "200":
+          description: Updated activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+    delete:
+      operationId: deleteActivity
+      tags: [activities]
+      summary: Delete activity
+      parameters:
+        - name: activityId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
 
   # ─── TRIPS ──────────────────────────────────────────────────────────────────
   /trips:
@@ -1219,6 +1311,92 @@ components:
           enum: [basic, standard, premium]
         description:
           type: string
+        active:
+          type: boolean
+
+    # ─── ACTIVITY ─────────────────────────────────────────────────────────────
+    ActivityCategory:
+      type: string
+      nullable: true
+      enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other, null]
+
+    Activity:
+      type: object
+      required: [id, agencyId, name, active, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        category:
+          $ref: "#/components/schemas/ActivityCategory"
+        durationHours:
+          type: ["number", "null"]
+        city:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        pricePerPerson:
+          type: ["number", "null"]
+        minPax:
+          type: ["integer", "null"]
+        maxPax:
+          type: ["integer", "null"]
+        active:
+          type: boolean
+        createdAt:
+          type: string
+
+    ActivityInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other]
+        durationHours:
+          type: number
+        city:
+          type: string
+        country:
+          type: string
+        pricePerPerson:
+          type: number
+        minPax:
+          type: integer
+        maxPax:
+          type: integer
+
+    ActivityUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+          enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other]
+        durationHours:
+          type: number
+        city:
+          type: string
+        country:
+          type: string
+        pricePerPerson:
+          type: number
+        minPax:
+          type: integer
+        maxPax:
+          type: integer
         active:
           type: boolean
 

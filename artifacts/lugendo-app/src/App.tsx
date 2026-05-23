@@ -16,6 +16,7 @@ import Hotels from "@/pages/hotels";
 import Itineraries from "@/pages/itineraries";
 import ItineraryDetail from "@/pages/itinerary-detail";
 import Team from "@/pages/team";
+import Activities from "@/pages/activities";
 import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
 
@@ -74,6 +75,9 @@ function Router() {
       </Route>
       <Route path="/hotels">
         <ProtectedBackOffice><Hotels /></ProtectedBackOffice>
+      </Route>
+      <Route path="/activities">
+        <ProtectedBackOffice><Activities /></ProtectedBackOffice>
       </Route>
       <Route path="/team">
         <ProtectedBackOffice><Team /></ProtectedBackOffice>

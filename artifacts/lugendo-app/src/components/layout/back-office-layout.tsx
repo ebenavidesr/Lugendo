@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Map, Bed, Plane, Users, LogOut } from "lucide-react";
+import { LayoutDashboard, Map, Bed, Plane, Users, LogOut, Zap } from "lucide-react";
 import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,9 +25,10 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/trips", label: "Viajes", icon: Plane },
     { href: "/itineraries", label: "Itinerarios", icon: Map },
+    { href: "/trips", label: "Viajes", icon: Plane },
     { href: "/hotels", label: "Hoteles", icon: Bed },
+    { href: "/activities", label: "Actividades", icon: Zap },
     ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/team", label: "Equipo", icon: Users }] : []),
   ];
 

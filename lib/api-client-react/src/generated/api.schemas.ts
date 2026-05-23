@@ -325,6 +325,96 @@ export interface HotelUpdate {
   active?: boolean;
 }
 
+export type ActivityCategory = typeof ActivityCategory[keyof typeof ActivityCategory] | null;
+
+
+export const ActivityCategory = {
+  cultural: 'cultural',
+  gastronomic: 'gastronomic',
+  adventure: 'adventure',
+  nature: 'nature',
+  beach: 'beach',
+  city: 'city',
+  excursion: 'excursion',
+  other: 'other',
+} as const;
+
+export interface Activity {
+  id: number;
+  agencyId: number;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  category?: ActivityCategory | null;
+  /** @nullable */
+  durationHours?: number | null;
+  /** @nullable */
+  city?: string | null;
+  /** @nullable */
+  country?: string | null;
+  /** @nullable */
+  pricePerPerson?: number | null;
+  /** @nullable */
+  minPax?: number | null;
+  /** @nullable */
+  maxPax?: number | null;
+  active: boolean;
+  createdAt: string;
+}
+
+export type ActivityInputCategory = typeof ActivityInputCategory[keyof typeof ActivityInputCategory];
+
+
+export const ActivityInputCategory = {
+  cultural: 'cultural',
+  gastronomic: 'gastronomic',
+  adventure: 'adventure',
+  nature: 'nature',
+  beach: 'beach',
+  city: 'city',
+  excursion: 'excursion',
+  other: 'other',
+} as const;
+
+export interface ActivityInput {
+  name: string;
+  description?: string;
+  category?: ActivityInputCategory;
+  durationHours?: number;
+  city?: string;
+  country?: string;
+  pricePerPerson?: number;
+  minPax?: number;
+  maxPax?: number;
+}
+
+export type ActivityUpdateCategory = typeof ActivityUpdateCategory[keyof typeof ActivityUpdateCategory];
+
+
+export const ActivityUpdateCategory = {
+  cultural: 'cultural',
+  gastronomic: 'gastronomic',
+  adventure: 'adventure',
+  nature: 'nature',
+  beach: 'beach',
+  city: 'city',
+  excursion: 'excursion',
+  other: 'other',
+} as const;
+
+export interface ActivityUpdate {
+  name?: string;
+  description?: string;
+  category?: ActivityUpdateCategory;
+  durationHours?: number;
+  city?: string;
+  country?: string;
+  pricePerPerson?: number;
+  minPax?: number;
+  maxPax?: number;
+  active?: boolean;
+}
+
 export type TripStatus = typeof TripStatus[keyof typeof TripStatus];
 
 
