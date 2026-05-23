@@ -36,36 +36,99 @@ router.post("/hotels", requireRoles("admin", "manager", "agent"), async (req, re
 });
 
 router.get("/hotels/lookup", requireAuth, async (req, res): Promise<void> => {
-  const q = (req.query.q as string ?? "").trim();
+  const qRaw = req.query.q;
+  const q = (Array.isArray(qRaw) ? String(qRaw[0] ?? "") : String(qRaw ?? "")).trim();
   if (!q) { res.status(400).json({ error: "q is required" }); return; }
 
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) {
-    const { agencyId } = req.session;
-    const rows = agencyId
-      ? await db.select().from(hotelsTable).where(eq(hotelsTable.agencyId, agencyId))
-      : [];
-    const filtered = rows
-      .filter(h => h.name.toLowerCase().includes(q.toLowerCase()) || (h.city ?? "").toLowerCase().includes(q.toLowerCase()))
-      .slice(0, 5)
-      .map(h => ({ name: h.name, city: h.city ?? "", country: h.country ?? "", address: h.address ?? "", phone: h.phone ?? "", website: h.website ?? "" }));
-    res.json(filtered);
-    return;
+  const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+
+  // ── Google Places (if key configured) ────────────────────────────────────
+  if (googleKey) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q + " hotel")}&type=lodging&key=${googleKey}`;
+      const gRes = await fetch(url);
+      const json = await gRes.json() as { results?: Array<{ name: string; formatted_address: string; international_phone_number?: string; website?: string }> };
+      const results = (json.results ?? []).slice(0, 6).map(p => {
+        const parts = p.formatted_address.split(",").map((s: string) => s.trim());
+        const country = parts[parts.length - 1] ?? "";
+        const city = parts.length >= 2 ? parts[parts.length - 2].replace(/\d+/g, "").trim() : "";
+        return { name: p.name, city, country, address: p.formatted_address, phone: p.international_phone_number ?? "", website: p.website ?? "" };
+      });
+      res.json(results);
+      return;
+    } catch (err) {
+      req.log.error({ err }, "Google Places lookup error — falling through to Nominatim");
+    }
   }
 
+  // ── OpenStreetMap Nominatim (free, no key required) ───────────────────────
   try {
-    const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q + " hotel")}&type=lodging&key=${apiKey}`;
-    const response = await fetch(url);
-    const json = await response.json() as { results?: Array<{ name: string; formatted_address: string; international_phone_number?: string; website?: string }> };
-    const results = (json.results ?? []).slice(0, 5).map((p) => {
-      const parts = p.formatted_address.split(",").map((s: string) => s.trim());
-      const country = parts[parts.length - 1] ?? "";
-      const city = parts.length >= 2 ? parts[parts.length - 2].replace(/\d+/g, "").trim() : "";
-      return { name: p.name, city, country, address: p.formatted_address, phone: p.international_phone_number ?? "", website: p.website ?? "" };
-    });
+    type NominatimResult = {
+      display_name: string;
+      address?: {
+        hotel?: string; tourism?: string; amenity?: string;
+        house_number?: string; road?: string;
+        city?: string; town?: string; village?: string; municipality?: string;
+        state?: string; country?: string;
+      };
+      extratags?: { phone?: string; website?: string; "contact:website"?: string; "contact:phone"?: string };
+    };
+
+    // Nominatim finds lodging best when "Hotel"/"Hostel"/etc. is at the START.
+    // Run two queries in parallel: one with the term prepended (if not already
+    // an accommodation keyword), one with the query as-is. Merge & deduplicate.
+    const hasLodgingWord = /\b(hotel|hostel|riad|resort|lodge|inn|motel|parador|albergue)\b/i.test(q);
+    const queries = hasLodgingWord
+      ? [q]
+      : [`Hotel ${q}`, q];
+
+    const NOM_BASE = "https://nominatim.openstreetmap.org/search";
+    const fetchNom = async (searchQ: string) => {
+      const r = await fetch(
+        `${NOM_BASE}?q=${encodeURIComponent(searchQ)}&format=json&limit=8&addressdetails=1&extratags=1`,
+        { headers: { "User-Agent": "Lugendo/1.0 travel-platform" } }
+      );
+      return r.json() as Promise<NominatimResult[]>;
+    };
+
+    const rawSets = await Promise.all(queries.map(fetchNom));
+    const allItems: NominatimResult[] = [];
+    const seenNames = new Set<string>();
+    for (const set of rawSets) {
+      for (const item of set) {
+        const key = item.display_name.split(",")[0].trim().toLowerCase();
+        if (!seenNames.has(key)) { seenNames.add(key); allItems.push(item); }
+      }
+    }
+
+    const isLodging = (r: NominatimResult) => {
+      const cls = (r as unknown as { class?: string }).class ?? "";
+      const type = (r as unknown as { type?: string }).type ?? "";
+      const addr = r.address ?? {};
+      if (addr.hotel ?? addr.tourism ?? addr.amenity) return true;
+      if (cls === "tourism" || (cls === "amenity" && type === "hotel")) return true;
+      const dl = r.display_name.toLowerCase();
+      return /hotel|hostel|riad|resort|inn|lodge|motel|parador|albergue/.test(dl) || type === "hotel";
+    };
+
+    const lodging = allItems.filter(isLodging);
+    const source = lodging.length > 0 ? lodging : allItems;
+
+    const results = source.slice(0, 6).map(r => {
+        const addr = r.address ?? {};
+        const name = addr.hotel ?? addr.tourism ?? addr.amenity ?? r.display_name.split(",")[0];
+        const city = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+        const country = addr.country ?? "";
+        const road = addr.road ? `${addr.house_number ? addr.house_number + " " : ""}${addr.road}` : "";
+        const address = [road, city, country].filter(Boolean).join(", ");
+        const phone = r.extratags?.phone ?? r.extratags?.["contact:phone"] ?? "";
+        const website = r.extratags?.website ?? r.extratags?.["contact:website"] ?? "";
+        return { name, city, country, address, phone, website };
+      });
+
     res.json(results);
   } catch (err) {
-    req.log.error({ err }, "Google Places lookup error");
+    req.log.error({ err }, "Nominatim lookup error");
     res.status(500).json({ error: "Search failed" });
   }
 });
