@@ -613,7 +613,12 @@ export const ListTripsResponseItem = zod.object({
   "acceptedCount": zod.number().optional(),
   "airline": zod.string().nullish(),
   "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListTripsResponse = zod.array(ListTripsResponseItem)
@@ -632,7 +637,11 @@ export const CreateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "flightTime": zod.string().optional(),
   "reservationCode": zod.string().optional(),
-  "flightNotes": zod.string().optional()
+  "flightNotes": zod.string().optional(),
+  "returnAirline": zod.string().optional(),
+  "returnFlightNumber": zod.string().optional(),
+  "returnFlightTime": zod.string().optional(),
+  "returnReservationCode": zod.string().optional()
 })
 
 
@@ -658,6 +667,10 @@ export const GetTripResponse = zod.object({
   "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
   "flightNotes": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -702,7 +715,11 @@ export const UpdateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "flightTime": zod.string().optional(),
   "reservationCode": zod.string().optional(),
-  "flightNotes": zod.string().optional()
+  "flightNotes": zod.string().optional(),
+  "returnAirline": zod.string().optional(),
+  "returnFlightNumber": zod.string().optional(),
+  "returnFlightTime": zod.string().optional(),
+  "returnReservationCode": zod.string().optional()
 })
 
 export const UpdateTripResponse = zod.object({
@@ -719,7 +736,12 @@ export const UpdateTripResponse = zod.object({
   "acceptedCount": zod.number().optional(),
   "airline": zod.string().nullish(),
   "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "createdAt": zod.string()
 })
 
@@ -1000,7 +1022,12 @@ export const GetDashboardSummaryResponse = zod.object({
   "acceptedCount": zod.number().optional(),
   "airline": zod.string().nullish(),
   "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "createdAt": zod.string()
 })),
   "recentInvitations": zod.array(zod.object({
@@ -1028,7 +1055,12 @@ export const GetDashboardSummaryResponse = zod.object({
   "acceptedCount": zod.number().optional(),
   "airline": zod.string().nullish(),
   "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "createdAt": zod.string()
 })).optional()
 })

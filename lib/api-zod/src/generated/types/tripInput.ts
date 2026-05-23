@@ -17,4 +17,8 @@ export interface TripInput {
   flightTime?: string;
   reservationCode?: string;
   flightNotes?: string;
+  returnAirline?: string;
+  returnFlightNumber?: string;
+  returnFlightTime?: string;
+  returnReservationCode?: string;
 }

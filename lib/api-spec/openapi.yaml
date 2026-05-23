@@ -1531,7 +1531,17 @@ components:
           type: ["string", "null"]
         flightNumber:
           type: ["string", "null"]
+        flightTime:
+          type: ["string", "null"]
         reservationCode:
+          type: ["string", "null"]
+        returnAirline:
+          type: ["string", "null"]
+        returnFlightNumber:
+          type: ["string", "null"]
+        returnFlightTime:
+          type: ["string", "null"]
+        returnReservationCode:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -1569,6 +1579,14 @@ components:
           type: ["string", "null"]
         flightNotes:
           type: ["string", "null"]
+        returnAirline:
+          type: ["string", "null"]
+        returnFlightNumber:
+          type: ["string", "null"]
+        returnFlightTime:
+          type: ["string", "null"]
+        returnReservationCode:
+          type: ["string", "null"]
         createdAt:
           type: string
         days:
@@ -1604,6 +1622,14 @@ components:
           type: string
         flightNotes:
           type: string
+        returnAirline:
+          type: string
+        returnFlightNumber:
+          type: string
+        returnFlightTime:
+          type: string
+        returnReservationCode:
+          type: string
 
     TripUpdate:
       type: object
@@ -1628,6 +1654,14 @@ components:
         reservationCode:
           type: string
         flightNotes:
+          type: string
+        returnAirline:
+          type: string
+        returnFlightNumber:
+          type: string
+        returnFlightTime:
+          type: string
+        returnReservationCode:
           type: string
 
     TripDay:

@@ -41,12 +41,17 @@ interface WizardData {
   maxCapacity: string;
   airline: string;
   flightNumber: string;
+  flightTime: string;
   reservationCode: string;
+  returnAirline: string;
+  returnFlightNumber: string;
+  returnFlightTime: string;
+  returnReservationCode: string;
   tripName: string;
   emails: string;
 }
 
-const STEP_LABELS = ["Origen", "Itinerario", "Fechas", "Vuelo", "Nombre", "Hoteles", "Invitaciones"];
+const STEP_LABELS = ["Origen", "Itinerario", "Fechas", "Vuelos", "Nombre", "Hoteles", "Invitaciones"];
 const STEP_ICONS = [MapPin, FileText, Calendar, Plane, Settings, Hotel, Mail];
 
 // ── Stepper ──────────────────────────────────────────────────────────────────
@@ -99,7 +104,8 @@ export default function TripWizard() {
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
     parsedItinerary: null, dayHotels: {},
     startDate: "", endDate: "", maxCapacity: "",
-    airline: "", flightNumber: "", reservationCode: "",
+    airline: "", flightNumber: "", flightTime: "", reservationCode: "",
+    returnAirline: "", returnFlightNumber: "", returnFlightTime: "", returnReservationCode: "",
     tripName: "", emails: "",
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -247,7 +253,12 @@ export default function TripWizard() {
           ...(data.maxCapacity ? { maxCapacity: parseInt(data.maxCapacity) } : {}),
           ...(data.airline ? { airline: data.airline } : {}),
           ...(data.flightNumber ? { flightNumber: data.flightNumber } : {}),
+          ...(data.flightTime ? { flightTime: data.flightTime } : {}),
           ...(data.reservationCode ? { reservationCode: data.reservationCode } : {}),
+          ...(data.returnAirline ? { returnAirline: data.returnAirline } : {}),
+          ...(data.returnFlightNumber ? { returnFlightNumber: data.returnFlightNumber } : {}),
+          ...(data.returnFlightTime ? { returnFlightTime: data.returnFlightTime } : {}),
+          ...(data.returnReservationCode ? { returnReservationCode: data.returnReservationCode } : {}),
         },
       });
 
@@ -487,26 +498,62 @@ export default function TripWizard() {
           </div>
         );
 
-      // ── STEP 4: Vuelo ───────────────────────────────────────────────────────
+      // ── STEP 4: Vuelos ──────────────────────────────────────────────────────
       case 4:
         return (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Información de vuelo</h2>
-              <p className="text-[13px] text-muted-foreground">Datos del vuelo de salida (opcional).</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Información de vuelos</h2>
+              <p className="text-[13px] text-muted-foreground">Datos del vuelo de ida y de vuelta (opcional).</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
-                <Input placeholder="Iberia" value={data.airline} onChange={e => set({ airline: e.target.value })} />
+
+            {/* Vuelo de ida */}
+            <div className="p-4 rounded-[12px] border border-border space-y-3" style={{ background: "white" }}>
+              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#C4793A" }}>
+                <Plane className="w-3.5 h-3.5" /> Vuelo de ida
               </div>
-              <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
-                <Input placeholder="IB1234" value={data.flightNumber} onChange={e => set({ flightNumber: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
+                  <Input placeholder="Iberia" value={data.airline} onChange={e => set({ airline: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
+                  <Input placeholder="IB1234" value={data.flightNumber} onChange={e => set({ flightNumber: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
+                  <Input type="time" value={data.flightTime} onChange={e => set({ flightTime: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
+                  <Input placeholder="ABCDEF" value={data.reservationCode} onChange={e => set({ reservationCode: e.target.value })} />
+                </div>
               </div>
-              <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
-                <Input placeholder="ABCDEF" value={data.reservationCode} onChange={e => set({ reservationCode: e.target.value })} />
+            </div>
+
+            {/* Vuelo de vuelta */}
+            <div className="p-4 rounded-[12px] border border-border space-y-3" style={{ background: "white" }}>
+              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#3D2F6B" }}>
+                <Plane className="w-3.5 h-3.5 rotate-180" /> Vuelo de vuelta
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
+                  <Input placeholder="Iberia" value={data.returnAirline} onChange={e => set({ returnAirline: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
+                  <Input placeholder="IB5678" value={data.returnFlightNumber} onChange={e => set({ returnFlightNumber: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
+                  <Input type="time" value={data.returnFlightTime} onChange={e => set({ returnFlightTime: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
+                  <Input placeholder="FEDCBA" value={data.returnReservationCode} onChange={e => set({ returnReservationCode: e.target.value })} />
+                </div>
               </div>
             </div>
           </div>
@@ -538,8 +585,12 @@ export default function TripWizard() {
                 <span className="text-muted-foreground">Capacidad</span>
                 <span style={{ color: "#2D1F0E" }}>{data.maxCapacity ? `${data.maxCapacity} viajeros` : "—"}</span>
                 {data.airline && <>
-                  <span className="text-muted-foreground">Vuelo</span>
-                  <span style={{ color: "#2D1F0E" }}>{data.airline} {data.flightNumber}</span>
+                  <span className="text-muted-foreground">Vuelo ida</span>
+                  <span style={{ color: "#2D1F0E" }}>{data.airline} {data.flightNumber}{data.flightTime ? ` · ${data.flightTime}` : ""}</span>
+                </>}
+                {data.returnAirline && <>
+                  <span className="text-muted-foreground">Vuelo vuelta</span>
+                  <span style={{ color: "#2D1F0E" }}>{data.returnAirline} {data.returnFlightNumber}{data.returnFlightTime ? ` · ${data.returnFlightTime}` : ""}</span>
                 </>}
               </div>
             </div>
@@ -574,13 +625,14 @@ export default function TripWizard() {
                       </div>
                     </div>
                     <div className="w-44">
-                      <Select value={data.dayHotels[day.dayNumber] ?? ""}
-                        onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v } })}>
+                      <Select
+                        value={data.dayHotels[day.dayNumber] ?? "none"}
+                        onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}>
                         <SelectTrigger className="text-[12px] h-8">
                           <SelectValue placeholder="Sin hotel" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin hotel</SelectItem>
+                          <SelectItem value="none">Sin hotel</SelectItem>
                           {hotels?.map(h => (
                             <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
                           ))}

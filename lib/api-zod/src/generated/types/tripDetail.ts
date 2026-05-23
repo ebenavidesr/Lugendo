@@ -33,6 +33,14 @@ export interface TripDetail {
   reservationCode?: string | null;
   /** @nullable */
   flightNotes?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
   createdAt: string;
   days: TripDay[];
   invitations: Invitation[];

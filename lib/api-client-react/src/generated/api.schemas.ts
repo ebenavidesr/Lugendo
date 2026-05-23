@@ -447,7 +447,17 @@ export interface Trip {
   /** @nullable */
   flightNumber?: string | null;
   /** @nullable */
+  flightTime?: string | null;
+  /** @nullable */
   reservationCode?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
   createdAt: string;
 }
 
@@ -529,6 +539,14 @@ export interface TripDetail {
   reservationCode?: string | null;
   /** @nullable */
   flightNotes?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
   createdAt: string;
   days: TripDay[];
   invitations: Invitation[];
@@ -545,6 +563,10 @@ export interface TripInput {
   flightTime?: string;
   reservationCode?: string;
   flightNotes?: string;
+  returnAirline?: string;
+  returnFlightNumber?: string;
+  returnFlightTime?: string;
+  returnReservationCode?: string;
 }
 
 export type TripUpdateStatus = typeof TripUpdateStatus[keyof typeof TripUpdateStatus];
@@ -569,6 +591,10 @@ export interface TripUpdate {
   flightTime?: string;
   reservationCode?: string;
   flightNotes?: string;
+  returnAirline?: string;
+  returnFlightNumber?: string;
+  returnFlightTime?: string;
+  returnReservationCode?: string;
 }
 
 export interface InvitationInput {
