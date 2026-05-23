@@ -808,7 +808,7 @@ export const AcceptInvitationResponse = zod.object({
 
 
 /**
- * @summary Get all trips for the logged-in traveler
+ * @summary Get all trips for the logged-in traveler (agency + personal)
  */
 export const ListMyTripsResponseItem = zod.object({
   "id": zod.number(),
@@ -816,12 +816,23 @@ export const ListMyTripsResponseItem = zod.object({
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
-  "agencyName": zod.string(),
+  "isPersonal": zod.boolean(),
+  "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
   "createdAt": zod.string()
 })
 export const ListMyTripsResponse = zod.array(ListMyTripsResponseItem)
+
+
+/**
+ * @summary Create a personal trip for the logged-in traveler
+ */
+export const CreateMyTripBody = zod.object({
+  "name": zod.string(),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish()
+})
 
 
 /**
@@ -837,7 +848,8 @@ export const GetMyTripResponse = zod.object({
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
-  "agencyName": zod.string(),
+  "isPersonal": zod.boolean(),
+  "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "airline": zod.string().nullish(),
   "flightNumber": zod.string().nullish(),

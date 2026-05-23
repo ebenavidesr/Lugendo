@@ -8,7 +8,8 @@ import { usersTable } from "./users";
 
 export const tripsTable = pgTable("trips", {
   id: serial("id").primaryKey(),
-  agencyId: integer("agency_id").notNull().references(() => agenciesTable.id),
+  agencyId: integer("agency_id").references(() => agenciesTable.id),
+  ownerId: integer("owner_id").references(() => usersTable.id),
   itineraryId: integer("itinerary_id").references(() => itinerariesTable.id),
   name: text("name").notNull(),
   status: text("status", { enum: ["draft", "scheduled", "active", "finished", "cancelled"] }).notNull().default("draft"),

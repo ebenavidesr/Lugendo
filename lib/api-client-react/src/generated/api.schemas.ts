@@ -619,7 +619,9 @@ export interface TravelerTrip {
   startDate: string;
   /** @nullable */
   endDate?: string | null;
-  agencyName: string;
+  isPersonal: boolean;
+  /** @nullable */
+  agencyName?: string | null;
   /** @nullable */
   agencyLogoUrl?: string | null;
   countries?: string[];
@@ -644,7 +646,9 @@ export interface TravelerTripDetail {
   startDate: string;
   /** @nullable */
   endDate?: string | null;
-  agencyName: string;
+  isPersonal: boolean;
+  /** @nullable */
+  agencyName?: string | null;
   /** @nullable */
   agencyLogoUrl?: string | null;
   /** @nullable */
@@ -659,6 +663,13 @@ export interface TravelerTripDetail {
   flightNotes?: string | null;
   createdAt: string;
   days: TripDay[];
+}
+
+export interface CreatePersonalTripInput {
+  name: string;
+  startDate: string;
+  /** @nullable */
+  endDate?: string | null;
 }
 
 export interface TripNote {

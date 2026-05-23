@@ -17,6 +17,7 @@ export * from './agencyInput';
 export * from './agencyUpdate';
 export * from './authUser';
 export * from './authUserRole';
+export * from './createPersonalTripInput';
 export * from './dashboardSummary';
 export * from './dashboardSummaryTripsByStatus';
 export * from './dayActivity';

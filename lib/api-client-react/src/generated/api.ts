@@ -27,6 +27,7 @@ import type {
   AgencyInput,
   AgencyUpdate,
   AuthUser,
+  CreatePersonalTripInput,
   DashboardSummary,
   DayActivity,
   DayActivityInput,
@@ -2954,7 +2955,7 @@ export const getListMyTripsUrl = () => {
 }
 
 /**
- * @summary Get all trips for the logged-in traveler
+ * @summary Get all trips for the logged-in traveler (agency + personal)
  */
 export const listMyTrips = async ( options?: RequestInit): Promise<TravelerTrip[]> => {
 
@@ -3001,7 +3002,7 @@ export type ListMyTripsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get all trips for the logged-in traveler
+ * @summary Get all trips for the logged-in traveler (agency + personal)
  */
 
 export function useListMyTrips<TData = Awaited<ReturnType<typeof listMyTrips>>, TError = ErrorType<unknown>>(
@@ -3021,6 +3022,77 @@ export function useListMyTrips<TData = Awaited<ReturnType<typeof listMyTrips>>, 
 
 
 
+
+export const getCreateMyTripUrl = () => {
+
+
+
+
+  return `/api/me/trips`
+}
+
+/**
+ * @summary Create a personal trip for the logged-in traveler
+ */
+export const createMyTrip = async (createPersonalTripInput: CreatePersonalTripInput, options?: RequestInit): Promise<TravelerTrip> => {
+
+  return customFetch<TravelerTrip>(getCreateMyTripUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createPersonalTripInput,)
+  }
+);}
+
+
+
+
+export const getCreateMyTripMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyTrip>>, TError,{data: BodyType<CreatePersonalTripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMyTrip>>, TError,{data: BodyType<CreatePersonalTripInput>}, TContext> => {
+
+const mutationKey = ['createMyTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMyTrip>>, {data: BodyType<CreatePersonalTripInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMyTrip(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMyTripMutationResult = NonNullable<Awaited<ReturnType<typeof createMyTrip>>>
+    export type CreateMyTripMutationBody = BodyType<CreatePersonalTripInput>
+    export type CreateMyTripMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a personal trip for the logged-in traveler
+ */
+export const useCreateMyTrip = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyTrip>>, TError,{data: BodyType<CreatePersonalTripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMyTrip>>,
+        TError,
+        {data: BodyType<CreatePersonalTripInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMyTripMutationOptions(options));
+    }
 
 export const getGetMyTripUrl = (tripId: number,) => {
 

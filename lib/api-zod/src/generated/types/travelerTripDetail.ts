@@ -15,7 +15,9 @@ export interface TravelerTripDetail {
   startDate: string;
   /** @nullable */
   endDate?: string | null;
-  agencyName: string;
+  isPersonal: boolean;
+  /** @nullable */
+  agencyName?: string | null;
   /** @nullable */
   agencyLogoUrl?: string | null;
   /** @nullable */

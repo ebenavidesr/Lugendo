@@ -63,7 +63,8 @@ export default function TravelerTrip() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{trip.agencyName}</p>
+            {trip.agencyName && <p className="text-sm text-muted-foreground mt-0.5">{trip.agencyName}</p>}
+          {trip.isPersonal && <p className="text-sm mt-0.5" style={{ color: "#C4793A" }}>Viaje personal</p>}
           </div>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium shrink-0"
             style={{ background: s.bg, color: s.color }}>{s.label}</span>

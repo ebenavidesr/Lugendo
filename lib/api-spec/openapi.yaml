@@ -779,7 +779,7 @@ paths:
     get:
       operationId: listMyTrips
       tags: [traveler]
-      summary: Get all trips for the logged-in traveler
+      summary: Get all trips for the logged-in traveler (agency + personal)
       responses:
         "200":
           description: List of traveler trips
@@ -789,6 +789,25 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TravelerTrip"
+    post:
+      operationId: createMyTrip
+      tags: [traveler]
+      summary: Create a personal trip for the logged-in traveler
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePersonalTripInput"
+      responses:
+        "201":
+          description: Trip created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelerTrip"
+        "400":
+          description: Validation error
 
   /me/trips/{tripId}:
     get:
@@ -1726,7 +1745,7 @@ components:
     # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────
     TravelerTrip:
       type: object
-      required: [id, name, status, startDate, agencyName, createdAt]
+      required: [id, name, status, startDate, isPersonal, createdAt]
       properties:
         id:
           type: integer
@@ -1739,8 +1758,10 @@ components:
           type: string
         endDate:
           type: ["string", "null"]
+        isPersonal:
+          type: boolean
         agencyName:
-          type: string
+          type: ["string", "null"]
         agencyLogoUrl:
           type: ["string", "null"]
         countries:
@@ -1752,7 +1773,7 @@ components:
 
     TravelerTripDetail:
       type: object
-      required: [id, name, status, startDate, agencyName, createdAt, days]
+      required: [id, name, status, startDate, isPersonal, createdAt, days]
       properties:
         id:
           type: integer
@@ -1765,8 +1786,10 @@ components:
           type: string
         endDate:
           type: ["string", "null"]
+        isPersonal:
+          type: boolean
         agencyName:
-          type: string
+          type: ["string", "null"]
         agencyLogoUrl:
           type: ["string", "null"]
         airline:
@@ -1785,6 +1808,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TripDay"
+
+    CreatePersonalTripInput:
+      type: object
+      required: [name, startDate]
+      properties:
+        name:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
 
     TripNote:
       type: object
