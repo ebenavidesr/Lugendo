@@ -1,30 +1,71 @@
-import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLogin, useRegister } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { LugendoCompass, LugendoWordmark } from "@/components/logo";
+import { LugendoCompass } from "@/components/logo";
+import { HelpCircle, Check, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "La contraseña es obligatoria"),
 });
 
-const registerSchema = z.object({
-  firstName: z.string().min(1, "El nombre es obligatorio"),
-  lastName: z.string().min(1, "Los apellidos son obligatorios"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(8, "Mínimo 8 caracteres"),
-  inviteCode: z.string().optional(),
-});
+const PASSWORD_RULES = [
+  { label: "Mínimo 8 caracteres",        test: (p: string) => p.length >= 8 },
+  { label: "Al menos una mayúscula",      test: (p: string) => /[A-Z]/.test(p) },
+  { label: "Al menos una minúscula",      test: (p: string) => /[a-z]/.test(p) },
+  { label: "Al menos un número",          test: (p: string) => /[0-9]/.test(p) },
+  { label: "Al menos un carácter especial (!@#$…)", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+const strongPassword = z
+  .string()
+  .min(8, "Mínimo 8 caracteres")
+  .regex(/[A-Z]/, "Debe contener al menos una mayúscula")
+  .regex(/[a-z]/, "Debe contener al menos una minúscula")
+  .regex(/[0-9]/, "Debe contener al menos un número")
+  .regex(/[^A-Za-z0-9]/, "Debe contener al menos un carácter especial");
+
+const registerSchema = z
+  .object({
+    firstName:       z.string().min(1, "El nombre es obligatorio"),
+    lastName:        z.string().min(1, "Los apellidos son obligatorios"),
+    email:           z.string().email("Email inválido"),
+    password:        strongPassword,
+    confirmPassword: z.string().min(1, "Confirma tu contraseña"),
+    inviteCode:      z.string().optional(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+function PasswordRequirements({ password }: { password: string }) {
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {PASSWORD_RULES.map((rule) => {
+        const ok = rule.test(password);
+        return (
+          <li key={rule.label} className="flex items-center gap-2">
+            {ok
+              ? <Check className="w-3.5 h-3.5 shrink-0 text-green-600" />
+              : <X    className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60" />}
+            <span className={ok ? "text-green-700" : "text-muted-foreground"}>{rule.label}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export function Login() {
   const [location, setLocation] = useLocation();
@@ -42,8 +83,10 @@ export function Login() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", password: "", inviteCode: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", password: "", confirmPassword: "", inviteCode: "" },
   });
+
+  const watchedPassword = registerForm.watch("password");
 
   const onLoginSubmit = (values: z.infer<typeof loginSchema>) => {
     loginMutation.mutate(
@@ -51,26 +94,26 @@ export function Login() {
       {
         onSuccess: (user) => {
           queryClient.setQueryData(["/api/auth/me"], user);
-          toast({ title: "Welcome back", description: "Successfully logged in." });
+          toast({ title: "Bienvenido", description: "Sesión iniciada correctamente." });
         },
         onError: () => {
-          toast({ variant: "destructive", title: "Login failed", description: "Invalid credentials." });
+          toast({ variant: "destructive", title: "Error al iniciar sesión", description: "Credenciales incorrectas." });
         },
       }
     );
   };
 
   const onRegisterSubmit = (values: z.infer<typeof registerSchema>) => {
-    const { firstName, lastName, ...rest } = values;
+    const { firstName, lastName, confirmPassword: _confirm, ...rest } = values;
     registerMutation.mutate(
       { data: { ...rest, name: `${firstName.trim()} ${lastName.trim()}` } },
       {
         onSuccess: (user) => {
           queryClient.setQueryData(["/api/auth/me"], user);
-          toast({ title: "Account created", description: "Welcome to Lugendo!" });
+          toast({ title: "Cuenta creada", description: "¡Bienvenido a Lugendo!" });
         },
         onError: () => {
-          toast({ variant: "destructive", title: "Registration failed", description: "Could not create account." });
+          toast({ variant: "destructive", title: "Error al registrarse", description: "No se pudo crear la cuenta." });
         },
       }
     );
@@ -94,18 +137,19 @@ export function Login() {
         <Card className="shadow-xl border-border/50">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-serif">
-              {isRegister ? "Create an account" : "Welcome back"}
+              {isRegister ? "Crear cuenta" : "Bienvenido"}
             </CardTitle>
             <CardDescription>
-              {isRegister 
-                ? "Enter your details to join your travel agency." 
-                : "Enter your credentials to access your workspace."}
+              {isRegister
+                ? "Introduce tus datos para unirte a tu agencia."
+                : "Introduce tus credenciales para acceder."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isRegister ? (
               <Form {...registerForm}>
                 <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                  {/* Nombre + Apellidos */}
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
                       control={registerForm.control}
@@ -134,6 +178,8 @@ export function Login() {
                       )}
                     />
                   </div>
+
+                  {/* Email */}
                   <FormField
                     control={registerForm.control}
                     name="email"
@@ -147,12 +193,31 @@ export function Login() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Contraseña con botón "?" */}
                   <FormField
                     control={registerForm.control}
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Contraseña</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Contraseña</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                aria-label="Requisitos de contraseña"
+                              >
+                                <HelpCircle className="w-4 h-4" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent side="right" align="start" className="w-72 p-4">
+                              <p className="text-sm font-medium mb-3">Requisitos de contraseña</p>
+                              <PasswordRequirements password={watchedPassword} />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <FormControl>
                           <Input type="password" autoComplete="new-password" {...field} data-testid="input-register-password" />
                         </FormControl>
@@ -160,12 +225,32 @@ export function Login() {
                       </FormItem>
                     )}
                   />
+
+                  {/* Confirmar contraseña */}
+                  <FormField
+                    control={registerForm.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirmar contraseña</FormLabel>
+                        <FormControl>
+                          <Input type="password" autoComplete="new-password" {...field} data-testid="input-register-confirm-password" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Código de invitación */}
                   <FormField
                     control={registerForm.control}
                     name="inviteCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Código de invitación <span className="text-muted-foreground font-normal">(opcional)</span></FormLabel>
+                        <FormLabel>
+                          Código de invitación{" "}
+                          <span className="text-muted-foreground font-normal">(opcional)</span>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="ABCDEF" autoComplete="off" {...field} data-testid="input-register-invite" />
                         </FormControl>
@@ -173,8 +258,14 @@ export function Login() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full mt-6" disabled={registerMutation.isPending} data-testid="button-register-submit">
-                    {registerMutation.isPending ? "Creating account..." : "Sign Up"}
+
+                  <Button
+                    type="submit"
+                    className="w-full mt-6"
+                    disabled={registerMutation.isPending}
+                    data-testid="button-register-submit"
+                  >
+                    {registerMutation.isPending ? "Creando cuenta…" : "Crear cuenta"}
                   </Button>
                 </form>
               </Form>
@@ -207,7 +298,12 @@ export function Login() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full mt-6" disabled={loginMutation.isPending} data-testid="button-login-submit">
+                  <Button
+                    type="submit"
+                    className="w-full mt-6"
+                    disabled={loginMutation.isPending}
+                    data-testid="button-login-submit"
+                  >
                     {loginMutation.isPending ? "Iniciando sesión…" : "Iniciar sesión"}
                   </Button>
                 </form>
@@ -216,10 +312,10 @@ export function Login() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">
-                {isRegister ? "Already have an account? " : "Don't have an account? "}
+                {isRegister ? "¿Ya tienes cuenta? " : "¿No tienes cuenta? "}
               </span>
               <Link href={isRegister ? "/login" : "/register"} className="text-primary font-medium hover:underline">
-                {isRegister ? "Sign in" : "Sign up"}
+                {isRegister ? "Inicia sesión" : "Regístrate"}
               </Link>
             </div>
           </CardContent>
