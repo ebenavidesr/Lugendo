@@ -109,9 +109,9 @@ export function Login() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>Nombre completo</FormLabel>
                         <FormControl>
-                          <Input placeholder="John Doe" {...field} data-testid="input-register-name" />
+                          <Input placeholder="Ana García" autoComplete="name" autoFocus {...field} data-testid="input-register-name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -124,7 +124,7 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="name@example.com" type="email" {...field} data-testid="input-register-email" />
+                          <Input placeholder="nombre@email.com" type="email" autoComplete="email" {...field} data-testid="input-register-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -135,9 +135,9 @@ export function Login() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel>Contraseña</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} data-testid="input-register-password" />
+                          <Input type="password" autoComplete="new-password" {...field} data-testid="input-register-password" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -148,9 +148,9 @@ export function Login() {
                     name="inviteCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Invite Code (Optional)</FormLabel>
+                        <FormLabel>Código de invitación <span className="text-muted-foreground font-normal">(opcional)</span></FormLabel>
                         <FormControl>
-                          <Input placeholder="ABCDEF" {...field} data-testid="input-register-invite" />
+                          <Input placeholder="ABCDEF" autoComplete="off" {...field} data-testid="input-register-invite" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -171,7 +171,7 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="name@example.com" type="email" {...field} data-testid="input-login-email" />
+                          <Input placeholder="nombre@email.com" type="email" autoComplete="email" autoFocus {...field} data-testid="input-login-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -182,18 +182,16 @@ export function Login() {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center justify-between">
-                          <FormLabel>Password</FormLabel>
-                        </div>
+                        <FormLabel>Contraseña</FormLabel>
                         <FormControl>
-                          <Input type="password" {...field} data-testid="input-login-password" />
+                          <Input type="password" autoComplete="current-password" {...field} data-testid="input-login-password" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <Button type="submit" className="w-full mt-6" disabled={loginMutation.isPending} data-testid="button-login-submit">
-                    {loginMutation.isPending ? "Signing in..." : "Sign In"}
+                    {loginMutation.isPending ? "Iniciando sesión…" : "Iniciar sesión"}
                   </Button>
                 </form>
               </Form>
