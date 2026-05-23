@@ -141,7 +141,7 @@ export function Login() {
             </CardTitle>
             <CardDescription>
               {isRegister
-                ? "Introduce tus datos para unirte a tu agencia."
+                ? "Introduce tus datos para crear tu cuenta y empezar a programar tus viajes o unirte a un viaje de agencia."
                 : "Introduce tus credenciales para acceder."}
             </CardDescription>
           </CardHeader>
