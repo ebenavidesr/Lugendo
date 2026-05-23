@@ -35,7 +35,7 @@ router.get("/itineraries", requireAuth, async (req, res): Promise<void> => {
 });
 
 // ─── PARSE PDF (must come before /:itineraryId to avoid routing conflicts) ───
-router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
   const { fileBase64, fileName } = req.body as { fileBase64: string; fileName: string };
   if (!fileBase64 || !fileName) {
     res.status(400).json({ error: "fileBase64 and fileName are required" });
