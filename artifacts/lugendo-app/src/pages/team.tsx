@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Mail, Pencil, UserPlus, KeyRound, Search } from "lucide-react";
+import { Plus, Mail, Pencil, UserPlus, KeyRound, Search, Check, X, HelpCircle } from "lucide-react";
 import {
   useListUsers, useCreateUser, useUpdateUser,
   useSendInvitations, useListTrips,
@@ -9,6 +9,7 @@ import type { User, UserRole } from "@workspace/api-client-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,38 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+
+// ── Password rules (same as traveler register) ────────────────────────────────
+
+const PASSWORD_RULES = [
+  { label: "Mínimo 8 caracteres",                    test: (p: string) => p.length >= 8 },
+  { label: "Al menos una mayúscula",                  test: (p: string) => /[A-Z]/.test(p) },
+  { label: "Al menos una minúscula",                  test: (p: string) => /[a-z]/.test(p) },
+  { label: "Al menos un número",                      test: (p: string) => /[0-9]/.test(p) },
+  { label: "Al menos un carácter especial (!@#$…)",   test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function isStrongPassword(p: string) {
+  return PASSWORD_RULES.every(r => r.test(p));
+}
+
+function PasswordRequirements({ password }: { password: string }) {
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {PASSWORD_RULES.map((rule) => {
+        const ok = rule.test(password);
+        return (
+          <li key={rule.label} className="flex items-center gap-2">
+            {ok
+              ? <Check className="w-3.5 h-3.5 shrink-0 text-green-600" />
+              : <X     className="w-3.5 h-3.5 shrink-0 text-muted-foreground/60" />}
+            <span className={ok ? "text-green-700" : "text-muted-foreground"}>{rule.label}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -53,21 +86,38 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const qc = useQueryClient();
   const createUser = useCreateUser();
 
-  const [form, setForm] = useState({ name: "", email: "", role: "agent" as UserRole, password: "" });
+  const empty = { name: "", email: "", role: "agent" as UserRole, password: "", confirm: "" };
+  const [form, setForm] = useState(empty);
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
+  const passwordStrong = isStrongPassword(form.password);
+  const passwordsMatch = form.password === form.confirm;
+
+  const canSubmit =
+    form.name.trim() &&
+    form.email.trim() &&
+    form.role &&
+    passwordStrong &&
+    passwordsMatch &&
+    !createUser.isPending;
+
   const handleSubmit = () => {
-    if (!form.name.trim() || !form.email.trim() || !form.role) {
-      toast({ variant: "destructive", title: "Nombre, email y rol son obligatorios" });
-      return;
-    }
+    const errs: typeof errors = {};
+    if (!form.name.trim()) errs.name = "El nombre es obligatorio";
+    if (!form.email.trim()) errs.email = "El email es obligatorio";
+    if (!passwordStrong) errs.password = "La contraseña no cumple los requisitos";
+    if (!passwordsMatch) errs.confirm = "Las contraseñas no coinciden";
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setErrors({});
+
     createUser.mutate(
-      { data: { name: form.name.trim(), email: form.email.trim(), role: form.role, ...(form.password ? { password: form.password } : {}) } },
+      { data: { name: form.name.trim(), email: form.email.trim(), role: form.role, password: form.password } },
       {
         onSuccess: (u) => {
           qc.invalidateQueries({ queryKey: ["/api/users"] });
           toast({ title: `Usuario "${u.name}" creado correctamente` });
-          setForm({ name: "", email: "", role: "agent", password: "" });
+          setForm(empty);
           onClose();
         },
         onError: () => toast({ variant: "destructive", title: "Error al crear el usuario. El email puede estar en uso." }),
@@ -75,8 +125,10 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     );
   };
 
+  const handleClose = () => { setForm(empty); setErrors({}); onClose(); };
+
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={v => !v && handleClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="font-serif flex items-center gap-2">
@@ -85,17 +137,32 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-1">
+        <div className="space-y-3 py-1">
+          {/* Name */}
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo *</label>
+            <Input
+              placeholder="Ana García"
+              value={form.name}
+              onChange={e => { set({ name: e.target.value }); setErrors(er => ({ ...er, name: undefined })); }}
+              autoFocus
+            />
+            {errors.name && <p className="text-[11px] text-destructive mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Email + Role */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre completo *</label>
-              <Input placeholder="Ana García" value={form.name} onChange={e => set({ name: e.target.value })} autoFocus />
-            </div>
-            <div className="col-span-2">
+            <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
-              <Input type="email" placeholder="ana@agencia.com" value={form.email} onChange={e => set({ email: e.target.value })} />
+              <Input
+                type="email"
+                placeholder="ana@agencia.com"
+                value={form.email}
+                onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
+              />
+              {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
             </div>
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Rol *</label>
               <Select value={form.role} onValueChange={v => set({ role: v as UserRole })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -106,30 +173,71 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
-                Contraseña <span className="font-normal text-muted-foreground">(opcional)</span>
-              </label>
-              <Input
-                type="password"
-                placeholder="Autogenerada si se deja vacío"
-                value={form.password}
-                onChange={e => set({ password: e.target.value })}
-              />
-            </div>
           </div>
-          {!form.password && (
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-              <KeyRound className="w-3 h-3" />
-              Si no introduces contraseña, se generará una automáticamente. Compártela con el usuario.
-            </p>
-          )}
+
+          {/* Password */}
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <label className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>Contraseña *</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className="text-muted-foreground hover:text-foreground">
+                    <HelpCircle className="w-3.5 h-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" side="right">
+                  <p className="text-[12px] font-medium mb-2" style={{ color: "#2D1F0E" }}>Requisitos</p>
+                  <PasswordRequirements password={form.password} />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={e => { set({ password: e.target.value }); setErrors(er => ({ ...er, password: undefined })); }}
+            />
+            {errors.password && <p className="text-[11px] text-destructive mt-1">{errors.password}</p>}
+            {/* Live requirements bar */}
+            {form.password && (
+              <div className="mt-2 flex gap-1">
+                {PASSWORD_RULES.map(r => (
+                  <div
+                    key={r.label}
+                    className="flex-1 h-1 rounded-full transition-colors"
+                    style={{ background: r.test(form.password) ? "#C4793A" : "#ECD5B8" }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Confirm password */}
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Repetir contraseña *</label>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••••••"
+              value={form.confirm}
+              onChange={e => { set({ confirm: e.target.value }); setErrors(er => ({ ...er, confirm: undefined })); }}
+            />
+            {form.confirm && !passwordsMatch && (
+              <p className="text-[11px] text-destructive mt-1">Las contraseñas no coinciden</p>
+            )}
+            {form.confirm && passwordsMatch && form.confirm.length > 0 && (
+              <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: "#2E7D5A" }}>
+                <Check className="w-3 h-3" /> Las contraseñas coinciden
+              </p>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="pt-2">
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="outline" onClick={handleClose}>Cancelar</Button>
           <Button
-            disabled={createUser.isPending || !form.name.trim() || !form.email.trim()}
+            disabled={!canSubmit}
             onClick={handleSubmit}
             style={{ background: "#C4793A", color: "#FAF2EB" }}
           >
