@@ -121,6 +121,7 @@ export default function TripWizard() {
   const [inlineHotelDay, setInlineHotelDay] = useState<number | null>(null);
   const [hotelSearchQ, setHotelSearchQ] = useState("");
   const [hotelLookupLoading, setHotelLookupLoading] = useState(false);
+  const [hotelSearchDone, setHotelSearchDone] = useState(false);
   type HotelSuggestion = { name: string; city: string; country: string; address: string; phone: string; website: string };
   const [hotelLookupResults, setHotelLookupResults] = useState<HotelSuggestion[]>([]);
   const [newHotelForm, setNewHotelForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
@@ -214,11 +215,19 @@ export default function TripWizard() {
   const handleHotelLookup = async () => {
     if (!hotelSearchQ.trim()) return;
     setHotelLookupLoading(true);
+    setHotelSearchDone(false);
     try {
       const res = await fetch(`/api/hotels/lookup?q=${encodeURIComponent(hotelSearchQ)}`, { credentials: "include" });
-      if (res.ok) setHotelLookupResults(await res.json());
+      if (res.ok) {
+        setHotelLookupResults(await res.json());
+      } else {
+        toast({ variant: "destructive", title: "Error al buscar hoteles" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión al buscar hoteles" });
     } finally {
       setHotelLookupLoading(false);
+      setHotelSearchDone(true);
     }
   };
 
@@ -825,9 +834,14 @@ export default function TripWizard() {
                               {hotelLookupLoading ? "Buscando…" : "Buscar"}
                             </Button>
                           </div>
+                          {hotelSearchDone && hotelLookupResults.length === 0 && (
+                            <div className="text-[12px] py-1.5 px-2 rounded-[8px] text-center" style={{ background: "#FFF3E0", color: "#8B4420" }}>
+                              Sin resultados — rellena el formulario manualmente o prueba otro nombre
+                            </div>
+                          )}
                           {hotelLookupResults.length > 0 && (
                             <div className="space-y-1">
-                              <div className="text-[11px]" style={{ color: "#9C7A58" }}>Selecciona para pre-rellenar:</div>
+                              <div className="text-[11px]" style={{ color: "#9C7A58" }}>Selecciona para pre-rellenar el formulario:</div>
                               {hotelLookupResults.map((r, i) => (
                                 <button key={i}
                                   onClick={() => setNewHotelForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website })}
@@ -873,25 +887,42 @@ export default function TripWizard() {
                             onChange={e => setActivitySearchQ(e.target.value)}
                             className="h-7 text-[12px]"
                           />
-                          <div className="max-h-36 overflow-y-auto space-y-0.5">
-                            {(activities ?? [])
+                          {(() => {
+                            const catalogue = activities ?? [];
+                            const alreadyAdded = data.dayActivities[day.dayNumber] ?? [];
+                            const filtered = catalogue
                               .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
-                              .filter(a => !(data.dayActivities[day.dayNumber] ?? []).includes(a.id))
-                              .slice(0, 12)
-                              .map(a => (
-                                <button key={a.id}
-                                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
-                                  style={{ color: "#2D1F0E" }}
-                                  onClick={() => {
-                                    set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...(data.dayActivities[day.dayNumber] ?? []), a.id] } });
-                                  }}>
-                                  {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
-                                </button>
-                              ))}
-                            {(activities ?? []).filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase())).length === 0 && (
-                              <div className="text-[11px] py-2 text-center" style={{ color: "#9C7A58" }}>Sin resultados</div>
-                            )}
-                          </div>
+                              .filter(a => !alreadyAdded.includes(a.id))
+                              .slice(0, 12);
+                            if (catalogue.length === 0) {
+                              return (
+                                <div className="text-[12px] py-2 text-center rounded-[8px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                                  Tu catálogo está vacío — crea una nueva actividad abajo
+                                </div>
+                              );
+                            }
+                            if (filtered.length === 0) {
+                              return (
+                                <div className="text-[11px] py-2 text-center" style={{ color: "#9C7A58" }}>
+                                  {activitySearchQ ? `Sin coincidencias para "${activitySearchQ}"` : "Todas las actividades ya están añadidas"}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="max-h-36 overflow-y-auto space-y-0.5">
+                                {filtered.map(a => (
+                                  <button key={a.id}
+                                    className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
+                                    style={{ color: "#2D1F0E" }}
+                                    onClick={() => {
+                                      set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, a.id] } });
+                                    }}>
+                                    {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
+                                  </button>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           {!newActivityMode ? (
                             <button className="w-full text-[11px] font-medium py-1 rounded-[6px] flex items-center justify-center gap-1 transition-colors"
                               style={{ color: "#3D2F6B", background: "#EDE9F8" }}
