@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -15,7 +15,10 @@ import {
   useListDayActivities,
   useAddDayActivity,
   useRemoveDayActivity,
+  useParseItineraryPdf,
+  useUpdateItinerary,
 } from "@workspace/api-client-react";
+import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ItineraryDay, Activity } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -289,11 +292,193 @@ function EditDayDialog({
   );
 }
 
+// ── PDF Fill Dialog ───────────────────────────────────────────────────────────
+function PdfFillDialog({
+  itineraryId,
+  existingDaysCount,
+  onClose,
+}: {
+  itineraryId: number;
+  existingDaysCount: number;
+  onClose: () => void;
+}) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const parsePdf = useParseItineraryPdf();
+  const createDay = useCreateItineraryDay();
+  const updateItinerary = useUpdateItinerary();
+
+  const [file, setFile] = useState<File | null>(null);
+  const [parsed, setParsed] = useState<ParsedItinerary | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [updateMeta, setUpdateMeta] = useState(true);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) { setFile(f); setParsed(null); }
+  };
+
+  const handleParse = async () => {
+    if (!file) return;
+    setIsParsing(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const base64 = (e.target?.result as string).split(",")[1];
+      try {
+        const result = await parsePdf.mutateAsync({ data: { fileBase64: base64, fileName: file.name } });
+        setParsed(result);
+        toast({ title: `Extraídos ${result.numDays} días del archivo` });
+      } catch {
+        toast({ variant: "destructive", title: "No se pudo analizar el archivo. Prueba con un PDF de texto o .txt" });
+      } finally {
+        setIsParsing(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImport = async () => {
+    if (!parsed) return;
+    setIsImporting(true);
+    try {
+      if (updateMeta) {
+        await updateItinerary.mutateAsync({
+          itineraryId,
+          data: {
+            name: parsed.name,
+            numDays: parsed.numDays,
+            ...(parsed.countries?.length ? { countries: parsed.countries } : {}),
+            ...(parsed.description ? { description: parsed.description } : {}),
+          },
+        });
+      }
+      for (const day of parsed.days) {
+        await createDay.mutateAsync({
+          itineraryId,
+          data: {
+            dayNumber: day.dayNumber,
+            ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
+            ...(day.cityTo ? { cityTo: day.cityTo } : {}),
+            ...(day.transport ? { transport: day.transport } : {}),
+            ...(day.description ? { description: day.description } : {}),
+          },
+        });
+      }
+      qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
+      qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}`] });
+      qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+      toast({ title: `${parsed.days.length} días añadidos al itinerario` });
+      onClose();
+    } catch {
+      toast({ variant: "destructive", title: "Error al importar los días" });
+      setIsImporting(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={v => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Rellenar itinerario desde PDF</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <p className="text-[13px] text-muted-foreground">
+            Sube un archivo con el programa y la IA extraerá los días, ciudades y descripciones.
+            {existingDaysCount > 0 && (
+              <span className="text-amber-700 font-medium"> El itinerario ya tiene {existingDaysCount} día(s) — los nuevos se añadirán al final.</span>
+            )}
+          </p>
+
+          <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md" className="hidden" onChange={handleFile} />
+
+          {!file ? (
+            <button onClick={() => fileInputRef.current?.click()}
+              className="w-full p-8 rounded-[12px] border-2 border-dashed text-center transition-all hover:bg-[#FAF2EB]"
+              style={{ borderColor: "#E5D4BF" }}>
+              <FileUp className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
+              <div className="text-[11px] text-muted-foreground">PDF, TXT, DOC — máx. 10 MB</div>
+            </button>
+          ) : (
+            <div className="p-3 rounded-[10px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>
+              <FileUp className="w-4 h-4 shrink-0 text-muted-foreground" />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>{file.name}</div>
+                <div className="text-[11px] text-muted-foreground">{(file.size / 1024).toFixed(0)} KB</div>
+              </div>
+              <button onClick={() => { setFile(null); setParsed(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+          )}
+
+          {file && !parsed && (
+            <Button onClick={handleParse} disabled={isParsing} className="w-full"
+              style={{ background: "#C4793A", color: "#FAF2EB" }}>
+              {isParsing ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analizando con IA…</> : "Analizar con IA"}
+            </Button>
+          )}
+
+          {parsed && (
+            <div className="rounded-[12px] border border-border overflow-hidden">
+              <div className="px-4 py-3 flex items-center gap-2" style={{ background: "#E4F3EC" }}>
+                <Check className="w-4 h-4" style={{ color: "#2E7D5A" }} />
+                <span className="text-[13px] font-medium" style={{ color: "#2E7D5A" }}>
+                  {parsed.days.length} días extraídos
+                </span>
+              </div>
+              <div className="p-4 space-y-2">
+                <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                  <input type="checkbox" checked={updateMeta} onChange={e => setUpdateMeta(e.target.checked)} className="accent-[#C4793A]" />
+                  <span>Actualizar también el nombre y descripción del itinerario</span>
+                </label>
+                {updateMeta && (
+                  <div className="text-[12px] text-muted-foreground pl-5">
+                    Nombre: <strong>{parsed.name}</strong>
+                    {parsed.countries?.length ? ` · ${parsed.countries.join(", ")}` : ""}
+                  </div>
+                )}
+                <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border-t border-border pt-2">
+                  {parsed.days.map(d => (
+                    <div key={d.dayNumber} className="flex items-baseline gap-2 text-[12px]">
+                      <span className="shrink-0 font-medium w-10">Día {d.dayNumber}</span>
+                      <span className="text-muted-foreground truncate">
+                        {[d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
+                        {d.description ? ` — ${d.description.slice(0, 60)}${d.description.length > 60 ? "…" : ""}` : ""}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          {parsed && (
+            <Button onClick={handleImport} disabled={isImporting}
+              style={{ background: "#C4793A", color: "#FAF2EB" }}>
+              {isImporting
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Importando…</>
+                : `Añadir ${parsed.days.length} días`}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 export default function ItineraryDetail() {
   const params = useParams<{ id: string }>();
   const itineraryId = parseInt(params.id ?? "0");
   const [addDayOpen, setAddDayOpen] = useState(false);
+  const [pdfFillOpen, setPdfFillOpen] = useState(false);
   const [editDay, setEditDay] = useState<ItineraryDay | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const { data: itinerary, isLoading } = useGetItinerary(itineraryId);
@@ -397,17 +582,27 @@ export default function ItineraryDetail() {
             <p className="text-sm text-muted-foreground mt-2 max-w-xl">{itinerary.description}</p>
           )}
         </div>
-        <button
-          onClick={() => {
-            form.setValue("dayNumber", String((days?.length ?? 0) + 1));
-            setAddDayOpen(true);
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium shrink-0"
-          style={{ background: "#C4793A", color: "#FAF2EB" }}
-          onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
-          onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
-          <Plus className="w-4 h-4" /> Añadir día
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => setPdfFillOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors"
+            style={{ borderColor: "#E5D4BF", color: "#7A5C3A", background: "white" }}
+            onMouseOver={e => (e.currentTarget.style.background = "#FAF2EB")}
+            onMouseOut={e => (e.currentTarget.style.background = "white")}>
+            <FileUp className="w-4 h-4" /> Desde PDF
+          </button>
+          <button
+            onClick={() => {
+              form.setValue("dayNumber", String((days?.length ?? 0) + 1));
+              setAddDayOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium"
+            style={{ background: "#C4793A", color: "#FAF2EB" }}
+            onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
+            onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
+            <Plus className="w-4 h-4" /> Añadir día
+          </button>
+        </div>
       </div>
 
       {/* Days */}
@@ -587,6 +782,14 @@ export default function ItineraryDetail() {
           day={editDay}
           open={!!editDay}
           onClose={() => setEditDay(null)}
+        />
+      )}
+
+      {pdfFillOpen && (
+        <PdfFillDialog
+          itineraryId={itineraryId}
+          existingDaysCount={days?.length ?? 0}
+          onClose={() => setPdfFillOpen(false)}
         />
       )}
     </div>
