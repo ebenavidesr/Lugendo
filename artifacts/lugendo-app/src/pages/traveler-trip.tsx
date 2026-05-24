@@ -397,9 +397,7 @@ export default function TravelerTrip() {
   const [shareOpen, setShareOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  const isOwner = trip && user && "ownerId" in trip
-    ? (trip as unknown as { ownerId: number | null }).ownerId === user.id
-    : false;
+  const isOwner = !!(trip && user && trip.ownerId === user.id);
 
   if (isLoading) {
     return (

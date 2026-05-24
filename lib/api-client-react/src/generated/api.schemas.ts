@@ -656,6 +656,8 @@ export interface TravelerTripDetail {
   endDate?: string | null;
   isPersonal: boolean;
   /** @nullable */
+  ownerId?: number | null;
+  /** @nullable */
   agencyName?: string | null;
   /** @nullable */
   agencyLogoUrl?: string | null;
