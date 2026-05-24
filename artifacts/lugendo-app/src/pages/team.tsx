@@ -95,9 +95,9 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const passwordsMatch = form.password === form.confirm;
 
   const canSubmit =
-    form.firstName.trim() &&
-    form.lastName.trim() &&
-    form.email.trim() &&
+    (form.firstName ?? "").trim() &&
+    (form.lastName ?? "").trim() &&
+    (form.email ?? "").trim() &&
     form.role &&
     passwordStrong &&
     passwordsMatch &&
@@ -105,9 +105,9 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
   const handleSubmit = () => {
     const errs: typeof errors = {};
-    if (!form.firstName.trim()) errs.firstName = "El nombre es obligatorio";
-    if (!form.lastName.trim()) errs.lastName = "Los apellidos son obligatorios";
-    if (!form.email.trim()) errs.email = "El email es obligatorio";
+    if (!(form.firstName ?? "").trim()) errs.firstName = "El nombre es obligatorio";
+    if (!(form.lastName ?? "").trim()) errs.lastName = "Los apellidos son obligatorios";
+    if (!(form.email ?? "").trim()) errs.email = "El email es obligatorio";
     if (!passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (!passwordsMatch) errs.confirm = "Las contraseñas no coinciden";
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -169,7 +169,10 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
               <Input
-                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
                 placeholder="ana@agencia.com"
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
@@ -295,18 +298,18 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
   const passwordsMatch = changingPwd ? form.password === form.confirm  : true;
 
   const canSave =
-    form.firstName.trim() &&
-    form.lastName.trim() &&
-    form.email.trim() &&
+    (form.firstName ?? "").trim() &&
+    (form.lastName ?? "").trim() &&
+    (form.email ?? "").trim() &&
     passwordStrong &&
     passwordsMatch &&
     !updateUser.isPending;
 
   const handleSave = () => {
     const errs: typeof errors = {};
-    if (!form.firstName.trim()) errs.firstName = "El nombre es obligatorio";
-    if (!form.lastName.trim())  errs.lastName  = "Los apellidos son obligatorios";
-    if (!form.email.trim())     errs.email     = "El email es obligatorio";
+    if (!(form.firstName ?? "").trim()) errs.firstName = "El nombre es obligatorio";
+    if (!(form.lastName ?? "").trim())  errs.lastName  = "Los apellidos son obligatorios";
+    if (!(form.email ?? "").trim())     errs.email     = "El email es obligatorio";
     if (changingPwd && !passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (changingPwd && !passwordsMatch) errs.confirm  = "Las contraseñas no coinciden";
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -374,7 +377,10 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
               <Input
-                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="off"
+                autoCorrect="off"
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
               />
