@@ -20,14 +20,13 @@ router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/hotels", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
   const { name, city, country, address, phone, website, type, stars, segment, description } = req.body;
   if (!name || !city || !country) {
     res.status(400).json({ error: "name, city, country are required" });
     return;
   }
-  const agencyId = req.session.agencyId;
-  if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
+  const agencyId = req.session.agencyId ?? null;
   const [hotel] = await db
     .insert(hotelsTable)
     .values({ agencyId, name, city, country, address, phone, website, type, stars, segment, description })
