@@ -60,6 +60,7 @@ import type {
   TripNoteUpdate,
   TripShare,
   TripUpdate,
+  UpdateMyTripInput,
   User,
   UserInput,
   UserUpdate
@@ -3173,6 +3174,78 @@ export function useGetMyTrip<TData = Awaited<ReturnType<typeof getMyTrip>>, TErr
 
 
 
+
+export const getUpdateMyTripUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}`
+}
+
+/**
+ * @summary Update a personal trip's metadata
+ */
+export const updateMyTrip = async (tripId: number,
+    updateMyTripInput: UpdateMyTripInput, options?: RequestInit): Promise<TravelerTripDetail> => {
+
+  return customFetch<TravelerTripDetail>(getUpdateMyTripUrl(tripId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMyTripInput,)
+  }
+);}
+
+
+
+
+export const getUpdateMyTripMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTrip>>, TError,{tripId: number;data: BodyType<UpdateMyTripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyTrip>>, TError,{tripId: number;data: BodyType<UpdateMyTripInput>}, TContext> => {
+
+const mutationKey = ['updateMyTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyTrip>>, {tripId: number;data: BodyType<UpdateMyTripInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  updateMyTrip(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyTripMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyTrip>>>
+    export type UpdateMyTripMutationBody = BodyType<UpdateMyTripInput>
+    export type UpdateMyTripMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a personal trip's metadata
+ */
+export const useUpdateMyTrip = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTrip>>, TError,{tripId: number;data: BodyType<UpdateMyTripInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyTrip>>,
+        TError,
+        {tripId: number;data: BodyType<UpdateMyTripInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyTripMutationOptions(options));
+    }
 
 export const getListMyTripNotesUrl = (tripId: number,) => {
 

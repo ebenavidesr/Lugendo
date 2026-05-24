@@ -673,6 +673,41 @@ export interface TravelerTripDetail {
   days: TripDay[];
 }
 
+export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];
+
+
+export const UpdateMyTripInputStatus = {
+  draft: 'draft',
+  scheduled: 'scheduled',
+  active: 'active',
+  finished: 'finished',
+  cancelled: 'cancelled',
+} as const;
+
+export interface UpdateMyTripInput {
+  name?: string;
+  status?: UpdateMyTripInputStatus;
+  startDate?: string;
+  /** @nullable */
+  endDate?: string | null;
+  /** @nullable */
+  airline?: string | null;
+  /** @nullable */
+  flightNumber?: string | null;
+  /** @nullable */
+  flightTime?: string | null;
+  /** @nullable */
+  reservationCode?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
+}
+
 export interface CreatePersonalTripInput {
   name: string;
   startDate: string;

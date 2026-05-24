@@ -829,6 +829,33 @@ paths:
                 $ref: "#/components/schemas/TravelerTripDetail"
         "404":
           description: Not found
+    patch:
+      operationId: updateMyTrip
+      tags: [traveler]
+      summary: Update a personal trip's metadata
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMyTripInput"
+      responses:
+        "200":
+          description: Updated trip detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelerTripDetail"
+        "403":
+          description: Not your trip
+        "404":
+          description: Not found
 
   /me/trips/{tripId}/notes:
     get:
@@ -1920,6 +1947,35 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TripDay"
+
+    UpdateMyTripInput:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        airline:
+          type: ["string", "null"]
+        flightNumber:
+          type: ["string", "null"]
+        flightTime:
+          type: ["string", "null"]
+        reservationCode:
+          type: ["string", "null"]
+        returnAirline:
+          type: ["string", "null"]
+        returnFlightNumber:
+          type: ["string", "null"]
+        returnFlightTime:
+          type: ["string", "null"]
+        returnReservationCode:
+          type: ["string", "null"]
 
     CreatePersonalTripInput:
       type: object

@@ -886,6 +886,58 @@ export const GetMyTripResponse = zod.object({
 
 
 /**
+ * @summary Update a personal trip's metadata
+ */
+export const UpdateMyTripParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const UpdateMyTripBody = zod.object({
+  "name": zod.string().optional(),
+  "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']).optional(),
+  "startDate": zod.string().optional(),
+  "endDate": zod.string().nullish(),
+  "airline": zod.string().nullish(),
+  "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
+  "reservationCode": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish()
+})
+
+export const UpdateMyTripResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "isPersonal": zod.boolean(),
+  "agencyName": zod.string().nullish(),
+  "agencyLogoUrl": zod.string().nullish(),
+  "airline": zod.string().nullish(),
+  "flightNumber": zod.string().nullish(),
+  "flightTime": zod.string().nullish(),
+  "reservationCode": zod.string().nullish(),
+  "flightNotes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "days": zod.array(zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish(),
+  "hotelName": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
  * @summary Get personal notes for a trip
  */
 export const ListMyTripNotesParams = zod.object({

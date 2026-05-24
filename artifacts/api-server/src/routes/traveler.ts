@@ -5,6 +5,7 @@ import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, invitationsTable,
   agenciesTable, hotelsTable, tripNotesTable, itinerariesTable,
+  itineraryDaysTable,
   tripSharesTable, usersTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
@@ -184,6 +185,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
       agencyName: agenciesTable.name,
       agencyLogoUrl: agenciesTable.logoUrl,
       ownerId: tripsTable.ownerId,
+      itineraryId: tripsTable.itineraryId,
       createdAt: tripsTable.createdAt,
     })
     .from(tripsTable)
@@ -192,7 +194,12 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
 
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
 
-  const days = await db
+  let days: Array<{
+    id: number; tripId: number; dayNumber: number;
+    cityFrom: string | null; cityTo: string | null; transport: string | null;
+    description: string | null; hotelId: number | null; hotelName: string | null;
+    createdAt: Date;
+  }> = await db
     .select({
       id: tripDaysTable.id,
       tripId: tripDaysTable.tripId,
@@ -210,12 +217,145 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .where(eq(tripDaysTable.tripId, tripId))
     .orderBy(tripDaysTable.dayNumber);
 
+  // Personal trips store days in itinerary_days — fall back if trip_days is empty
+  if (days.length === 0 && row.itineraryId) {
+    const itinDays = await db
+      .select({
+        id: itineraryDaysTable.id,
+        dayNumber: itineraryDaysTable.dayNumber,
+        cityFrom: itineraryDaysTable.cityFrom,
+        cityTo: itineraryDaysTable.cityTo,
+        transport: itineraryDaysTable.transport,
+        description: itineraryDaysTable.description,
+        hotelId: itineraryDaysTable.hotelId,
+        hotelName: hotelsTable.name,
+        createdAt: itineraryDaysTable.createdAt,
+      })
+      .from(itineraryDaysTable)
+      .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
+      .where(eq(itineraryDaysTable.itineraryId, row.itineraryId))
+      .orderBy(itineraryDaysTable.dayNumber);
+    days = itinDays.map(d => ({ ...d, tripId }));
+  }
+
   res.json({
     ...row,
     isPersonal: row.ownerId != null && row.agencyName == null,
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
     createdAt: row.createdAt.toISOString(),
+    days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
+  });
+});
+
+// ─── Update personal trip ─────────────────────────────────────────────────────
+router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const [owned] = await db.select({ id: tripsTable.id, itineraryId: tripsTable.itineraryId })
+    .from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  if (!owned) { res.status(403).json({ error: "No es tu viaje" }); return; }
+
+  const {
+    name, status, startDate, endDate,
+    airline, flightNumber, flightTime, reservationCode,
+    returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
+  } = req.body as Record<string, string | null | undefined>;
+
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+  if (status !== undefined) updateData.status = status;
+  if (startDate !== undefined) updateData.startDate = startDate;
+  if (endDate !== undefined) updateData.endDate = endDate;
+  if (airline !== undefined) updateData.airline = airline;
+  if (flightNumber !== undefined) updateData.flightNumber = flightNumber;
+  if (flightTime !== undefined) updateData.flightTime = flightTime;
+  if (reservationCode !== undefined) updateData.reservationCode = reservationCode;
+  if (returnAirline !== undefined) updateData.returnAirline = returnAirline;
+  if (returnFlightNumber !== undefined) updateData.returnFlightNumber = returnFlightNumber;
+  if (returnFlightTime !== undefined) updateData.returnFlightTime = returnFlightTime;
+  if (returnReservationCode !== undefined) updateData.returnReservationCode = returnReservationCode;
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No hay campos para actualizar" }); return;
+  }
+
+  await db.update(tripsTable).set(updateData).where(eq(tripsTable.id, tripId));
+
+  // Return updated detail
+  const [updated] = await db
+    .select({
+      id: tripsTable.id,
+      name: tripsTable.name,
+      status: tripsTable.status,
+      startDate: tripsTable.startDate,
+      endDate: tripsTable.endDate,
+      airline: tripsTable.airline,
+      flightNumber: tripsTable.flightNumber,
+      flightTime: tripsTable.flightTime,
+      reservationCode: tripsTable.reservationCode,
+      flightNotes: tripsTable.flightNotes,
+      agencyName: agenciesTable.name,
+      agencyLogoUrl: agenciesTable.logoUrl,
+      ownerId: tripsTable.ownerId,
+      itineraryId: tripsTable.itineraryId,
+      createdAt: tripsTable.createdAt,
+    })
+    .from(tripsTable)
+    .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
+    .where(eq(tripsTable.id, tripId));
+
+  let days: Array<{
+    id: number; tripId: number; dayNumber: number;
+    cityFrom: string | null; cityTo: string | null; transport: string | null;
+    description: string | null; hotelId: number | null; hotelName: string | null;
+    createdAt: Date;
+  }> = await db
+    .select({
+      id: tripDaysTable.id,
+      tripId: tripDaysTable.tripId,
+      dayNumber: tripDaysTable.dayNumber,
+      cityFrom: tripDaysTable.cityFrom,
+      cityTo: tripDaysTable.cityTo,
+      transport: tripDaysTable.transport,
+      description: tripDaysTable.description,
+      hotelId: tripDaysTable.hotelId,
+      hotelName: hotelsTable.name,
+      createdAt: tripDaysTable.createdAt,
+    })
+    .from(tripDaysTable)
+    .leftJoin(hotelsTable, eq(tripDaysTable.hotelId, hotelsTable.id))
+    .where(eq(tripDaysTable.tripId, tripId))
+    .orderBy(tripDaysTable.dayNumber);
+
+  if (days.length === 0 && updated.itineraryId) {
+    const itinDays = await db
+      .select({
+        id: itineraryDaysTable.id,
+        dayNumber: itineraryDaysTable.dayNumber,
+        cityFrom: itineraryDaysTable.cityFrom,
+        cityTo: itineraryDaysTable.cityTo,
+        transport: itineraryDaysTable.transport,
+        description: itineraryDaysTable.description,
+        hotelId: itineraryDaysTable.hotelId,
+        hotelName: hotelsTable.name,
+        createdAt: itineraryDaysTable.createdAt,
+      })
+      .from(itineraryDaysTable)
+      .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
+      .where(eq(itineraryDaysTable.itineraryId, updated.itineraryId))
+      .orderBy(itineraryDaysTable.dayNumber);
+    days = itinDays.map(d => ({ ...d, tripId }));
+  }
+
+  res.json({
+    ...updated,
+    isPersonal: updated.ownerId != null && updated.agencyName == null,
+    agencyName: updated.agencyName ?? null,
+    agencyLogoUrl: updated.agencyLogoUrl ?? null,
+    createdAt: updated.createdAt.toISOString(),
     days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
   });
 });
