@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Star, Pencil } from "lucide-react";
+import { Plus, Star, Pencil, Search, Globe } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -50,32 +50,147 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+type LookupResult = { name: string; city: string; country: string; address: string; phone: string; website: string };
+
 function HotelForm({
   title,
   defaultValues,
   onSubmit,
   isPending,
   onCancel,
+  isNew = false,
 }: {
   title: string;
   defaultValues: FormValues;
   onSubmit: (v: FormValues) => void;
   isPending: boolean;
   onCancel: () => void;
+  isNew?: boolean;
 }) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: defaultValues,
   });
+  const { toast } = useToast();
+
+  const [lookupQ, setLookupQ] = useState("");
+  const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupDone, setLookupDone] = useState(false);
+
+  const handleLookup = async () => {
+    if (!lookupQ.trim()) return;
+    setLookupLoading(true);
+    setLookupDone(false);
+    setLookupResults([]);
+    try {
+      const res = await fetch(`/api/hotels/lookup?q=${encodeURIComponent(lookupQ)}`, { credentials: "include" });
+      if (res.ok) {
+        const data: LookupResult[] = await res.json();
+        setLookupResults(data);
+        if (data.length === 0) toast({ title: "Sin resultados", description: "Prueba con otro nombre o ciudad." });
+      } else {
+        toast({ variant: "destructive", title: "Error al buscar" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" });
+    } finally {
+      setLookupLoading(false);
+      setLookupDone(true);
+    }
+  };
+
+  const applyResult = (r: LookupResult) => {
+    form.reset({
+      name: r.name,
+      city: r.city,
+      country: r.country,
+      address: r.address || "",
+      phone: r.phone || "",
+      website: r.website || "",
+      stars: form.getValues("stars"),
+      segment: form.getValues("segment"),
+    });
+    setLookupResults([]);
+    setLookupQ("");
+    setLookupDone(false);
+  };
 
   return (
     <Dialog open onOpenChange={v => !v && onCancel()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+            {/* ── Web search (creation only) ─────────────────────────────── */}
+            {isNew && (
+              <div className="rounded-[10px] border border-border p-3 space-y-2" style={{ background: "#F8F6FC" }}>
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+                  <Globe className="w-3.5 h-3.5" /> Buscar en internet
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Ej: Hotel Arts Barcelona…"
+                    value={lookupQ}
+                    onChange={e => setLookupQ(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleLookup())}
+                    className="h-8 text-[13px]"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 gap-1.5 shrink-0"
+                    style={{ background: "#3D2F6B", color: "white" }}
+                    disabled={lookupLoading || !lookupQ.trim()}
+                    onClick={handleLookup}
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                    {lookupLoading ? "Buscando…" : "Buscar"}
+                  </Button>
+                </div>
+
+                {lookupResults.length > 0 && (
+                  <div className="space-y-0.5 border border-border rounded-[8px] overflow-hidden" style={{ background: "white" }}>
+                    <p className="text-[10px] text-muted-foreground px-2 pt-1.5 pb-0.5">
+                      Haz clic en un resultado para rellenar el formulario
+                    </p>
+                    {lookupResults.map((r, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => applyResult(r)}
+                        className="w-full text-left px-3 py-2 hover:bg-[#FAF2EB] transition-colors flex items-start justify-between gap-3 border-t border-border/40 first:border-t-0"
+                      >
+                        <div>
+                          <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>{r.name}</p>
+                          {r.address && <p className="text-[11px] text-muted-foreground truncate max-w-[280px]">{r.address}</p>}
+                        </div>
+                        <span className="text-[11px] text-muted-foreground shrink-0 mt-0.5">{r.city}{r.country ? `, ${r.country}` : ""}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {lookupDone && lookupResults.length === 0 && (
+                  <p className="text-[12px] text-muted-foreground text-center py-1">
+                    Sin resultados — rellena el formulario manualmente
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ── Manual form ───────────────────────────────────────────── */}
+            {isNew && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[11px] text-muted-foreground">o introduce los datos manualmente</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            )}
+
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
                 <FormLabel>Nombre del hotel</FormLabel>
@@ -304,6 +419,7 @@ export default function Hotels() {
           onSubmit={handleCreate}
           isPending={create.isPending}
           onCancel={() => setCreateOpen(false)}
+          isNew
         />
       )}
 
