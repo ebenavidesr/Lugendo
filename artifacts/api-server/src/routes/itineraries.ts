@@ -166,7 +166,16 @@ router.patch("/itineraries/:itineraryId", requireRoles("admin", "manager", "agen
   res.json(serializeItinerary(itinerary));
 });
 
-router.delete("/itineraries/:itineraryId", requireRoles("admin"), async (req, res): Promise<void> => {
+router.get("/itineraries/:itineraryId/usage", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
+  const trips = await db
+    .select({ id: tripsTable.id, name: tripsTable.name })
+    .from(tripsTable)
+    .where(eq(tripsTable.itineraryId, id));
+  res.json({ trips });
+});
+
+router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   await db.delete(itinerariesTable).where(eq(itinerariesTable.id, id));
   res.sendStatus(204);

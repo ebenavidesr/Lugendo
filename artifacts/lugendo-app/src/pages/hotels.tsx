@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Star, Pencil, Search, Globe } from "lucide-react";
+import { Plus, Star, Pencil, Search, Globe, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 
 const segmentBadge: Record<NonNullable<HotelSegment>, { bg: string; color: string; label: string }> = {
   basic:    { bg: "#ECD5B8", color: "#7A5C3A", label: "Básico" },
@@ -293,11 +295,46 @@ function HotelForm({
 export default function Hotels() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editHotel, setEditHotel] = useState<Hotel | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: hotels, isLoading } = useListHotels();
   const create = useCreateHotel();
   const update = useUpdateHotel();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin";
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/hotels/${deleteTarget.id}`, { method: "DELETE", credentials: "include" });
+      if (res.ok) {
+        qc.invalidateQueries({ queryKey: ["/api/hotels"] });
+        toast({ title: "Hotel eliminado" });
+        setDeleteTarget(null);
+      } else {
+        toast({ variant: "destructive", title: "Error al eliminar el hotel" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeactivateHotel = () => {
+    if (!deleteTarget) return;
+    update.mutate({ hotelId: deleteTarget.id, data: { active: false } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/hotels"] });
+        toast({ title: "Hotel desactivado" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al desactivar" }),
+    });
+  };
 
   const handleCreate = (values: FormValues) => {
     create.mutate({
@@ -399,11 +436,18 @@ export default function Hotels() {
                     </span>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button
-                      onClick={() => setEditHotel(h)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => setEditHotel(h)}
+                        className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      {canDelete && (
+                        <button onClick={() => setDeleteTarget({ id: h.id, name: h.name })}
+                          className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -439,6 +483,19 @@ export default function Hotels() {
           onSubmit={handleEdit}
           isPending={update.isPending}
           onCancel={() => setEditHotel(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          entityType="hotel"
+          entityId={deleteTarget.id}
+          entityName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onDelete={handleDelete}
+          onDeactivate={handleDeactivateHotel}
+          isPendingDelete={isDeleting}
+          isPendingDeactivate={update.isPending}
         />
       )}
     </div>

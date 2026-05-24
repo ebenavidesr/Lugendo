@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, ArrowRight, Pencil } from "lucide-react";
+import { Plus, ArrowRight, Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useListTrips, useUpdateTrip, useListItineraries } from "@workspace/api-client-react";
+import { useListTrips, useUpdateTrip, useDeleteTrip, useListItineraries } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Trip, TripStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 
 const statusBadge: Record<TripStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
@@ -213,7 +215,38 @@ function EditTripDialog({ trip, open, onClose }: { trip: Trip; open: boolean; on
 export default function Trips() {
   const [, navigate] = useLocation();
   const [editTrip, setEditTrip] = useState<Trip | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const { data: trips, isLoading } = useListTrips();
+  const remove = useDeleteTrip();
+  const update = useUpdateTrip();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin" || user?.role === "manager";
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    remove.mutate({ tripId: deleteTarget.id }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/trips"] });
+        toast({ title: "Viaje eliminado" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al eliminar el viaje" }),
+    });
+  };
+
+  const handleDeactivateTrip = () => {
+    if (!deleteTarget) return;
+    update.mutate({ tripId: deleteTarget.id, data: { status: "cancelled" } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/trips"] });
+        toast({ title: "Viaje cancelado" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al cancelar el viaje" }),
+    });
+  };
 
   return (
     <div className="p-6 max-w-6xl space-y-5">
@@ -265,11 +298,18 @@ export default function Trips() {
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setEditTrip(trip)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditTrip(trip)}
+                          className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        {canDelete && (
+                          <button onClick={() => setDeleteTarget({ id: trip.id, name: trip.name })}
+                            className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                       <Link href={`/trips/${trip.id}`}
                         className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "#C4793A" }}>
                         Ver <ArrowRight className="w-3.5 h-3.5" />
@@ -285,6 +325,19 @@ export default function Trips() {
 
       {editTrip && (
         <EditTripDialog trip={editTrip} open={!!editTrip} onClose={() => setEditTrip(null)} />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          entityType="trip"
+          entityId={deleteTarget.id}
+          entityName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onDelete={handleDelete}
+          onDeactivate={handleDeactivateTrip}
+          isPendingDelete={remove.isPending}
+          isPendingDeactivate={update.isPending}
+        />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Clock, Users, Euro, Pencil, Globe, Search } from "lucide-react";
+import { Plus, Clock, Users, Euro, Pencil, Globe, Search, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 
 const categoryMeta: Record<string, { label: string; bg: string; color: string; emoji: string }> = {
   cultural:    { label: "Cultural",     bg: "#EAE6F5", color: "#3D2F6B", emoji: "🏛️" },
@@ -296,12 +298,15 @@ function ActivityForm({
 export default function Activities() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editActivity, setEditActivity] = useState<Activity | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const { data: activities, isLoading } = useListActivities();
   const create = useCreateActivity();
   const update = useUpdateActivity();
   const remove = useDeleteActivity();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin";
 
   const grouped = (activities ?? []).reduce<Record<string, Activity[]>>((acc, a) => {
     const key = a.category ?? "other";
@@ -358,14 +363,27 @@ export default function Activities() {
     });
   };
 
-  const handleDelete = (id: number, name: string) => {
-    if (!confirm(`¿Eliminar "${name}"?`)) return;
-    remove.mutate({ activityId: id }, {
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    remove.mutate({ activityId: deleteTarget.id }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["/api/activities"] });
         toast({ title: "Actividad eliminada" });
+        setDeleteTarget(null);
       },
       onError: () => toast({ variant: "destructive", title: "Error al eliminar" }),
+    });
+  };
+
+  const handleDeactivate = () => {
+    if (!deleteTarget) return;
+    update.mutate({ activityId: deleteTarget.id, data: { active: false } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/activities"] });
+        toast({ title: "Actividad desactivada" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al desactivar" }),
     });
   };
 
@@ -478,11 +496,13 @@ export default function Activities() {
                         className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(a.id, a.name)}
-                        className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors text-[11px]">
-                        ✕
-                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => setDeleteTarget({ id: a.id, name: a.name })}
+                          className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -520,6 +540,19 @@ export default function Activities() {
           onSubmit={handleEdit}
           isPending={update.isPending}
           onCancel={() => setEditActivity(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          entityType="activity"
+          entityId={deleteTarget.id}
+          entityName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onDelete={handleDelete}
+          onDeactivate={handleDeactivate}
+          isPendingDelete={remove.isPending}
+          isPendingDeactivate={update.isPending}
         />
       )}
     </div>

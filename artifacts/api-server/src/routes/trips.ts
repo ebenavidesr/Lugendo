@@ -3,7 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, itinerariesTable, itineraryDaysTable,
-  hotelsTable, invitationsTable, agenciesTable,
+  hotelsTable, invitationsTable, agenciesTable, tripSharesTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
@@ -144,6 +144,15 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
       acceptedAt: i.acceptedAt?.toISOString() ?? null,
     })),
   });
+});
+
+router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const travelers = await db
+    .select({ id: tripSharesTable.id, email: tripSharesTable.sharedWithEmail, status: tripSharesTable.status })
+    .from(tripSharesTable)
+    .where(eq(tripSharesTable.tripId, id));
+  res.json({ travelers });
 });
 
 router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {

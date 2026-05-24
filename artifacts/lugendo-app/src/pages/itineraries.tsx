@@ -1,12 +1,12 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, ArrowRight, Pencil, FileUp, Check, X, Loader2 } from "lucide-react";
+import { Plus, ArrowRight, Pencil, FileUp, Check, X, Loader2, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   useListItineraries, useCreateItinerary, useUpdateItinerary,
-  useParseItineraryPdf, useCreateItineraryDay,
+  useDeleteItinerary, useParseItineraryPdf, useCreateItineraryDay,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -18,6 +18,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 
 const diffBadge: Record<NonNullable<ItineraryDifficulty>, { bg: string; color: string; label: string }> = {
   easy:      { bg: "#E4F3EC", color: "#2E7D5A", label: "Fácil" },
@@ -310,11 +312,39 @@ export default function Itineraries() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pdfOpen, setPdfOpen] = useState(false);
   const [editItinerary, setEditItinerary] = useState<Itinerary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const { data: itineraries, isLoading } = useListItineraries();
   const create = useCreateItinerary();
   const update = useUpdateItinerary();
+  const deleteIt = useDeleteItinerary();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin" || user?.role === "manager";
+
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+    deleteIt.mutate({ itineraryId: deleteTarget.id }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+        toast({ title: "Itinerario eliminado" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al eliminar" }),
+    });
+  };
+
+  const handleDeactivate = () => {
+    if (!deleteTarget) return;
+    update.mutate({ itineraryId: deleteTarget.id, data: { active: false } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+        toast({ title: "Itinerario desactivado" });
+        setDeleteTarget(null);
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al desactivar" }),
+    });
+  };
 
   const handleCreate = (values: FormValues) => {
     const countries = values.countries?.trim()
@@ -425,11 +455,18 @@ export default function Itineraries() {
                   <td className="px-5 py-3 text-muted-foreground">{it.tripCount ?? 0}</td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => setEditItinerary(it)}
-                        className="opacity-0 group-hover:opacity-100 p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setEditItinerary(it)}
+                          className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        {canDelete && (
+                          <button onClick={() => setDeleteTarget({ id: it.id, name: it.name })}
+                            className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                       <Link href={`/itineraries/${it.id}`}
                         className="inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: "#C4793A" }}>
                         Ver <ArrowRight className="w-3.5 h-3.5" />
@@ -469,6 +506,19 @@ export default function Itineraries() {
           onSubmit={handleEdit}
           isPending={update.isPending}
           onCancel={() => setEditItinerary(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmDialog
+          entityType="itinerary"
+          entityId={deleteTarget.id}
+          entityName={deleteTarget.name}
+          onClose={() => setDeleteTarget(null)}
+          onDelete={handleDelete}
+          onDeactivate={handleDeactivate}
+          isPendingDelete={deleteIt.isPending}
+          isPendingDeactivate={update.isPending}
         />
       )}
     </div>

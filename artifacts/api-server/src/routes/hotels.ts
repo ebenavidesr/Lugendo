@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, and } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { hotelsTable } from "@workspace/db";
+import { hotelsTable, itinerariesTable, itineraryDaysTable, tripsTable, tripDaysTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -147,12 +147,33 @@ router.get("/hotels/:hotelId", requireAuth, async (req, res): Promise<void> => {
   res.json(serialize(hotel));
 });
 
+router.get("/hotels/:hotelId/usage", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
+  const itineraries = await db
+    .selectDistinct({ id: itinerariesTable.id, name: itinerariesTable.name })
+    .from(itineraryDaysTable)
+    .innerJoin(itinerariesTable, eq(itineraryDaysTable.itineraryId, itinerariesTable.id))
+    .where(eq(itineraryDaysTable.hotelId, id));
+  const trips = await db
+    .selectDistinct({ id: tripsTable.id, name: tripsTable.name })
+    .from(tripDaysTable)
+    .innerJoin(tripsTable, eq(tripDaysTable.tripId, tripsTable.id))
+    .where(eq(tripDaysTable.hotelId, id));
+  res.json({ itineraries, trips });
+});
+
 router.patch("/hotels/:hotelId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
   const fields = req.body;
   const [hotel] = await db.update(hotelsTable).set(fields).where(eq(hotelsTable.id, id)).returning();
   if (!hotel) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serialize(hotel));
+});
+
+router.delete("/hotels/:hotelId", requireRoles("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
+  await db.delete(hotelsTable).where(eq(hotelsTable.id, id));
+  res.sendStatus(204);
 });
 
 export default router;

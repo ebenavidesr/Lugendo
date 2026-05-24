@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { activitiesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
@@ -131,6 +131,18 @@ router.post("/activities", requireRoles("admin", "manager", "agent"), async (req
     .values({ agencyId, name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax })
     .returning();
   res.status(201).json(serialize(activity));
+});
+
+router.get("/activities/:activityId/usage", requireAuth, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
+  const result = await db.execute(sql`
+    SELECT DISTINCT i.id, i.name
+    FROM itinerary_day_activities ida
+    JOIN itinerary_days idys ON idys.id = ida.day_id
+    JOIN itineraries i ON i.id = idys.itinerary_id
+    WHERE ida.activity_id = ${id}
+  `);
+  res.json({ itineraries: result.rows });
 });
 
 router.get("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {

@@ -57,7 +57,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - The `sessions` table must exist before starting the API server (already created — do not drop it)
 - `connect-pg-simple` with `createTableIfMissing: true` is BROKEN when bundled (can't find `table.sql`). The `sessions` table is pre-created manually; keep `createTableIfMissing` omitted.
 - Google Fonts `@import url(...)` must be the FIRST line in `index.css` — before any other `@import` or `@plugin` rules.
-- Seed admin: `admin@lugendo.app` / `admin1234` (agencyId=1, role=admin)
+- Seed admin: `admin@lugendo.io` / `admin1234` (agencyId=1, role=admin)
 
 ## Pointers
 
