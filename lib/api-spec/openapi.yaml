@@ -857,6 +857,87 @@ paths:
         "404":
           description: Not found
 
+  /me/trips/{tripId}/days:
+    post:
+      operationId: createTripDay
+      tags: [traveler]
+      summary: Add a day to a personal trip's itinerary
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonalTripDayInput"
+      responses:
+        "201":
+          description: Day created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDay"
+        "403":
+          description: Not your trip
+
+  /me/trips/{tripId}/days/{dayId}:
+    patch:
+      operationId: updateTripDay
+      tags: [traveler]
+      summary: Update a day in a personal trip's itinerary
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonalTripDayInput"
+      responses:
+        "200":
+          description: Day updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDay"
+        "403":
+          description: Not your trip
+        "404":
+          description: Day not found
+    delete:
+      operationId: deleteTripDay
+      tags: [traveler]
+      summary: Delete a day from a personal trip's itinerary
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Not your trip
+
   /me/trips/{tripId}/notes:
     get:
       operationId: listMyTripNotes
@@ -1949,6 +2030,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TripDay"
+
+    PersonalTripDayInput:
+      type: object
+      required: [dayNumber]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        transport:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        hotelId:
+          type: ["integer", "null"]
 
     UpdateMyTripInput:
       type: object

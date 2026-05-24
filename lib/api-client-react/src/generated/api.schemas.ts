@@ -675,6 +675,20 @@ export interface TravelerTripDetail {
   days: TripDay[];
 }
 
+export interface PersonalTripDayInput {
+  dayNumber: number;
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  transport?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  hotelId?: number | null;
+}
+
 export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];
 
 

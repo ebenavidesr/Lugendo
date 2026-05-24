@@ -940,6 +940,63 @@ export const UpdateMyTripResponse = zod.object({
 
 
 /**
+ * @summary Add a day to a personal trip's itinerary
+ */
+export const CreateTripDayParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripDayBody = zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish()
+})
+
+
+/**
+ * @summary Update a day in a personal trip's itinerary
+ */
+export const UpdateTripDayParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const UpdateTripDayBody = zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish()
+})
+
+export const UpdateTripDayResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish(),
+  "hotelName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a day from a personal trip's itinerary
+ */
+export const DeleteTripDayParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+
+/**
  * @summary Get personal notes for a trip
  */
 export const ListMyTripNotesParams = zod.object({

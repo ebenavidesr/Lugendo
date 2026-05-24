@@ -537,6 +537,123 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
 });
 
 // ─── Accept a share by code ───────────────────────────────────────────────────
+// ─── Trip Day management (personal trips) ────────────────────────────────────
+
+async function getOwnedTripItineraryId(tripId: number, userId: number): Promise<number | null | false> {
+  const [trip] = await db
+    .select({ id: tripsTable.id, itineraryId: tripsTable.itineraryId })
+    .from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  if (!trip) return false;
+  if (trip.itineraryId) return trip.itineraryId;
+  // Auto-create itinerary if none exists
+  const [itin] = await db
+    .insert(itinerariesTable)
+    .values({ name: "Mi itinerario", numDays: 0 })
+    .returning();
+  await db.update(tripsTable).set({ itineraryId: itin.id }).where(eq(tripsTable.id, tripId));
+  return itin.id;
+}
+
+router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+
+  const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body as Record<string, unknown>;
+  if (!dayNumber) { res.status(400).json({ error: "dayNumber es obligatorio" }); return; }
+
+  const [day] = await db
+    .insert(itineraryDaysTable)
+    .values({
+      itineraryId: itineraryId as number,
+      dayNumber: Number(dayNumber),
+      ...(cityFrom ? { cityFrom: String(cityFrom) } : {}),
+      ...(cityTo ? { cityTo: String(cityTo) } : {}),
+      ...(transport ? { transport: String(transport) } : {}),
+      ...(description ? { description: String(description) } : {}),
+      ...(hotelId ? { hotelId: Number(hotelId) } : {}),
+    })
+    .returning();
+
+  const [hotel] = hotelId
+    ? await db.select({ name: hotelsTable.name }).from(hotelsTable).where(eq(hotelsTable.id, Number(hotelId)))
+    : [];
+
+  res.status(201).json({
+    id: day.id,
+    tripId,
+    dayNumber: day.dayNumber,
+    cityFrom: day.cityFrom ?? null,
+    cityTo: day.cityTo ?? null,
+    transport: day.transport ?? null,
+    description: day.description ?? null,
+    hotelId: day.hotelId ?? null,
+    hotelName: hotel?.name ?? null,
+    createdAt: day.createdAt.toISOString(),
+  });
+});
+
+router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+
+  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+
+  const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body as Record<string, unknown>;
+
+  const patch: Record<string, unknown> = {};
+  if (dayNumber !== undefined) patch.dayNumber = Number(dayNumber);
+  if (cityFrom !== undefined) patch.cityFrom = cityFrom || null;
+  if (cityTo !== undefined) patch.cityTo = cityTo || null;
+  if (transport !== undefined) patch.transport = transport || null;
+  if (description !== undefined) patch.description = description || null;
+  if (hotelId !== undefined) patch.hotelId = hotelId ? Number(hotelId) : null;
+
+  const [updated] = await db
+    .update(itineraryDaysTable)
+    .set(patch)
+    .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Día no encontrado" }); return; }
+
+  const [hotel] = updated.hotelId
+    ? await db.select({ name: hotelsTable.name }).from(hotelsTable).where(eq(hotelsTable.id, updated.hotelId))
+    : [];
+
+  res.json({
+    id: updated.id,
+    tripId,
+    dayNumber: updated.dayNumber,
+    cityFrom: updated.cityFrom ?? null,
+    cityTo: updated.cityTo ?? null,
+    transport: updated.transport ?? null,
+    description: updated.description ?? null,
+    hotelId: updated.hotelId ?? null,
+    hotelName: hotel?.name ?? null,
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
+router.delete("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+
+  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+
+  await db.delete(itineraryDaysTable)
+    .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)));
+
+  res.sendStatus(204);
+});
+
 router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const shareCode = Array.isArray(req.params.shareCode) ? req.params.shareCode[0] : req.params.shareCode;

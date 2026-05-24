@@ -46,6 +46,7 @@ export * from './loginInput';
 export * from './parsedDay';
 export * from './parsedItinerary';
 export * from './parsePdfInput';
+export * from './personalTripDayInput';
 export * from './registerInput';
 export * from './sharedTripEntry';
 export * from './sharedTripEntryPermission';

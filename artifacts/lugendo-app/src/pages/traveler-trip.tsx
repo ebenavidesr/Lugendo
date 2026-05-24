@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import {
   ArrowLeft, Plane, Calendar, MapPin, Hotel,
   Share2, Trash2, Users, Copy, Check, Pencil,
 } from "lucide-react";
 import {
-  useGetMyTrip, useListTripShares, useShareTrip, useRevokeTripShare, useUpdateMyTrip,
+  useGetMyTrip, useListTripShares, useShareTrip, useRevokeTripShare,
 } from "@workspace/api-client-react";
 import type {
   TravelerTripDetailStatus, TripDay, TripShare,
@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -50,186 +49,6 @@ function InfoCard({ icon: Icon, label, value }: { icon: React.ElementType; label
       </div>
       <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>{value}</p>
     </div>
-  );
-}
-
-// ── Edit Dialog ───────────────────────────────────────────────────────────────
-
-interface TripSnapshot {
-  name: string;
-  status: TravelerTripDetailStatus;
-  startDate: string;
-  endDate: string | null;
-  airline: string | null;
-  flightNumber: string | null;
-  flightTime: string | null;
-  reservationCode: string | null;
-}
-
-function EditDialog({ tripId, trip, open, onClose }: {
-  tripId: number;
-  trip: TripSnapshot;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const { toast } = useToast();
-  const qc = useQueryClient();
-  const updateTrip = useUpdateMyTrip();
-
-  const [form, setForm] = useState<TripSnapshot>({
-    name: trip.name,
-    status: trip.status,
-    startDate: trip.startDate,
-    endDate: trip.endDate ?? "",
-    airline: trip.airline ?? "",
-    flightNumber: trip.flightNumber ?? "",
-    flightTime: trip.flightTime ?? "",
-    reservationCode: trip.reservationCode ?? "",
-  });
-
-  const set = (patch: Partial<TripSnapshot>) => setForm(f => ({ ...f, ...patch }));
-
-  const handleSave = () => {
-    if (!form.name.trim() || !form.startDate) {
-      toast({ variant: "destructive", title: "Nombre y fecha de inicio son obligatorios" });
-      return;
-    }
-    updateTrip.mutate(
-      {
-        tripId,
-        data: {
-          name: form.name.trim(),
-          status: form.status,
-          startDate: form.startDate,
-          endDate: form.endDate || null,
-          airline: form.airline || null,
-          flightNumber: form.flightNumber || null,
-          flightTime: form.flightTime || null,
-          reservationCode: form.reservationCode || null,
-        },
-      },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}`] });
-          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-          toast({ title: "Viaje actualizado" });
-          onClose();
-        },
-        onError: () => toast({ variant: "destructive", title: "Error al guardar los cambios" }),
-      }
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="font-serif flex items-center gap-2">
-            <Pencil className="w-4 h-4" style={{ color: "#C4793A" }} />
-            Editar viaje
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-1">
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">Nombre del viaje *</Label>
-            <Input
-              value={form.name}
-              onChange={e => set({ name: e.target.value })}
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[12px]">Estado</Label>
-            <Select value={form.status} onValueChange={v => set({ status: v as TravelerTripDetailStatus })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="draft">Próximamente</SelectItem>
-                <SelectItem value="scheduled">Programado</SelectItem>
-                <SelectItem value="active">En curso</SelectItem>
-                <SelectItem value="finished">Finalizado</SelectItem>
-                <SelectItem value="cancelled">Cancelado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[12px]">Fecha de salida *</Label>
-              <Input
-                type="date"
-                value={form.startDate}
-                onChange={e => set({ startDate: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px]">Fecha de regreso</Label>
-              <Input
-                type="date"
-                value={form.endDate ?? ""}
-                onChange={e => set({ endDate: e.target.value || null })}
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-border pt-3">
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground mb-3">
-              Vuelo de ida
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">Aerolínea</Label>
-                <Input
-                  placeholder="Iberia"
-                  value={form.airline ?? ""}
-                  onChange={e => set({ airline: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">Número de vuelo</Label>
-                <Input
-                  placeholder="IB3456"
-                  value={form.flightNumber ?? ""}
-                  onChange={e => set({ flightNumber: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">Hora de salida</Label>
-                <Input
-                  placeholder="08:30"
-                  value={form.flightTime ?? ""}
-                  onChange={e => set({ flightTime: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[12px]">Código de reserva</Label>
-                <Input
-                  placeholder="ABC123"
-                  value={form.reservationCode ?? ""}
-                  onChange={e => set({ reservationCode: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose} disabled={updateTrip.isPending}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={updateTrip.isPending || !form.name.trim() || !form.startDate}
-            style={{ background: "#C4793A", color: "#fff" }}
-          >
-            {updateTrip.isPending ? "Guardando…" : "Guardar cambios"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -394,8 +213,8 @@ export default function TravelerTrip() {
   const tripId = parseInt(params.id ?? "0");
   const { data: trip, isLoading } = useGetMyTrip(tripId);
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const [shareOpen, setShareOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
 
   const isOwner = !!(trip && user && trip.ownerId === user.id);
 
@@ -438,7 +257,7 @@ export default function TravelerTrip() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setEditOpen(true)}
+                onClick={() => navigate(`/traveler/trips/${tripId}/edit`)}
                 className="gap-1.5"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -550,24 +369,6 @@ export default function TravelerTrip() {
         </div>
       )}
 
-      {/* Edit dialog — personal trips only */}
-      {isOwner && trip.isPersonal && editOpen && (
-        <EditDialog
-          tripId={tripId}
-          trip={{
-            name: trip.name,
-            status: trip.status,
-            startDate: trip.startDate,
-            endDate: trip.endDate ?? null,
-            airline: trip.airline ?? null,
-            flightNumber: trip.flightNumber ?? null,
-            flightTime: trip.flightTime ?? null,
-            reservationCode: trip.reservationCode ?? null,
-          }}
-          open={editOpen}
-          onClose={() => setEditOpen(false)}
-        />
-      )}
 
       {/* Share dialog */}
       {isOwner && shareOpen && (
