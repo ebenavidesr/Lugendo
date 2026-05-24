@@ -5,7 +5,7 @@ import { agenciesTable } from "./agencies";
 
 export const hotelsTable = pgTable("hotels", {
   id: serial("id").primaryKey(),
-  agencyId: integer("agency_id").notNull().references(() => agenciesTable.id),
+  agencyId: integer("agency_id").references(() => agenciesTable.id),
   name: text("name").notNull(),
   city: text("city").notNull(),
   country: text("country").notNull(),
