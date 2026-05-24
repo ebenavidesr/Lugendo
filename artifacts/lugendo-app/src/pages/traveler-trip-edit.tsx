@@ -153,6 +153,7 @@ function HotelPanel({
 
       {tab === "new" && (
         <div className="space-y-2">
+          {/* Internet search — click result to create+assign directly */}
           <div className="flex gap-2">
             <Input
               placeholder="Buscar en internet…"
@@ -161,25 +162,36 @@ function HotelPanel({
               className="h-7 text-[12px] flex-1"
               onKeyDown={e => e.key === "Enter" && handleLookup()}
             />
-            <Button size="sm" className="h-7 text-[11px] gap-1" onClick={handleLookup} disabled={lookupLoading} style={{ background: "#3D2F6B" }}>
+            <Button size="sm" className="h-7 text-[11px] gap-1" onClick={handleLookup} disabled={lookupLoading || creating} style={{ background: "#3D2F6B" }}>
               <Search className="w-3 h-3" />{lookupLoading ? "…" : "Buscar"}
             </Button>
           </div>
           {lookupResults.length > 0 && (
-            <div className="max-h-28 overflow-y-auto space-y-0.5">
+            <div className="max-h-36 overflow-y-auto space-y-0.5 border border-border rounded-[8px] p-1" style={{ background: "white" }}>
+              <p className="text-[10px] text-muted-foreground px-1 pt-0.5 pb-1">Haz clic para crear y asignar</p>
               {lookupResults.map((r, i) => (
                 <button
                   key={i}
-                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-white text-[12px] flex items-center justify-between"
+                  disabled={creating}
+                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#FAF2EB] text-[12px] flex items-center justify-between disabled:opacity-50"
                   style={{ color: "#2D1F0E" }}
-                  onClick={() => setNewForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website })}
+                  onClick={() => handleCreate(r)}
                 >
-                  <span>{r.name} · {r.city}</span>
-                  <span className="text-[10px] text-muted-foreground">Usar →</span>
+                  <span className="font-medium">{r.name}</span>
+                  <span className="text-muted-foreground text-[11px] shrink-0 ml-2">{r.city}{r.country ? `, ${r.country}` : ""}</span>
                 </button>
               ))}
             </div>
           )}
+
+          {/* Divider */}
+          <div className="flex items-center gap-2 py-1">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-muted-foreground">o añade manualmente</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Manual form */}
           <div className="grid grid-cols-2 gap-2">
             <Input placeholder="Nombre *" value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
             <Input placeholder="Ciudad *" value={newForm.city} onChange={e => setNewForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
