@@ -16,6 +16,101 @@ function serialize(a: typeof activitiesTable.$inferSelect) {
   };
 }
 
+// ── Activity lookup (Nominatim / Google Places) ───────────────────────────────
+router.get("/activities/lookup", requireAuth, async (req, res): Promise<void> => {
+  const qRaw = req.query.q;
+  const q = (Array.isArray(qRaw) ? String(qRaw[0] ?? "") : String(qRaw ?? "")).trim();
+  if (!q) { res.status(400).json({ error: "q is required" }); return; }
+
+  const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+
+  // ── Google Places (if key configured) ────────────────────────────────────
+  if (googleKey) {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q)}&type=tourist_attraction|point_of_interest|museum|park&key=${googleKey}`;
+      const gRes = await fetch(url);
+      const json = await gRes.json() as { results?: Array<{ name: string; formatted_address: string; website?: string }> };
+      const results = (json.results ?? []).slice(0, 6).map(p => {
+        const parts = p.formatted_address.split(",").map((s: string) => s.trim());
+        const country = parts[parts.length - 1] ?? "";
+        const city = parts.length >= 2 ? parts[parts.length - 2].replace(/\d+/g, "").trim() : "";
+        return { name: p.name, city, country, address: p.formatted_address, description: "" };
+      });
+      res.json(results);
+      return;
+    } catch (err) {
+      req.log.error({ err }, "Google Places activity lookup error — falling through to Nominatim");
+    }
+  }
+
+  // ── OpenStreetMap Nominatim (free, no key required) ───────────────────────
+  try {
+    type NominatimResult = {
+      display_name: string;
+      address?: {
+        tourism?: string; amenity?: string; leisure?: string;
+        historic?: string; natural?: string; attraction?: string;
+        house_number?: string; road?: string;
+        city?: string; town?: string; village?: string; municipality?: string;
+        state?: string; country?: string;
+      };
+      extratags?: {
+        description?: string; website?: string;
+        "contact:website"?: string;
+        wikipedia?: string;
+      };
+    };
+
+    const NOM_BASE = "https://nominatim.openstreetmap.org/search";
+    const fetchNom = async (searchQ: string) => {
+      const r = await fetch(
+        `${NOM_BASE}?q=${encodeURIComponent(searchQ)}&format=json&limit=8&addressdetails=1&extratags=1`,
+        { headers: { "User-Agent": "Lugendo/1.0 travel-platform" } }
+      );
+      return r.json() as Promise<NominatimResult[]>;
+    };
+
+    const rawSets = await Promise.all([q, `tourism ${q}`].map(fetchNom));
+    const allItems: NominatimResult[] = [];
+    const seenNames = new Set<string>();
+    for (const set of rawSets) {
+      for (const item of set) {
+        const key = item.display_name.split(",")[0].trim().toLowerCase();
+        if (!seenNames.has(key)) { seenNames.add(key); allItems.push(item); }
+      }
+    }
+
+    const isActivity = (r: NominatimResult) => {
+      const cls = (r as unknown as { class?: string }).class ?? "";
+      const type = (r as unknown as { type?: string }).type ?? "";
+      const addr = r.address ?? {};
+      if (addr.tourism ?? addr.amenity ?? addr.leisure ?? addr.historic ?? addr.natural ?? addr.attraction) return true;
+      if (["tourism", "leisure", "amenity", "historic", "natural"].includes(cls)) return true;
+      const dl = r.display_name.toLowerCase();
+      return /museum|park|monument|temple|castle|cathedral|theatre|theater|attraction|gallery|zoo|aquarium|plaza|square|beach|garden|market|tour/.test(dl) || type === "attraction";
+    };
+
+    const activities = allItems.filter(isActivity);
+    const source = activities.length > 0 ? activities : allItems;
+
+    const results = source.slice(0, 6).map(r => {
+      const addr = r.address ?? {};
+      const name = addr.tourism ?? addr.amenity ?? addr.leisure ?? addr.historic ?? addr.natural ?? addr.attraction ?? r.display_name.split(",")[0];
+      const city = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+      const country = addr.country ?? "";
+      const road = addr.road ? `${addr.house_number ? addr.house_number + " " : ""}${addr.road}` : "";
+      const address = [road, city, country].filter(Boolean).join(", ");
+      const description = r.extratags?.description ?? "";
+      return { name, city, country, address, description };
+    });
+
+    res.json(results);
+  } catch (err) {
+    req.log.error({ err }, "Nominatim activity lookup error");
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 router.get("/activities", requireAuth, async (req, res): Promise<void> => {
   const { agencyId, role } = req.session;
   const rows = role === "admin"

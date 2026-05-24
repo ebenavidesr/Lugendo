@@ -34,7 +34,7 @@ router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), as
     res.status(400).json({ error: "name, city, country are required" });
     return;
   }
-  const agencyId = req.session.agencyId ?? null;
+  const agencyId = req.session.agencyId ?? undefined;
   const [hotel] = await db
     .insert(hotelsTable)
     .values({ agencyId, name, city, country, address, phone, website, type, stars, segment, description })
