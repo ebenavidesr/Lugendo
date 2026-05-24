@@ -12,11 +12,19 @@ function serialize(h: typeof hotelsTable.$inferSelect) {
 
 router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
   const { agencyId, role } = req.session;
-  const rows = role === "admin"
-    ? await db.select().from(hotelsTable).orderBy(hotelsTable.name)
-    : agencyId
-      ? await db.select().from(hotelsTable).where(eq(hotelsTable.agencyId, agencyId)).orderBy(hotelsTable.name)
-      : [];
+  let rows;
+  if (role === "admin") {
+    rows = await db.select().from(hotelsTable).orderBy(hotelsTable.name);
+  } else if (agencyId) {
+    rows = await db.select().from(hotelsTable)
+      .where(eq(hotelsTable.agencyId, agencyId))
+      .orderBy(hotelsTable.name);
+  } else {
+    // Traveler with no agency: show hotels with no agency (traveler-created)
+    rows = await db.select().from(hotelsTable)
+      .where(eq(hotelsTable.active, true))
+      .orderBy(hotelsTable.name);
+  }
   res.json(rows.map(serialize));
 });
 
