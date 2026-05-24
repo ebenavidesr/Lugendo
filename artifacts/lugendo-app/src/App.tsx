@@ -18,6 +18,7 @@ import ItineraryDetail from "@/pages/itinerary-detail";
 import Team from "@/pages/team";
 import Activities from "@/pages/activities";
 import TripWizard from "@/pages/trip-wizard";
+import ItineraryWizard from "@/pages/itinerary-wizard";
 import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
 import TravelerTripWizard from "@/pages/traveler-trip-wizard";
@@ -70,6 +71,9 @@ function Router() {
       </Route>
       <Route path="/trips">
         <ProtectedBackOffice><Trips /></ProtectedBackOffice>
+      </Route>
+      <Route path="/itineraries/new">
+        <ProtectedBackOffice><ItineraryWizard /></ProtectedBackOffice>
       </Route>
       <Route path="/itineraries/:id">
         {() => (
