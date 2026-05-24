@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Plane, Users, Calendar, Mail, Plus } from "lucide-react";
+import { ArrowLeft, Plane, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useGetTrip, useSendInvitations, useUpdateTrip } from "@workspace/api-client-react";
+import { useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays } from "@workspace/api-client-react";
+import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TripDetailStatus, InvitationStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -44,7 +45,22 @@ export default function TripDetail() {
   const params = useParams<{ id: string }>();
   const tripId = parseInt(params.id ?? "0");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const { data: trip, isLoading } = useGetTrip(tripId);
+  const { data: itineraryDays } = useListItineraryDays(trip?.itineraryId ?? 0);
+
+  const itineraryDayMap = Object.fromEntries(
+    (itineraryDays ?? []).map(d => [d.dayNumber, d])
+  );
+
+  const toggleDay = (dayId: number) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dayId)) next.delete(dayId);
+      else next.add(dayId);
+      return next;
+    });
+  };
   const sendInv = useSendInvitations();
   const updateTrip = useUpdateTrip();
   const qc = useQueryClient();
@@ -204,36 +220,68 @@ export default function TripDetail() {
       {/* Days */}
       {trip.days && trip.days.length > 0 && (
         <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-border">
+          <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
             <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
               Días del itinerario ({trip.days.length})
             </span>
+            {trip.itineraryId && (
+              <button
+                onClick={() => {
+                  if (expandedDays.size > 0) setExpandedDays(new Set());
+                  else setExpandedDays(new Set(trip.days!.map(d => d.id)));
+                }}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                {expandedDays.size > 0 ? "Colapsar todos" : "Expandir actividades"}
+              </button>
+            )}
           </div>
           <ul className="divide-y divide-border/60">
-            {trip.days.map(day => (
-              <li key={day.id} className="px-5 py-3 flex items-start gap-4">
-                <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-medium"
-                  style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                  {day.dayNumber}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
-                    {day.cityFrom && day.cityTo
-                      ? `${day.cityFrom} → ${day.cityTo}`
-                      : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                  </p>
-                  {day.hotelName && (
-                    <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotelName}</p>
+            {trip.days.map(day => {
+              const isExpanded = expandedDays.has(day.id);
+              const itDay = itineraryDayMap[day.dayNumber];
+              return (
+                <li key={day.id} className="px-5 py-3 flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-medium"
+                    style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                    {day.dayNumber}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+                      {day.cityFrom && day.cityTo
+                        ? `${day.cityFrom} → ${day.cityTo}`
+                        : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
+                    </p>
+                    {day.hotelName && (
+                      <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotelName}</p>
+                    )}
+                    {day.transport && (
+                      <p className="text-[12px] text-muted-foreground">✈️ {day.transport}</p>
+                    )}
+                    {day.description && (
+                      <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
+                    )}
+                    {isExpanded && itDay && trip.itineraryId && (
+                      <DayActivitiesPanel itineraryId={trip.itineraryId} dayId={itDay.id} />
+                    )}
+                    {isExpanded && !itDay && (
+                      <p className="text-[11px] text-muted-foreground mt-2 italic">
+                        Este día no tiene plantilla de actividades asociada.
+                      </p>
+                    )}
+                  </div>
+                  {trip.itineraryId && (
+                    <button
+                      onClick={() => toggleDay(day.id)}
+                      className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mt-0.5"
+                      title={isExpanded ? "Colapsar actividades" : "Ver actividades"}>
+                      {isExpanded
+                        ? <ChevronDown className="w-4 h-4" />
+                        : <ChevronRight className="w-4 h-4" />}
+                    </button>
                   )}
-                  {day.transport && (
-                    <p className="text-[12px] text-muted-foreground">✈️ {day.transport}</p>
-                  )}
-                  {day.description && (
-                    <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
-                  )}
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
