@@ -15,6 +15,7 @@ import {
   useUpdateItinerary,
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
+import { DayHotelPanel } from "@/components/day-hotel-panel";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ItineraryDay } from "@workspace/api-client-react";
@@ -130,25 +131,7 @@ function EditDayDialog({
                 <FormMessage />
               </FormItem>
             )} />
-            <FormField control={form.control} name="hotelId" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Hotel</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger><SelectValue placeholder="Sin hotel" /></SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">Sin hotel</SelectItem>
-                    {hotels?.map(h => (
-                      <SelectItem key={h.id} value={String(h.id)}>
-                        {h.name} — {h.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <DayHotelPanel itineraryId={itineraryId} day={day} compact />
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Descripción</FormLabel>
@@ -554,7 +537,10 @@ export default function ItineraryDetail() {
                       )}
 
                       {isExpanded && (
-                        <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} />
+                        <>
+                          <DayHotelPanel itineraryId={itineraryId} day={day} />
+                          <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} />
+                        </>
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
