@@ -48,6 +48,7 @@ const schema = z.object({
   website: z.string().optional(),
   stars: z.string().optional(),
   segment: z.enum(["basic", "standard", "premium"]).optional(),
+  active: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -278,6 +279,31 @@ function HotelForm({
               )} />
             </div>
 
+            {!isNew && (
+              <FormField control={form.control} name="active" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado</FormLabel>
+                  <div className="flex items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => field.onChange(!field.value)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors border"
+                      style={{
+                        background: field.value ? "#E4F3EC" : "#ECD5B8",
+                        color: field.value ? "#2E7D5A" : "#7A5C3A",
+                        borderColor: field.value ? "#2E7D5A40" : "#7A5C3A40",
+                      }}>
+                      <span className="w-2 h-2 rounded-full" style={{ background: field.value ? "#2E7D5A" : "#7A5C3A" }} />
+                      {field.value ? "Activo" : "Inactivo"}
+                    </button>
+                    <span className="text-[11px] text-muted-foreground">
+                      Haz clic para cambiar el estado
+                    </span>
+                  </div>
+                </FormItem>
+              )} />
+            )}
+
             <DialogFooter className="pt-2">
               <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
               <Button type="submit" disabled={isPending}
@@ -371,6 +397,7 @@ export default function Hotels() {
         ...(values.website ? { website: values.website } : {}),
         ...(values.stars ? { stars: parseInt(values.stars) } : {}),
         ...(values.segment ? { segment: values.segment } : {}),
+        ...(values.active !== undefined ? { active: values.active } : {}),
       },
     }, {
       onSuccess: () => {
@@ -487,6 +514,7 @@ export default function Hotels() {
             website: editHotel.website ?? "",
             stars: editHotel.stars ? String(editHotel.stars) : undefined,
             segment: editHotel.segment ?? undefined,
+            active: editHotel.active,
           }}
           onSubmit={handleEdit}
           isPending={update.isPending}
