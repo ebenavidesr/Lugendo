@@ -430,10 +430,18 @@ export default function Hotels() {
                   <td className="px-5 py-3"><SegmentBadge segment={h.segment ?? null} /></td>
                   <td className="px-5 py-3"><Stars n={h.stars} /></td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                    <button
+                      onClick={() => update.mutate(
+                        { hotelId: h.id, data: { active: !h.active } },
+                        { onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/hotels"] }),
+                          onError: () => toast({ variant: "destructive", title: "Error al cambiar estado" }) }
+                      )}
+                      title={h.active ? "Haz clic para desactivar" : "Haz clic para activar"}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
                       style={{ background: h.active ? "#E4F3EC" : "#ECD5B8", color: h.active ? "#2E7D5A" : "#7A5C3A" }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: h.active ? "#2E7D5A" : "#7A5C3A" }} />
                       {h.active ? "Activo" : "Inactivo"}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-5 py-3 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

@@ -481,13 +481,21 @@ export default function Activities() {
                     ) : "—"}
                   </td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                    <button
+                      onClick={() => update.mutate(
+                        { activityId: a.id, data: { active: !a.active } },
+                        { onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/activities"] }),
+                          onError: () => toast({ variant: "destructive", title: "Error al cambiar estado" }) }
+                      )}
+                      title={a.active ? "Haz clic para desactivar" : "Haz clic para activar"}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
                       style={{
                         background: a.active ? "#E4F3EC" : "#ECD5B8",
                         color: a.active ? "#2E7D5A" : "#7A5C3A",
                       }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: a.active ? "#2E7D5A" : "#7A5C3A" }} />
                       {a.active ? "Activa" : "Inactiva"}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
