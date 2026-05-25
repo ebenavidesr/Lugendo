@@ -38,15 +38,24 @@ export const tripDaysTable = pgTable("trip_days", {
   cityTo: text("city_to"),
   transport: text("transport"),
   description: text("description"),
-  hotelId: integer("hotel_id").references(() => hotelsTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const tripDayHotelsTable = pgTable("trip_day_hotels", {
+  id: serial("id").primaryKey(),
+  tripDayId: integer("trip_day_id").notNull().references(() => tripDaysTable.id, { onDelete: "cascade" }),
+  hotelId: integer("hotel_id").notNull().references(() => hotelsTable.id, { onDelete: "cascade" }),
+  segment: text("segment", { enum: ["basic", "standard", "premium"] }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertTripSchema = createInsertSchema(tripsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripDaySchema = createInsertSchema(tripDaysTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTripDayHotelSchema = createInsertSchema(tripDayHotelsTable).omit({ id: true, createdAt: true });
 
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof tripsTable.$inferSelect;
 export type InsertTripDay = z.infer<typeof insertTripDaySchema>;
 export type TripDay = typeof tripDaysTable.$inferSelect;
+export type TripDayHotel = typeof tripDayHotelsTable.$inferSelect;

@@ -5,8 +5,9 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { InvitationInputInviteesItem } from './invitationInputInviteesItem';
+import type { DayHotelInputSegment } from './dayHotelInputSegment';
 
-export interface InvitationInput {
-  invitees: InvitationInputInviteesItem[];
+export interface DayHotelInput {
+  hotelId: number;
+  segment?: DayHotelInputSegment;
 }

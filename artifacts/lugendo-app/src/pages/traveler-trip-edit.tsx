@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import {
-  ArrowLeft, Plus, Trash2, Plane, Hotel, ChevronDown, ChevronUp,
-  Save, Search,
+  ArrowLeft, Plus, Trash2, Plane, ChevronDown, ChevronUp,
+  Save,
 } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useCreateTripDay, useUpdateTripDay,
-  useDeleteTripDay, useListHotels, useCreateHotel,
+  useDeleteTripDay,
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { TransportSelect } from "@/components/transport-select";
@@ -16,9 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -29,8 +27,6 @@ interface DayState {
   cityTo: string;
   transport: string;
   description: string;
-  hotelId: string;          // stringified id or ""
-  hotelName: string;
   deleted: boolean;
   expanded: boolean;
 }
@@ -50,170 +46,6 @@ interface MetaState {
   returnReservationCode: string;
 }
 
-// ── Hotel lookup mini-panel ────────────────────────────────────────────────────
-
-function HotelPanel({
-  dayNumber,
-  hotels,
-  onAssign,
-  onClose,
-}: {
-  dayNumber: number;
-  hotels: Array<{ id: number; name: string; city: string }>;
-  onAssign: (id: string, name: string) => void;
-  onClose: () => void;
-}) {
-  const { toast } = useToast();
-  const createHotel = useCreateHotel();
-  const qc = useQueryClient();
-  const [tab, setTab] = useState<"catalog" | "new">("catalog");
-  const [q, setQ] = useState("");
-  const [lookupQ, setLookupQ] = useState("");
-  const [lookupResults, setLookupResults] = useState<Array<{ name: string; city: string; country: string; address: string; phone: string; website: string }>>([]);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [newForm, setNewForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
-  const [creating, setCreating] = useState(false);
-
-  const filtered = hotels.filter(h =>
-    !q || h.name.toLowerCase().includes(q.toLowerCase()) || h.city.toLowerCase().includes(q.toLowerCase())
-  );
-
-  const handleLookup = async () => {
-    if (!lookupQ.trim()) return;
-    setLookupLoading(true);
-    try {
-      const res = await fetch(`/api/hotels/lookup?q=${encodeURIComponent(lookupQ)}`, { credentials: "include" });
-      if (res.ok) setLookupResults(await res.json());
-    } catch { /* ignore */ }
-    finally { setLookupLoading(false); }
-  };
-
-  const handleCreate = async (data: { name: string; city: string; country: string; address?: string; phone?: string; website?: string }) => {
-    if (!data.name || !data.city || !data.country) return;
-    setCreating(true);
-    try {
-      const hotel = await createHotel.mutateAsync({ data: {
-        name: data.name, city: data.city, country: data.country,
-        ...(data.address ? { address: data.address } : {}),
-        ...(data.phone ? { phone: data.phone } : {}),
-        ...(data.website ? { website: data.website } : {}),
-      }});
-      qc.invalidateQueries({ queryKey: ["/api/hotels"] });
-      toast({ title: `Hotel "${hotel.name}" creado` });
-      onAssign(String(hotel.id), hotel.name);
-      onClose();
-    } catch { toast({ variant: "destructive", title: "Error al crear el hotel" }); }
-    finally { setCreating(false); }
-  };
-
-  return (
-    <div className="border border-border rounded-[10px] p-3 mt-2 space-y-3" style={{ background: "#F8F6FC" }}>
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
-        <Hotel className="w-3.5 h-3.5" /> Asignar hotel — Día {dayNumber}
-        <button className="ml-auto text-muted-foreground hover:text-foreground" onClick={onClose}>✕</button>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          className={`text-[11px] font-medium px-3 py-1 rounded-full transition-colors ${tab === "catalog" ? "text-white" : "text-muted-foreground"}`}
-          style={{ background: tab === "catalog" ? "#3D2F6B" : "#EDE9F8" }}
-          onClick={() => setTab("catalog")}
-        >Catálogo</button>
-        <button
-          className={`text-[11px] font-medium px-3 py-1 rounded-full transition-colors ${tab === "new" ? "text-white" : "text-muted-foreground"}`}
-          style={{ background: tab === "new" ? "#C4793A" : "#FAEEE4", color: tab === "new" ? "white" : "#C4793A" }}
-          onClick={() => setTab("new")}
-        >Nuevo hotel</button>
-      </div>
-
-      {tab === "catalog" && (
-        <div className="space-y-2">
-          <Input
-            placeholder="Buscar en catálogo…"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            className="h-7 text-[12px]"
-          />
-          <div className="max-h-36 overflow-y-auto space-y-0.5">
-            {filtered.length === 0 ? (
-              <div className="text-[12px] text-muted-foreground text-center py-2">Sin resultados</div>
-            ) : (
-              filtered.slice(0, 15).map(h => (
-                <button
-                  key={h.id}
-                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-white text-[12px]"
-                  style={{ color: "#2D1F0E" }}
-                  onClick={() => { onAssign(String(h.id), h.name); onClose(); }}
-                >
-                  {h.name} <span className="text-muted-foreground">· {h.city}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {tab === "new" && (
-        <div className="space-y-2">
-          {/* Internet search — click result to create+assign directly */}
-          <div className="flex gap-2">
-            <Input
-              placeholder="Buscar en internet…"
-              value={lookupQ}
-              onChange={e => setLookupQ(e.target.value)}
-              className="h-7 text-[12px] flex-1"
-              onKeyDown={e => e.key === "Enter" && handleLookup()}
-            />
-            <Button size="sm" className="h-7 text-[11px] gap-1" onClick={handleLookup} disabled={lookupLoading || creating} style={{ background: "#3D2F6B" }}>
-              <Search className="w-3 h-3" />{lookupLoading ? "…" : "Buscar"}
-            </Button>
-          </div>
-          {lookupResults.length > 0 && (
-            <div className="max-h-36 overflow-y-auto space-y-0.5 border border-border rounded-[8px] p-1" style={{ background: "white" }}>
-              <p className="text-[10px] text-muted-foreground px-1 pt-0.5 pb-1">Haz clic para crear y asignar</p>
-              {lookupResults.map((r, i) => (
-                <button
-                  key={i}
-                  disabled={creating}
-                  className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#FAF2EB] text-[12px] flex items-center justify-between disabled:opacity-50"
-                  style={{ color: "#2D1F0E" }}
-                  onClick={() => handleCreate(r)}
-                >
-                  <span className="font-medium">{r.name}</span>
-                  <span className="text-muted-foreground text-[11px] shrink-0 ml-2">{r.city}{r.country ? `, ${r.country}` : ""}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-2 py-1">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[10px] text-muted-foreground">o añade manualmente</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          {/* Manual form */}
-          <div className="grid grid-cols-2 gap-2">
-            <Input placeholder="Nombre *" value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
-            <Input placeholder="Ciudad *" value={newForm.city} onChange={e => setNewForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-            <Input placeholder="País *" value={newForm.country} onChange={e => setNewForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
-            <Input placeholder="Dirección" value={newForm.address} onChange={e => setNewForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
-          </div>
-          <Button
-            size="sm" className="w-full h-7 text-[11px]"
-            style={{ background: "#C4793A", color: "white" }}
-            disabled={!newForm.name || !newForm.city || !newForm.country || creating}
-            onClick={() => handleCreate(newForm)}
-          >
-            {creating ? "Creando…" : "Crear y asignar"}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function TravelerTripEdit() {
@@ -224,7 +56,6 @@ export default function TravelerTripEdit() {
   const qc = useQueryClient();
 
   const { data: trip, isLoading } = useGetMyTrip(tripId);
-  const { data: hotels } = useListHotels();
   const updateTrip = useUpdateMyTrip();
   const createDay = useCreateTripDay();
   const updateDay = useUpdateTripDay();
@@ -236,7 +67,6 @@ export default function TravelerTripEdit() {
     returnAirline: "", returnFlightNumber: "", returnFlightTime: "", returnReservationCode: "",
   });
   const [days, setDays] = useState<DayState[]>([]);
-  const [hotelPanelDay, setHotelPanelDay] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
@@ -264,8 +94,6 @@ export default function TravelerTripEdit() {
         cityTo: d.cityTo ?? "",
         transport: d.transport ?? "",
         description: d.description ?? "",
-        hotelId: d.hotelId ? String(d.hotelId) : "",
-        hotelName: d.hotelName ?? "",
         deleted: false,
         expanded: false,
       })));
@@ -286,7 +114,7 @@ export default function TravelerTripEdit() {
     setDays(ds => [...ds, {
       id: null, dayNumber: nextNum,
       cityFrom: "", cityTo: "", transport: "", description: "",
-      hotelId: "", hotelName: "", deleted: false, expanded: true,
+      deleted: false, expanded: true,
     }]);
   };
 
@@ -342,7 +170,6 @@ export default function TravelerTripEdit() {
             cityTo: d.cityTo || null,
             transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
-            hotelId: d.hotelId ? parseInt(d.hotelId) : null,
           },
         });
       }
@@ -358,7 +185,6 @@ export default function TravelerTripEdit() {
             cityTo: d.cityTo || null,
             transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
-            hotelId: d.hotelId ? parseInt(d.hotelId) : null,
           },
         });
       }
@@ -386,8 +212,6 @@ export default function TravelerTripEdit() {
   if (!trip) {
     return <p className="text-muted-foreground">Viaje no encontrado</p>;
   }
-
-  const hotelList = (hotels ?? []) as Array<{ id: number; name: string; city: string }>;
 
   return (
     <div className="max-w-2xl space-y-5 pb-16">
@@ -516,7 +340,7 @@ export default function TravelerTripEdit() {
 
         {activeDays.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            <Hotel className="w-8 h-8 mx-auto mb-2 opacity-40" />
+            <Plane className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-[13px]">Sin días definidos. Pulsa "Añadir día" para empezar.</p>
           </div>
         )}
@@ -548,11 +372,6 @@ export default function TravelerTripEdit() {
                     {dateStr && <div className="text-[11px] capitalize" style={{ color: "#9C7A58" }}>{dateStr}</div>}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    {day.hotelName && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "#FAF2EB", color: "#8B4420" }}>
-                        {day.hotelName}
-                      </span>
-                    )}
                     <button
                       onClick={() => toggleExpand(idx)}
                       className="p-1 rounded text-muted-foreground hover:text-foreground"
@@ -610,56 +429,6 @@ export default function TravelerTripEdit() {
                         value={day.description}
                         onChange={e => updateDayField(idx, { description: e.target.value })}
                       />
-                    </div>
-
-                    {/* Hotel */}
-                    <div className="space-y-1">
-                      <label className="text-[11px] text-muted-foreground">Hotel</label>
-                      <div className="flex items-center gap-2">
-                        <Select
-                          value={day.hotelId || "none"}
-                          onValueChange={v => {
-                            if (v === "none") {
-                              updateDayField(idx, { hotelId: "", hotelName: "" });
-                            } else {
-                              const h = hotelList.find(h => String(h.id) === v);
-                              updateDayField(idx, { hotelId: v, hotelName: h?.name ?? "" });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-8 text-[13px] flex-1">
-                            <SelectValue placeholder="Sin hotel asignado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">Sin hotel</SelectItem>
-                            {hotelList.map(h => (
-                              <SelectItem key={h.id} value={String(h.id)}>
-                                {h.name} · {h.city}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <button
-                          className="text-[11px] font-medium px-2 py-1 rounded-[6px] flex items-center gap-1 transition-colors shrink-0"
-                          style={{
-                            background: hotelPanelDay === day.dayNumber ? "#FAEEE4" : "#FAF2EB",
-                            color: "#C4793A",
-                          }}
-                          onClick={() => setHotelPanelDay(hotelPanelDay === day.dayNumber ? null : day.dayNumber)}
-                        >
-                          <Plus className="w-3 h-3" />
-                          {hotelPanelDay === day.dayNumber ? "Cerrar" : "Nuevo"}
-                        </button>
-                      </div>
-
-                      {hotelPanelDay === day.dayNumber && (
-                        <HotelPanel
-                          dayNumber={day.dayNumber}
-                          hotels={hotelList}
-                          onAssign={(id, name) => updateDayField(idx, { hotelId: id, hotelName: name })}
-                          onClose={() => setHotelPanelDay(null)}
-                        />
-                      )}
                     </div>
 
                     {/* Activities */}

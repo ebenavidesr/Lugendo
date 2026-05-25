@@ -174,6 +174,25 @@ export const TransportMode = {
   walking: 'walking',
 } as const;
 
+export type SegmentValue = typeof SegmentValue[keyof typeof SegmentValue] | null;
+
+
+export const SegmentValue = {
+  basic: 'basic',
+  standard: 'standard',
+  premium: 'premium',
+} as const;
+
+export interface DayHotel {
+  id: number;
+  hotelId: number;
+  hotelName: string;
+  /** @nullable */
+  hotelCity?: string | null;
+  segment: SegmentValue | null;
+  createdAt: string;
+}
+
 export interface ItineraryDay {
   id: number;
   itineraryId: number;
@@ -185,10 +204,7 @@ export interface ItineraryDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
-  /** @nullable */
-  hotelName?: string | null;
+  hotels?: DayHotel[];
   createdAt: string;
 }
 
@@ -256,7 +272,6 @@ export interface ItineraryDayInput {
   cityTo?: string;
   transport?: TransportMode | null;
   description?: string;
-  hotelId?: number;
 }
 
 export interface ItineraryDayUpdate {
@@ -264,20 +279,7 @@ export interface ItineraryDayUpdate {
   cityTo?: string;
   transport?: TransportMode | null;
   description?: string;
-  hotelId?: number;
 }
-
-/**
- * @nullable
- */
-export type HotelSegment = typeof HotelSegment[keyof typeof HotelSegment] | null;
-
-
-export const HotelSegment = {
-  basic: 'basic',
-  standard: 'standard',
-  premium: 'premium',
-} as const;
 
 export interface Hotel {
   id: number;
@@ -296,21 +298,10 @@ export interface Hotel {
   /** @nullable */
   stars?: number | null;
   /** @nullable */
-  segment?: HotelSegment;
-  /** @nullable */
   description?: string | null;
   active: boolean;
   createdAt: string;
 }
-
-export type HotelInputSegment = typeof HotelInputSegment[keyof typeof HotelInputSegment];
-
-
-export const HotelInputSegment = {
-  basic: 'basic',
-  standard: 'standard',
-  premium: 'premium',
-} as const;
 
 export interface HotelInput {
   name: string;
@@ -321,18 +312,8 @@ export interface HotelInput {
   website?: string;
   type?: string;
   stars?: number;
-  segment?: HotelInputSegment;
   description?: string;
 }
-
-export type HotelUpdateSegment = typeof HotelUpdateSegment[keyof typeof HotelUpdateSegment];
-
-
-export const HotelUpdateSegment = {
-  basic: 'basic',
-  standard: 'standard',
-  premium: 'premium',
-} as const;
 
 export interface HotelUpdate {
   name?: string;
@@ -343,9 +324,22 @@ export interface HotelUpdate {
   website?: string;
   type?: string;
   stars?: number;
-  segment?: HotelUpdateSegment;
   description?: string;
   active?: boolean;
+}
+
+export type DayHotelInputSegment = typeof DayHotelInputSegment[keyof typeof DayHotelInputSegment] | null;
+
+
+export const DayHotelInputSegment = {
+  basic: 'basic',
+  standard: 'standard',
+  premium: 'premium',
+} as const;
+
+export interface DayHotelInput {
+  hotelId: number;
+  segment?: DayHotelInputSegment;
 }
 
 export type ActivityCategory = typeof ActivityCategory[keyof typeof ActivityCategory] | null;
@@ -506,10 +500,7 @@ export interface TripDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
-  /** @nullable */
-  hotelName?: string | null;
+  hotels?: DayHotel[];
   createdAt: string;
 }
 
@@ -528,6 +519,7 @@ export interface Invitation {
   email: string;
   inviteCode: string;
   status: InvitationStatus;
+  segment?: SegmentValue | null;
   /** @nullable */
   travelerId?: number | null;
   /** @nullable */
@@ -627,12 +619,19 @@ export interface TripDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
 }
 
+export type InvitationInputInviteesItem = {
+  email: string;
+  segment?: SegmentValue | null;
+};
+
 export interface InvitationInput {
-  emails: string[];
+  invitees: InvitationInputInviteesItem[];
+}
+
+export interface InvitationUpdateInput {
+  segment?: SegmentValue | null;
 }
 
 export type TravelerTripStatus = typeof TravelerTripStatus[keyof typeof TravelerTripStatus];
@@ -710,8 +709,6 @@ export interface PersonalTripDayInput {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
 }
 
 export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];

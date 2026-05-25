@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { itinerariesTable, itineraryDaysTable, hotelsTable, tripsTable, activitiesTable } from "@workspace/db";
+import {
+  itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
+  hotelsTable, tripsTable, activitiesTable,
+} from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { sql } from "drizzle-orm";
 import pdfParse from "pdf-parse";
@@ -13,8 +16,35 @@ function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount =
   return { ...i, createdAt: i.createdAt.toISOString(), tripCount };
 }
 
-function serializeDay(d: typeof itineraryDaysTable.$inferSelect & { hotelName?: string | null }) {
-  return { ...d, createdAt: d.createdAt.toISOString() };
+function serializeDayHotel(r: {
+  id: number; hotelId: number; hotelName: string; hotelCity: string | null;
+  segment: string | null; createdAt: Date;
+}) {
+  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, segment: r.segment, createdAt: r.createdAt.toISOString() };
+}
+
+async function getDayHotelMap(dayIds: number[]) {
+  if (dayIds.length === 0) return {} as Record<number, ReturnType<typeof serializeDayHotel>[]>;
+  const rows = await db
+    .select({
+      id: itineraryDayHotelsTable.id,
+      dayId: itineraryDayHotelsTable.itineraryDayId,
+      hotelId: itineraryDayHotelsTable.hotelId,
+      hotelName: hotelsTable.name,
+      hotelCity: hotelsTable.city,
+      segment: itineraryDayHotelsTable.segment,
+      createdAt: itineraryDayHotelsTable.createdAt,
+    })
+    .from(itineraryDayHotelsTable)
+    .innerJoin(hotelsTable, eq(itineraryDayHotelsTable.hotelId, hotelsTable.id))
+    .where(inArray(itineraryDayHotelsTable.itineraryDayId, dayIds))
+    .orderBy(itineraryDayHotelsTable.createdAt);
+  const map: Record<number, ReturnType<typeof serializeDayHotel>[]> = {};
+  for (const r of rows) {
+    if (!map[r.dayId]) map[r.dayId] = [];
+    map[r.dayId].push(serializeDayHotel({ ...r, hotelCity: r.hotelCity ?? null }));
+  }
+  return map;
 }
 
 router.get("/itineraries", requireAuth, async (req, res): Promise<void> => {
@@ -135,26 +165,16 @@ router.get("/itineraries/:itineraryId", requireAuth, async (req, res): Promise<v
   if (!itinerary) { res.status(404).json({ error: "Not found" }); return; }
 
   const days = await db
-    .select({
-      id: itineraryDaysTable.id,
-      itineraryId: itineraryDaysTable.itineraryId,
-      dayNumber: itineraryDaysTable.dayNumber,
-      cityFrom: itineraryDaysTable.cityFrom,
-      cityTo: itineraryDaysTable.cityTo,
-      transport: itineraryDaysTable.transport,
-      description: itineraryDaysTable.description,
-      hotelId: itineraryDaysTable.hotelId,
-      hotelName: hotelsTable.name,
-      createdAt: itineraryDaysTable.createdAt,
-    })
+    .select()
     .from(itineraryDaysTable)
-    .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
     .where(eq(itineraryDaysTable.itineraryId, id))
     .orderBy(itineraryDaysTable.dayNumber);
 
+  const hotelMap = await getDayHotelMap(days.map(d => d.id));
+
   res.json({
     ...serializeItinerary(itinerary),
-    days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
+    days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), hotels: hotelMap[d.id] ?? [] })),
   });
 });
 
@@ -184,47 +204,72 @@ router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager"), asy
 router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const days = await db
-    .select({
-      id: itineraryDaysTable.id,
-      itineraryId: itineraryDaysTable.itineraryId,
-      dayNumber: itineraryDaysTable.dayNumber,
-      cityFrom: itineraryDaysTable.cityFrom,
-      cityTo: itineraryDaysTable.cityTo,
-      transport: itineraryDaysTable.transport,
-      description: itineraryDaysTable.description,
-      hotelId: itineraryDaysTable.hotelId,
-      hotelName: hotelsTable.name,
-      createdAt: itineraryDaysTable.createdAt,
-    })
+    .select()
     .from(itineraryDaysTable)
-    .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
     .where(eq(itineraryDaysTable.itineraryId, itineraryId))
     .orderBy(itineraryDaysTable.dayNumber);
-  res.json(days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+
+  const hotelMap = await getDayHotelMap(days.map(d => d.id));
+  res.json(days.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), hotels: hotelMap[d.id] ?? [] })));
 });
 
 router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body;
+  const { dayNumber, cityFrom, cityTo, transport, description } = req.body;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber is required" }); return; }
   const [day] = await db
     .insert(itineraryDaysTable)
-    .values({ itineraryId, dayNumber, cityFrom, cityTo, transport, description, hotelId })
+    .values({ itineraryId, dayNumber, cityFrom, cityTo, transport, description })
     .returning();
-  res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotelName: null });
+  res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const fields = req.body;
-  const [day] = await db.update(itineraryDaysTable).set(fields).where(eq(itineraryDaysTable.id, dayId)).returning();
+  const { cityFrom, cityTo, transport, description } = req.body;
+  const patch: Record<string, unknown> = {};
+  if (cityFrom !== undefined) patch.cityFrom = cityFrom;
+  if (cityTo !== undefined) patch.cityTo = cityTo;
+  if (transport !== undefined) patch.transport = transport;
+  if (description !== undefined) patch.description = description;
+  const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();
   if (!day) { res.status(404).json({ error: "Not found" }); return; }
-  res.json({ ...day, createdAt: day.createdAt.toISOString(), hotelName: null });
+  const hotelMap = await getDayHotelMap([day.id]);
+  res.json({ ...day, createdAt: day.createdAt.toISOString(), hotels: hotelMap[day.id] ?? [] });
 });
 
 router.delete("/itineraries/:itineraryId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   await db.delete(itineraryDaysTable).where(eq(itineraryDaysTable.id, dayId));
+  res.sendStatus(204);
+});
+
+// ─── DAY HOTELS ───────────────────────────────────────────────────────────────
+router.get("/itineraries/:itineraryId/days/:dayId/hotels", requireAuth, async (req, res): Promise<void> => {
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const hotelMap = await getDayHotelMap([dayId]);
+  res.json(hotelMap[dayId] ?? []);
+});
+
+router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const { hotelId, segment } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium" };
+  if (!hotelId || !segment) { res.status(400).json({ error: "hotelId and segment are required" }); return; }
+
+  const [hotel] = await db.select().from(hotelsTable).where(eq(hotelsTable.id, hotelId));
+  if (!hotel) { res.status(404).json({ error: "Hotel not found" }); return; }
+
+  const [assignment] = await db
+    .insert(itineraryDayHotelsTable)
+    .values({ itineraryDayId: dayId, hotelId, segment })
+    .returning();
+
+  res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
+});
+
+router.delete("/itineraries/:itineraryId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const assignmentId = parseInt(Array.isArray(req.params.assignmentId) ? req.params.assignmentId[0] : req.params.assignmentId, 10);
+  await db.delete(itineraryDayHotelsTable).where(eq(itineraryDayHotelsTable.id, assignmentId));
   res.sendStatus(204);
 });
 

@@ -12,5 +12,4 @@ export interface ItineraryDayUpdate {
   cityTo?: string;
   transport?: TransportMode | null;
   description?: string;
-  hotelId?: number;
 }

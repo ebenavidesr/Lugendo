@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useListHotels, useCreateHotel, useUpdateHotel } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Hotel, HotelSegment } from "@workspace/api-client-react";
+import type { Hotel } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -14,21 +14,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
-
-const segmentBadge: Record<NonNullable<HotelSegment>, { bg: string; color: string; label: string }> = {
-  basic:    { bg: "#ECD5B8", color: "#7A5C3A", label: "Básico" },
-  standard: { bg: "#FAEEE4", color: "#8B4420", label: "Estándar" },
-  premium:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Premium" },
-};
-
-function SegmentBadge({ segment }: { segment: HotelSegment }) {
-  if (!segment) return null;
-  const s = segmentBadge[segment];
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-      style={{ background: s.bg, color: s.color }}>{s.label}</span>
-  );
-}
 
 function Stars({ n }: { n: number | null | undefined }) {
   if (!n) return <span className="text-muted-foreground text-[12px]">—</span>;
@@ -47,7 +32,6 @@ const schema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   stars: z.string().optional(),
-  segment: z.enum(["basic", "standard", "premium"]).optional(),
   active: z.boolean().optional(),
 });
 
@@ -112,7 +96,6 @@ function HotelForm({
       phone: r.phone || "",
       website: r.website || "",
       stars: form.getValues("stars"),
-      segment: form.getValues("segment"),
     });
     setLookupResults([]);
     setLookupQ("");
@@ -228,22 +211,6 @@ function HotelForm({
             )} />
 
             <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="segment" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Segmento</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="basic">Básico</SelectItem>
-                      <SelectItem value="standard">Estándar</SelectItem>
-                      <SelectItem value="premium">Premium</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
               <FormField control={form.control} name="stars" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Estrellas</FormLabel>
@@ -372,7 +339,6 @@ export default function Hotels() {
         ...(values.phone ? { phone: values.phone } : {}),
         ...(values.website ? { website: values.website } : {}),
         ...(values.stars ? { stars: parseInt(values.stars) } : {}),
-        ...(values.segment ? { segment: values.segment } : {}),
       },
     }, {
       onSuccess: () => {
@@ -396,7 +362,6 @@ export default function Hotels() {
         ...(values.phone ? { phone: values.phone } : {}),
         ...(values.website ? { website: values.website } : {}),
         ...(values.stars ? { stars: parseInt(values.stars) } : {}),
-        ...(values.segment ? { segment: values.segment } : {}),
         ...(values.active !== undefined ? { active: values.active } : {}),
       },
     }, {
@@ -439,7 +404,7 @@ export default function Hotels() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Hotel", "Ciudad", "País", "Segmento", "Estrellas", "Estado", ""].map(h => (
+                {["Hotel", "Ciudad", "País", "Estrellas", "Estado", ""].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -454,7 +419,6 @@ export default function Hotels() {
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">{h.city}</td>
                   <td className="px-5 py-3 text-muted-foreground">{h.country}</td>
-                  <td className="px-5 py-3"><SegmentBadge segment={h.segment ?? null} /></td>
                   <td className="px-5 py-3"><Stars n={h.stars} /></td>
                   <td className="px-5 py-3">
                     <button
@@ -513,7 +477,6 @@ export default function Hotels() {
             phone: editHotel.phone ?? "",
             website: editHotel.website ?? "",
             stars: editHotel.stars ? String(editHotel.stars) : undefined,
-            segment: editHotel.segment ?? undefined,
             active: editHotel.active,
           }}
           onSubmit={handleEdit}

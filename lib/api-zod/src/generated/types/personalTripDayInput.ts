@@ -16,6 +16,4 @@ export interface PersonalTripDayInput {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
 }

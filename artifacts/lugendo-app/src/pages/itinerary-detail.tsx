@@ -34,7 +34,6 @@ const daySchema = z.object({
   cityTo: z.string().optional(),
   transport: z.string().optional(),
   description: z.string().optional(),
-  hotelId: z.string().optional(),
 });
 
 const diffLabel: Record<string, string> = {
@@ -69,7 +68,6 @@ function EditDayDialog({
       cityTo: day.cityTo ?? "",
       transport: day.transport ?? "",
       description: day.description ?? "",
-      hotelId: day.hotelId ? String(day.hotelId) : "none",
     },
   });
 
@@ -82,7 +80,6 @@ function EditDayDialog({
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
         ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
-        ...(values.hotelId && values.hotelId !== "none" ? { hotelId: parseInt(values.hotelId) } : {}),
       },
     }, {
       onSuccess: () => {
@@ -379,7 +376,6 @@ export default function ItineraryDetail() {
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
         ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
-        ...(values.hotelId && values.hotelId !== "none" ? { hotelId: parseInt(values.hotelId) } : {}),
       },
     }, {
       onSuccess: () => {
@@ -533,8 +529,8 @@ export default function ItineraryDetail() {
                             <TransportLabel value={day.transport} />
                           </span>
                         )}
-                        {day.hotelName && (
-                          <span className="text-[12px] text-muted-foreground">🏨 {day.hotelName}</span>
+                        {day.hotels && day.hotels.length > 0 && (
+                          <span className="text-[12px] text-muted-foreground">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</span>
                         )}
                       </div>
                       {day.description && (
@@ -613,25 +609,6 @@ export default function ItineraryDetail() {
                   <FormControl>
                     <TransportSelect value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="hotelId" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hotel (opcional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar hotel" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Sin hotel</SelectItem>
-                      {hotels?.map(h => (
-                        <SelectItem key={h.id} value={String(h.id)}>
-                          {h.name} — {h.city}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )} />

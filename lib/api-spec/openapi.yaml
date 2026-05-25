@@ -861,6 +861,56 @@ paths:
                 items:
                   $ref: "#/components/schemas/Invitation"
 
+  /trips/{tripId}/invitations/{invitationId}:
+    patch:
+      operationId: updateInvitation
+      tags: [invitations]
+      summary: Update invitation (segment assignment)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationUpdateInput"
+      responses:
+        "200":
+          description: Updated invitation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteInvitation
+      tags: [invitations]
+      summary: Delete an invitation
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /invitations/{code}/accept:
     post:
       operationId: acceptInvitation
@@ -1345,6 +1395,166 @@ paths:
         "204":
           description: Unlinked
 
+  # ─── ITINERARY DAY HOTELS ───────────────────────────────────────────────────
+  /itineraries/{itineraryId}/days/{dayId}/hotels:
+    get:
+      operationId: listItineraryDayHotels
+      tags: [itineraries]
+      summary: List hotel assignments for an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of hotel assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DayHotel"
+    post:
+      operationId: addItineraryDayHotel
+      tags: [itineraries]
+      summary: Assign a hotel with a segment to an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DayHotelInput"
+      responses:
+        "201":
+          description: Hotel assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayHotel"
+
+  /itineraries/{itineraryId}/days/{dayId}/hotels/{assignmentId}:
+    delete:
+      operationId: removeItineraryDayHotel
+      tags: [itineraries]
+      summary: Remove a hotel assignment from an itinerary day
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  # ─── TRIP DAY HOTELS ────────────────────────────────────────────────────────
+  /trips/{tripId}/days/{dayId}/hotels:
+    get:
+      operationId: listTripDayHotels
+      tags: [trips]
+      summary: List hotel assignments for a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of hotel assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DayHotel"
+    post:
+      operationId: addTripDayHotel
+      tags: [trips]
+      summary: Assign a hotel with a segment to a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DayHotelInput"
+      responses:
+        "201":
+          description: Hotel assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayHotel"
+
+  /trips/{tripId}/days/{dayId}/hotels/{assignmentId}:
+    delete:
+      operationId: removeTripDayHotel
+      tags: [trips]
+      summary: Remove a hotel assignment from a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
   # ─── DASHBOARD ───────────────────────────────────────────────────────────────
   /dashboard/summary:
     get:
@@ -1636,10 +1846,10 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
-        hotelId:
-          type: ["integer", "null"]
-        hotelName:
-          type: ["string", "null"]
+        hotels:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayHotel"
         createdAt:
           type: string
 
@@ -1657,8 +1867,6 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: string
-        hotelId:
-          type: integer
 
     ItineraryDayUpdate:
       type: object
@@ -1671,8 +1879,6 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: string
-        hotelId:
-          type: integer
 
     # ─── HOTEL ────────────────────────────────────────────────────────────────
     Hotel:
@@ -1699,9 +1905,6 @@ components:
           type: ["string", "null"]
         stars:
           type: ["integer", "null"]
-        segment:
-          type: ["string", "null"]
-          enum: ["basic", "standard", "premium", null]
         description:
           type: ["string", "null"]
         active:
@@ -1729,9 +1932,6 @@ components:
           type: string
         stars:
           type: integer
-        segment:
-          type: string
-          enum: [basic, standard, premium]
         description:
           type: string
 
@@ -1754,13 +1954,44 @@ components:
           type: string
         stars:
           type: integer
-        segment:
-          type: string
-          enum: [basic, standard, premium]
         description:
           type: string
         active:
           type: boolean
+
+    # ─── SEGMENT / DAY HOTEL ──────────────────────────────────────────────────
+    SegmentValue:
+      type: string
+      nullable: true
+      enum: [basic, standard, premium, null]
+
+    DayHotel:
+      type: object
+      required: [id, hotelId, hotelName, segment, createdAt]
+      properties:
+        id:
+          type: integer
+        hotelId:
+          type: integer
+        hotelName:
+          type: string
+        hotelCity:
+          type: ["string", "null"]
+        segment:
+          $ref: "#/components/schemas/SegmentValue"
+        createdAt:
+          type: string
+
+    DayHotelInput:
+      type: object
+      required: [hotelId]
+      properties:
+        hotelId:
+          type: integer
+        segment:
+          type: string
+          nullable: true
+          enum: [basic, standard, premium, null]
 
     # ─── ACTIVITY ─────────────────────────────────────────────────────────────
     ActivityCategory:
@@ -2029,8 +2260,6 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
-        hotelId:
-          type: ["integer", "null"]
 
     TripDay:
       type: object
@@ -2050,10 +2279,10 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
-        hotelId:
-          type: ["integer", "null"]
-        hotelName:
-          type: ["string", "null"]
+        hotels:
+          type: array
+          items:
+            $ref: "#/components/schemas/DayHotel"
         createdAt:
           type: string
 
@@ -2073,6 +2302,8 @@ components:
         status:
           type: string
           enum: [pending, accepted, declined]
+        segment:
+          $ref: "#/components/schemas/SegmentValue"
         travelerId:
           type: ["integer", "null"]
         travelerName:
@@ -2084,12 +2315,24 @@ components:
 
     InvitationInput:
       type: object
-      required: [emails]
+      required: [invitees]
       properties:
-        emails:
+        invitees:
           type: array
           items:
-            type: string
+            type: object
+            required: [email]
+            properties:
+              email:
+                type: string
+              segment:
+                $ref: "#/components/schemas/SegmentValue"
+
+    InvitationUpdateInput:
+      type: object
+      properties:
+        segment:
+          $ref: "#/components/schemas/SegmentValue"
 
     # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────
     TravelerTrip:
@@ -2174,8 +2417,6 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
-        hotelId:
-          type: ["integer", "null"]
 
     UpdateMyTripInput:
       type: object

@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type HotelUpdateSegment = typeof HotelUpdateSegment[keyof typeof HotelUpdateSegment];
+export type DayHotelInputSegment = typeof DayHotelInputSegment[keyof typeof DayHotelInputSegment] | null;
 
 
-export const HotelUpdateSegment = {
+export const DayHotelInputSegment = {
   basic: 'basic',
   standard: 'standard',
   premium: 'premium',

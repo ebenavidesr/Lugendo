@@ -14,7 +14,6 @@ export const hotelsTable = pgTable("hotels", {
   website: text("website"),
   type: text("type"),
   stars: integer("stars"),
-  segment: text("segment", { enum: ["basic", "standard", "premium"] }),
   description: text("description"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

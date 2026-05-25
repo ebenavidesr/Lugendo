@@ -263,8 +263,14 @@ export const GetItineraryResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 }))
 })
@@ -327,8 +333,14 @@ export const ListItineraryDaysResponseItem = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 export const ListItineraryDaysResponse = zod.array(ListItineraryDaysResponseItem)
@@ -346,8 +358,7 @@ export const CreateItineraryDayBody = zod.object({
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().optional(),
-  "hotelId": zod.number().optional()
+  "description": zod.string().optional()
 })
 
 
@@ -363,8 +374,7 @@ export const UpdateItineraryDayBody = zod.object({
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().optional(),
-  "hotelId": zod.number().optional()
+  "description": zod.string().optional()
 })
 
 export const UpdateItineraryDayResponse = zod.object({
@@ -375,8 +385,14 @@ export const UpdateItineraryDayResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 
@@ -404,7 +420,6 @@ export const ListHotelsResponseItem = zod.object({
   "website": zod.string().nullish(),
   "type": zod.string().nullish(),
   "stars": zod.number().nullish(),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
   "createdAt": zod.string()
@@ -424,7 +439,6 @@ export const CreateHotelBody = zod.object({
   "website": zod.string().optional(),
   "type": zod.string().optional(),
   "stars": zod.number().optional(),
-  "segment": zod.enum(['basic', 'standard', 'premium']).optional(),
   "description": zod.string().optional()
 })
 
@@ -447,7 +461,6 @@ export const GetHotelResponse = zod.object({
   "website": zod.string().nullish(),
   "type": zod.string().nullish(),
   "stars": zod.number().nullish(),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
   "createdAt": zod.string()
@@ -470,7 +483,6 @@ export const UpdateHotelBody = zod.object({
   "website": zod.string().optional(),
   "type": zod.string().optional(),
   "stars": zod.number().optional(),
-  "segment": zod.enum(['basic', 'standard', 'premium']).optional(),
   "description": zod.string().optional(),
   "active": zod.boolean().optional()
 })
@@ -486,7 +498,6 @@ export const UpdateHotelResponse = zod.object({
   "website": zod.string().nullish(),
   "type": zod.string().nullish(),
   "stars": zod.number().nullish(),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "active": zod.boolean(),
   "createdAt": zod.string()
@@ -683,8 +694,14 @@ export const GetTripResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })),
   "invitations": zod.array(zod.object({
@@ -693,6 +710,7 @@ export const GetTripResponse = zod.object({
   "email": zod.string(),
   "inviteCode": zod.string(),
   "status": zod.enum(['pending', 'accepted', 'declined']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
   "createdAt": zod.string(),
@@ -769,8 +787,7 @@ export const UpdateTripDayAdminBody = zod.object({
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish()
+  "description": zod.string().nullish()
 })
 
 export const UpdateTripDayAdminResponse = zod.object({
@@ -781,8 +798,14 @@ export const UpdateTripDayAdminResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 
@@ -848,6 +871,7 @@ export const ListInvitationsResponseItem = zod.object({
   "email": zod.string(),
   "inviteCode": zod.string(),
   "status": zod.enum(['pending', 'accepted', 'declined']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
   "createdAt": zod.string(),
@@ -864,7 +888,45 @@ export const SendInvitationsParams = zod.object({
 })
 
 export const SendInvitationsBody = zod.object({
-  "emails": zod.array(zod.string())
+  "invitees": zod.array(zod.object({
+  "email": zod.string(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+}))
+})
+
+
+/**
+ * @summary Update invitation (segment assignment)
+ */
+export const UpdateInvitationParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "invitationId": zod.coerce.number()
+})
+
+export const UpdateInvitationBody = zod.object({
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+})
+
+export const UpdateInvitationResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "email": zod.string(),
+  "inviteCode": zod.string(),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
+  "travelerId": zod.number().nullish(),
+  "travelerName": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "acceptedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete an invitation
+ */
+export const DeleteInvitationParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "invitationId": zod.coerce.number()
 })
 
 
@@ -881,6 +943,7 @@ export const AcceptInvitationResponse = zod.object({
   "email": zod.string(),
   "inviteCode": zod.string(),
   "status": zod.enum(['pending', 'accepted', 'declined']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
   "createdAt": zod.string(),
@@ -957,8 +1020,14 @@ export const GetMyTripResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 }))
 })
@@ -1010,8 +1079,14 @@ export const UpdateMyTripResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 }))
 })
@@ -1029,8 +1104,7 @@ export const CreateTripDayBody = zod.object({
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish()
+  "description": zod.string().nullish()
 })
 
 
@@ -1047,8 +1121,7 @@ export const UpdateTripDayBody = zod.object({
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish()
+  "description": zod.string().nullish()
 })
 
 export const UpdateTripDayResponse = zod.object({
@@ -1059,8 +1132,14 @@ export const UpdateTripDayResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "hotelId": zod.number().nullish(),
-  "hotelName": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 
@@ -1303,6 +1382,92 @@ export const RemoveDayActivityParams = zod.object({
 
 
 /**
+ * @summary List hotel assignments for an itinerary day
+ */
+export const ListItineraryDayHotelsParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const ListItineraryDayHotelsResponseItem = zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})
+export const ListItineraryDayHotelsResponse = zod.array(ListItineraryDayHotelsResponseItem)
+
+
+/**
+ * @summary Assign a hotel with a segment to an itinerary day
+ */
+export const AddItineraryDayHotelParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const AddItineraryDayHotelBody = zod.object({
+  "hotelId": zod.number(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+})
+
+
+/**
+ * @summary Remove a hotel assignment from an itinerary day
+ */
+export const RemoveItineraryDayHotelParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "assignmentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List hotel assignments for a trip day
+ */
+export const ListTripDayHotelsParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const ListTripDayHotelsResponseItem = zod.object({
+  "id": zod.number(),
+  "hotelId": zod.number(),
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "createdAt": zod.string()
+})
+export const ListTripDayHotelsResponse = zod.array(ListTripDayHotelsResponseItem)
+
+
+/**
+ * @summary Assign a hotel with a segment to a trip day
+ */
+export const AddTripDayHotelParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const AddTripDayHotelBody = zod.object({
+  "hotelId": zod.number(),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+})
+
+
+/**
+ * @summary Remove a hotel assignment from a trip day
+ */
+export const RemoveTripDayHotelParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "assignmentId": zod.coerce.number()
+})
+
+
+/**
  * @summary Agency dashboard summary — trips by status, occupancy, recent activity
  */
 export const GetDashboardSummaryResponse = zod.object({
@@ -1342,6 +1507,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "email": zod.string(),
   "inviteCode": zod.string(),
   "status": zod.enum(['pending', 'accepted', 'declined']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
   "createdAt": zod.string(),

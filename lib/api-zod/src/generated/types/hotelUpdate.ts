@@ -5,7 +5,6 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { HotelUpdateSegment } from './hotelUpdateSegment';
 
 export interface HotelUpdate {
   name?: string;
@@ -16,7 +15,6 @@ export interface HotelUpdate {
   website?: string;
   type?: string;
   stars?: number;
-  segment?: HotelUpdateSegment;
   description?: string;
   active?: boolean;
 }

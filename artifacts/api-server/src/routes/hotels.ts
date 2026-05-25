@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { hotelsTable, itinerariesTable, itineraryDaysTable, tripsTable, tripDaysTable } from "@workspace/db";
+import {
+  hotelsTable, itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
+  tripsTable, tripDaysTable, tripDayHotelsTable,
+} from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -20,7 +23,6 @@ router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
       .where(eq(hotelsTable.agencyId, agencyId))
       .orderBy(hotelsTable.name);
   } else {
-    // Traveler with no agency: show hotels with no agency (traveler-created)
     rows = await db.select().from(hotelsTable)
       .where(eq(hotelsTable.active, true))
       .orderBy(hotelsTable.name);
@@ -29,7 +31,7 @@ router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
-  const { name, city, country, address, phone, website, type, stars, segment, description } = req.body;
+  const { name, city, country, address, phone, website, type, stars, description } = req.body;
   if (!name || !city || !country) {
     res.status(400).json({ error: "name, city, country are required" });
     return;
@@ -37,7 +39,7 @@ router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), as
   const agencyId = req.session.agencyId ?? undefined;
   const [hotel] = await db
     .insert(hotelsTable)
-    .values({ agencyId, name, city, country, address, phone, website, type, stars, segment, description })
+    .values({ agencyId, name, city, country, address, phone, website, type, stars, description })
     .returning();
   res.status(201).json(serialize(hotel));
 });
@@ -49,7 +51,6 @@ router.get("/hotels/lookup", requireAuth, async (req, res): Promise<void> => {
 
   const googleKey = process.env.GOOGLE_PLACES_API_KEY;
 
-  // ── Google Places (if key configured) ────────────────────────────────────
   if (googleKey) {
     try {
       const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(q + " hotel")}&type=lodging&key=${googleKey}`;
@@ -68,7 +69,6 @@ router.get("/hotels/lookup", requireAuth, async (req, res): Promise<void> => {
     }
   }
 
-  // ── OpenStreetMap Nominatim (free, no key required) ───────────────────────
   try {
     type NominatimResult = {
       display_name: string;
@@ -81,13 +81,8 @@ router.get("/hotels/lookup", requireAuth, async (req, res): Promise<void> => {
       extratags?: { phone?: string; website?: string; "contact:website"?: string; "contact:phone"?: string };
     };
 
-    // Nominatim finds lodging best when "Hotel"/"Hostel"/etc. is at the START.
-    // Run two queries in parallel: one with the term prepended (if not already
-    // an accommodation keyword), one with the query as-is. Merge & deduplicate.
     const hasLodgingWord = /\b(hotel|hostel|riad|resort|lodge|inn|motel|parador|albergue)\b/i.test(q);
-    const queries = hasLodgingWord
-      ? [q]
-      : [`Hotel ${q}`, q];
+    const queries = hasLodgingWord ? [q] : [`Hotel ${q}`, q];
 
     const NOM_BASE = "https://nominatim.openstreetmap.org/search";
     const fetchNom = async (searchQ: string) => {
@@ -122,16 +117,16 @@ router.get("/hotels/lookup", requireAuth, async (req, res): Promise<void> => {
     const source = lodging.length > 0 ? lodging : allItems;
 
     const results = source.slice(0, 6).map(r => {
-        const addr = r.address ?? {};
-        const name = addr.hotel ?? addr.tourism ?? addr.amenity ?? r.display_name.split(",")[0];
-        const city = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
-        const country = addr.country ?? "";
-        const road = addr.road ? `${addr.house_number ? addr.house_number + " " : ""}${addr.road}` : "";
-        const address = [road, city, country].filter(Boolean).join(", ");
-        const phone = r.extratags?.phone ?? r.extratags?.["contact:phone"] ?? "";
-        const website = r.extratags?.website ?? r.extratags?.["contact:website"] ?? "";
-        return { name, city, country, address, phone, website };
-      });
+      const addr = r.address ?? {};
+      const name = addr.hotel ?? addr.tourism ?? addr.amenity ?? r.display_name.split(",")[0];
+      const city = addr.city ?? addr.town ?? addr.village ?? addr.municipality ?? "";
+      const country = addr.country ?? "";
+      const road = addr.road ? `${addr.house_number ? addr.house_number + " " : ""}${addr.road}` : "";
+      const address = [road, city, country].filter(Boolean).join(", ");
+      const phone = r.extratags?.phone ?? r.extratags?.["contact:phone"] ?? "";
+      const website = r.extratags?.website ?? r.extratags?.["contact:website"] ?? "";
+      return { name, city, country, address, phone, website };
+    });
 
     res.json(results);
   } catch (err) {
@@ -151,14 +146,16 @@ router.get("/hotels/:hotelId/usage", requireAuth, async (req, res): Promise<void
   const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
   const itineraries = await db
     .selectDistinct({ id: itinerariesTable.id, name: itinerariesTable.name })
-    .from(itineraryDaysTable)
+    .from(itineraryDayHotelsTable)
+    .innerJoin(itineraryDaysTable, eq(itineraryDayHotelsTable.itineraryDayId, itineraryDaysTable.id))
     .innerJoin(itinerariesTable, eq(itineraryDaysTable.itineraryId, itinerariesTable.id))
-    .where(eq(itineraryDaysTable.hotelId, id));
+    .where(eq(itineraryDayHotelsTable.hotelId, id));
   const trips = await db
     .selectDistinct({ id: tripsTable.id, name: tripsTable.name })
-    .from(tripDaysTable)
+    .from(tripDayHotelsTable)
+    .innerJoin(tripDaysTable, eq(tripDayHotelsTable.tripDayId, tripDaysTable.id))
     .innerJoin(tripsTable, eq(tripDaysTable.tripId, tripsTable.id))
-    .where(eq(tripDaysTable.hotelId, id));
+    .where(eq(tripDayHotelsTable.hotelId, id));
   res.json({ itineraries, trips });
 });
 

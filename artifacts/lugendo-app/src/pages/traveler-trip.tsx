@@ -345,10 +345,10 @@ export default function TravelerTrip() {
                         ? `${day.cityFrom} → ${day.cityTo}`
                         : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
                     </p>
-                    {day.hotelName && (
+                    {day.hotels && day.hotels.length > 0 && (
                       <div className="flex items-center gap-1.5 mt-2 p-2.5 rounded-[8px]" style={{ background: "#FAF2EB" }}>
                         <Hotel className="w-3.5 h-3.5 shrink-0" style={{ color: "#C4793A" }} />
-                        <span className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{day.hotelName}</span>
+                        <span className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{day.hotels.map(h => h.hotelName).join(", ")}</span>
                       </div>
                     )}
                     {day.description && (

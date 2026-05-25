@@ -10,6 +10,7 @@ export const invitationsTable = pgTable("invitations", {
   email: text("email").notNull(),
   inviteCode: text("invite_code").notNull().unique(),
   status: text("status", { enum: ["pending", "accepted", "declined"] }).notNull().default("pending"),
+  segment: text("segment", { enum: ["basic", "standard", "premium"] }),
   travelerId: integer("traveler_id").references(() => usersTable.id),
   createdBy: integer("created_by").references(() => usersTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

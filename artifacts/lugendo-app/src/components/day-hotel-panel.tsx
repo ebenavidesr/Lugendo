@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Hotel, Plus, X, Search, Loader2, ChevronDown } from "lucide-react";
+import { Hotel, Plus, X, Search, Loader2, Trash2 } from "lucide-react";
 import {
   useListHotels,
   useCreateHotel,
-  useUpdateItineraryDay,
-  useUpdateTripDayAdmin,
+  useAddItineraryDayHotel,
+  useRemoveItineraryDayHotel,
+  useAddTripDayHotel,
+  useRemoveTripDayHotel,
 } from "@workspace/api-client-react";
-import type { ItineraryDay, TripDay } from "@workspace/api-client-react";
+import type { DayHotel, SegmentValue } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,10 +19,21 @@ type HotelLookupResult = {
   address: string; phone: string; website: string;
 };
 
+const SEGMENTS: { value: NonNullable<SegmentValue>; label: string }[] = [
+  { value: "basic",    label: "Básico" },
+  { value: "standard", label: "Estándar" },
+  { value: "premium",  label: "Premium" },
+];
+
+const segmentColors: Record<NonNullable<SegmentValue>, { bg: string; color: string }> = {
+  basic:    { bg: "#ECD5B8", color: "#7A5C3A" },
+  standard: { bg: "#FAEEE4", color: "#8B4420" },
+  premium:  { bg: "#EAE6F5", color: "#3D2F6B" },
+};
+
 type GenericDay = {
   id: number;
-  hotelId?: number | null;
-  hotelName?: string | null;
+  hotels?: DayHotel[] | null;
   cityFrom?: string | null;
   cityTo?: string | null;
 };
@@ -36,22 +49,22 @@ export function DayHotelPanel({
   day: GenericDay;
   compact?: boolean;
 }) {
-  const { data: hotels } = useListHotels();
+  const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
-  const updateItinDay = useUpdateItineraryDay();
-  const updateTripDay = useUpdateTripDayAdmin();
+  const addItinHotel = useAddItineraryDayHotel();
+  const removeItinHotel = useRemoveItineraryDayHotel();
+  const addTripHotel = useAddTripDayHotel();
+  const removeTripHotel = useRemoveTripDayHotel();
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [mode, setMode] = useState<"idle" | "select" | "create">("idle");
-
-  // lookup state
+  const [mode, setMode] = useState<"idle" | "add" | "create">("idle");
+  const [selectedHotelId, setSelectedHotelId] = useState<string>("");
+  const [selectedSegment, setSelectedSegment] = useState<string>("");
   const [searchQ, setSearchQ] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupResults, setLookupResults] = useState<HotelLookupResult[]>([]);
   const [lookupDone, setLookupDone] = useState(false);
-
-  // new hotel form
   const [form, setForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
   const [saving, setSaving] = useState(false);
 
@@ -63,32 +76,42 @@ export function DayHotelPanel({
     }
   };
 
-  const assignHotel = (hotelId: number | null, hotelName?: string) => {
+  const handleAdd = () => {
+    if (!selectedHotelId) return;
+    const data = {
+      hotelId: parseInt(selectedHotelId),
+      ...(selectedSegment ? { segment: selectedSegment as SegmentValue } : {}),
+    };
     const callbacks = {
       onSuccess: () => {
         invalidate();
-        if (hotelName) toast({ title: `Hotel "${hotelName}" asignado` });
+        toast({ title: "Hotel añadido" });
         setMode("idle");
+        setSelectedHotelId("");
+        setSelectedSegment("");
       },
-      onError: () => toast({ variant: "destructive", title: "Error al asignar el hotel" }),
+      onError: () => toast({ variant: "destructive", title: "Error al añadir hotel" }),
     };
-
     if (entityType === "itinerary") {
-      updateItinDay.mutate(
-        { itineraryId: entityId, dayId: day.id, data: { hotelId: hotelId ?? undefined } },
-        callbacks
-      );
+      addItinHotel.mutate({ itineraryId: entityId, dayId: day.id, data }, callbacks);
     } else {
-      updateTripDay.mutate(
-        { tripId: entityId, dayId: day.id, data: { hotelId } },
-        callbacks
-      );
+      addTripHotel.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
     }
   };
 
-  const handleSelectChange = (val: string) => {
-    if (val === "none") assignHotel(null);
-    else assignHotel(parseInt(val), hotels?.find(h => h.id === parseInt(val))?.name);
+  const handleRemove = (assignmentId: number) => {
+    const callbacks = {
+      onSuccess: () => {
+        invalidate();
+        toast({ title: "Hotel eliminado" });
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al eliminar hotel" }),
+    };
+    if (entityType === "itinerary") {
+      removeItinHotel.mutate({ itineraryId: entityId, dayId: day.id, assignmentId }, callbacks);
+    } else {
+      removeTripHotel.mutate({ tripId: entityId, dayId: day.id, assignmentId }, callbacks);
+    }
   };
 
   const handleLookup = async () => {
@@ -128,8 +151,10 @@ export function DayHotelPanel({
         },
       });
       qc.invalidateQueries({ queryKey: ["/api/hotels"] });
-      assignHotel(hotel.id, hotel.name);
+      setSelectedHotelId(String(hotel.id));
       setForm({ name: "", city: "", country: "", address: "", phone: "", website: "" });
+      setMode("add");
+      toast({ title: `Hotel "${hotel.name}" creado. Ahora elige el segmento y confirma.` });
     } catch {
       toast({ variant: "destructive", title: "Error al crear el hotel" });
     } finally {
@@ -139,31 +164,34 @@ export function DayHotelPanel({
 
   const resetMode = () => {
     setMode("idle");
+    setSelectedHotelId("");
+    setSelectedSegment("");
     setSearchQ(""); setLookupResults([]); setLookupDone(false);
     setForm({ name: "", city: "", country: "", address: "", phone: "", website: "" });
   };
 
-  const isPending = updateItinDay.isPending || updateTripDay.isPending;
+  const isPending = addItinHotel.isPending || removeItinHotel.isPending || addTripHotel.isPending || removeTripHotel.isPending;
+  const currentHotels = day.hotels ?? [];
 
   return (
     <div className={compact ? "space-y-2" : "mt-3 pt-3 border-t border-border/60"}>
       <div className="flex items-center justify-between mb-2">
         <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>
-          Hotel del día
+          Hoteles del día
         </div>
         {mode === "idle" && (
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setMode("select")}
+              onClick={() => setMode("add")}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
-              <ChevronDown className="w-3 h-3" /> Cambiar
+              <Plus className="w-3 h-3" /> Añadir
             </button>
             <button
               onClick={() => { setMode("create"); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "" })); }}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#FAEEE4", color: "#C4793A" }}>
-              <Plus className="w-3 h-3" /> Nuevo
+              <Plus className="w-3 h-3" /> Nuevo hotel
             </button>
           </div>
         )}
@@ -174,42 +202,86 @@ export function DayHotelPanel({
         )}
       </div>
 
-      {/* Current hotel */}
-      {day.hotelId ? (
-        <div className="flex items-center gap-2 px-2.5 py-2 rounded-[8px] border border-border/60 bg-card mb-2">
-          <Hotel className="w-4 h-4 shrink-0" style={{ color: "#9C7A58" }} />
-          <span className="text-[12px] font-medium flex-1" style={{ color: "#2D1F0E" }}>
-            {day.hotelName ?? `Hotel #${day.hotelId}`}
-          </span>
-          <button
-            onClick={() => assignHotel(null)}
-            disabled={isPending}
-            className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-            title="Quitar hotel">
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : mode === "idle" ? (
+      {/* Existing hotel assignments */}
+      {currentHotels.length === 0 && mode === "idle" && (
         <div className="text-[11px] text-muted-foreground italic py-1">
-          Sin hotel asignado.
+          Sin hoteles asignados.
         </div>
-      ) : null}
+      )}
+      {currentHotels.length > 0 && (
+        <div className="space-y-1 mb-2">
+          {currentHotels.map(h => {
+            const seg = h.segment as SegmentValue | null;
+            const segStyle = seg ? segmentColors[seg] : { bg: "#F0F0F0", color: "#666" };
+            return (
+              <div key={h.id} className="flex items-center gap-2 px-2.5 py-2 rounded-[8px] border border-border/60 bg-card">
+                <Hotel className="w-3.5 h-3.5 shrink-0" style={{ color: "#9C7A58" }} />
+                <span className="text-[12px] font-medium flex-1 truncate" style={{ color: "#2D1F0E" }}>
+                  {h.hotelName}
+                  {h.hotelCity && <span className="text-muted-foreground font-normal"> · {h.hotelCity ?? ""}</span>}
+                </span>
+                {seg && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                    style={{ background: segStyle.bg, color: segStyle.color }}>
+                    {SEGMENTS.find(s => s.value === seg)?.label ?? seg}
+                  </span>
+                )}
+                <button
+                  onClick={() => handleRemove(h.id)}
+                  disabled={isPending}
+                  className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
+                  title="Quitar hotel">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Select from catalogue */}
-      {mode === "select" && (
-        <div className="rounded-[8px] border border-border/60 p-3 space-y-2" style={{ background: "#FAF8FF" }}>
-          <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Seleccionar del catálogo</p>
-          <Select defaultValue={day.hotelId ? String(day.hotelId) : "none"} onValueChange={handleSelectChange}>
-            <SelectTrigger className="h-8 text-[12px]">
-              <SelectValue placeholder="Sin hotel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sin hotel</SelectItem>
-              {hotels?.map(h => (
-                <SelectItem key={h.id} value={String(h.id)}>{h.name} — {h.city}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Add from catalogue */}
+      {mode === "add" && (
+        <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#FAF8FF" }}>
+          <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Añadir hotel al día</p>
+          <div className="space-y-2">
+            <div>
+              <label className="text-[11px] text-muted-foreground block mb-1">Hotel del catálogo</label>
+              <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
+                <SelectTrigger className="h-8 text-[12px]">
+                  <SelectValue placeholder="Seleccionar hotel…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hotelCatalog?.map(h => (
+                    <SelectItem key={h.id} value={String(h.id)}>
+                      {h.name} — {h.city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-[11px] text-muted-foreground block mb-1">Segmento (opcional)</label>
+              <Select value={selectedSegment} onValueChange={setSelectedSegment}>
+                <SelectTrigger className="h-8 text-[12px]">
+                  <SelectValue placeholder="Sin segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin segmento</SelectItem>
+                  {SEGMENTS.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <button
+              onClick={handleAdd}
+              disabled={!selectedHotelId || isPending}
+              className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40 inline-flex items-center gap-1.5"
+              style={{ background: "#3D2F6B", color: "white" }}>
+              {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              Confirmar
+            </button>
+          </div>
         </div>
       )}
 
@@ -268,10 +340,10 @@ export function DayHotelPanel({
             </div>
             <button
               onClick={handleCreate}
-              disabled={!form.name || !form.city || !form.country || saving || isPending}
+              disabled={!form.name || !form.city || !form.country || saving}
               className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40"
               style={{ background: "#C4793A", color: "#FAF2EB" }}>
-              {saving || isPending ? "Guardando…" : "Guardar hotel y asignar"}
+              {saving ? "Guardando…" : "Crear y continuar"}
             </button>
           </div>
         </div>

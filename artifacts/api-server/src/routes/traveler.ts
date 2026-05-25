@@ -1,11 +1,11 @@
 import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, invitationsTable,
   agenciesTable, hotelsTable, tripNotesTable, itinerariesTable,
-  itineraryDaysTable,
+  itineraryDaysTable, tripDayHotelsTable, itineraryDayHotelsTable,
   tripSharesTable, usersTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
@@ -15,6 +15,39 @@ function makeShareCode(): string {
 }
 
 const router: IRouter = Router();
+
+function serializeDayHotel(r: {
+  id: number; hotelId: number; hotelName: string; hotelCity: string | null;
+  segment: string | null; createdAt: Date;
+}) {
+  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, segment: r.segment, createdAt: r.createdAt.toISOString() };
+}
+
+async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerary") {
+  if (dayIds.length === 0) return {} as Record<number, ReturnType<typeof serializeDayHotel>[]>;
+  const table = kind === "trip" ? tripDayHotelsTable : itineraryDayHotelsTable;
+  const idCol = kind === "trip" ? tripDayHotelsTable.tripDayId : itineraryDayHotelsTable.itineraryDayId;
+  const rows = await db
+    .select({
+      id: table.id,
+      dayId: idCol,
+      hotelId: table.hotelId,
+      hotelName: hotelsTable.name,
+      hotelCity: hotelsTable.city,
+      segment: table.segment,
+      createdAt: table.createdAt,
+    })
+    .from(table)
+    .innerJoin(hotelsTable, eq(table.hotelId, hotelsTable.id))
+    .where(inArray(idCol, dayIds))
+    .orderBy(table.createdAt);
+  const map: Record<number, ReturnType<typeof serializeDayHotel>[]> = {};
+  for (const r of rows) {
+    if (!map[r.dayId]) map[r.dayId] = [];
+    map[r.dayId].push(serializeDayHotel({ ...r, hotelCity: r.hotelCity ?? null }));
+  }
+  return map;
+}
 
 // ─── List trips (agency-invited + own personal trips) ───────────────────────
 router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
@@ -194,48 +227,26 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
 
   if (!row) { res.status(404).json({ error: "Not found" }); return; }
 
-  let days: Array<{
-    id: number; tripId: number; dayNumber: number;
-    cityFrom: string | null; cityTo: string | null; transport: string | null;
-    description: string | null; hotelId: number | null; hotelName: string | null;
-    createdAt: Date;
-  }> = await db
-    .select({
-      id: tripDaysTable.id,
-      tripId: tripDaysTable.tripId,
-      dayNumber: tripDaysTable.dayNumber,
-      cityFrom: tripDaysTable.cityFrom,
-      cityTo: tripDaysTable.cityTo,
-      transport: tripDaysTable.transport,
-      description: tripDaysTable.description,
-      hotelId: tripDaysTable.hotelId,
-      hotelName: hotelsTable.name,
-      createdAt: tripDaysTable.createdAt,
-    })
+  const tripDayRows = await db
+    .select()
     .from(tripDaysTable)
-    .leftJoin(hotelsTable, eq(tripDaysTable.hotelId, hotelsTable.id))
     .where(eq(tripDaysTable.tripId, tripId))
     .orderBy(tripDaysTable.dayNumber);
 
-  // Personal trips store days in itinerary_days — fall back if trip_days is empty
-  if (days.length === 0 && row.itineraryId) {
+  let days: Array<{ id: number; tripId: number; dayNumber: number; cityFrom: string | null; cityTo: string | null; transport: string | null; description: string | null; createdAt: Date; hotels: ReturnType<typeof serializeDayHotel>[] }> = [];
+
+  if (tripDayRows.length > 0) {
+    const hotelMap = await getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip");
+    days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [] }));
+  } else if (row.itineraryId) {
+    // Personal trips store days in itinerary_days — fall back if trip_days is empty
     const itinDays = await db
-      .select({
-        id: itineraryDaysTable.id,
-        dayNumber: itineraryDaysTable.dayNumber,
-        cityFrom: itineraryDaysTable.cityFrom,
-        cityTo: itineraryDaysTable.cityTo,
-        transport: itineraryDaysTable.transport,
-        description: itineraryDaysTable.description,
-        hotelId: itineraryDaysTable.hotelId,
-        hotelName: hotelsTable.name,
-        createdAt: itineraryDaysTable.createdAt,
-      })
+      .select()
       .from(itineraryDaysTable)
-      .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
       .where(eq(itineraryDaysTable.itineraryId, row.itineraryId))
       .orderBy(itineraryDaysTable.dayNumber);
-    days = itinDays.map(d => ({ ...d, tripId }));
+    const hotelMap = await getTravelerDayHotelMap(itinDays.map(d => d.id), "itinerary");
+    days = itinDays.map(d => ({ ...d, tripId, hotels: hotelMap[d.id] ?? [] }));
   }
 
   res.json({
@@ -307,47 +318,25 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
     .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
     .where(eq(tripsTable.id, tripId));
 
-  let days: Array<{
-    id: number; tripId: number; dayNumber: number;
-    cityFrom: string | null; cityTo: string | null; transport: string | null;
-    description: string | null; hotelId: number | null; hotelName: string | null;
-    createdAt: Date;
-  }> = await db
-    .select({
-      id: tripDaysTable.id,
-      tripId: tripDaysTable.tripId,
-      dayNumber: tripDaysTable.dayNumber,
-      cityFrom: tripDaysTable.cityFrom,
-      cityTo: tripDaysTable.cityTo,
-      transport: tripDaysTable.transport,
-      description: tripDaysTable.description,
-      hotelId: tripDaysTable.hotelId,
-      hotelName: hotelsTable.name,
-      createdAt: tripDaysTable.createdAt,
-    })
+  const updatedTripDayRows = await db
+    .select()
     .from(tripDaysTable)
-    .leftJoin(hotelsTable, eq(tripDaysTable.hotelId, hotelsTable.id))
     .where(eq(tripDaysTable.tripId, tripId))
     .orderBy(tripDaysTable.dayNumber);
 
-  if (days.length === 0 && updated.itineraryId) {
+  let updatedDays: Array<{ id: number; tripId: number; dayNumber: number; cityFrom: string | null; cityTo: string | null; transport: string | null; description: string | null; createdAt: Date; hotels: ReturnType<typeof serializeDayHotel>[] }> = [];
+
+  if (updatedTripDayRows.length > 0) {
+    const hotelMap = await getTravelerDayHotelMap(updatedTripDayRows.map(d => d.id), "trip");
+    updatedDays = updatedTripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [] }));
+  } else if (updated.itineraryId) {
     const itinDays = await db
-      .select({
-        id: itineraryDaysTable.id,
-        dayNumber: itineraryDaysTable.dayNumber,
-        cityFrom: itineraryDaysTable.cityFrom,
-        cityTo: itineraryDaysTable.cityTo,
-        transport: itineraryDaysTable.transport,
-        description: itineraryDaysTable.description,
-        hotelId: itineraryDaysTable.hotelId,
-        hotelName: hotelsTable.name,
-        createdAt: itineraryDaysTable.createdAt,
-      })
+      .select()
       .from(itineraryDaysTable)
-      .leftJoin(hotelsTable, eq(itineraryDaysTable.hotelId, hotelsTable.id))
       .where(eq(itineraryDaysTable.itineraryId, updated.itineraryId))
       .orderBy(itineraryDaysTable.dayNumber);
-    days = itinDays.map(d => ({ ...d, tripId }));
+    const hotelMap = await getTravelerDayHotelMap(itinDays.map(d => d.id), "itinerary");
+    updatedDays = itinDays.map(d => ({ ...d, tripId, hotels: hotelMap[d.id] ?? [] }));
   }
 
   res.json({
@@ -356,7 +345,7 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
     agencyName: updated.agencyName ?? null,
     agencyLogoUrl: updated.agencyLogoUrl ?? null,
     createdAt: updated.createdAt.toISOString(),
-    days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
+    days: updatedDays.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
   });
 });
 
@@ -562,7 +551,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
   const itineraryId = await getOwnedTripItineraryId(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body as Record<string, unknown>;
+  const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber es obligatorio" }); return; }
 
   const [day] = await db
@@ -574,13 +563,8 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
       ...(cityTo ? { cityTo: String(cityTo) } : {}),
       ...(transport ? { transport: String(transport) } : {}),
       ...(description ? { description: String(description) } : {}),
-      ...(hotelId ? { hotelId: Number(hotelId) } : {}),
     })
     .returning();
-
-  const [hotel] = hotelId
-    ? await db.select({ name: hotelsTable.name }).from(hotelsTable).where(eq(hotelsTable.id, Number(hotelId)))
-    : [];
 
   res.status(201).json({
     id: day.id,
@@ -590,8 +574,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
     cityTo: day.cityTo ?? null,
     transport: day.transport ?? null,
     description: day.description ?? null,
-    hotelId: day.hotelId ?? null,
-    hotelName: hotel?.name ?? null,
+    hotels: [],
     createdAt: day.createdAt.toISOString(),
   });
 });
@@ -604,7 +587,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
   const itineraryId = await getOwnedTripItineraryId(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, transport, description, hotelId } = req.body as Record<string, unknown>;
+  const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
 
   const patch: Record<string, unknown> = {};
   if (dayNumber !== undefined) patch.dayNumber = Number(dayNumber);
@@ -612,7 +595,6 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
   if (cityTo !== undefined) patch.cityTo = cityTo || null;
   if (transport !== undefined) patch.transport = transport || null;
   if (description !== undefined) patch.description = description || null;
-  if (hotelId !== undefined) patch.hotelId = hotelId ? Number(hotelId) : null;
 
   const [updated] = await db
     .update(itineraryDaysTable)
@@ -622,10 +604,6 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
 
   if (!updated) { res.status(404).json({ error: "Día no encontrado" }); return; }
 
-  const [hotel] = updated.hotelId
-    ? await db.select({ name: hotelsTable.name }).from(hotelsTable).where(eq(hotelsTable.id, updated.hotelId))
-    : [];
-
   res.json({
     id: updated.id,
     tripId,
@@ -634,8 +612,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
     cityTo: updated.cityTo ?? null,
     transport: updated.transport ?? null,
     description: updated.description ?? null,
-    hotelId: updated.hotelId ?? null,
-    hotelName: hotel?.name ?? null,
+    hotels: [],
     createdAt: updated.createdAt.toISOString(),
   });
 });

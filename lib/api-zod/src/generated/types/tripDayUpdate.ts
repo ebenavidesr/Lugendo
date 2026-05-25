@@ -15,6 +15,4 @@ export interface TripDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
-  /** @nullable */
-  hotelId?: number | null;
 }

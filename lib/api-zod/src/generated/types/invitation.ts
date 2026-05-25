@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { InvitationStatus } from './invitationStatus';
+import type { SegmentValue } from './segmentValue';
 
 export interface Invitation {
   id: number;
@@ -13,6 +14,7 @@ export interface Invitation {
   email: string;
   inviteCode: string;
   status: InvitationStatus;
+  segment?: SegmentValue | null;
   /** @nullable */
   travelerId?: number | null;
   /** @nullable */

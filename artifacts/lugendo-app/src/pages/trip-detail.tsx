@@ -80,7 +80,7 @@ export default function TripDetail() {
 
   const onInvite = (values: z.infer<typeof inviteSchema>) => {
     const emails = values.emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
-    sendInv.mutate({ tripId, data: { emails } }, {
+    sendInv.mutate({ tripId, data: { invitees: emails.map(email => ({ email })) } }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
         toast({ title: `${emails.length} invitación${emails.length > 1 ? "es" : ""} enviada${emails.length > 1 ? "s" : ""}` });
@@ -253,8 +253,8 @@ export default function TripDetail() {
                         ? `${day.cityFrom} → ${day.cityTo}`
                         : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
                     </p>
-                    {day.hotelName && (
-                      <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotelName}</p>
+                    {day.hotels && day.hotels.length > 0 && (
+                      <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
                     )}
                     {day.transport && (
                       <p className="text-[12px] text-muted-foreground">

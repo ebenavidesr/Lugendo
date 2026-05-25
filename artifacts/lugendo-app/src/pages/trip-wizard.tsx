@@ -327,20 +327,6 @@ export default function TripWizard() {
           }
         }
       } else if (data.origin === "existing" && hasDays) {
-        for (const [dayNumStr, hotelIdStr] of Object.entries(data.dayHotels)) {
-          const dayNum = parseInt(dayNumStr);
-          const hotelId = parseInt(hotelIdStr);
-          if (!hotelId) continue;
-          const existingDay = existingDays?.find(d => d.dayNumber === dayNum);
-          if (existingDay && hotelId !== existingDay.hotelId) {
-            await fetch(`/api/itineraries/${itineraryId}/days/${existingDay.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({ hotelId }),
-            });
-          }
-        }
         if (itineraryId) {
           for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {
             const dayNum = parseInt(dayNumStr);
@@ -374,7 +360,7 @@ export default function TripWizard() {
       if (data.emails.trim()) {
         const emails = data.emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
         if (emails.length > 0) {
-          await sendInvitations.mutateAsync({ tripId: trip.id, data: { emails } });
+          await sendInvitations.mutateAsync({ tripId: trip.id, data: { invitees: emails.map(email => ({ email })) } });
         }
       }
 

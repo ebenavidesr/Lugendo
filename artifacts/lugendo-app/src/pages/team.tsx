@@ -508,7 +508,7 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
     const list = emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
     if (!list.length) { toast({ variant: "destructive", title: "Introduce al menos un email" }); return; }
     invite.mutate(
-      { tripId: parseInt(tripId), data: { emails: list } },
+      { tripId: parseInt(tripId), data: { invitees: list.map(email => ({ email })) } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: ["/api/trips"] });
