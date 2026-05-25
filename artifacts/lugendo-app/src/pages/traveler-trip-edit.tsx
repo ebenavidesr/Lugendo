@@ -8,6 +8,7 @@ import {
   useGetMyTrip, useUpdateMyTrip, useCreateTripDay, useUpdateTripDay,
   useDeleteTripDay, useListHotels, useCreateHotel,
 } from "@workspace/api-client-react";
+import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import type { TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -660,6 +661,17 @@ export default function TravelerTripEdit() {
                         />
                       )}
                     </div>
+
+                    {/* Activities */}
+                    {day.id !== null ? (
+                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
+                    ) : (
+                      <div className="pt-3 border-t border-border/60">
+                        <p className="text-[11px] text-muted-foreground italic">
+                          Guarda los cambios para gestionar actividades de este día.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

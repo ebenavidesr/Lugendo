@@ -121,7 +121,7 @@ router.get("/activities", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/activities", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/activities", requireAuth, async (req, res): Promise<void> => {
   const { name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax } = req.body;
   if (!name) { res.status(400).json({ error: "name is required" }); return; }
   const agencyId = req.session.agencyId;

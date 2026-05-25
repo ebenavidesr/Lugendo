@@ -195,7 +195,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, re
   });
 });
 
-router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async (req, res): Promise<void> => {
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
   await db.execute(sql`DELETE FROM trip_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
