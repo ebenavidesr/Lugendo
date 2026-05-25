@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { usersTable, agenciesTable } from "@workspace/db";
+import { usersTable, agenciesTable, invitationsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -68,6 +68,15 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   req.session.agencyId = user.agencyId;
   req.session.email = user.email;
   req.session.name = user.name;
+
+  // Auto-accept any pending invitations for this email
+  await db
+    .update(invitationsTable)
+    .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })
+    .where(and(
+      eq(invitationsTable.email, user.email),
+      eq(invitationsTable.status, "pending"),
+    ));
 
   res.json({
     id: user.id,
