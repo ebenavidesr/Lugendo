@@ -605,6 +605,19 @@ export interface TripUpdate {
   returnReservationCode?: string;
 }
 
+export interface TripDayUpdate {
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  transport?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  hotelId?: number | null;
+}
+
 export interface InvitationInput {
   emails: string[];
 }

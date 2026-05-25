@@ -214,7 +214,7 @@ router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Pro
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotelName: null });
 });
 
-router.patch("/itineraries/:itineraryId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const fields = req.body;
   const [day] = await db.update(itineraryDaysTable).set(fields).where(eq(itineraryDaysTable.id, dayId)).returning();

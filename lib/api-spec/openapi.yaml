@@ -704,6 +704,36 @@ paths:
         "204":
           description: Deleted
 
+  /trips/{tripId}/days/{dayId}:
+    patch:
+      operationId: updateTripDayAdmin
+      tags: [trips]
+      summary: Update a trip day (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDayUpdate"
+      responses:
+        "200":
+          description: Updated day
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDay"
+
   # ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
   /trips/{tripId}/days/{dayId}/activities:
     get:
@@ -1982,6 +2012,20 @@ components:
           type: string
         returnReservationCode:
           type: string
+
+    TripDayUpdate:
+      type: object
+      properties:
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        transport:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        hotelId:
+          type: ["integer", "null"]
 
     TripDay:
       type: object

@@ -131,7 +131,7 @@ function EditDayDialog({
                 <FormMessage />
               </FormItem>
             )} />
-            <DayHotelPanel itineraryId={itineraryId} day={day} compact />
+            <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} compact />
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Descripción</FormLabel>
@@ -538,7 +538,7 @@ export default function ItineraryDetail() {
 
                       {isExpanded && (
                         <>
-                          <DayHotelPanel itineraryId={itineraryId} day={day} />
+                          <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} />
                           <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} />
                         </>
                       )}

@@ -146,6 +146,34 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
   });
 });
 
+// ─── TRIP DAY UPDATE (back-office) ───────────────────────────────────────────
+router.patch("/trips/:tripId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const { cityFrom, cityTo, transport, description, hotelId } = req.body as {
+    cityFrom?: string | null; cityTo?: string | null; transport?: string | null;
+    description?: string | null; hotelId?: number | null;
+  };
+  const patch: Record<string, unknown> = {};
+  if (cityFrom !== undefined) patch.cityFrom = cityFrom;
+  if (cityTo !== undefined) patch.cityTo = cityTo;
+  if (transport !== undefined) patch.transport = transport;
+  if (description !== undefined) patch.description = description;
+  if (hotelId !== undefined) patch.hotelId = hotelId;
+
+  const [updated] = await db
+    .update(tripDaysTable)
+    .set(patch)
+    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [hotel] = updated.hotelId
+    ? await db.select().from(hotelsTable).where(eq(hotelsTable.id, updated.hotelId))
+    : [];
+  res.json({ ...updated, hotelName: hotel?.name ?? null, createdAt: String(updated.createdAt) });
+});
+
 // ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
 router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);

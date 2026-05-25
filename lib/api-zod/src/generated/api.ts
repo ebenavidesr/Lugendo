@@ -758,6 +758,36 @@ export const DeleteTripParams = zod.object({
 
 
 /**
+ * @summary Update a trip day (back-office)
+ */
+export const UpdateTripDayAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const UpdateTripDayAdminBody = zod.object({
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish()
+})
+
+export const UpdateTripDayAdminResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "hotelId": zod.number().nullish(),
+  "hotelName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary List activities linked to a trip day
  */
 export const ListTripDayActivitiesParams = zod.object({

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
+import { DayHotelPanel } from "@/components/day-hotel-panel";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TripDetailStatus, InvitationStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -261,7 +262,10 @@ export default function TripDetail() {
                       <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
                     )}
                     {isExpanded && (
-                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
+                      <>
+                        <DayHotelPanel entityType="trip" entityId={tripId} day={day} />
+                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
+                      </>
                     )}
                   </div>
                   <button

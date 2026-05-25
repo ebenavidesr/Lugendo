@@ -4,8 +4,9 @@ import {
   useListHotels,
   useCreateHotel,
   useUpdateItineraryDay,
+  useUpdateTripDayAdmin,
 } from "@workspace/api-client-react";
-import type { ItineraryDay } from "@workspace/api-client-react";
+import type { ItineraryDay, TripDay } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,18 +17,29 @@ type HotelLookupResult = {
   address: string; phone: string; website: string;
 };
 
+type GenericDay = {
+  id: number;
+  hotelId?: number | null;
+  hotelName?: string | null;
+  cityFrom?: string | null;
+  cityTo?: string | null;
+};
+
 export function DayHotelPanel({
-  itineraryId,
+  entityType,
+  entityId,
   day,
   compact = false,
 }: {
-  itineraryId: number;
-  day: ItineraryDay;
+  entityType: "itinerary" | "trip";
+  entityId: number;
+  day: GenericDay;
   compact?: boolean;
 }) {
   const { data: hotels } = useListHotels();
   const createHotel = useCreateHotel();
-  const updateDay = useUpdateItineraryDay();
+  const updateItinDay = useUpdateItineraryDay();
+  const updateTripDay = useUpdateTripDayAdmin();
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -43,21 +55,35 @@ export function DayHotelPanel({
   const [form, setForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
   const [saving, setSaving] = useState(false);
 
-  const invalidate = () =>
-    qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
+  const invalidate = () => {
+    if (entityType === "itinerary") {
+      qc.invalidateQueries({ queryKey: [`/api/itineraries/${entityId}/days`] });
+    } else {
+      qc.invalidateQueries({ queryKey: [`/api/trips/${entityId}`] });
+    }
+  };
 
   const assignHotel = (hotelId: number | null, hotelName?: string) => {
-    updateDay.mutate(
-      { itineraryId, dayId: day.id, data: hotelId ? { hotelId } : { hotelId: 0 } },
-      {
-        onSuccess: () => {
-          invalidate();
-          if (hotelName) toast({ title: `Hotel "${hotelName}" asignado` });
-          setMode("idle");
-        },
-        onError: () => toast({ variant: "destructive", title: "Error al asignar el hotel" }),
-      }
-    );
+    const callbacks = {
+      onSuccess: () => {
+        invalidate();
+        if (hotelName) toast({ title: `Hotel "${hotelName}" asignado` });
+        setMode("idle");
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al asignar el hotel" }),
+    };
+
+    if (entityType === "itinerary") {
+      updateItinDay.mutate(
+        { itineraryId: entityId, dayId: day.id, data: { hotelId: hotelId ?? undefined } },
+        callbacks
+      );
+    } else {
+      updateTripDay.mutate(
+        { tripId: entityId, dayId: day.id, data: { hotelId } },
+        callbacks
+      );
+    }
   };
 
   const handleSelectChange = (val: string) => {
@@ -117,6 +143,8 @@ export function DayHotelPanel({
     setForm({ name: "", city: "", country: "", address: "", phone: "", website: "" });
   };
 
+  const isPending = updateItinDay.isPending || updateTripDay.isPending;
+
   return (
     <div className={compact ? "space-y-2" : "mt-3 pt-3 border-t border-border/60"}>
       <div className="flex items-center justify-between mb-2">
@@ -155,6 +183,7 @@ export function DayHotelPanel({
           </span>
           <button
             onClick={() => assignHotel(null)}
+            disabled={isPending}
             className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
             title="Quitar hotel">
             <X className="w-3.5 h-3.5" />
@@ -189,7 +218,6 @@ export function DayHotelPanel({
         <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#FAF8F5" }}>
           <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#C4793A" }}>Buscar o crear hotel</p>
 
-          {/* Lookup */}
           <div>
             <label className="text-[11px] text-muted-foreground block mb-1">Buscar en la web</label>
             <div className="flex gap-1.5">
@@ -226,7 +254,6 @@ export function DayHotelPanel({
             )}
           </div>
 
-          {/* Hotel form */}
           <div className="space-y-2 pt-1 border-t border-border/60">
             <label className="text-[11px] text-muted-foreground block">Datos del hotel</label>
             <Input placeholder="Nombre *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-[12px]" />
@@ -241,10 +268,10 @@ export function DayHotelPanel({
             </div>
             <button
               onClick={handleCreate}
-              disabled={!form.name || !form.city || !form.country || saving}
+              disabled={!form.name || !form.city || !form.country || saving || isPending}
               className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40"
               style={{ background: "#C4793A", color: "#FAF2EB" }}>
-              {saving ? "Guardando…" : "Guardar hotel y asignar"}
+              {saving || isPending ? "Guardando…" : "Guardar hotel y asignar"}
             </button>
           </div>
         </div>

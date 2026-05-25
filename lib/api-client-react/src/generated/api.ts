@@ -55,6 +55,7 @@ import type {
   TravelerTripDetail,
   Trip,
   TripDay,
+  TripDayUpdate,
   TripDetail,
   TripInput,
   TripNote,
@@ -2731,6 +2732,80 @@ export const useDeleteTrip = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTripMutationOptions(options));
+    }
+
+export const getUpdateTripDayAdminUrl = (tripId: number,
+    dayId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}`
+}
+
+/**
+ * @summary Update a trip day (back-office)
+ */
+export const updateTripDayAdmin = async (tripId: number,
+    dayId: number,
+    tripDayUpdate: TripDayUpdate, options?: RequestInit): Promise<TripDay> => {
+
+  return customFetch<TripDay>(getUpdateTripDayAdminUrl(tripId,dayId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripDayUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTripDayAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDayAdmin>>, TError,{tripId: number;dayId: number;data: BodyType<TripDayUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTripDayAdmin>>, TError,{tripId: number;dayId: number;data: BodyType<TripDayUpdate>}, TContext> => {
+
+const mutationKey = ['updateTripDayAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripDayAdmin>>, {tripId: number;dayId: number;data: BodyType<TripDayUpdate>}> = (props) => {
+          const {tripId,dayId,data} = props ?? {};
+
+          return  updateTripDayAdmin(tripId,dayId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTripDayAdminMutationResult = NonNullable<Awaited<ReturnType<typeof updateTripDayAdmin>>>
+    export type UpdateTripDayAdminMutationBody = BodyType<TripDayUpdate>
+    export type UpdateTripDayAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a trip day (back-office)
+ */
+export const useUpdateTripDayAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDayAdmin>>, TError,{tripId: number;dayId: number;data: BodyType<TripDayUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTripDayAdmin>>,
+        TError,
+        {tripId: number;dayId: number;data: BodyType<TripDayUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTripDayAdminMutationOptions(options));
     }
 
 export const getListTripDayActivitiesUrl = (tripId: number,
