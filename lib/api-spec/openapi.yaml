@@ -704,6 +704,86 @@ paths:
         "204":
           description: Deleted
 
+  # ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
+  /trips/{tripId}/days/{dayId}/activities:
+    get:
+      operationId: listTripDayActivities
+      tags: [trips]
+      summary: List activities linked to a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of trip day activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DayActivity"
+    post:
+      operationId: addTripDayActivity
+      tags: [trips]
+      summary: Link an activity to a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DayActivityInput"
+      responses:
+        "201":
+          description: Activity linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayActivity"
+
+  /trips/{tripId}/days/{dayId}/activities/{linkId}:
+    delete:
+      operationId: removeTripDayActivity
+      tags: [trips]
+      summary: Unlink an activity from a trip day
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Unlinked
+
   # ─── INVITATIONS ─────────────────────────────────────────────────────────────
   /trips/{tripId}/invitations:
     get:
@@ -2271,6 +2351,8 @@ components:
           type: ["string", "null"]
         sortOrder:
           type: integer
+        startTime:
+          type: ["string", "null"]
         notes:
           type: ["string", "null"]
         createdAt:
@@ -2284,6 +2366,8 @@ components:
           type: integer
         sortOrder:
           type: integer
+        startTime:
+          type: string
         notes:
           type: string
 

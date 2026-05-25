@@ -887,6 +887,8 @@ export interface DayActivity {
   activityCategory?: string | null;
   sortOrder: number;
   /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
   notes?: string | null;
   createdAt: string;
 }
@@ -894,6 +896,7 @@ export interface DayActivity {
 export interface DayActivityInput {
   activityId: number;
   sortOrder?: number;
+  startTime?: string;
   notes?: string;
 }
 

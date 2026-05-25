@@ -233,7 +233,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const rows = await db.execute(sql`
     SELECT ida.id, ida.day_id, ida.activity_id, a.name as activity_name, a.category as activity_category,
-           ida.sort_order, ida.notes, ida.created_at
+           ida.sort_order, ida.start_time, ida.notes, ida.created_at
     FROM itinerary_day_activities ida
     JOIN activities a ON a.id = ida.activity_id
     WHERE ida.day_id = ${dayId}
@@ -246,6 +246,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
     activityName: r.activity_name,
     activityCategory: r.activity_category,
     sortOrder: r.sort_order,
+    startTime: r.start_time ?? null,
     notes: r.notes,
     createdAt: (r.created_at as Date).toISOString(),
   })));
@@ -253,21 +254,13 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
 
 router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { activityId, sortOrder = 0, notes } = req.body as { activityId: number; sortOrder?: number; notes?: string };
+  const { activityId, sortOrder = 0, notes, startTime } = req.body as { activityId: number; sortOrder?: number; notes?: string; startTime?: string };
   if (!activityId) { res.status(400).json({ error: "activityId is required" }); return; }
 
-  const existingResult = await db.execute(sql`
-    SELECT id FROM itinerary_day_activities WHERE day_id = ${dayId} AND activity_id = ${activityId}
-  `);
-  if (existingResult.rows.length > 0) {
-    res.status(409).json({ error: "Activity already linked to this day" });
-    return;
-  }
-
   const insertResult = await db.execute(sql`
-    INSERT INTO itinerary_day_activities (day_id, activity_id, sort_order, notes)
-    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null})
-    RETURNING id, day_id, activity_id, sort_order, notes, created_at
+    INSERT INTO itinerary_day_activities (day_id, activity_id, sort_order, notes, start_time)
+    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null}, ${startTime ?? null})
+    RETURNING id, day_id, activity_id, sort_order, notes, start_time, created_at
   `);
   const link = insertResult.rows[0] as Record<string, unknown>;
   const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, activityId));
@@ -278,6 +271,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asy
     activityName: act?.name ?? "",
     activityCategory: act?.category ?? null,
     sortOrder: link.sort_order,
+    startTime: link.start_time ?? null,
     notes: link.notes,
     createdAt: (link.created_at as Date).toISOString(),
   });

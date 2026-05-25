@@ -9,5 +9,6 @@
 export interface DayActivityInput {
   activityId: number;
   sortOrder?: number;
+  startTime?: string;
   notes?: string;
 }

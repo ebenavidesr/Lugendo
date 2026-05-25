@@ -162,7 +162,7 @@ function EditDayDialog({
               <p className="text-[11px] font-medium uppercase tracking-wide mb-2" style={{ color: "#9C7A58" }}>
                 Actividades del día
               </p>
-              <DayActivitiesPanel itineraryId={itineraryId} dayId={day.id} compact />
+              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} compact />
             </div>
 
             <DialogFooter>
@@ -554,7 +554,7 @@ export default function ItineraryDetail() {
                       )}
 
                       {isExpanded && (
-                        <DayActivitiesPanel itineraryId={itineraryId} dayId={day.id} />
+                        <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} />
                       )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">

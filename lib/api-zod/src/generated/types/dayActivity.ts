@@ -15,6 +15,8 @@ export interface DayActivity {
   activityCategory?: string | null;
   sortOrder: number;
   /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
   notes?: string | null;
   createdAt: string;
 }

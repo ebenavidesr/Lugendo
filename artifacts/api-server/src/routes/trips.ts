@@ -3,7 +3,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, itinerariesTable, itineraryDaysTable,
-  hotelsTable, invitationsTable, agenciesTable, tripSharesTable,
+  hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
@@ -144,6 +144,61 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
       acceptedAt: i.acceptedAt?.toISOString() ?? null,
     })),
   });
+});
+
+// ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
+router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const rows = await db.execute(sql`
+    SELECT tda.id, tda.day_id, tda.activity_id, a.name as activity_name, a.category as activity_category,
+           tda.sort_order, tda.start_time, tda.notes, tda.created_at
+    FROM trip_day_activities tda
+    JOIN activities a ON a.id = tda.activity_id
+    WHERE tda.day_id = ${dayId}
+    ORDER BY tda.sort_order, tda.created_at
+  `);
+  res.json((rows.rows as Array<Record<string, unknown>>).map(r => ({
+    id: r.id,
+    dayId: r.day_id,
+    activityId: r.activity_id,
+    activityName: r.activity_name,
+    activityCategory: r.activity_category,
+    sortOrder: r.sort_order,
+    startTime: r.start_time ?? null,
+    notes: r.notes,
+    createdAt: (r.created_at as Date).toISOString(),
+  })));
+});
+
+router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const { activityId, sortOrder = 0, notes, startTime } = req.body as { activityId: number; sortOrder?: number; notes?: string; startTime?: string };
+  if (!activityId) { res.status(400).json({ error: "activityId is required" }); return; }
+
+  const insertResult = await db.execute(sql`
+    INSERT INTO trip_day_activities (day_id, activity_id, sort_order, notes, start_time)
+    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null}, ${startTime ?? null})
+    RETURNING id, day_id, activity_id, sort_order, notes, start_time, created_at
+  `);
+  const link = insertResult.rows[0] as Record<string, unknown>;
+  const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, activityId));
+  res.status(201).json({
+    id: link.id,
+    dayId: link.day_id,
+    activityId: link.activity_id,
+    activityName: act?.name ?? "",
+    activityCategory: act?.category ?? null,
+    sortOrder: link.sort_order,
+    startTime: link.start_time ?? null,
+    notes: link.notes,
+    createdAt: (link.created_at as Date).toISOString(),
+  });
+});
+
+router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  await db.execute(sql`DELETE FROM trip_day_activities WHERE id = ${linkId}`);
+  res.sendStatus(204);
 });
 
 router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> => {

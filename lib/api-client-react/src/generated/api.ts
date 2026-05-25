@@ -2733,6 +2733,236 @@ export const useDeleteTrip = <TError = ErrorType<unknown>,
       return useMutation(getDeleteTripMutationOptions(options));
     }
 
+export const getListTripDayActivitiesUrl = (tripId: number,
+    dayId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities`
+}
+
+/**
+ * @summary List activities linked to a trip day
+ */
+export const listTripDayActivities = async (tripId: number,
+    dayId: number, options?: RequestInit): Promise<DayActivity[]> => {
+
+  return customFetch<DayActivity[]>(getListTripDayActivitiesUrl(tripId,dayId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripDayActivitiesQueryKey = (tripId: number,
+    dayId: number,) => {
+    return [
+    `/api/trips/${tripId}/days/${dayId}/activities`
+    ] as const;
+    }
+
+
+export const getListTripDayActivitiesQueryOptions = <TData = Awaited<ReturnType<typeof listTripDayActivities>>, TError = ErrorType<unknown>>(tripId: number,
+    dayId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDayActivities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripDayActivitiesQueryKey(tripId,dayId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripDayActivities>>> = ({ signal }) => listTripDayActivities(tripId,dayId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId && dayId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripDayActivities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripDayActivitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listTripDayActivities>>>
+export type ListTripDayActivitiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List activities linked to a trip day
+ */
+
+export function useListTripDayActivities<TData = Awaited<ReturnType<typeof listTripDayActivities>>, TError = ErrorType<unknown>>(
+ tripId: number,
+    dayId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDayActivities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripDayActivitiesQueryOptions(tripId,dayId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddTripDayActivityUrl = (tripId: number,
+    dayId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities`
+}
+
+/**
+ * @summary Link an activity to a trip day
+ */
+export const addTripDayActivity = async (tripId: number,
+    dayId: number,
+    dayActivityInput: DayActivityInput, options?: RequestInit): Promise<DayActivity> => {
+
+  return customFetch<DayActivity>(getAddTripDayActivityUrl(tripId,dayId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      dayActivityInput,)
+  }
+);}
+
+
+
+
+export const getAddTripDayActivityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripDayActivity>>, TError,{tripId: number;dayId: number;data: BodyType<DayActivityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTripDayActivity>>, TError,{tripId: number;dayId: number;data: BodyType<DayActivityInput>}, TContext> => {
+
+const mutationKey = ['addTripDayActivity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTripDayActivity>>, {tripId: number;dayId: number;data: BodyType<DayActivityInput>}> = (props) => {
+          const {tripId,dayId,data} = props ?? {};
+
+          return  addTripDayActivity(tripId,dayId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTripDayActivityMutationResult = NonNullable<Awaited<ReturnType<typeof addTripDayActivity>>>
+    export type AddTripDayActivityMutationBody = BodyType<DayActivityInput>
+    export type AddTripDayActivityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Link an activity to a trip day
+ */
+export const useAddTripDayActivity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripDayActivity>>, TError,{tripId: number;dayId: number;data: BodyType<DayActivityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTripDayActivity>>,
+        TError,
+        {tripId: number;dayId: number;data: BodyType<DayActivityInput>},
+        TContext
+      > => {
+      return useMutation(getAddTripDayActivityMutationOptions(options));
+    }
+
+export const getRemoveTripDayActivityUrl = (tripId: number,
+    dayId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities/${linkId}`
+}
+
+/**
+ * @summary Unlink an activity from a trip day
+ */
+export const removeTripDayActivity = async (tripId: number,
+    dayId: number,
+    linkId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveTripDayActivityUrl(tripId,dayId,linkId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveTripDayActivityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripDayActivity>>, TError,{tripId: number;dayId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTripDayActivity>>, TError,{tripId: number;dayId: number;linkId: number}, TContext> => {
+
+const mutationKey = ['removeTripDayActivity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTripDayActivity>>, {tripId: number;dayId: number;linkId: number}> = (props) => {
+          const {tripId,dayId,linkId} = props ?? {};
+
+          return  removeTripDayActivity(tripId,dayId,linkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTripDayActivityMutationResult = NonNullable<Awaited<ReturnType<typeof removeTripDayActivity>>>
+
+    export type RemoveTripDayActivityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Unlink an activity from a trip day
+ */
+export const useRemoveTripDayActivity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripDayActivity>>, TError,{tripId: number;dayId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTripDayActivity>>,
+        TError,
+        {tripId: number;dayId: number;linkId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveTripDayActivityMutationOptions(options));
+    }
+
 export const getListInvitationsUrl = (tripId: number,) => {
 
 

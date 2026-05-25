@@ -260,25 +260,18 @@ export default function TripDetail() {
                     {day.description && (
                       <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
                     )}
-                    {isExpanded && itDay && trip.itineraryId && (
-                      <DayActivitiesPanel itineraryId={trip.itineraryId} dayId={itDay.id} />
-                    )}
-                    {isExpanded && !itDay && (
-                      <p className="text-[11px] text-muted-foreground mt-2 italic">
-                        Este día no tiene plantilla de actividades asociada.
-                      </p>
+                    {isExpanded && (
+                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
                     )}
                   </div>
-                  {trip.itineraryId && (
-                    <button
-                      onClick={() => toggleDay(day.id)}
-                      className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mt-0.5"
-                      title={isExpanded ? "Colapsar actividades" : "Ver actividades"}>
-                      {isExpanded
-                        ? <ChevronDown className="w-4 h-4" />
-                        : <ChevronRight className="w-4 h-4" />}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => toggleDay(day.id)}
+                    className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mt-0.5"
+                    title={isExpanded ? "Colapsar actividades" : "Ver actividades"}>
+                    {isExpanded
+                      ? <ChevronDown className="w-4 h-4" />
+                      : <ChevronRight className="w-4 h-4" />}
+                  </button>
                 </li>
               );
             })}

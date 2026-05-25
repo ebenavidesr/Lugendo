@@ -758,6 +758,54 @@ export const DeleteTripParams = zod.object({
 
 
 /**
+ * @summary List activities linked to a trip day
+ */
+export const ListTripDayActivitiesParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const ListTripDayActivitiesResponseItem = zod.object({
+  "id": zod.number(),
+  "dayId": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string().optional(),
+  "activityCategory": zod.string().nullish(),
+  "sortOrder": zod.number(),
+  "startTime": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const ListTripDayActivitiesResponse = zod.array(ListTripDayActivitiesResponseItem)
+
+
+/**
+ * @summary Link an activity to a trip day
+ */
+export const AddTripDayActivityParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+export const AddTripDayActivityBody = zod.object({
+  "activityId": zod.number(),
+  "sortOrder": zod.number().optional(),
+  "startTime": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Unlink an activity from a trip day
+ */
+export const RemoveTripDayActivityParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+
+/**
  * @summary List invitations for a trip
  */
 export const ListInvitationsParams = zod.object({
@@ -1191,6 +1239,7 @@ export const ListDayActivitiesResponseItem = zod.object({
   "activityName": zod.string().optional(),
   "activityCategory": zod.string().nullish(),
   "sortOrder": zod.number(),
+  "startTime": zod.string().nullish(),
   "notes": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -1208,6 +1257,7 @@ export const AddDayActivityParams = zod.object({
 export const AddDayActivityBody = zod.object({
   "activityId": zod.number(),
   "sortOrder": zod.number().optional(),
+  "startTime": zod.string().optional(),
   "notes": zod.string().optional()
 })
 
