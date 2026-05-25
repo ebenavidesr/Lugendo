@@ -162,7 +162,7 @@ router.get("/hotels/:hotelId/usage", requireAuth, async (req, res): Promise<void
   res.json({ itineraries, trips });
 });
 
-router.patch("/hotels/:hotelId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/hotels/:hotelId", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
   const fields = req.body;
   const [hotel] = await db.update(hotelsTable).set(fields).where(eq(hotelsTable.id, id)).returning();

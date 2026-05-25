@@ -152,7 +152,7 @@ router.get("/activities/:activityId", requireAuth, async (req, res): Promise<voi
   res.json(serialize(activity));
 });
 
-router.patch("/activities/:activityId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   const fields = req.body;
   const [activity] = await db.update(activitiesTable).set(fields).where(eq(activitiesTable.id, id)).returning();
