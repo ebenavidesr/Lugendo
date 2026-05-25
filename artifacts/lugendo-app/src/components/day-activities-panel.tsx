@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Clock, StickyNote } from "lucide-react";
+import { Plus, X, Clock, StickyNote, Search, Loader2 } from "lucide-react";
 import {
   useListDayActivities,
   useAddDayActivity,
@@ -27,6 +27,8 @@ export const categoryMeta: Record<string, { emoji: string; label: string }> = {
   excursion:   { emoji: "🚌", label: "Excursión" },
   other:       { emoji: "⭐", label: "Otros" },
 };
+
+type LookupResult = { name: string; city: string; country: string; address: string; description: string };
 
 export function DayActivitiesPanel({
   entityType,
@@ -59,13 +61,25 @@ export function DayActivitiesPanel({
     : `/api/trips/${entityId}/days/${dayId}/activities`;
 
   const [mode, setMode] = useState<"idle" | "link" | "create">("idle");
+
+  // link mode
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
   const [startTime, setStartTime] = useState("");
   const [notes, setNotes] = useState("");
+
+  // create mode
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newCity, setNewCity] = useState("");
+  const [newCountry, setNewCountry] = useState("");
   const [newStartTime, setNewStartTime] = useState("");
   const [newNotes, setNewNotes] = useState("");
+
+  // lookup
+  const [lookupQ, setLookupQ] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
+  const [lookupDone, setLookupDone] = useState(false);
 
   const linkedIds = new Set((dayActivities ?? []).map(a => a.activityId));
   const availableActivities = (allActivities ?? []).filter(a => !linkedIds.has(a.id));
@@ -73,7 +87,9 @@ export function DayActivitiesPanel({
   const resetForm = () => {
     setMode("idle");
     setSelectedActivityId(""); setStartTime(""); setNotes("");
-    setNewName(""); setNewCategory(""); setNewStartTime(""); setNewNotes("");
+    setNewName(""); setNewCategory(""); setNewCity(""); setNewCountry("");
+    setNewStartTime(""); setNewNotes("");
+    setLookupQ(""); setLookupResults([]); setLookupDone(false);
   };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [queryKey] });
@@ -84,20 +100,26 @@ export function DayActivitiesPanel({
       ...(st ? { startTime: st } : {}),
       ...(n ? { notes: n } : {}),
     };
-    const successCb = { onSuccess: () => { invalidate(); cb?.(); }, onError: () => toast({ variant: "destructive", title: "Error al añadir actividad" }) };
+    const callbacks = {
+      onSuccess: () => { invalidate(); cb?.(); },
+      onError: () => toast({ variant: "destructive", title: "Error al añadir actividad" }),
+    };
     if (isItinerary) {
-      addItin.mutate({ itineraryId: entityId, dayId, data }, successCb);
+      addItin.mutate({ itineraryId: entityId, dayId, data }, callbacks);
     } else {
-      addTrip.mutate({ tripId: entityId, dayId, data }, successCb);
+      addTrip.mutate({ tripId: entityId, dayId, data }, callbacks);
     }
   };
 
   const doRemove = (linkId: number) => {
-    const successCb = { onSuccess: invalidate, onError: () => toast({ variant: "destructive", title: "Error al eliminar actividad" }) };
+    const callbacks = {
+      onSuccess: invalidate,
+      onError: () => toast({ variant: "destructive", title: "Error al eliminar actividad" }),
+    };
     if (isItinerary) {
-      removeItin.mutate({ itineraryId: entityId, dayId, linkId }, successCb);
+      removeItin.mutate({ itineraryId: entityId, dayId, linkId }, callbacks);
     } else {
-      removeTrip.mutate({ tripId: entityId, dayId, linkId }, successCb);
+      removeTrip.mutate({ tripId: entityId, dayId, linkId }, callbacks);
     }
   };
 
@@ -109,10 +131,43 @@ export function DayActivitiesPanel({
     });
   };
 
+  const handleLookup = async () => {
+    if (!lookupQ.trim()) return;
+    setLookupLoading(true);
+    setLookupDone(false);
+    setLookupResults([]);
+    try {
+      const res = await fetch(`/api/activities/lookup?q=${encodeURIComponent(lookupQ)}`, { credentials: "include" });
+      if (res.ok) setLookupResults(await res.json());
+      else toast({ variant: "destructive", title: "Error al buscar actividades" });
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión" });
+    } finally {
+      setLookupLoading(false);
+      setLookupDone(true);
+    }
+  };
+
+  const applyLookupResult = (r: LookupResult) => {
+    setNewName(r.name);
+    setNewCity(r.city);
+    setNewCountry(r.country);
+    setLookupResults([]);
+    setLookupQ("");
+    setLookupDone(false);
+  };
+
   const handleCreateAndLink = () => {
     if (!newName.trim()) return;
     createActivity.mutate(
-      { data: { name: newName.trim(), ...(newCategory ? { category: newCategory as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}) } },
+      {
+        data: {
+          name: newName.trim(),
+          ...(newCategory ? { category: newCategory as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
+          ...(newCity ? { city: newCity } : {}),
+          ...(newCountry ? { country: newCountry } : {}),
+        },
+      },
       {
         onSuccess: (created) => {
           qc.invalidateQueries({ queryKey: ["/api/activities"] });
@@ -197,9 +252,10 @@ export function DayActivitiesPanel({
             </div>
           )}
 
+          {/* ── Link existing ── */}
           {mode === "link" && (
             <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#FAF8FF" }}>
-              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Vincular actividad existente</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Vincular actividad del catálogo</p>
               <Select value={selectedActivityId} onValueChange={setSelectedActivityId}>
                 <SelectTrigger className="h-8 text-[12px]">
                   <SelectValue placeholder="Seleccionar actividad…" />
@@ -231,12 +287,61 @@ export function DayActivitiesPanel({
             </div>
           )}
 
+          {/* ── Create new ── */}
           {mode === "create" && (
             <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#FAEEE4" }}>
               <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#C4793A" }}>Nueva actividad</p>
+
+              {/* Lookup */}
+              <div>
+                <label className="text-[11px] text-muted-foreground block mb-1">Buscar en la web</label>
+                <div className="flex gap-1.5">
+                  <Input
+                    placeholder="Plaza Mayor Madrid, Parque Güell…"
+                    value={lookupQ}
+                    onChange={e => setLookupQ(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleLookup()}
+                    className="h-8 text-[12px] flex-1"
+                  />
+                  <button
+                    onClick={handleLookup}
+                    disabled={!lookupQ.trim() || lookupLoading}
+                    className="h-8 px-3 rounded-[6px] text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
+                    style={{ background: "#C4793A", color: "#FAF2EB" }}>
+                    {lookupLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                {lookupResults.length > 0 && (
+                  <div className="mt-1.5 rounded-[6px] border border-border bg-card overflow-hidden divide-y divide-border/60">
+                    {lookupResults.map((r, i) => (
+                      <button key={i} onClick={() => applyLookupResult(r)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors">
+                        <p className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>{r.name}</p>
+                        {(r.city || r.country) && (
+                          <p className="text-[11px] text-muted-foreground truncate">{[r.city, r.country].filter(Boolean).join(", ")}</p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {lookupDone && lookupResults.length === 0 && (
+                  <p className="text-[11px] text-muted-foreground mt-1">Sin resultados. Rellena el nombre manualmente.</p>
+                )}
+              </div>
+
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Nombre *</label>
                 <Input placeholder="Visita guiada a la Medina…" value={newName} onChange={e => setNewName(e.target.value)} className="h-8 text-[12px]" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Ciudad</label>
+                  <Input placeholder="Barcelona" value={newCity} onChange={e => setNewCity(e.target.value)} className="h-8 text-[12px]" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">País</label>
+                  <Input placeholder="España" value={newCountry} onChange={e => setNewCountry(e.target.value)} className="h-8 text-[12px]" />
+                </div>
               </div>
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Categoría</label>
@@ -252,7 +357,7 @@ export function DayActivitiesPanel({
                 </Select>
               </div>
               <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Hora de inicio</label>
+                <label className="text-[11px] text-muted-foreground block mb-1">Hora de inicio (para este día)</label>
                 <Input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} className="h-8 text-[12px] w-36" />
               </div>
               <div>

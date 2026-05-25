@@ -166,7 +166,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
     sortOrder: r.sort_order,
     startTime: r.start_time ?? null,
     notes: r.notes,
-    createdAt: (r.created_at as Date).toISOString(),
+    createdAt: String(r.created_at),
   })));
 });
 
@@ -191,7 +191,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, re
     sortOrder: link.sort_order,
     startTime: link.start_time ?? null,
     notes: link.notes,
-    createdAt: (link.created_at as Date).toISOString(),
+    createdAt: String(link.created_at),
   });
 });
 

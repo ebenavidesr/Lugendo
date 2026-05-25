@@ -248,7 +248,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
     sortOrder: r.sort_order,
     startTime: r.start_time ?? null,
     notes: r.notes,
-    createdAt: (r.created_at as Date).toISOString(),
+    createdAt: String(r.created_at),
   })));
 });
 
@@ -273,7 +273,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asy
     sortOrder: link.sort_order,
     startTime: link.start_time ?? null,
     notes: link.notes,
-    createdAt: (link.created_at as Date).toISOString(),
+    createdAt: String(link.created_at),
   });
 });
 
