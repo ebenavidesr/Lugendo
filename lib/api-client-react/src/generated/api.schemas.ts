@@ -158,6 +158,22 @@ export interface Itinerary {
   createdAt: string;
 }
 
+export type TransportMode = typeof TransportMode[keyof typeof TransportMode] | null;
+
+
+export const TransportMode = {
+  plane: 'plane',
+  ship: 'ship',
+  ferry: 'ferry',
+  train: 'train',
+  self_drive: 'self_drive',
+  car_driver: 'car_driver',
+  bus: 'bus',
+  motorcycle: 'motorcycle',
+  bicycle: 'bicycle',
+  walking: 'walking',
+} as const;
+
 export interface ItineraryDay {
   id: number;
   itineraryId: number;
@@ -166,8 +182,7 @@ export interface ItineraryDay {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -239,7 +254,7 @@ export interface ItineraryDayInput {
   dayNumber: number;
   cityFrom?: string;
   cityTo?: string;
-  transport?: string;
+  transport?: TransportMode | null;
   description?: string;
   hotelId?: number;
 }
@@ -247,7 +262,7 @@ export interface ItineraryDayInput {
 export interface ItineraryDayUpdate {
   cityFrom?: string;
   cityTo?: string;
-  transport?: string;
+  transport?: TransportMode | null;
   description?: string;
   hotelId?: number;
 }
@@ -488,8 +503,7 @@ export interface TripDay {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -610,8 +624,7 @@ export interface TripDayUpdate {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -694,8 +707,7 @@ export interface PersonalTripDayInput {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
@@ -865,8 +877,7 @@ export interface ParsedDay {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   activities?: string[];

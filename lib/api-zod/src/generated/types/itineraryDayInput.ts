@@ -5,12 +5,13 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TransportMode } from './transportMode';
 
 export interface ItineraryDayInput {
   dayNumber: number;
   cityFrom?: string;
   cityTo?: string;
-  transport?: string;
+  transport?: TransportMode | null;
   description?: string;
   hotelId?: number;
 }

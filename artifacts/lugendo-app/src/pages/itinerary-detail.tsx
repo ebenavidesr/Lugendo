@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
+import { TransportSelect, TransportLabel } from "@/components/transport-select";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ItineraryDay } from "@workspace/api-client-react";
@@ -79,7 +80,7 @@ function EditDayDialog({
       data: {
         ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
-        ...(values.transport ? { transport: values.transport } : {}),
+        ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
         ...(values.hotelId && values.hotelId !== "none" ? { hotelId: parseInt(values.hotelId) } : {}),
       },
@@ -127,7 +128,9 @@ function EditDayDialog({
             <FormField control={form.control} name="transport" render={({ field }) => (
               <FormItem>
                 <FormLabel>Transporte</FormLabel>
-                <FormControl><Input placeholder="Vuelo, Tren, Autobús…" {...field} /></FormControl>
+                <FormControl>
+                  <TransportSelect value={field.value ?? ""} onChange={field.onChange} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -374,7 +377,7 @@ export default function ItineraryDetail() {
         dayNumber: parseInt(values.dayNumber),
         ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
-        ...(values.transport ? { transport: values.transport } : {}),
+        ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
         ...(values.hotelId && values.hotelId !== "none" ? { hotelId: parseInt(values.hotelId) } : {}),
       },
@@ -526,7 +529,9 @@ export default function ItineraryDetail() {
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                         {day.transport && (
-                          <span className="text-[12px] text-muted-foreground">✈ {day.transport}</span>
+                          <span className="text-[12px] text-muted-foreground">
+                            <TransportLabel value={day.transport} />
+                          </span>
                         )}
                         {day.hotelName && (
                           <span className="text-[12px] text-muted-foreground">🏨 {day.hotelName}</span>
@@ -605,7 +610,9 @@ export default function ItineraryDetail() {
               <FormField control={form.control} name="transport" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporte (opcional)</FormLabel>
-                  <FormControl><Input placeholder="Vuelo, Tren, Autobús…" {...field} /></FormControl>
+                  <FormControl>
+                    <TransportSelect value={field.value ?? ""} onChange={field.onChange} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

@@ -7,6 +7,7 @@ import * as z from "zod";
 import { useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
+import { TransportLabel } from "@/components/transport-select";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TripDetailStatus, InvitationStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -256,7 +257,9 @@ export default function TripDetail() {
                       <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotelName}</p>
                     )}
                     {day.transport && (
-                      <p className="text-[12px] text-muted-foreground">✈️ {day.transport}</p>
+                      <p className="text-[12px] text-muted-foreground">
+                        <TransportLabel value={day.transport} />
+                      </p>
                     )}
                     {day.description && (
                       <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>

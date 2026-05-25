@@ -53,6 +53,7 @@ export * from './sharedTripEntryPermission';
 export * from './sharedTripEntryStatus';
 export * from './shareTripInput';
 export * from './shareTripInputPermission';
+export * from './transportMode';
 export * from './travelerTrip';
 export * from './travelerTripDetail';
 export * from './travelerTripDetailStatus';

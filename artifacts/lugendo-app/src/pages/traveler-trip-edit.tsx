@@ -9,6 +9,7 @@ import {
   useDeleteTripDay, useListHotels, useCreateHotel,
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
+import { TransportSelect } from "@/components/transport-select";
 import type { TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -339,7 +340,7 @@ export default function TravelerTripEdit() {
             dayNumber: d.dayNumber,
             cityFrom: d.cityFrom || null,
             cityTo: d.cityTo || null,
-            transport: d.transport || null,
+            transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
             hotelId: d.hotelId ? parseInt(d.hotelId) : null,
           },
@@ -355,7 +356,7 @@ export default function TravelerTripEdit() {
             dayNumber: d.dayNumber,
             cityFrom: d.cityFrom || null,
             cityTo: d.cityTo || null,
-            transport: d.transport || null,
+            transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
             hotelId: d.hotelId ? parseInt(d.hotelId) : null,
           },
@@ -594,11 +595,10 @@ export default function TravelerTripEdit() {
 
                     <div className="space-y-1">
                       <label className="text-[11px] text-muted-foreground">Transporte</label>
-                      <Input
-                        className="h-8 text-[13px]"
-                        placeholder="Vuelo, tren, coche…"
+                      <TransportSelect
                         value={day.transport}
-                        onChange={e => updateDayField(idx, { transport: e.target.value })}
+                        onChange={v => updateDayField(idx, { transport: v })}
+                        className="h-8 text-[13px]"
                       />
                     </div>
 

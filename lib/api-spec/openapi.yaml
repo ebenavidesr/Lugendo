@@ -1633,7 +1633,7 @@ components:
         cityTo:
           type: ["string", "null"]
         transport:
-          type: ["string", "null"]
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
         hotelId:
@@ -1654,7 +1654,7 @@ components:
         cityTo:
           type: string
         transport:
-          type: string
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: string
         hotelId:
@@ -1668,7 +1668,7 @@ components:
         cityTo:
           type: string
         transport:
-          type: string
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: string
         hotelId:
@@ -1767,6 +1767,11 @@ components:
       type: string
       nullable: true
       enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other, null]
+
+    TransportMode:
+      type: string
+      nullable: true
+      enum: [plane, ship, ferry, train, self_drive, car_driver, bus, motorcycle, bicycle, walking, null]
 
     Activity:
       type: object
@@ -2021,7 +2026,7 @@ components:
         cityTo:
           type: ["string", "null"]
         transport:
-          type: ["string", "null"]
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
         hotelId:
@@ -2042,7 +2047,7 @@ components:
         cityTo:
           type: ["string", "null"]
         transport:
-          type: ["string", "null"]
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
         hotelId:
@@ -2166,7 +2171,7 @@ components:
         cityTo:
           type: ["string", "null"]
         transport:
-          type: ["string", "null"]
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
         hotelId:
@@ -2371,7 +2376,7 @@ components:
         cityTo:
           type: ["string", "null"]
         transport:
-          type: ["string", "null"]
+          $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
         activities:

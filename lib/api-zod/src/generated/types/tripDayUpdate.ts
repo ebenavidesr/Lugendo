@@ -5,14 +5,14 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TransportMode } from './transportMode';
 
 export interface TripDayUpdate {
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
-  /** @nullable */
-  transport?: string | null;
+  transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
   /** @nullable */
