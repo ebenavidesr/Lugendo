@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import {
@@ -192,12 +192,18 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .from(tripsTable)
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
 
+  const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = me?.email ?? "";
+
   const [acceptedShare] = await db
     .select({ id: tripSharesTable.id, permission: tripSharesTable.permission })
     .from(tripSharesTable)
     .where(and(
       eq(tripSharesTable.tripId, tripId),
-      eq(tripSharesTable.sharedWithUserId, userId),
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, myEmail),
+      ),
       eq(tripSharesTable.status, "accepted"),
     ));
 
@@ -578,13 +584,19 @@ async function getTripEditAccess(tripId: number, userId: number): Promise<number
     return itin.id;
   }
 
-  // Check full-permission share
+  // Check full-permission share (match by userId OR email to handle edge cases where sharedWithUserId is null)
+  const [userRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const userEmail = userRow?.email ?? "";
+
   const [fullShare] = await db
     .select({ id: tripSharesTable.id })
     .from(tripSharesTable)
     .where(and(
       eq(tripSharesTable.tripId, tripId),
-      eq(tripSharesTable.sharedWithUserId, userId),
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, userEmail),
+      ),
       eq(tripSharesTable.status, "accepted"),
       eq(tripSharesTable.permission, "full"),
     ));
