@@ -2125,6 +2125,8 @@ components:
           type: integer
         agencyId:
           type: ["integer", "null"]
+        agencyName:
+          type: ["string", "null"]
         ownerId:
           type: ["integer", "null"]
         itineraryId:

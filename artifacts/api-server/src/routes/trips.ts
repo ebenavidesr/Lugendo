@@ -13,6 +13,7 @@ const router: IRouter = Router();
 function serializeTrip(
   t: typeof tripsTable.$inferSelect & {
     itineraryName?: string | null;
+    agencyName?: string | null;
     invitedCount?: number;
     acceptedCount?: number;
   }
@@ -20,6 +21,7 @@ function serializeTrip(
   return {
     ...t,
     itineraryName: t.itineraryName ?? null,
+    agencyName: t.agencyName ?? null,
     invitedCount: t.invitedCount ?? 0,
     acceptedCount: t.acceptedCount ?? 0,
     createdAt: t.createdAt.toISOString(),
@@ -60,14 +62,16 @@ async function getTripDayHotelMap(dayIds: number[]) {
 router.get("/trips", requireAuth, async (req, res): Promise<void> => {
   const { agencyId, role } = req.session;
   const baseRows = role === "admin"
-    ? await db.select({ t: tripsTable, itineraryName: itinerariesTable.name })
+    ? await db.select({ t: tripsTable, itineraryName: itinerariesTable.name, agencyName: agenciesTable.name })
         .from(tripsTable)
         .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
+        .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
         .orderBy(tripsTable.startDate)
     : agencyId
-      ? await db.select({ t: tripsTable, itineraryName: itinerariesTable.name })
+      ? await db.select({ t: tripsTable, itineraryName: itinerariesTable.name, agencyName: agenciesTable.name })
           .from(tripsTable)
           .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
+          .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
           .where(eq(tripsTable.agencyId, agencyId))
           .orderBy(tripsTable.startDate)
       : [];
@@ -85,8 +89,8 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
     if (r.tripId) countMap[r.tripId] = { invited: r.invited, accepted: r.accepted };
   }
 
-  res.json(baseRows.map(({ t, itineraryName }) =>
-    serializeTrip({ ...t, itineraryName, invitedCount: countMap[t.id]?.invited ?? 0, acceptedCount: countMap[t.id]?.accepted ?? 0 })
+  res.json(baseRows.map(({ t, itineraryName, agencyName }) =>
+    serializeTrip({ ...t, itineraryName, agencyName, invitedCount: countMap[t.id]?.invited ?? 0, acceptedCount: countMap[t.id]?.accepted ?? 0 })
   ));
 });
 

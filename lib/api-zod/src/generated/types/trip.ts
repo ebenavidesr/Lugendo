@@ -12,6 +12,8 @@ export interface Trip {
   /** @nullable */
   agencyId?: number | null;
   /** @nullable */
+  agencyName?: string | null;
+  /** @nullable */
   ownerId?: number | null;
   /** @nullable */
   itineraryId?: number | null;

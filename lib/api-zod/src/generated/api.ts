@@ -616,6 +616,7 @@ export const DeleteActivityParams = zod.object({
 export const ListTripsResponseItem = zod.object({
   "id": zod.number(),
   "agencyId": zod.number().nullish(),
+  "agencyName": zod.string().nullish(),
   "ownerId": zod.number().nullish(),
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
@@ -747,6 +748,7 @@ export const UpdateTripBody = zod.object({
 export const UpdateTripResponse = zod.object({
   "id": zod.number(),
   "agencyId": zod.number().nullish(),
+  "agencyName": zod.string().nullish(),
   "ownerId": zod.number().nullish(),
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
@@ -1511,6 +1513,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "upcomingTrips": zod.array(zod.object({
   "id": zod.number(),
   "agencyId": zod.number().nullish(),
+  "agencyName": zod.string().nullish(),
   "ownerId": zod.number().nullish(),
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
@@ -1546,6 +1549,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "occupancyAlerts": zod.array(zod.object({
   "id": zod.number(),
   "agencyId": zod.number().nullish(),
+  "agencyName": zod.string().nullish(),
   "ownerId": zod.number().nullish(),
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),

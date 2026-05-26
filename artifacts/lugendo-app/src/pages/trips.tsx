@@ -278,7 +278,7 @@ export default function Trips() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Nombre", "Itinerario", "Inicio", "Estado", "Viajeros", ""].map(h => (
+                {["Nombre", ...(user?.role === "admin" ? ["Agencia"] : []), "Itinerario", "Inicio", "Estado", "Viajeros", ""].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -298,6 +298,13 @@ export default function Trips() {
                       )}
                     </div>
                   </td>
+                  {user?.role === "admin" && (
+                    <td className="px-5 py-3">
+                      {trip.agencyName
+                        ? <span className="text-[12px]" style={{ color: "#2D1F0E" }}>{trip.agencyName}</span>
+                        : <span className="text-muted-foreground text-[12px]">—</span>}
+                    </td>
+                  )}
                   <td className="px-5 py-3 text-muted-foreground">{trip.itineraryName ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{fmt(trip.startDate)}</td>
                   <td className="px-5 py-3"><StatusBadge status={trip.status} /></td>

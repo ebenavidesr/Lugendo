@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Building2, Pencil, Plus, Globe } from "lucide-react";
+import { Building2, Pencil, Plus, Globe, PowerOff, Power } from "lucide-react";
 import {
   useListAgencies, useUpdateAgency, useCreateAgency,
 } from "@workspace/api-client-react";
@@ -126,6 +126,37 @@ function CreateAgencyDialog({ onClose }: { onClose: () => void }) {
   );
 }
 
+function ToggleActiveButton({ agency }: { agency: Agency }) {
+  const update = useUpdateAgency();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const toggle = () => {
+    update.mutate(
+      { agencyId: agency.id, data: { active: !agency.active } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["/api/agencies"] });
+          toast({ title: agency.active ? "Agencia desactivada" : "Agencia activada" });
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al cambiar estado" }),
+      }
+    );
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      disabled={update.isPending}
+      title={agency.active ? "Desactivar agencia" : "Activar agencia"}
+      className="p-1 rounded-[6px] transition-colors hover:bg-muted"
+      style={{ color: agency.active ? "#C0392B" : "#2E7D5A" }}
+    >
+      {agency.active ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
+    </button>
+  );
+}
+
 export default function Agencies() {
   const { user } = useAuth();
   const { data: agencies, isLoading } = useListAgencies();
@@ -212,6 +243,7 @@ export default function Agencies() {
                         className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                         <Pencil className="w-3.5 h-3.5" />
                       </button>
+                      <ToggleActiveButton agency={agency} />
                     </div>
                   </td>
                 </tr>
