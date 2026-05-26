@@ -445,7 +445,10 @@ export const TripStatus = {
 
 export interface Trip {
   id: number;
-  agencyId: number;
+  /** @nullable */
+  agencyId?: number | null;
+  /** @nullable */
+  ownerId?: number | null;
   /** @nullable */
   itineraryId?: number | null;
   /** @nullable */

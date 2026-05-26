@@ -23,6 +23,7 @@ import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
 import TravelerTripWizard from "@/pages/traveler-trip-wizard";
 import TravelerTripEdit from "@/pages/traveler-trip-edit";
+import Agencies from "@/pages/agencies";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,9 @@ function Router() {
       </Route>
       <Route path="/team">
         <ProtectedBackOffice><Team /></ProtectedBackOffice>
+      </Route>
+      <Route path="/agencies">
+        <ProtectedBackOffice><Agencies /></ProtectedBackOffice>
       </Route>
 
       {/* Traveler Portal */}

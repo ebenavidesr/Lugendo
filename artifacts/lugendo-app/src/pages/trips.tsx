@@ -288,7 +288,15 @@ export default function Trips() {
               {trips.map((trip: Trip) => (
                 <tr key={trip.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
-                    <span className="font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</span>
+                      {trip.ownerId && !trip.agencyId && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium"
+                          style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                          Personal
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">{trip.itineraryName ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">{fmt(trip.startDate)}</td>

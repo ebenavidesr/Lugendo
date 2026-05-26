@@ -2119,12 +2119,14 @@ components:
     # ─── TRIP ─────────────────────────────────────────────────────────────────
     Trip:
       type: object
-      required: [id, agencyId, name, status, startDate, createdAt]
+      required: [id, name, status, startDate, createdAt]
       properties:
         id:
           type: integer
         agencyId:
-          type: integer
+          type: ["integer", "null"]
+        ownerId:
+          type: ["integer", "null"]
         itineraryId:
           type: ["integer", "null"]
         itineraryName:

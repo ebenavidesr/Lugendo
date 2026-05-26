@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LayoutDashboard, Map, Bed, Plane, Users, LogOut, Zap } from "lucide-react";
+import { LayoutDashboard, Map, Bed, Plane, Users, LogOut, Zap, Building2 } from "lucide-react";
 import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,7 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
     { href: "/hotels", label: "Hoteles", icon: Bed },
     { href: "/activities", label: "Actividades", icon: Zap },
     ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/team", label: "Equipo", icon: Users }] : []),
+    ...(user?.role === "admin" ? [{ href: "/agencies", label: "Agencias", icon: Building2 }] : []),
   ];
 
   return (
