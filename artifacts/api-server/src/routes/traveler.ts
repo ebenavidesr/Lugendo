@@ -454,6 +454,31 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, re
   res.status(201).json({ ...share, createdAt: share.createdAt.toISOString() });
 });
 
+// ─── Update share permission ──────────────────────────────────────────────────
+router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const shareId = parseInt(Array.isArray(req.params.shareId) ? req.params.shareId[0] : req.params.shareId, 10);
+
+  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
+
+  const { permission } = req.body as { permission?: string };
+  if (permission !== "read" && permission !== "full") {
+    res.status(400).json({ error: "permission must be 'read' or 'full'" }); return;
+  }
+
+  const [updated] = await db
+    .update(tripSharesTable)
+    .set({ permission })
+    .where(and(eq(tripSharesTable.id, shareId), eq(tripSharesTable.tripId, tripId)))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Share not found" }); return; }
+  res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+});
+
 // ─── Revoke a share ───────────────────────────────────────────────────────────
 router.delete("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;

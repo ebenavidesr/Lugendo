@@ -1254,6 +1254,31 @@ export const ShareTripBody = zod.object({
 
 
 /**
+ * @summary Update the permission level of an existing share
+ */
+export const UpdateTripShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "shareId": zod.coerce.number()
+})
+
+export const UpdateTripShareBody = zod.object({
+  "permission": zod.enum(['full', 'read'])
+})
+
+export const UpdateTripShareResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "ownerId": zod.number(),
+  "sharedWithEmail": zod.string(),
+  "sharedWithUserId": zod.number().nullish(),
+  "shareCode": zod.string(),
+  "permission": zod.enum(['full', 'read']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Revoke a trip share
  */
 export const RevokeTripShareParams = zod.object({

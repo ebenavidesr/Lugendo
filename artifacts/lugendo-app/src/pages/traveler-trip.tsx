@@ -5,7 +5,7 @@ import {
   Share2, Trash2, Users, Copy, Check, Pencil,
 } from "lucide-react";
 import {
-  useGetMyTrip, useListTripShares, useShareTrip, useRevokeTripShare,
+  useGetMyTrip, useListTripShares, useShareTrip, useRevokeTripShare, useUpdateTripShare,
 } from "@workspace/api-client-react";
 import type {
   TravelerTripDetailStatus, TripDay, TripShare,
@@ -59,11 +59,14 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
   const qc = useQueryClient();
   const shareTrip = useShareTrip();
   const revokeShare = useRevokeTripShare();
+  const updateShare = useUpdateTripShare();
   const { data: shares } = useListTripShares(tripId);
 
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"read" | "full">("read");
   const [copied, setCopied] = useState<string | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
 
   const handleShare = () => {
     if (!email.trim()) return;
@@ -71,7 +74,7 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
       { tripId, data: { email: email.trim(), permission } },
       {
         onSuccess: () => {
-          qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
+          invalidate();
           toast({ title: `Invitación enviada a ${email.trim()}` });
           setEmail("");
         },
@@ -83,12 +86,25 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
     );
   };
 
+  const handlePermissionChange = (shareId: number, newPermission: "read" | "full") => {
+    updateShare.mutate(
+      { tripId, shareId, data: { permission: newPermission } },
+      {
+        onSuccess: () => {
+          invalidate();
+          toast({ title: "Permiso actualizado" });
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al actualizar el permiso" }),
+      }
+    );
+  };
+
   const handleRevoke = (shareId: number) => {
     revokeShare.mutate(
       { tripId, shareId },
       {
         onSuccess: () => {
-          qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
+          invalidate();
           toast({ title: "Acceso revocado" });
         },
         onError: () => toast({ variant: "destructive", title: "Error al revocar" }),
@@ -163,33 +179,53 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
                   const st = statusShare[s.status] ?? statusShare.pending;
                   return (
                     <div key={s.id}
-                      className="flex items-center justify-between gap-2 p-3 rounded-[10px] border border-border bg-card">
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>
-                          {s.sharedWithEmail}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
-                            style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                          {s.status === "pending" && (
-                            <button
-                              onClick={() => copyCode(s.shareCode)}
-                              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
-                            >
-                              {copied === s.shareCode
-                                ? <><Check className="w-3 h-3" /> Copiado</>
-                                : <><Copy className="w-3 h-3" /> {s.shareCode}</>}
-                            </button>
-                          )}
+                      className="p-3 rounded-[10px] border border-border bg-card space-y-2">
+                      {/* Row 1: email + status + revoke */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>
+                            {s.sharedWithEmail}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                              style={{ background: st.bg, color: st.color }}>{st.label}</span>
+                            {s.status === "pending" && (
+                              <button
+                                onClick={() => copyCode(s.shareCode)}
+                                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                              >
+                                {copied === s.shareCode
+                                  ? <><Check className="w-3 h-3" /> Copiado</>
+                                  : <><Copy className="w-3 h-3" /> {s.shareCode}</>}
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        <button
+                          onClick={() => handleRevoke(s.id)}
+                          className="text-muted-foreground hover:text-destructive shrink-0 p-1"
+                          title="Revocar acceso"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => handleRevoke(s.id)}
-                        className="text-muted-foreground hover:text-destructive shrink-0 p-1"
-                        title="Revocar acceso"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Row 2: permission selector */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                        <Pencil className="w-3 h-3 shrink-0 text-muted-foreground" />
+                        <Select
+                          value={s.permission}
+                          onValueChange={v => handlePermissionChange(s.id, v as "read" | "full")}
+                          disabled={updateShare.isPending}
+                        >
+                          <SelectTrigger className="h-7 text-[12px] border-0 bg-transparent px-1 focus:ring-0 shadow-none w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="read">Solo lectura</SelectItem>
+                            <SelectItem value="full">Acceso completo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   );
                 })}

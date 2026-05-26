@@ -78,6 +78,8 @@ export * from './tripUpdate';
 export * from './tripUpdateStatus';
 export * from './updateMyTripInput';
 export * from './updateMyTripInputStatus';
+export * from './updateShareInput';
+export * from './updateShareInputPermission';
 export * from './user';
 export * from './userInput';
 export * from './userInputRole';

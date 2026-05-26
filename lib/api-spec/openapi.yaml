@@ -1241,6 +1241,38 @@ paths:
           description: Not the trip owner
 
   /me/trips/{tripId}/shares/{shareId}:
+    patch:
+      operationId: updateTripShare
+      tags: [traveler]
+      summary: Update the permission level of an existing share
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shareId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateShareInput"
+      responses:
+        "200":
+          description: Updated share
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripShare"
+        "403":
+          description: Not the trip owner
+        "404":
+          description: Share not found
     delete:
       operationId: revokeTripShare
       tags: [traveler]
@@ -2550,6 +2582,14 @@ components:
           type: string
           enum: [full, read]
           default: read
+
+    UpdateShareInput:
+      type: object
+      required: [permission]
+      properties:
+        permission:
+          type: string
+          enum: [full, read]
 
     SharedTripEntry:
       type: object

@@ -67,6 +67,7 @@ import type {
   TripShare,
   TripUpdate,
   UpdateMyTripInput,
+  UpdateShareInput,
   User,
   UserInput,
   UserUpdate
@@ -4363,6 +4364,80 @@ export const useShareTrip = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getShareTripMutationOptions(options));
+    }
+
+export const getUpdateTripShareUrl = (tripId: number,
+    shareId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/shares/${shareId}`
+}
+
+/**
+ * @summary Update the permission level of an existing share
+ */
+export const updateTripShare = async (tripId: number,
+    shareId: number,
+    updateShareInput: UpdateShareInput, options?: RequestInit): Promise<TripShare> => {
+
+  return customFetch<TripShare>(getUpdateTripShareUrl(tripId,shareId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateShareInput,)
+  }
+);}
+
+
+
+
+export const getUpdateTripShareMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripShare>>, TError,{tripId: number;shareId: number;data: BodyType<UpdateShareInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTripShare>>, TError,{tripId: number;shareId: number;data: BodyType<UpdateShareInput>}, TContext> => {
+
+const mutationKey = ['updateTripShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripShare>>, {tripId: number;shareId: number;data: BodyType<UpdateShareInput>}> = (props) => {
+          const {tripId,shareId,data} = props ?? {};
+
+          return  updateTripShare(tripId,shareId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTripShareMutationResult = NonNullable<Awaited<ReturnType<typeof updateTripShare>>>
+    export type UpdateTripShareMutationBody = BodyType<UpdateShareInput>
+    export type UpdateTripShareMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the permission level of an existing share
+ */
+export const useUpdateTripShare = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripShare>>, TError,{tripId: number;shareId: number;data: BodyType<UpdateShareInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTripShare>>,
+        TError,
+        {tripId: number;shareId: number;data: BodyType<UpdateShareInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateTripShareMutationOptions(options));
     }
 
 export const getRevokeTripShareUrl = (tripId: number,

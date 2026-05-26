@@ -836,6 +836,18 @@ export interface ShareTripInput {
   permission?: ShareTripInputPermission;
 }
 
+export type UpdateShareInputPermission = typeof UpdateShareInputPermission[keyof typeof UpdateShareInputPermission];
+
+
+export const UpdateShareInputPermission = {
+  full: 'full',
+  read: 'read',
+} as const;
+
+export interface UpdateShareInput {
+  permission: UpdateShareInputPermission;
+}
+
 export type SharedTripEntryPermission = typeof SharedTripEntryPermission[keyof typeof SharedTripEntryPermission];
 
 
