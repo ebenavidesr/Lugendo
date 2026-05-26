@@ -430,9 +430,9 @@ export default function ItineraryWizard() {
                     {data.parsedItinerary.days.length > 0 && (
                       <div className="mt-2 pt-2 border-t border-[#B2D9C3] max-h-32 overflow-y-auto space-y-0.5">
                         {data.parsedItinerary.days.map(d => (
-                          <div key={d.dayNumber} className="flex items-baseline gap-2 text-[11px]">
+                          <div key={d.dayNumber} className="flex items-baseline gap-2 text-[11px] min-w-0">
                             <span className="shrink-0 font-medium w-10" style={{ color: "#2E7D5A" }}>Día {d.dayNumber}</span>
-                            <span className="text-muted-foreground truncate">
+                            <span className="text-muted-foreground truncate min-w-0">
                               {[d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
                               {d.description ? ` — ${d.description.slice(0, 60)}${d.description.length > 60 ? "…" : ""}` : ""}
                             </span>
