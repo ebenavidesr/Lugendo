@@ -193,7 +193,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
 
   const [acceptedShare] = await db
-    .select({ id: tripSharesTable.id })
+    .select({ id: tripSharesTable.id, permission: tripSharesTable.permission })
     .from(tripSharesTable)
     .where(and(
       eq(tripSharesTable.tripId, tripId),
@@ -202,6 +202,8 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     ));
 
   if (!invite && !ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
+
+  const myPermission: string | null = acceptedShare ? acceptedShare.permission : null;
 
   const [row] = await db
     .select({
@@ -252,6 +254,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   res.json({
     ...row,
     isPersonal: row.ownerId != null && row.agencyName == null,
+    myPermission,
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -264,10 +267,9 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  const [owned] = await db.select({ id: tripsTable.id, itineraryId: tripsTable.itineraryId })
-    .from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!owned) { res.status(403).json({ error: "No es tu viaje" }); return; }
+  // Allow owner OR full-permission share user
+  const hasEditAccess = await getTripEditAccess(tripId, userId);
+  if (hasEditAccess === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
   const {
     name, status, startDate, endDate,
@@ -553,28 +555,55 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
 // ─── Accept a share by code ───────────────────────────────────────────────────
 // ─── Trip Day management (personal trips) ────────────────────────────────────
 
-async function getOwnedTripItineraryId(tripId: number, userId: number): Promise<number | null | false> {
+/**
+ * Returns the itineraryId for a trip if the user has edit access
+ * (owner OR accepted share with permission='full').
+ * Returns false if the user has no edit access.
+ */
+async function getTripEditAccess(tripId: number, userId: number): Promise<number | null | false> {
+  // Check owner first
   const [trip] = await db
     .select({ id: tripsTable.id, itineraryId: tripsTable.itineraryId })
     .from(tripsTable)
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!trip) return false;
-  if (trip.itineraryId) return trip.itineraryId;
-  // Auto-create itinerary if none exists
-  const [itin] = await db
-    .insert(itinerariesTable)
-    .values({ name: "Mi itinerario", numDays: 0 })
-    .returning();
-  await db.update(tripsTable).set({ itineraryId: itin.id }).where(eq(tripsTable.id, tripId));
-  return itin.id;
+
+  if (trip) {
+    if (trip.itineraryId) return trip.itineraryId;
+    // Auto-create itinerary if none exists
+    const [itin] = await db
+      .insert(itinerariesTable)
+      .values({ name: "Mi itinerario", numDays: 0 })
+      .returning();
+    await db.update(tripsTable).set({ itineraryId: itin.id }).where(eq(tripsTable.id, tripId));
+    return itin.id;
+  }
+
+  // Check full-permission share
+  const [fullShare] = await db
+    .select({ id: tripSharesTable.id })
+    .from(tripSharesTable)
+    .where(and(
+      eq(tripSharesTable.tripId, tripId),
+      eq(tripSharesTable.sharedWithUserId, userId),
+      eq(tripSharesTable.status, "accepted"),
+      eq(tripSharesTable.permission, "full"),
+    ));
+  if (!fullShare) return false;
+
+  // Fetch the trip's itineraryId (shared user can't auto-create itinerary)
+  const [sharedTrip] = await db
+    .select({ itineraryId: tripsTable.itineraryId })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, tripId));
+  return sharedTrip ? (sharedTrip.itineraryId ?? null) : false;
 }
 
 router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
-  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+  const itineraryId = await getTripEditAccess(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
   const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber es obligatorio" }); return; }
@@ -609,8 +638,8 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
 
-  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
-  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+  const itineraryId = await getTripEditAccess(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
   const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
 
@@ -647,8 +676,8 @@ router.delete("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
 
-  const itineraryId = await getOwnedTripItineraryId(tripId, userId);
-  if (itineraryId === false) { res.status(403).json({ error: "No es tu viaje" }); return; }
+  const itineraryId = await getTripEditAccess(tripId, userId);
+  if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
   await db.delete(itineraryDaysTable)
     .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)));

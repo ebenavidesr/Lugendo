@@ -253,6 +253,7 @@ export default function TravelerTrip() {
   const [shareOpen, setShareOpen] = useState(false);
 
   const isOwner = !!(trip && user && trip.ownerId === user.id);
+  const canEdit = isOwner || trip?.myPermission === "full";
 
   if (isLoading) {
     return (
@@ -289,7 +290,7 @@ export default function TravelerTrip() {
             {trip.isPersonal && <p className="text-sm mt-0.5" style={{ color: "#C4793A" }}>Viaje personal</p>}
           </div>
           <div className="flex items-center gap-2">
-            {isOwner && trip.isPersonal && (
+            {canEdit && trip.isPersonal && (
               <Button
                 size="sm"
                 variant="outline"

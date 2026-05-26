@@ -672,6 +672,19 @@ export const TravelerTripDetailStatus = {
   cancelled: 'cancelled',
 } as const;
 
+/**
+ * Permission level of the current user when accessing via a share (null if owner or agency-invited)
+ * @nullable
+ */
+export type TravelerTripDetailMyPermission = typeof TravelerTripDetailMyPermission[keyof typeof TravelerTripDetailMyPermission] | null;
+
+
+export const TravelerTripDetailMyPermission = {
+  full: 'full',
+  read: 'read',
+  null: 'null',
+} as const;
+
 export interface TravelerTripDetail {
   id: number;
   name: string;
@@ -682,6 +695,11 @@ export interface TravelerTripDetail {
   isPersonal: boolean;
   /** @nullable */
   ownerId?: number | null;
+  /**
+     * Permission level of the current user when accessing via a share (null if owner or agency-invited)
+     * @nullable
+     */
+  myPermission?: TravelerTripDetailMyPermission;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */

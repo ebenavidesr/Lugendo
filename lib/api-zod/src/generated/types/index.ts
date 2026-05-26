@@ -59,6 +59,7 @@ export * from './shareTripInputPermission';
 export * from './transportMode';
 export * from './travelerTrip';
 export * from './travelerTripDetail';
+export * from './travelerTripDetailMyPermission';
 export * from './travelerTripDetailStatus';
 export * from './travelerTripStatus';
 export * from './trip';

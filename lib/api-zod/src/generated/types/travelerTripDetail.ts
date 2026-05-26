@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TravelerTripDetailMyPermission } from './travelerTripDetailMyPermission';
 import type { TravelerTripDetailStatus } from './travelerTripDetailStatus';
 import type { TripDay } from './tripDay';
 
@@ -18,6 +19,11 @@ export interface TravelerTripDetail {
   isPersonal: boolean;
   /** @nullable */
   ownerId?: number | null;
+  /**
+     * Permission level of the current user when accessing via a share (null if owner or agency-invited)
+     * @nullable
+     */
+  myPermission?: TravelerTripDetailMyPermission;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */

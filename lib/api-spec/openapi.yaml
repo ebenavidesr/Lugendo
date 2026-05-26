@@ -2414,6 +2414,10 @@ components:
           type: boolean
         ownerId:
           type: ["integer", "null"]
+        myPermission:
+          type: ["string", "null"]
+          enum: [full, read, "null"]
+          description: Permission level of the current user when accessing via a share (null if owner or agency-invited)
         agencyName:
           type: ["string", "null"]
         agencyLogoUrl:
