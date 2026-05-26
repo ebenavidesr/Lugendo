@@ -1,0 +1,58 @@
+Necesito implementar la lógica que determina dónde aparece un viaje 
+compartido en la navegación del usuario invitado: en "Mis viajes" 
+o en "Compartidos".
+
+## Contexto
+
+Cada viaje tiene un campo `status` con los siguientes valores posibles:
+- `upcoming` (próximamente)
+- `scheduled` (programado)
+- `ongoing` (en curso)
+- `completed` (finalizado)
+- `cancelled` (cancelado)
+
+Cuando un usuario comparte un viaje con otro (el invitado), el viaje 
+debe aparecer en una de las dos secciones según el estado actual del 
+viaje en el momento en que el invitado consulta su dashboard.
+
+## Regla de clasificación
+
+- Si el estado es `upcoming` O `scheduled` → el viaje aparece en la 
+  pestaña **"Mis viajes"** del invitado.
+- Si el estado es `ongoing`, `completed` O `cancelled` → el viaje 
+  aparece en la pestaña **"Compartidos"** del invitado.
+
+## Justificación
+
+La distinción es intencionada: si el viaje aún no ha comenzado, el 
+invitado es probablemente un participante del viaje (un compañero de 
+viaje), por lo que pertenece a "Mis viajes". Si el viaje ya está en 
+curso o ha finalizado, el contexto del compartido es distinto — el 
+invitado está consultando el viaje de otra persona como referencia o 
+inspiración — por lo que pertenece a "Compartidos".
+
+## Notas importantes
+
+1. Esta clasificación se basa en el **estado actual y en tiempo real** 
+   del viaje, no en el estado en el momento en que se compartió. Si un 
+   viaje pasa de `scheduled` a `ongoing`, debe moverse automáticamente 
+   de "Mis viajes" a "Compartidos" para todos los invitados.
+
+2. El propietario del viaje siempre lo ve en "Mis viajes" 
+   independientemente del estado. Esta regla solo aplica a los usuarios 
+   que han recibido el viaje mediante una invitación.
+
+3. El nivel de acceso concedido al compartir (edición o solo lectura) 
+   es independiente de esta lógica de clasificación y debe mantenerse 
+   independientemente de en qué pestaña aparezca el viaje.
+
+## Qué necesito que implementes
+
+- Una función o consulta que, para un usuario dado, separe los viajes 
+  a los que tiene acceso en dos grupos: "míos" (propietario, o invitado 
+  con estado upcoming/scheduled) y "compartidos" (invitado con estado 
+  ongoing/completed/cancelled).
+- Actualizar la vista del dashboard para usar esta separación al 
+  renderizar las dos pestañas.
+- Asegurarse de que la separación es dinámica: se recalcula en base al 
+  estado actual del viaje, no a partir de un campo almacenado.

@@ -50,6 +50,12 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
 }
 
 // ─── List trips (agency-invited + own personal trips) ───────────────────────
+// Statuses where a shared trip belongs in "Mis viajes" (pre-start / travel companion).
+// Ongoing/completed/cancelled shared trips go to "Compartidos" instead.
+// Pre-start statuses: shared trips with these statuses appear in "Mis viajes" (travel companion).
+// active/finished/cancelled trips stay in "Compartidos" (reference/inspiration context).
+const SHARED_MINE_STATUSES = ["draft", "scheduled"] as const;
+
 router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
 
@@ -73,6 +79,38 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     })
     .from(tripsTable)
     .where(eq(tripsTable.ownerId, userId));
+
+  // 3. Accepted shares where the trip hasn't started yet → appear here, not in "Compartidos"
+  const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = meRow?.email ?? "";
+
+  const sharedMineRows = await db
+    .select({
+      id: tripsTable.id,
+      name: tripsTable.name,
+      status: tripsTable.status,
+      startDate: tripsTable.startDate,
+      endDate: tripsTable.endDate,
+      agencyName: agenciesTable.name,
+      agencyLogoUrl: agenciesTable.logoUrl,
+      countries: itinerariesTable.countries,
+      ownerId: tripsTable.ownerId,
+      createdAt: tripsTable.createdAt,
+    })
+    .from(tripSharesTable)
+    .innerJoin(tripsTable, and(
+      eq(tripsTable.id, tripSharesTable.tripId),
+      inArray(tripsTable.status, [...SHARED_MINE_STATUSES]),
+    ))
+    .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
+    .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
+    .where(and(
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, myEmail),
+      ),
+      eq(tripSharesTable.status, "accepted"),
+    ));
 
   const trips = [];
 
@@ -104,7 +142,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     });
   }
 
-  // Add personal trips
+  // Add personal trips (owned)
   for (const row of personalRows) {
     trips.push({
       ...row,
@@ -112,6 +150,20 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       agencyName: null,
       agencyLogoUrl: null,
       countries: [],
+      createdAt: row.createdAt.toISOString(),
+    });
+  }
+
+  // Add shared trips that are pre-start (travel companion context)
+  const seenIds = new Set(trips.map(t => t.id));
+  for (const row of sharedMineRows) {
+    if (seenIds.has(row.id)) continue; // avoid duplicates with owned trips
+    trips.push({
+      ...row,
+      isPersonal: row.ownerId != null && row.agencyName == null,
+      countries: row.countries ?? [],
+      agencyName: row.agencyName ?? null,
+      agencyLogoUrl: row.agencyLogoUrl ?? null,
       createdAt: row.createdAt.toISOString(),
     });
   }
@@ -507,10 +559,12 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
   const me = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = me[0]?.email;
 
-  const shares = await db.select().from(tripSharesTable)
-    .where(
-      eq(tripSharesTable.sharedWithEmail, myEmail ?? "")
-    );
+  const emailFilter = or(
+    eq(tripSharesTable.sharedWithUserId, userId),
+    eq(tripSharesTable.sharedWithEmail, myEmail ?? ""),
+  );
+
+  const shares = await db.select().from(tripSharesTable).where(emailFilter);
 
   const result = [];
   for (const share of shares) {
@@ -532,27 +586,34 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
       .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
       .where(eq(tripsTable.id, share.tripId));
 
-    if (row) {
-      result.push({
-        shareId: share.id,
-        shareCode: share.shareCode,
-        permission: share.permission,
-        status: share.status,
-        createdAt: share.createdAt.toISOString(),
-        trip: {
-          id: row.id,
-          name: row.name,
-          status: row.status,
-          startDate: row.startDate,
-          endDate: row.endDate ?? null,
-          isPersonal: row.ownerId != null && row.agencyName == null,
-          agencyName: row.agencyName ?? null,
-          agencyLogoUrl: row.agencyLogoUrl ?? null,
-          countries: row.countries ?? [],
-          createdAt: row.createdAt.toISOString(),
-        },
-      });
-    }
+    if (!row) continue;
+
+    // Pending shares always appear here (user needs to accept them).
+    // Accepted shares only appear here when the trip is already started/done;
+    // pre-start trips (draft/upcoming/scheduled) are shown in "Mis viajes" instead.
+    const isAccepted = share.status === "accepted";
+    const tripIsPreStart = (SHARED_MINE_STATUSES as readonly string[]).includes(row.status ?? "");
+    if (isAccepted && tripIsPreStart) continue;
+
+    result.push({
+      shareId: share.id,
+      shareCode: share.shareCode,
+      permission: share.permission,
+      status: share.status,
+      createdAt: share.createdAt.toISOString(),
+      trip: {
+        id: row.id,
+        name: row.name,
+        status: row.status,
+        startDate: row.startDate,
+        endDate: row.endDate ?? null,
+        isPersonal: row.ownerId != null && row.agencyName == null,
+        agencyName: row.agencyName ?? null,
+        agencyLogoUrl: row.agencyLogoUrl ?? null,
+        countries: row.countries ?? [],
+        createdAt: row.createdAt.toISOString(),
+      },
+    });
   }
 
   res.json(result);
