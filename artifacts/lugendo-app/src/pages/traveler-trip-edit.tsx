@@ -9,6 +9,7 @@ import {
   useDeleteTripDay,
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
+import { DayHotelPanel } from "@/components/day-hotel-panel";
 import { TransportSelect } from "@/components/transport-select";
 import type { TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
@@ -431,16 +432,28 @@ export default function TravelerTripEdit() {
                       />
                     </div>
 
-                    {/* Activities */}
-                    {day.id !== null ? (
-                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
-                    ) : (
+                    {/* Hotels */}
+                    {day.id !== null ? (() => {
+                      const serverDay = trip.days?.find(d => d.id === day.id);
+                      return serverDay ? (
+                        <DayHotelPanel
+                          entityType="trip"
+                          entityId={tripId}
+                          day={serverDay}
+                        />
+                      ) : null;
+                    })() : (
                       <div className="pt-3 border-t border-border/60">
                         <p className="text-[11px] text-muted-foreground italic">
-                          Guarda los cambios para gestionar actividades de este día.
+                          Guarda los cambios para gestionar hoteles de este día.
                         </p>
                       </div>
                     )}
+
+                    {/* Activities */}
+                    {day.id !== null ? (
+                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
+                    ) : null}
                   </div>
                 )}
               </div>
