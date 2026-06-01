@@ -8,6 +8,7 @@ import {
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { sql } from "drizzle-orm";
 import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
@@ -82,6 +83,14 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
       extractedText = parsed.text;
     } catch {
       res.status(422).json({ error: "Could not parse PDF. Try uploading a text file instead." });
+      return;
+    }
+  } else if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
+    try {
+      const result = await mammoth.extractRawText({ buffer });
+      extractedText = result.value;
+    } catch {
+      res.status(422).json({ error: "Could not parse the Word document. Try uploading a PDF instead." });
       return;
     }
   } else {
