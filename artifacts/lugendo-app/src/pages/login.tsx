@@ -187,7 +187,7 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="nombre@email.com" type="email" autoComplete="email" {...field} data-testid="input-register-email" />
+                          <Input placeholder="nombre@email.com" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} data-testid="input-register-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -279,7 +279,7 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="nombre@email.com" type="email" autoComplete="email" autoFocus {...field} data-testid="input-login-email" />
+                          <Input placeholder="nombre@email.com" inputMode="email" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} data-testid="input-login-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
