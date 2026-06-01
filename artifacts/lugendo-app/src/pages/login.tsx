@@ -10,6 +10,7 @@ import { HelpCircle, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ const registerSchema = z
     password:        strongPassword,
     confirmPassword: z.string().min(1, "Confirma tu contraseña"),
     inviteCode:      z.string().optional(),
+    acceptTerms:     z.literal(true, { message: "Debes aceptar los términos y condiciones para registrarte" }),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: "Las contraseñas no coinciden",
@@ -83,7 +85,7 @@ export function Login() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", password: "", confirmPassword: "", inviteCode: "" },
+    defaultValues: { firstName: "", lastName: "", email: "", password: "", confirmPassword: "", inviteCode: "", acceptTerms: false as unknown as true },
   });
 
   const watchedPassword = registerForm.watch("password");
@@ -259,9 +261,47 @@ export function Login() {
                     )}
                   />
 
+                  {/* Términos y condiciones */}
+                  <FormField
+                    control={registerForm.control}
+                    name="acceptTerms"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              id="accept-terms"
+                              checked={field.value === true}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-accept-terms"
+                            />
+                          </FormControl>
+                          <label
+                            htmlFor="accept-terms"
+                            className="text-[13px] leading-snug cursor-pointer select-none"
+                            style={{ color: "#2D1F0E" }}
+                          >
+                            He leído y acepto los{" "}
+                            <a
+                              href="/terminos-y-condiciones.pdf"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium underline underline-offset-2"
+                              style={{ color: "#C4793A" }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              términos y condiciones
+                            </a>
+                          </label>
+                        </div>
+                        <FormMessage className="mt-1" />
+                      </FormItem>
+                    )}
+                  />
+
                   <Button
                     type="submit"
-                    className="w-full mt-6"
+                    className="w-full mt-2"
                     disabled={registerMutation.isPending}
                     data-testid="button-register-submit"
                   >
