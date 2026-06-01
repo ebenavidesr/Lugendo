@@ -118,17 +118,20 @@ The JSON must match this structure exactly:
     {
       "dayNumber": 1,
       "cityFrom": "string or null - departure city",
-      "cityTo": "string or null - arrival/main city",
-      "transport": "string or null - transport method",
-      "description": "string or null - day description",
-      "activities": ["array of activity names as strings"]
+      "cityTo": "string or null - arrival/main city for the day",
+      "transport": "string or null - transport mode used to travel to this day's city. Use one of: plane, ship, ferry, train, self_drive, car_driver, bus, motorcycle, bicycle, walking. null if staying in same city.",
+      "description": "string or null - day description and programme",
+      "activities": ["array of ALL activity, excursion, tour and visit names mentioned for this day"],
+      "hotels": ["array of hotel or accommodation names mentioned for this day - include any hotel, resort, lodge, hostel or accommodation name. Empty array if none mentioned."]
     }
   ]
 }
 
 Rules:
 - dayNumber must start at 1 and be sequential
-- Extract all activities, excursions, and tours mentioned per day
+- Extract ALL activities, excursions, tours, visits and experiences mentioned per day — do not skip any
+- Extract hotel/accommodation names exactly as written in the document; include one entry per hotel even if only one is mentioned for the day
+- For transport: map modes to the enum values (avión→plane, tren→train, ferry→ferry, barco→ship, autobús→bus, coche→self_drive, etc.)
 - If city doesn't change, cityFrom and cityTo can be the same city or null for cityFrom
 - Keep descriptions concise but informative
 - For startDate/endDate: look for explicit dates in the document header or first/last day entries. Format as YYYY-MM-DD (e.g. "4 de agosto, 2026" → "2026-08-04"). If not found, use null.

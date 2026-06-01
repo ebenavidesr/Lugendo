@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { useLocation } from "wouter";
 import {
   Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings,
@@ -25,6 +25,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { TransportSelect } from "@/components/transport-select";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -155,6 +156,7 @@ export default function TravelerTripWizard() {
   const [activityLookupDone, setActivityLookupDone] = useState(false);
   type ActivitySuggestion = { name: string; city: string; country: string; address: string; description: string };
   const [activityLookupResults, setActivityLookupResults] = useState<ActivitySuggestion[]>([]);
+  const [dayTransports, setDayTransports] = useState<Record<number, string>>({});
 
   const { data: hotels } = useListHotels();
   const { data: activities } = useListActivities();
@@ -197,6 +199,63 @@ export default function TravelerTripWizard() {
       const base64 = (e.target?.result as string).split(",")[1];
       try {
         const result = await parsePdf.mutateAsync({ data: { fileBase64: base64, fileName: pdfFile.name } });
+
+        // Extract transports from parsed days
+        const transMap: Record<number, string> = {};
+        for (const d of result.days) {
+          if (d.transport) transMap[d.dayNumber] = d.transport;
+        }
+        setDayTransports(transMap);
+
+        // Auto-match or create activities and hotels from parsed names
+        const currentActivities = activities ?? [];
+        const currentHotels = hotels ?? [];
+        const newDayActivities: Record<number, number[]> = {};
+        const newDayHotels: Record<number, string> = {};
+        for (const day of result.days) {
+          if (day.activities?.length) {
+            const actIds: number[] = [];
+            for (const actName of day.activities) {
+              const trimmed = actName.trim();
+              if (!trimmed) continue;
+              const existing = currentActivities.find(a => a.name.toLowerCase() === trimmed.toLowerCase());
+              if (existing) {
+                actIds.push(existing.id);
+              } else {
+                try {
+                  const created = await createActivity.mutateAsync({ data: { name: trimmed } });
+                  actIds.push(created.id);
+                } catch { /* skip */ }
+              }
+            }
+            if (actIds.length) newDayActivities[day.dayNumber] = actIds;
+          }
+          if (day.hotels?.length) {
+            const hotelName = day.hotels[0].trim();
+            if (hotelName) {
+              const existing = currentHotels.find(h => h.name.toLowerCase() === hotelName.toLowerCase());
+              if (existing) {
+                newDayHotels[day.dayNumber] = String(existing.id);
+              } else {
+                try {
+                  const created = await createHotel.mutateAsync({ data: { name: hotelName, city: "", country: "" } });
+                  newDayHotels[day.dayNumber] = String(created.id);
+                } catch { /* skip */ }
+              }
+            }
+          }
+        }
+        if (Object.keys(newDayActivities).length || Object.keys(newDayHotels).length) {
+          qc.invalidateQueries({ queryKey: ["/api/activities"] });
+          qc.invalidateQueries({ queryKey: ["/api/hotels"] });
+        }
+
+        const actCount = Object.values(newDayActivities).reduce((s, ids) => s + ids.length, 0);
+        const hotelCount = Object.keys(newDayHotels).length;
+        const extras: string[] = [];
+        if (actCount) extras.push(`${actCount} actividad${actCount !== 1 ? "es" : ""}`);
+        if (hotelCount) extras.push(`${hotelCount} hotel${hotelCount !== 1 ? "es" : ""}`);
+
         set({
           parsedItinerary: result,
           scratchName: result.name,
@@ -206,8 +265,10 @@ export default function TravelerTripWizard() {
           tripName: result.name,
           ...(result.startDate ? { startDate: result.startDate } : {}),
           ...(result.endDate ? { endDate: result.endDate } : {}),
+          ...(Object.keys(newDayActivities).length ? { dayActivities: newDayActivities } : {}),
+          ...(Object.keys(newDayHotels).length ? { dayHotels: newDayHotels } : {}),
         });
-        toast({ title: `Itinerario extraído: ${result.numDays} días detectados` });
+        toast({ title: `Itinerario extraído: ${result.numDays} días${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
       } catch {
         toast({ variant: "destructive", title: "No se pudo analizar el archivo. Intenta con un .txt o PDF de texto." });
       } finally {
@@ -368,7 +429,7 @@ export default function TravelerTripWizard() {
               dayNumber: day.dayNumber,
               ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
               ...(day.cityTo ? { cityTo: day.cityTo } : {}),
-              ...(day.transport ? { transport: day.transport } : {}),
+              ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
               ...(day.description ? { description: day.description } : {}),
               ...(hotelId ? { hotelId } : {}),
             },
@@ -771,7 +832,7 @@ export default function TravelerTripWizard() {
               </div>
             ) : (
               <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
-                {days.map(day => {
+                {days.map((day, idx) => {
                   const dayDate = data.startDate ? new Date(data.startDate + "T00:00:00") : null;
                   if (dayDate) dayDate.setDate(dayDate.getDate() + (day.dayNumber - 1));
                   const dateStr = dayDate
@@ -785,7 +846,8 @@ export default function TravelerTripWizard() {
                   const assignedHotel = data.dayHotels[day.dayNumber];
 
                   return (
-                    <div key={day.dayNumber} className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
+                    <Fragment key={day.dayNumber}>
+                    <div className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
                       <div className="flex items-center gap-3 px-3 pt-3 pb-2">
                         <div
                           className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 text-[12px] font-semibold"
@@ -1067,6 +1129,19 @@ export default function TravelerTripWizard() {
                         </div>
                       )}
                     </div>
+                    {idx < days.length - 1 && (
+                      <div className="flex items-center gap-2 py-1">
+                        <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
+                        <TransportSelect
+                          value={dayTransports[days[idx + 1].dayNumber] ?? ""}
+                          onChange={v => setDayTransports(prev => ({ ...prev, [days[idx + 1].dayNumber]: v }))}
+                          placeholder="Sin transporte"
+                          className="h-7 text-[11px] w-48 border-dashed"
+                        />
+                        <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
+                      </div>
+                    )}
+                    </Fragment>
                   );
                 })}
               </div>

@@ -17,4 +17,5 @@ export interface ParsedDay {
   /** @nullable */
   description?: string | null;
   activities?: string[];
+  hotels?: string[];
 }

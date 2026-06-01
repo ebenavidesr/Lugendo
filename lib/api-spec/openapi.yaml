@@ -2672,6 +2672,10 @@ components:
           type: array
           items:
             type: string
+        hotels:
+          type: array
+          items:
+            type: string
 
     DayActivity:
       type: object

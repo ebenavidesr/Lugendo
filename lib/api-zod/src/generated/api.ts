@@ -1359,7 +1359,8 @@ export const ParseItineraryPdfResponse = zod.object({
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "activities": zod.array(zod.string()).optional()
+  "activities": zod.array(zod.string()).optional(),
+  "hotels": zod.array(zod.string()).optional()
 }))
 })
 
