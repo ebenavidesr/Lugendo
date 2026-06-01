@@ -131,8 +131,13 @@ export default function TripWizard() {
   const [inlineActivityDay, setInlineActivityDay] = useState<number | null>(null);
   const [activitySearchQ, setActivitySearchQ] = useState("");
   const [newActivityMode, setNewActivityMode] = useState(false);
-  const [newActivityForm, setNewActivityForm] = useState({ name: "", category: "", city: "" });
+  const [newActivityForm, setNewActivityForm] = useState({ name: "", category: "", city: "", country: "" });
   const [creatingActivity, setCreatingActivity] = useState(false);
+  const [activityLookupQ, setActivityLookupQ] = useState("");
+  const [activityLookupLoading, setActivityLookupLoading] = useState(false);
+  const [activityLookupDone, setActivityLookupDone] = useState(false);
+  type ActivitySuggestion = { name: string; city: string; country: string; address: string; description: string };
+  const [activityLookupResults, setActivityLookupResults] = useState<ActivitySuggestion[]>([]);
 
   const { data: itineraries } = useListItineraries();
   const { data: hotels } = useListHotels();
@@ -211,6 +216,26 @@ export default function TripWizard() {
     reader.readAsDataURL(pdfFile);
   };
 
+  // ── Activity lookup ───────────────────────────────────────────────────────
+  const handleActivityLookup = async () => {
+    if (!activityLookupQ.trim()) return;
+    setActivityLookupLoading(true);
+    setActivityLookupDone(false);
+    try {
+      const res = await fetch(`/api/activities/lookup?q=${encodeURIComponent(activityLookupQ)}`, { credentials: "include" });
+      if (res.ok) {
+        setActivityLookupResults(await res.json());
+      } else {
+        toast({ variant: "destructive", title: "Error al buscar actividades" });
+      }
+    } catch {
+      toast({ variant: "destructive", title: "Error de conexión al buscar actividades" });
+    } finally {
+      setActivityLookupLoading(false);
+      setActivityLookupDone(true);
+    }
+  };
+
   // ── Hotel lookup (Google Places or DB fallback) ───────────────────────────
   const handleHotelLookup = async () => {
     if (!hotelSearchQ.trim()) return;
@@ -260,12 +285,14 @@ export default function TripWizard() {
       const act = await createActivity.mutateAsync({ data: {
         name: newActivityForm.name,
         ...(newActivityForm.city ? { city: newActivityForm.city } : {}),
+        ...(newActivityForm.country ? { country: newActivityForm.country } : {}),
         ...(newActivityForm.category && newActivityForm.category !== "none" ? { category: newActivityForm.category as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
       }});
       qc.invalidateQueries({ queryKey: ["/api/activities"] });
       set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), act.id] } });
       setNewActivityMode(false);
-      setNewActivityForm({ name: "", category: "", city: "" });
+      setNewActivityForm({ name: "", category: "", city: "", country: "" });
+      setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
       toast({ title: `Actividad "${act.name}" creada` });
     } catch {
       toast({ variant: "destructive", title: "Error al crear la actividad" });
@@ -918,30 +945,73 @@ export default function TripWizard() {
                           ) : (
                             <div className="space-y-2 pt-2 border-t border-border">
                               <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Nueva actividad</div>
+                              {/* Web search */}
+                              <div className="flex gap-1.5">
+                                <Input
+                                  placeholder="Buscar en internet…"
+                                  value={activityLookupQ}
+                                  onChange={e => setActivityLookupQ(e.target.value)}
+                                  onKeyDown={e => e.key === "Enter" && handleActivityLookup()}
+                                  className="h-7 text-[12px] flex-1"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleActivityLookup}
+                                  disabled={!activityLookupQ.trim() || activityLookupLoading}
+                                  className="h-7 px-2 rounded-[6px] text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
+                                  style={{ background: "#3D2F6B", color: "white" }}>
+                                  {activityLookupLoading ? "…" : <Search className="w-3 h-3" />}
+                                </button>
+                              </div>
+                              {activityLookupResults.length > 0 && (
+                                <div className="rounded-[6px] border border-border bg-card overflow-hidden divide-y divide-border/60 max-h-32 overflow-y-auto">
+                                  {activityLookupResults.map((r, i) => (
+                                    <button key={i} type="button"
+                                      onClick={() => {
+                                        setNewActivityForm(f => ({ ...f, name: r.name, city: r.city, country: r.country }));
+                                        setActivityLookupResults([]); setActivityLookupQ(""); setActivityLookupDone(false);
+                                      }}
+                                      className="w-full text-left px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
+                                      <p className="text-[11px] font-medium truncate" style={{ color: "#2D1F0E" }}>{r.name}</p>
+                                      {(r.city || r.country) && <p className="text-[10px] text-muted-foreground truncate">{[r.city, r.country].filter(Boolean).join(", ")}</p>}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                              {activityLookupDone && activityLookupResults.length === 0 && (
+                                <p className="text-[10px] text-muted-foreground">Sin resultados. Rellena manualmente.</p>
+                              )}
+                              {/* Manual fields */}
                               <Input placeholder="Nombre *" value={newActivityForm.name}
                                 onChange={e => setNewActivityForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
                               <div className="grid grid-cols-2 gap-2">
                                 <Input placeholder="Ciudad" value={newActivityForm.city}
                                   onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                                <Select value={newActivityForm.category || "none"}
-                                  onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>
-                                  <SelectTrigger className="h-7 text-[12px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="none">Sin categoría</SelectItem>
-                                    <SelectItem value="cultural">Cultural</SelectItem>
-                                    <SelectItem value="gastronomic">Gastronómica</SelectItem>
-                                    <SelectItem value="adventure">Aventura</SelectItem>
-                                    <SelectItem value="nature">Naturaleza</SelectItem>
-                                    <SelectItem value="beach">Playa</SelectItem>
-                                    <SelectItem value="city">Ciudad</SelectItem>
-                                    <SelectItem value="excursion">Excursión</SelectItem>
-                                    <SelectItem value="other">Otra</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <Input placeholder="País" value={newActivityForm.country}
+                                  onChange={e => setNewActivityForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
                               </div>
+                              <Select value={newActivityForm.category || "none"}
+                                onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>
+                                <SelectTrigger className="h-7 text-[12px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Sin categoría</SelectItem>
+                                  <SelectItem value="cultural">Cultural</SelectItem>
+                                  <SelectItem value="gastronomic">Gastronómica</SelectItem>
+                                  <SelectItem value="adventure">Aventura</SelectItem>
+                                  <SelectItem value="nature">Naturaleza</SelectItem>
+                                  <SelectItem value="beach">Playa</SelectItem>
+                                  <SelectItem value="city">Ciudad</SelectItem>
+                                  <SelectItem value="excursion">Excursión</SelectItem>
+                                  <SelectItem value="other">Otra</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <div className="flex justify-end gap-2">
                                 <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px]"
-                                  onClick={() => { setNewActivityMode(false); setNewActivityForm({ name: "", category: "", city: "" }); }}>
+                                  onClick={() => {
+                                    setNewActivityMode(false);
+                                    setNewActivityForm({ name: "", category: "", city: "", country: "" });
+                                    setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
+                                  }}>
                                   Cancelar
                                 </Button>
                                 <Button type="button" size="sm" className="h-6 text-[11px]"
