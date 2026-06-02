@@ -330,25 +330,60 @@ export default function TravelerTrip() {
         const hasLegacy = trip.airline || trip.flightNumber || trip.flightTime || trip.reservationCode || trip.returnAirline || trip.returnFlightNumber;
         if (!hasNew && !hasLegacy) return null;
 
-        const renderLeg = (leg: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string }, i: number) => (
-          <div key={i} className={i > 0 ? "pt-3 mt-3 border-t border-border/60" : ""}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>
-                {[leg.airline, leg.flightNumber].filter(Boolean).join(" ")}
-              </span>
-              {(leg.cityFrom || leg.cityTo) && (
-                <span className="text-[13px] text-muted-foreground">
-                  {leg.cityFrom}{leg.cityFrom && leg.cityTo ? " → " : ""}{leg.cityTo}
-                </span>
+        const renderLeg = (leg: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string }, i: number) => {
+          const hasRoute = leg.cityFrom || leg.cityTo;
+          const hasTimes = leg.departureTime || leg.arrivalTime;
+          return (
+            <div key={i} className={i > 0 ? "pt-4 mt-4 border-t border-border/60" : ""}>
+              {/* Aerolínea + número de vuelo */}
+              {(leg.airline || leg.flightNumber) && (
+                <div className="flex items-center gap-2 mb-3">
+                  <Plane className="w-4 h-4 shrink-0" style={{ color: "#C4793A" }} />
+                  <span className="text-[15px] font-semibold" style={{ color: "#2D1F0E" }}>
+                    {[leg.airline, leg.flightNumber].filter(Boolean).join(" ")}
+                  </span>
+                </div>
+              )}
+
+              {/* Ruta: ciudad de salida → ciudad de llegada */}
+              {hasRoute && (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 rounded-[10px] p-3 text-center" style={{ background: "#FAF2EB" }}>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Origen</p>
+                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.cityFrom || "—"}</p>
+                  </div>
+                  <span className="text-muted-foreground text-[18px]">→</span>
+                  <div className="flex-1 rounded-[10px] p-3 text-center" style={{ background: "#FAF2EB" }}>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Destino</p>
+                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.cityTo || "—"}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Horas */}
+              {hasTimes && (
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Salida</p>
+                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.departureTime || "—"}</p>
+                  </div>
+                  <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Llegada</p>
+                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.arrivalTime || "—"}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Código de reserva */}
+              {leg.reservationCode && (
+                <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Código de reserva</p>
+                  <p className="text-[14px] font-semibold tracking-widest" style={{ color: "#3D2F6B" }}>{leg.reservationCode}</p>
+                </div>
               )}
             </div>
-            <div className="flex gap-4 mt-1 text-[12px] text-muted-foreground flex-wrap">
-              {leg.departureTime && <span>Salida: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.departureTime}</span></span>}
-              {leg.arrivalTime && <span>Llegada: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.arrivalTime}</span></span>}
-              {leg.reservationCode && <span>Código: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.reservationCode}</span></span>}
-            </div>
-          </div>
-        );
+          );
+        };
 
         return (
           <div className="bg-card border border-border rounded-[14px] p-5 space-y-4">
