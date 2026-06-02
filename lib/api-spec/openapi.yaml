@@ -2492,6 +2492,14 @@ components:
           type: ["string", "null"]
         flightNotes:
           type: ["string", "null"]
+        returnAirline:
+          type: ["string", "null"]
+        returnFlightNumber:
+          type: ["string", "null"]
+        returnFlightTime:
+          type: ["string", "null"]
+        returnReservationCode:
+          type: ["string", "null"]
         outboundFlights:
           type: array
           nullable: true

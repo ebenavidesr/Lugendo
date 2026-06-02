@@ -737,6 +737,14 @@ export interface TravelerTripDetail {
   reservationCode?: string | null;
   /** @nullable */
   flightNotes?: string | null;
+  /** @nullable */
+  returnAirline?: string | null;
+  /** @nullable */
+  returnFlightNumber?: string | null;
+  /** @nullable */
+  returnFlightTime?: string | null;
+  /** @nullable */
+  returnReservationCode?: string | null;
   outboundFlights?: FlightLeg[] | null;
   returnFlights?: FlightLeg[] | null;
   createdAt: string;

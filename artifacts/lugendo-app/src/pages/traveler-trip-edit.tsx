@@ -111,7 +111,9 @@ export default function TravelerTripEdit() {
               arrivalTime: l.arrivalTime ?? "",
               reservationCode: l.reservationCode ?? "",
             }))
-          : [emptyLeg()],
+          : trip.returnAirline || trip.returnFlightNumber
+            ? [{ airline: trip.returnAirline ?? "", flightNumber: trip.returnFlightNumber ?? "", cityFrom: "", cityTo: "", departureTime: trip.returnFlightTime ?? "", arrivalTime: "", reservationCode: trip.returnReservationCode ?? "" }]
+            : [emptyLeg()],
       });
       setDays((trip.days ?? []).map(d => ({
         id: d.id,

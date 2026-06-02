@@ -327,7 +327,7 @@ export default function TravelerTrip() {
       {/* Unified flight card */}
       {(() => {
         const hasNew = (trip.outboundFlights && trip.outboundFlights.length > 0) || (trip.returnFlights && trip.returnFlights.length > 0);
-        const hasLegacy = trip.airline || trip.flightNumber || trip.flightTime || trip.reservationCode;
+        const hasLegacy = trip.airline || trip.flightNumber || trip.flightTime || trip.reservationCode || trip.returnAirline || trip.returnFlightNumber;
         if (!hasNew && !hasLegacy) return null;
 
         const renderLeg = (leg: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string }, i: number) => (
@@ -381,6 +381,14 @@ export default function TravelerTrip() {
                       <Plane className="w-3 h-3" /> Ida
                     </div>
                     {renderLeg({ airline: trip.airline ?? undefined, flightNumber: trip.flightNumber ?? undefined, departureTime: trip.flightTime ?? undefined, reservationCode: trip.reservationCode ?? undefined }, 0)}
+                  </div>
+                )}
+                {(trip.returnAirline || trip.returnFlightNumber) && (
+                  <div className="border-t border-border pt-4">
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+                      <Plane className="w-3 h-3 rotate-180" /> Vuelta
+                    </div>
+                    {renderLeg({ airline: trip.returnAirline ?? undefined, flightNumber: trip.returnFlightNumber ?? undefined, departureTime: trip.returnFlightTime ?? undefined, reservationCode: trip.returnReservationCode ?? undefined }, 0)}
                   </div>
                 )}
                 {trip.flightNotes && (

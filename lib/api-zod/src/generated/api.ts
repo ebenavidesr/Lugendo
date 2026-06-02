@@ -1124,6 +1124,10 @@ export const GetMyTripResponse = zod.object({
   "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
   "flightNotes": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "outboundFlights": zod.array(zod.object({
   "airline": zod.string().optional(),
   "flightNumber": zod.string().optional(),
@@ -1220,6 +1224,10 @@ export const UpdateMyTripResponse = zod.object({
   "flightTime": zod.string().nullish(),
   "reservationCode": zod.string().nullish(),
   "flightNotes": zod.string().nullish(),
+  "returnAirline": zod.string().nullish(),
+  "returnFlightNumber": zod.string().nullish(),
+  "returnFlightTime": zod.string().nullish(),
+  "returnReservationCode": zod.string().nullish(),
   "outboundFlights": zod.array(zod.object({
   "airline": zod.string().optional(),
   "flightNumber": zod.string().optional(),
