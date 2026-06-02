@@ -1,8 +1,9 @@
-import { pgTable, serial, text, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
 import { hotelsTable } from "./hotels";
+import { activitiesTable } from "./activities";
 
 export const itinerariesTable = pgTable("itineraries", {
   id: serial("id").primaryKey(),
@@ -38,6 +39,16 @@ export const itineraryDayHotelsTable = pgTable("itinerary_day_hotels", {
   segment: text("segment", { enum: ["basic", "standard", "premium"] }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const itineraryDayActivitiesTable = pgTable("itinerary_day_activities", {
+  id: serial("id").primaryKey(),
+  dayId: integer("day_id").notNull().references(() => itineraryDaysTable.id, { onDelete: "cascade" }),
+  activityId: integer("activity_id").notNull().references(() => activitiesTable.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  startTime: text("start_time"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("ida_day_idx").on(t.dayId)]);
 
 export const insertItinerarySchema = createInsertSchema(itinerariesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertItineraryDaySchema = createInsertSchema(itineraryDaysTable).omit({ id: true, createdAt: true, updatedAt: true });
