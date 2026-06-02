@@ -349,6 +349,9 @@ export default function TripWizard() {
         ...(newActivityForm.country ? { country: newActivityForm.country } : {}),
         ...(newActivityForm.category && newActivityForm.category !== "none" ? { category: newActivityForm.category as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
       }});
+      qc.setQueryData(["/api/activities"], (old: typeof act[] | undefined) =>
+        old ? [...old, act] : [act]
+      );
       qc.invalidateQueries({ queryKey: ["/api/activities"] });
       set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), act.id] } });
       setNewActivityMode(false);

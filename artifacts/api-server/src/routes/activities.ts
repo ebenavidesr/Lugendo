@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
+import { eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { activitiesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
@@ -113,11 +113,18 @@ router.get("/activities/lookup", requireAuth, async (req, res): Promise<void> =>
 
 router.get("/activities", requireAuth, async (req, res): Promise<void> => {
   const { agencyId, role } = req.session;
-  const rows = role === "admin"
-    ? await db.select().from(activitiesTable).orderBy(activitiesTable.name)
-    : agencyId
-      ? await db.select().from(activitiesTable).where(eq(activitiesTable.agencyId, agencyId)).orderBy(activitiesTable.name)
-      : [];
+  let rows;
+  if (role === "admin") {
+    rows = await db.select().from(activitiesTable).orderBy(activitiesTable.name);
+  } else if (agencyId) {
+    rows = await db.select().from(activitiesTable)
+      .where(or(eq(activitiesTable.agencyId, agencyId), isNull(activitiesTable.agencyId)))
+      .orderBy(activitiesTable.name);
+  } else {
+    rows = await db.select().from(activitiesTable)
+      .where(isNull(activitiesTable.agencyId))
+      .orderBy(activitiesTable.name);
+  }
   res.json(rows.map(serialize));
 });
 
