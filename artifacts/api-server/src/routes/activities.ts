@@ -124,13 +124,17 @@ router.get("/activities", requireAuth, async (req, res): Promise<void> => {
 router.post("/activities", requireAuth, async (req, res): Promise<void> => {
   const { name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax } = req.body;
   if (!name) { res.status(400).json({ error: "name is required" }); return; }
-  const agencyId = req.session.agencyId;
-  if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
-  const [activity] = await db
-    .insert(activitiesTable)
-    .values({ agencyId, name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax })
-    .returning();
-  res.status(201).json(serialize(activity));
+  const agencyId = req.session.agencyId ?? null;
+  try {
+    const [activity] = await db
+      .insert(activitiesTable)
+      .values({ agencyId, name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax })
+      .returning();
+    res.status(201).json(serialize(activity));
+  } catch (err) {
+    req.log.error({ err }, "Failed to create activity");
+    res.status(500).json({ error: "Failed to create activity" });
+  }
 });
 
 router.get("/activities/:activityId/usage", requireAuth, async (req, res): Promise<void> => {
