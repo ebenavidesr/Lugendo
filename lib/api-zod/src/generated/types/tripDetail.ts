@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { FlightLeg } from './flightLeg';
 import type { Invitation } from './invitation';
 import type { TripDay } from './tripDay';
 import type { TripDetailStatus } from './tripDetailStatus';
@@ -41,6 +42,8 @@ export interface TripDetail {
   returnFlightTime?: string | null;
   /** @nullable */
   returnReservationCode?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
   createdAt: string;
   days: TripDay[];
   invitations: Invitation[];

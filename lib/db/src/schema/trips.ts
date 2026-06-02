@@ -1,10 +1,20 @@
-import { pgTable, serial, text, boolean, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
 import { itinerariesTable } from "./itineraries";
 import { hotelsTable } from "./hotels";
 import { usersTable } from "./users";
+
+export interface FlightLeg {
+  airline: string;
+  flightNumber: string;
+  cityFrom: string;
+  cityTo: string;
+  departureTime: string;
+  arrivalTime: string;
+  reservationCode: string;
+}
 
 export const tripsTable = pgTable("trips", {
   id: serial("id").primaryKey(),
@@ -25,6 +35,8 @@ export const tripsTable = pgTable("trips", {
   returnFlightNumber: text("return_flight_number"),
   returnFlightTime: text("return_flight_time"),
   returnReservationCode: text("return_reservation_code"),
+  outboundFlights: jsonb("outbound_flights").$type<FlightLeg[]>(),
+  returnFlights: jsonb("return_flights").$type<FlightLeg[]>(),
   createdBy: integer("created_by").references(() => usersTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

@@ -47,16 +47,25 @@ interface WizardData {
   dayActivities: Record<number, number[]>;
   startDate: string;
   endDate: string;
-  airline: string;
-  flightNumber: string;
-  flightTime: string;
-  reservationCode: string;
-  returnAirline: string;
-  returnFlightNumber: string;
-  returnFlightTime: string;
-  returnReservationCode: string;
+  outboundLegs: FlightLeg[];
+  returnLegs: FlightLeg[];
   tripName: string;
 }
+
+interface FlightLeg {
+  airline: string;
+  flightNumber: string;
+  cityFrom: string;
+  cityTo: string;
+  departureTime: string;
+  arrivalTime: string;
+  reservationCode: string;
+}
+
+const emptyLeg = (): FlightLeg => ({
+  airline: "", flightNumber: "", cityFrom: "", cityTo: "",
+  departureTime: "", arrivalTime: "", reservationCode: "",
+});
 
 const STEP_LABELS = ["Inicio", "Programa", "Fechas", "Vuelos", "Nombre", "Itinerario", "Crear"];
 const STEP_ICONS = [MapPin, FileText, Calendar, Plane, Settings, Hotel, Check];
@@ -126,8 +135,8 @@ export default function TravelerTripWizard() {
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
     parsedItinerary: null, dayHotels: {}, dayActivities: {},
     startDate: "", endDate: "",
-    airline: "", flightNumber: "", flightTime: "", reservationCode: "",
-    returnAirline: "", returnFlightNumber: "", returnFlightTime: "", returnReservationCode: "",
+    outboundLegs: [emptyLeg()],
+    returnLegs: [emptyLeg()],
     tripName: "",
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -460,14 +469,8 @@ export default function TravelerTripWizard() {
           startDate: data.startDate,
           ...(data.endDate ? { endDate: data.endDate } : {}),
           ...(itineraryId ? { itineraryId } : {}),
-          ...(data.airline ? { airline: data.airline } : {}),
-          ...(data.flightNumber ? { flightNumber: data.flightNumber } : {}),
-          ...(data.flightTime ? { flightTime: data.flightTime } : {}),
-          ...(data.reservationCode ? { reservationCode: data.reservationCode } : {}),
-          ...(data.returnAirline ? { returnAirline: data.returnAirline } : {}),
-          ...(data.returnFlightNumber ? { returnFlightNumber: data.returnFlightNumber } : {}),
-          ...(data.returnFlightTime ? { returnFlightTime: data.returnFlightTime } : {}),
-          ...(data.returnReservationCode ? { returnReservationCode: data.returnReservationCode } : {}),
+          ...(data.outboundLegs.some(l => l.airline || l.flightNumber) ? { outboundFlights: data.outboundLegs.filter(l => l.airline || l.flightNumber) } : {}),
+          ...(data.returnLegs.some(l => l.airline || l.flightNumber) ? { returnFlights: data.returnLegs.filter(l => l.airline || l.flightNumber) } : {}),
         },
       });
 
@@ -724,48 +727,56 @@ export default function TravelerTripWizard() {
               <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#C4793A" }}>
                 <Plane className="w-3.5 h-3.5" /> Vuelo de ida
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
-                  <Input placeholder="Iberia" value={data.airline} onChange={e => set({ airline: e.target.value })} />
+              {data.outboundLegs.map((leg, idx) => (
+                <div key={idx}>
+                  {idx > 0 && (
+                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
+                      <button onClick={() => set({ outboundLegs: data.outboundLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar tramo</button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label><Input placeholder="Iberia" value={leg.airline} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label><Input placeholder="IB1234" value={leg.flightNumber} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label><Input placeholder="Madrid" value={leg.cityFrom} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label><Input placeholder="Edimburgo" value={leg.cityTo} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label><Input type="time" value={leg.departureTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label><Input type="time" value={leg.arrivalTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
+                    <div className="col-span-2"><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label><Input placeholder="ABCDEF" value={leg.reservationCode} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
-                  <Input placeholder="IB1234" value={data.flightNumber} onChange={e => set({ flightNumber: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
-                  <Input type="time" value={data.flightTime} onChange={e => set({ flightTime: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
-                  <Input placeholder="ABCDEF" value={data.reservationCode} onChange={e => set({ reservationCode: e.target.value })} />
-                </div>
-              </div>
+              ))}
+              <button onClick={() => set({ outboundLegs: [...data.outboundLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                <Plus className="w-3 h-3" /> Añadir tramo
+              </button>
             </div>
 
-            <div className="p-4 rounded-[12px] border border-border space-y-3" style={{ background: "white" }}>
+            <div className="p-4 rounded-[12px] border border-border space-y-4" style={{ background: "white" }}>
               <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#3D2F6B" }}>
                 <Plane className="w-3.5 h-3.5 rotate-180" /> Vuelo de vuelta
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
-                  <Input placeholder="Iberia" value={data.returnAirline} onChange={e => set({ returnAirline: e.target.value })} />
+              {data.returnLegs.map((leg, idx) => (
+                <div key={idx}>
+                  {idx > 0 && (
+                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
+                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
+                      <button onClick={() => set({ returnLegs: data.returnLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar tramo</button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label><Input placeholder="Iberia" value={leg.airline} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label><Input placeholder="IB5678" value={leg.flightNumber} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label><Input placeholder="Edimburgo" value={leg.cityFrom} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label><Input placeholder="Madrid" value={leg.cityTo} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label><Input type="time" value={leg.departureTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
+                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label><Input type="time" value={leg.arrivalTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
+                    <div className="col-span-2"><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label><Input placeholder="FEDCBA" value={leg.reservationCode} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
-                  <Input placeholder="IB5678" value={data.returnFlightNumber} onChange={e => set({ returnFlightNumber: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
-                  <Input type="time" value={data.returnFlightTime} onChange={e => set({ returnFlightTime: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
-                  <Input placeholder="FEDCBA" value={data.returnReservationCode} onChange={e => set({ returnReservationCode: e.target.value })} />
-                </div>
-              </div>
+              ))}
+              <button onClick={() => set({ returnLegs: [...data.returnLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                <Plus className="w-3 h-3" /> Añadir tramo
+              </button>
             </div>
           </div>
         );
@@ -798,16 +809,16 @@ export default function TravelerTripWizard() {
                 <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
                 <span className="text-muted-foreground">Regreso</span>
                 <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
-                {data.airline && (
+                {data.outboundLegs.some(l => l.airline || l.flightNumber) && (
                   <>
                     <span className="text-muted-foreground">Vuelo ida</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.airline} {data.flightNumber}{data.flightTime ? ` · ${data.flightTime}` : ""}</span>
+                    <span style={{ color: "#2D1F0E" }}>{data.outboundLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
                   </>
                 )}
-                {data.returnAirline && (
+                {data.returnLegs.some(l => l.airline || l.flightNumber) && (
                   <>
                     <span className="text-muted-foreground">Vuelo vuelta</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.returnAirline} {data.returnFlightNumber}{data.returnFlightTime ? ` · ${data.returnFlightTime}` : ""}</span>
+                    <span style={{ color: "#2D1F0E" }}>{data.returnLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
                   </>
                 )}
               </div>
@@ -1175,16 +1186,16 @@ export default function TravelerTripWizard() {
                 <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
                 <span className="text-muted-foreground">Regreso</span>
                 <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
-                {data.airline && (
+                {data.outboundLegs.some(l => l.airline || l.flightNumber) && (
                   <>
                     <span className="text-muted-foreground">Vuelo ida</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.airline} {data.flightNumber}{data.flightTime ? ` · ${data.flightTime}` : ""}</span>
+                    <span style={{ color: "#2D1F0E" }}>{data.outboundLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
                   </>
                 )}
-                {data.returnAirline && (
+                {data.returnLegs.some(l => l.airline || l.flightNumber) && (
                   <>
                     <span className="text-muted-foreground">Vuelo vuelta</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.returnAirline} {data.returnFlightNumber}{data.returnFlightTime ? ` · ${data.returnFlightTime}` : ""}</span>
+                    <span style={{ color: "#2D1F0E" }}>{data.returnLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
                   </>
                 )}
                 {hasDays && (

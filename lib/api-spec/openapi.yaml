@@ -2164,6 +2164,16 @@ components:
           type: ["string", "null"]
         returnReservationCode:
           type: ["string", "null"]
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
         createdAt:
           type: string
 
@@ -2208,6 +2218,16 @@ components:
           type: ["string", "null"]
         returnReservationCode:
           type: ["string", "null"]
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
         createdAt:
           type: string
         days:
@@ -2218,6 +2238,24 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Invitation"
+
+    FlightLeg:
+      type: object
+      properties:
+        airline:
+          type: string
+        flightNumber:
+          type: string
+        cityFrom:
+          type: string
+        cityTo:
+          type: string
+        departureTime:
+          type: string
+        arrivalTime:
+          type: string
+        reservationCode:
+          type: string
 
     TripInput:
       type: object
@@ -2251,6 +2289,14 @@ components:
           type: string
         returnReservationCode:
           type: string
+        outboundFlights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlightLeg"
 
     TripUpdate:
       type: object
@@ -2284,6 +2330,16 @@ components:
           type: string
         returnReservationCode:
           type: string
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
 
     TripDayUpdate:
       type: object
@@ -2436,6 +2492,16 @@ components:
           type: ["string", "null"]
         flightNotes:
           type: ["string", "null"]
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
         createdAt:
           type: string
         days:
@@ -2486,6 +2552,16 @@ components:
           type: ["string", "null"]
         returnReservationCode:
           type: ["string", "null"]
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
 
     CreatePersonalTripInput:
       type: object
@@ -2517,6 +2593,16 @@ components:
           type: ["string", "null"]
         returnReservationCode:
           type: ["string", "null"]
+        outboundFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
+        returnFlights:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FlightLeg"
 
     TripNote:
       type: object

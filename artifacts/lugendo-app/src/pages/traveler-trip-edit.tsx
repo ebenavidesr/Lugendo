@@ -32,19 +32,28 @@ interface DayState {
   expanded: boolean;
 }
 
+interface FlightLeg {
+  airline: string;
+  flightNumber: string;
+  cityFrom: string;
+  cityTo: string;
+  departureTime: string;
+  arrivalTime: string;
+  reservationCode: string;
+}
+
+const emptyLeg = (): FlightLeg => ({
+  airline: "", flightNumber: "", cityFrom: "", cityTo: "",
+  departureTime: "", arrivalTime: "", reservationCode: "",
+});
+
 interface MetaState {
   name: string;
   status: TravelerTripDetailStatus;
   startDate: string;
   endDate: string;
-  airline: string;
-  flightNumber: string;
-  flightTime: string;
-  reservationCode: string;
-  returnAirline: string;
-  returnFlightNumber: string;
-  returnFlightTime: string;
-  returnReservationCode: string;
+  outboundLegs: FlightLeg[];
+  returnLegs: FlightLeg[];
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -64,8 +73,8 @@ export default function TravelerTripEdit() {
 
   const [meta, setMeta] = useState<MetaState>({
     name: "", status: "draft", startDate: "", endDate: "",
-    airline: "", flightNumber: "", flightTime: "", reservationCode: "",
-    returnAirline: "", returnFlightNumber: "", returnFlightTime: "", returnReservationCode: "",
+    outboundLegs: [emptyLeg()],
+    returnLegs: [emptyLeg()],
   });
   const [days, setDays] = useState<DayState[]>([]);
   const [saving, setSaving] = useState(false);
@@ -79,14 +88,30 @@ export default function TravelerTripEdit() {
         status: trip.status,
         startDate: trip.startDate,
         endDate: trip.endDate ?? "",
-        airline: trip.airline ?? "",
-        flightNumber: trip.flightNumber ?? "",
-        flightTime: trip.flightTime ?? "",
-        reservationCode: trip.reservationCode ?? "",
-        returnAirline: "",
-        returnFlightNumber: "",
-        returnFlightTime: "",
-        returnReservationCode: "",
+        outboundLegs: trip.outboundFlights && trip.outboundFlights.length > 0
+          ? trip.outboundFlights.map(l => ({
+              airline: l.airline ?? "",
+              flightNumber: l.flightNumber ?? "",
+              cityFrom: l.cityFrom ?? "",
+              cityTo: l.cityTo ?? "",
+              departureTime: l.departureTime ?? "",
+              arrivalTime: l.arrivalTime ?? "",
+              reservationCode: l.reservationCode ?? "",
+            }))
+          : trip.airline || trip.flightNumber
+            ? [{ airline: trip.airline ?? "", flightNumber: trip.flightNumber ?? "", cityFrom: "", cityTo: "", departureTime: trip.flightTime ?? "", arrivalTime: "", reservationCode: trip.reservationCode ?? "" }]
+            : [emptyLeg()],
+        returnLegs: trip.returnFlights && trip.returnFlights.length > 0
+          ? trip.returnFlights.map(l => ({
+              airline: l.airline ?? "",
+              flightNumber: l.flightNumber ?? "",
+              cityFrom: l.cityFrom ?? "",
+              cityTo: l.cityTo ?? "",
+              departureTime: l.departureTime ?? "",
+              arrivalTime: l.arrivalTime ?? "",
+              reservationCode: l.reservationCode ?? "",
+            }))
+          : [emptyLeg()],
       });
       setDays((trip.days ?? []).map(d => ({
         id: d.id,
@@ -145,14 +170,8 @@ export default function TravelerTripEdit() {
           status: meta.status,
           startDate: meta.startDate,
           endDate: meta.endDate || null,
-          airline: meta.airline || null,
-          flightNumber: meta.flightNumber || null,
-          flightTime: meta.flightTime || null,
-          reservationCode: meta.reservationCode || null,
-          returnAirline: meta.returnAirline || null,
-          returnFlightNumber: meta.returnFlightNumber || null,
-          returnFlightTime: meta.returnFlightTime || null,
-          returnReservationCode: meta.returnReservationCode || null,
+          ...(meta.outboundLegs.some(l => l.airline || l.flightNumber) ? { outboundFlights: meta.outboundLegs.filter(l => l.airline || l.flightNumber) } : { outboundFlights: [] }),
+          ...(meta.returnLegs.some(l => l.airline || l.flightNumber) ? { returnFlights: meta.returnLegs.filter(l => l.airline || l.flightNumber) } : { returnFlights: [] }),
         },
       });
 
@@ -279,48 +298,58 @@ export default function TravelerTripEdit() {
           <Plane className="w-3.5 h-3.5" /> Vuelos
         </p>
 
+        {/* Outbound legs */}
         <div className="space-y-3">
           <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>Ida</div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Aerolínea</label>
-              <Input className="h-8 text-[13px]" placeholder="Iberia" value={meta.airline} onChange={e => setMt({ airline: e.target.value })} />
+          {meta.outboundLegs.map((leg, idx) => (
+            <div key={idx}>
+              {idx > 0 && (
+                <div className="flex items-center gap-2 py-2 border-t border-border">
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Tramo {idx + 1}</span>
+                  <button onClick={() => setMt({ outboundLegs: meta.outboundLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar</button>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Aerolínea</label><Input className="h-8 text-[13px]" placeholder="Iberia" value={leg.airline} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Número de vuelo</label><Input className="h-8 text-[13px]" placeholder="IB1234" value={leg.flightNumber} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Ciudad origen</label><Input className="h-8 text-[13px]" placeholder="Madrid" value={leg.cityFrom} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Ciudad destino</label><Input className="h-8 text-[13px]" placeholder="Edimburgo" value={leg.cityTo} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Hora de salida</label><Input className="h-8 text-[13px]" type="time" value={leg.departureTime} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Hora de llegada</label><Input className="h-8 text-[13px]" type="time" value={leg.arrivalTime} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
+                <div className="col-span-2 space-y-1"><label className="text-[11px] text-muted-foreground">Código de reserva</label><Input className="h-8 text-[13px]" placeholder="ABCDEF" value={leg.reservationCode} onChange={e => setMt({ outboundLegs: meta.outboundLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Número de vuelo</label>
-              <Input className="h-8 text-[13px]" placeholder="IB1234" value={meta.flightNumber} onChange={e => setMt({ flightNumber: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Hora de salida</label>
-              <Input className="h-8 text-[13px]" type="time" value={meta.flightTime} onChange={e => setMt({ flightTime: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Código de reserva</label>
-              <Input className="h-8 text-[13px]" placeholder="ABCDEF" value={meta.reservationCode} onChange={e => setMt({ reservationCode: e.target.value })} />
-            </div>
-          </div>
+          ))}
+          <button onClick={() => setMt({ outboundLegs: [...meta.outboundLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#FAEEE4", color: "#C4793A" }}>
+            <Plus className="w-3 h-3" /> Añadir tramo
+          </button>
         </div>
 
+        {/* Return legs */}
         <div className="border-t border-border pt-4 space-y-3">
           <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Vuelta</div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Aerolínea</label>
-              <Input className="h-8 text-[13px]" placeholder="Iberia" value={meta.returnAirline} onChange={e => setMt({ returnAirline: e.target.value })} />
+          {meta.returnLegs.map((leg, idx) => (
+            <div key={idx}>
+              {idx > 0 && (
+                <div className="flex items-center gap-2 py-2 border-t border-border">
+                  <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Tramo {idx + 1}</span>
+                  <button onClick={() => setMt({ returnLegs: meta.returnLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar</button>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Aerolínea</label><Input className="h-8 text-[13px]" placeholder="Iberia" value={leg.airline} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Número de vuelo</label><Input className="h-8 text-[13px]" placeholder="IB5678" value={leg.flightNumber} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Ciudad origen</label><Input className="h-8 text-[13px]" placeholder="Edimburgo" value={leg.cityFrom} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Ciudad destino</label><Input className="h-8 text-[13px]" placeholder="Madrid" value={leg.cityTo} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Hora de salida</label><Input className="h-8 text-[13px]" type="time" value={leg.departureTime} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
+                <div className="space-y-1"><label className="text-[11px] text-muted-foreground">Hora de llegada</label><Input className="h-8 text-[13px]" type="time" value={leg.arrivalTime} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
+                <div className="col-span-2 space-y-1"><label className="text-[11px] text-muted-foreground">Código de reserva</label><Input className="h-8 text-[13px]" placeholder="FEDCBA" value={leg.reservationCode} onChange={e => setMt({ returnLegs: meta.returnLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
+              </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Número de vuelo</label>
-              <Input className="h-8 text-[13px]" placeholder="IB5678" value={meta.returnFlightNumber} onChange={e => setMt({ returnFlightNumber: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Hora de salida</label>
-              <Input className="h-8 text-[13px]" type="time" value={meta.returnFlightTime} onChange={e => setMt({ returnFlightTime: e.target.value })} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] text-muted-foreground">Código de reserva</label>
-              <Input className="h-8 text-[13px]" placeholder="FEDCBA" value={meta.returnReservationCode} onChange={e => setMt({ returnReservationCode: e.target.value })} />
-            </div>
-          </div>
+          ))}
+          <button onClick={() => setMt({ returnLegs: [...meta.returnLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+            <Plus className="w-3 h-3" /> Añadir tramo
+          </button>
         </div>
       </section>
 

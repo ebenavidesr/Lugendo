@@ -182,6 +182,7 @@ router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<voi
     itineraryId, maxCapacity,
     airline, flightNumber, flightTime, reservationCode,
     returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
+    outboundFlights, returnFlights,
   } = req.body;
 
   if (!name || !startDate) {
@@ -207,6 +208,8 @@ router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<voi
       ...(returnFlightNumber ? { returnFlightNumber } : {}),
       ...(returnFlightTime ? { returnFlightTime } : {}),
       ...(returnReservationCode ? { returnReservationCode } : {}),
+      outboundFlights: outboundFlights ?? null,
+      returnFlights: returnFlights ?? null,
     })
     .returning();
 
@@ -333,7 +336,8 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
     name, status, startDate, endDate,
     airline, flightNumber, flightTime, reservationCode,
     returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
-  } = req.body as Record<string, string | null | undefined>;
+    outboundFlights, returnFlights,
+  } = req.body as Record<string, unknown>;
 
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
@@ -348,6 +352,8 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
   if (returnFlightNumber !== undefined) updateData.returnFlightNumber = returnFlightNumber;
   if (returnFlightTime !== undefined) updateData.returnFlightTime = returnFlightTime;
   if (returnReservationCode !== undefined) updateData.returnReservationCode = returnReservationCode;
+  if (outboundFlights !== undefined) updateData.outboundFlights = outboundFlights;
+  if (returnFlights !== undefined) updateData.returnFlights = returnFlights;
 
   if (Object.keys(updateData).length === 0) {
     res.status(400).json({ error: "No hay campos para actualizar" }); return;

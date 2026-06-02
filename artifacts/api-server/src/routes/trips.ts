@@ -95,14 +95,14 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.post("/trips", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
-  const { name, itineraryId, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode } = req.body;
+  const { name, itineraryId, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode, outboundFlights, returnFlights } = req.body;
   if (!name || !startDate) { res.status(400).json({ error: "name and startDate are required" }); return; }
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
 
   const [trip] = await db
     .insert(tripsTable)
-    .values({ agencyId, itineraryId, name, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode, createdBy: req.session.userId })
+    .values({ agencyId, itineraryId, name, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode, outboundFlights: outboundFlights ?? null, returnFlights: returnFlights ?? null, createdBy: req.session.userId })
     .returning();
 
   if (itineraryId) {

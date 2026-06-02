@@ -322,37 +322,77 @@ export default function TravelerTrip() {
       <div className="grid grid-cols-2 gap-3">
         <InfoCard icon={Calendar} label="Inicio" value={fmt(trip.startDate)} />
         <InfoCard icon={Calendar} label="Fin" value={trip.endDate ? fmt(trip.endDate) : "—"} />
-        {trip.flightNumber && <InfoCard icon={Plane} label="Vuelo" value={trip.flightNumber} />}
-        {trip.reservationCode && <InfoCard icon={Plane} label="Código reserva" value={trip.reservationCode} />}
       </div>
 
-      {/* Flight details box */}
-      {(trip.airline || trip.flightTime || trip.flightNotes) && (
-        <div className="bg-card border border-border rounded-[14px] p-5">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3">
-            Información de vuelo
-          </p>
-          <div className="grid grid-cols-2 gap-4 text-[13px]">
-            {trip.airline && (
-              <div>
-                <p className="text-muted-foreground text-[11px] mb-0.5">Aerolínea</p>
-                <p className="font-medium" style={{ color: "#2D1F0E" }}>{trip.airline}</p>
-              </div>
-            )}
-            {trip.flightTime && (
-              <div>
-                <p className="text-muted-foreground text-[11px] mb-0.5">Hora de salida</p>
-                <p className="font-medium" style={{ color: "#2D1F0E" }}>{trip.flightTime}</p>
-              </div>
+      {/* Unified flight card */}
+      {(() => {
+        const hasNew = (trip.outboundFlights && trip.outboundFlights.length > 0) || (trip.returnFlights && trip.returnFlights.length > 0);
+        const hasLegacy = trip.airline || trip.flightNumber || trip.flightTime || trip.reservationCode;
+        if (!hasNew && !hasLegacy) return null;
+
+        const renderLeg = (leg: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string }, i: number) => (
+          <div key={i} className={i > 0 ? "pt-3 mt-3 border-t border-border/60" : ""}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>
+                {[leg.airline, leg.flightNumber].filter(Boolean).join(" ")}
+              </span>
+              {(leg.cityFrom || leg.cityTo) && (
+                <span className="text-[13px] text-muted-foreground">
+                  {leg.cityFrom}{leg.cityFrom && leg.cityTo ? " → " : ""}{leg.cityTo}
+                </span>
+              )}
+            </div>
+            <div className="flex gap-4 mt-1 text-[12px] text-muted-foreground flex-wrap">
+              {leg.departureTime && <span>Salida: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.departureTime}</span></span>}
+              {leg.arrivalTime && <span>Llegada: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.arrivalTime}</span></span>}
+              {leg.reservationCode && <span>Código: <span className="font-medium" style={{ color: "#2D1F0E" }}>{leg.reservationCode}</span></span>}
+            </div>
+          </div>
+        );
+
+        return (
+          <div className="bg-card border border-border rounded-[14px] p-5 space-y-4">
+            <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">Vuelos</p>
+
+            {hasNew ? (
+              <>
+                {trip.outboundFlights && trip.outboundFlights.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
+                      <Plane className="w-3 h-3" /> Ida
+                    </div>
+                    {trip.outboundFlights.map((leg, i) => renderLeg(leg, i))}
+                  </div>
+                )}
+                {trip.returnFlights && trip.returnFlights.length > 0 && (
+                  <div className={trip.outboundFlights && trip.outboundFlights.length > 0 ? "border-t border-border pt-4" : ""}>
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+                      <Plane className="w-3 h-3 rotate-180" /> Vuelta
+                    </div>
+                    {trip.returnFlights.map((leg, i) => renderLeg(leg, i))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {(trip.airline || trip.flightNumber || trip.flightTime) && (
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
+                      <Plane className="w-3 h-3" /> Ida
+                    </div>
+                    {renderLeg({ airline: trip.airline ?? undefined, flightNumber: trip.flightNumber ?? undefined, departureTime: trip.flightTime ?? undefined, reservationCode: trip.reservationCode ?? undefined }, 0)}
+                  </div>
+                )}
+                {trip.flightNotes && (
+                  <div className="p-3 rounded-[8px] text-[13px] text-muted-foreground" style={{ background: "#FAF2EB" }}>
+                    {trip.flightNotes}
+                  </div>
+                )}
+              </>
             )}
           </div>
-          {trip.flightNotes && (
-            <div className="mt-3 p-3 rounded-[8px] text-[13px] text-muted-foreground" style={{ background: "#FAF2EB" }}>
-              {trip.flightNotes}
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Day-by-day itinerary */}
       {trip.days && trip.days.length > 0 && (

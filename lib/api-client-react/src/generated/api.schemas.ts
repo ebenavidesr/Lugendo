@@ -443,6 +443,16 @@ export const TripStatus = {
   cancelled: 'cancelled',
 } as const;
 
+export interface FlightLeg {
+  airline?: string;
+  flightNumber?: string;
+  cityFrom?: string;
+  cityTo?: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  reservationCode?: string;
+}
+
 export interface Trip {
   id: number;
   /** @nullable */
@@ -480,6 +490,8 @@ export interface Trip {
   returnFlightTime?: string | null;
   /** @nullable */
   returnReservationCode?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
   createdAt: string;
 }
 
@@ -566,6 +578,8 @@ export interface TripDetail {
   returnFlightTime?: string | null;
   /** @nullable */
   returnReservationCode?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
   createdAt: string;
   days: TripDay[];
   invitations: Invitation[];
@@ -586,6 +600,8 @@ export interface TripInput {
   returnFlightNumber?: string;
   returnFlightTime?: string;
   returnReservationCode?: string;
+  outboundFlights?: FlightLeg[];
+  returnFlights?: FlightLeg[];
 }
 
 export type TripUpdateStatus = typeof TripUpdateStatus[keyof typeof TripUpdateStatus];
@@ -614,6 +630,8 @@ export interface TripUpdate {
   returnFlightNumber?: string;
   returnFlightTime?: string;
   returnReservationCode?: string;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
 }
 
 export interface TripDayUpdate {
@@ -719,6 +737,8 @@ export interface TravelerTripDetail {
   reservationCode?: string | null;
   /** @nullable */
   flightNotes?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
   createdAt: string;
   days: TripDay[];
 }
@@ -767,6 +787,8 @@ export interface UpdateMyTripInput {
   returnFlightTime?: string | null;
   /** @nullable */
   returnReservationCode?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
 }
 
 export interface CreatePersonalTripInput {
@@ -794,6 +816,8 @@ export interface CreatePersonalTripInput {
   returnFlightTime?: string | null;
   /** @nullable */
   returnReservationCode?: string | null;
+  outboundFlights?: FlightLeg[] | null;
+  returnFlights?: FlightLeg[] | null;
 }
 
 export interface TripNote {
