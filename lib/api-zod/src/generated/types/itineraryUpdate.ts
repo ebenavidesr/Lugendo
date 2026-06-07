@@ -15,5 +15,8 @@ export interface ItineraryUpdate {
   difficulty?: ItineraryUpdateDifficulty;
   description?: string;
   videoUrl?: string;
+  recommendedMonths?: string[];
+  priceRange?: string;
+  tags?: string[];
   active?: boolean;
 }

@@ -15,4 +15,7 @@ export interface ItineraryInput {
   difficulty?: ItineraryInputDifficulty;
   description?: string;
   videoUrl?: string;
+  recommendedMonths?: string[];
+  priceRange?: string;
+  tags?: string[];
 }

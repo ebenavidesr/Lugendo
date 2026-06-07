@@ -158,7 +158,7 @@ Rules:
 });
 
 router.post("/itineraries", requireAuth, async (req, res): Promise<void> => {
-  const { name, countries, region, numDays, difficulty, description, videoUrl } = req.body;
+  const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags } = req.body;
   if (!name || !numDays) {
     res.status(400).json({ error: "name and numDays are required" });
     return;
@@ -166,7 +166,7 @@ router.post("/itineraries", requireAuth, async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
-    .values({ agencyId, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl })
+    .values({ agencyId, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [] })
     .returning();
   res.status(201).json(serializeItinerary(itinerary));
 });
@@ -338,6 +338,51 @@ router.delete("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requir
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
   await db.execute(sql`DELETE FROM itinerary_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
+});
+
+// ─── AI: SUGGEST DAY DESCRIPTION ─────────────────────────────────────────────
+router.post("/itineraries/suggest-day-description", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const { dayNumber, cityFrom, cityTo, activities = [], writingTone = "friendly" } = req.body as {
+    dayNumber: number;
+    cityFrom?: string;
+    cityTo?: string;
+    activities?: string[];
+    writingTone?: string;
+  };
+
+  const toneMap: Record<string, string> = {
+    informative: "informativo y claro, con datos prácticos",
+    friendly: "cercano y entusiasta, como un amigo experto",
+    adventurous: "emocionante y aventurero, con energía y dinamismo",
+    luxury: "elegante y sofisticado, con atención al detalle exclusivo",
+    professional: "profesional y preciso, orientado al detalle",
+  };
+  const toneDesc = toneMap[writingTone] ?? toneMap["friendly"];
+
+  const locationParts: string[] = [];
+  if (cityFrom && cityTo && cityFrom !== cityTo) locationParts.push(`salida desde ${cityFrom} y llegada a ${cityTo}`);
+  else if (cityTo) locationParts.push(`en ${cityTo}`);
+  else if (cityFrom) locationParts.push(`salida desde ${cityFrom}`);
+
+  const activitiesDesc = activities.length > 0
+    ? `Actividades del día: ${activities.join(", ")}.`
+    : "No hay actividades específicas definidas.";
+
+  const prompt = `Eres un copywriter de agencias de viajes. Escribe una descripción atractiva para el Día ${dayNumber} de un itinerario de viaje.
+Ubicación: ${locationParts.length > 0 ? locationParts.join(". ") : "Sin especificar"}.
+${activitiesDesc}
+Estilo de escritura: ${toneDesc}.
+Escribe en español. La descripción debe tener entre 60 y 120 palabras. Solo devuelve el texto, sin títulos ni formateo adicional.`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 200,
+    temperature: 0.75,
+  });
+
+  const description = completion.choices[0]?.message?.content?.trim() ?? "";
+  res.json({ description });
 });
 
 export default router;

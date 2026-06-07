@@ -54,6 +54,8 @@ import type {
   RegisterInput,
   ShareTripInput,
   SharedTripEntry,
+  SuggestDayDescriptionInput,
+  SuggestDayDescriptionResult,
   TravelerTrip,
   TravelerTripDetail,
   Trip,
@@ -4657,6 +4659,77 @@ export const useAcceptTripShare = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAcceptTripShareMutationOptions(options));
+    }
+
+export const getSuggestDayDescriptionUrl = () => {
+
+
+
+
+  return `/api/itineraries/suggest-day-description`
+}
+
+/**
+ * @summary Generate an AI-powered day description using agency writing tone
+ */
+export const suggestDayDescription = async (suggestDayDescriptionInput: SuggestDayDescriptionInput, options?: RequestInit): Promise<SuggestDayDescriptionResult> => {
+
+  return customFetch<SuggestDayDescriptionResult>(getSuggestDayDescriptionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      suggestDayDescriptionInput,)
+  }
+);}
+
+
+
+
+export const getSuggestDayDescriptionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestDayDescription>>, TError,{data: BodyType<SuggestDayDescriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof suggestDayDescription>>, TError,{data: BodyType<SuggestDayDescriptionInput>}, TContext> => {
+
+const mutationKey = ['suggestDayDescription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof suggestDayDescription>>, {data: BodyType<SuggestDayDescriptionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  suggestDayDescription(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SuggestDayDescriptionMutationResult = NonNullable<Awaited<ReturnType<typeof suggestDayDescription>>>
+    export type SuggestDayDescriptionMutationBody = BodyType<SuggestDayDescriptionInput>
+    export type SuggestDayDescriptionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate an AI-powered day description using agency writing tone
+ */
+export const useSuggestDayDescription = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof suggestDayDescription>>, TError,{data: BodyType<SuggestDayDescriptionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof suggestDayDescription>>,
+        TError,
+        {data: BodyType<SuggestDayDescriptionInput>},
+        TContext
+      > => {
+      return useMutation(getSuggestDayDescriptionMutationOptions(options));
     }
 
 export const getParseItineraryPdfUrl = () => {

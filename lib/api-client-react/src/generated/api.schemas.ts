@@ -43,6 +43,17 @@ export interface RegisterInput {
   inviteCode?: string;
 }
 
+export type AgencyWritingTone = typeof AgencyWritingTone[keyof typeof AgencyWritingTone];
+
+
+export const AgencyWritingTone = {
+  informative: 'informative',
+  friendly: 'friendly',
+  adventurous: 'adventurous',
+  luxury: 'luxury',
+  professional: 'professional',
+} as const;
+
 export interface Agency {
   id: number;
   name: string;
@@ -51,21 +62,46 @@ export interface Agency {
   logoUrl?: string | null;
   /** @nullable */
   primaryColor?: string | null;
+  writingTone: AgencyWritingTone;
   active: boolean;
   createdAt: string;
 }
+
+export type AgencyInputWritingTone = typeof AgencyInputWritingTone[keyof typeof AgencyInputWritingTone];
+
+
+export const AgencyInputWritingTone = {
+  informative: 'informative',
+  friendly: 'friendly',
+  adventurous: 'adventurous',
+  luxury: 'luxury',
+  professional: 'professional',
+} as const;
 
 export interface AgencyInput {
   name: string;
   slug: string;
   logoUrl?: string;
   primaryColor?: string;
+  writingTone?: AgencyInputWritingTone;
 }
+
+export type AgencyUpdateWritingTone = typeof AgencyUpdateWritingTone[keyof typeof AgencyUpdateWritingTone];
+
+
+export const AgencyUpdateWritingTone = {
+  informative: 'informative',
+  friendly: 'friendly',
+  adventurous: 'adventurous',
+  luxury: 'luxury',
+  professional: 'professional',
+} as const;
 
 export interface AgencyUpdate {
   name?: string;
   logoUrl?: string;
   primaryColor?: string;
+  writingTone?: AgencyUpdateWritingTone;
   active?: boolean;
 }
 
@@ -222,6 +258,10 @@ export interface ItineraryDetail {
   description?: string | null;
   /** @nullable */
   videoUrl?: string | null;
+  recommendedMonths?: string[];
+  /** @nullable */
+  priceRange?: string | null;
+  tags?: string[];
   active: boolean;
   createdAt: string;
   days: ItineraryDay[];
@@ -244,6 +284,9 @@ export interface ItineraryInput {
   difficulty?: ItineraryInputDifficulty;
   description?: string;
   videoUrl?: string;
+  recommendedMonths?: string[];
+  priceRange?: string;
+  tags?: string[];
 }
 
 export type ItineraryUpdateDifficulty = typeof ItineraryUpdateDifficulty[keyof typeof ItineraryUpdateDifficulty];
@@ -263,6 +306,9 @@ export interface ItineraryUpdate {
   difficulty?: ItineraryUpdateDifficulty;
   description?: string;
   videoUrl?: string;
+  recommendedMonths?: string[];
+  priceRange?: string;
+  tags?: string[];
   active?: boolean;
 }
 
@@ -927,6 +973,29 @@ export interface SharedTripEntry {
   status: SharedTripEntryStatus;
   createdAt: string;
   trip: TravelerTrip;
+}
+
+export type SuggestDayDescriptionInputWritingTone = typeof SuggestDayDescriptionInputWritingTone[keyof typeof SuggestDayDescriptionInputWritingTone];
+
+
+export const SuggestDayDescriptionInputWritingTone = {
+  informative: 'informative',
+  friendly: 'friendly',
+  adventurous: 'adventurous',
+  luxury: 'luxury',
+  professional: 'professional',
+} as const;
+
+export interface SuggestDayDescriptionInput {
+  dayNumber: number;
+  cityFrom?: string;
+  cityTo?: string;
+  activities?: string[];
+  writingTone?: SuggestDayDescriptionInputWritingTone;
+}
+
+export interface SuggestDayDescriptionResult {
+  description: string;
 }
 
 export interface ParsePdfInput {

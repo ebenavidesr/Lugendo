@@ -1329,6 +1329,25 @@ paths:
           description: Share not found or already handled
 
   # ─── DAY ACTIVITIES ─────────────────────────────────────────────────────────
+  /itineraries/suggest-day-description:
+    post:
+      operationId: suggestDayDescription
+      tags: [itineraries]
+      summary: Generate an AI-powered day description using agency writing tone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestDayDescriptionInput"
+      responses:
+        "200":
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestDayDescriptionResult"
+
   /itineraries/parse-pdf:
     post:
       operationId: parseItineraryPdf
@@ -1655,7 +1674,7 @@ components:
     # ─── AGENCY ───────────────────────────────────────────────────────────────
     Agency:
       type: object
-      required: [id, name, slug, active, createdAt]
+      required: [id, name, slug, active, createdAt, writingTone]
       properties:
         id:
           type: integer
@@ -1667,6 +1686,9 @@ components:
           type: ["string", "null"]
         primaryColor:
           type: ["string", "null"]
+        writingTone:
+          type: string
+          enum: [informative, friendly, adventurous, luxury, professional]
         active:
           type: boolean
         createdAt:
@@ -1684,6 +1706,9 @@ components:
           type: string
         primaryColor:
           type: string
+        writingTone:
+          type: string
+          enum: [informative, friendly, adventurous, luxury, professional]
 
     AgencyUpdate:
       type: object
@@ -1694,6 +1719,9 @@ components:
           type: string
         primaryColor:
           type: string
+        writingTone:
+          type: string
+          enum: [informative, friendly, adventurous, luxury, professional]
         active:
           type: boolean
 
@@ -1806,6 +1834,16 @@ components:
           type: ["string", "null"]
         videoUrl:
           type: ["string", "null"]
+        recommendedMonths:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
         active:
           type: boolean
         createdAt:
@@ -1836,6 +1874,16 @@ components:
           type: string
         videoUrl:
           type: string
+        recommendedMonths:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
 
     ItineraryUpdate:
       type: object
@@ -1857,6 +1905,16 @@ components:
           type: string
         videoUrl:
           type: string
+        recommendedMonths:
+          type: array
+          items:
+            type: string
+        priceRange:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
         active:
           type: boolean
 
@@ -2713,6 +2771,31 @@ components:
           $ref: "#/components/schemas/TravelerTrip"
 
     # ─── PDF PARSE / DAY ACTIVITIES ─────────────────────────────────────────
+    SuggestDayDescriptionInput:
+      type: object
+      required: [dayNumber]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: string
+        cityTo:
+          type: string
+        activities:
+          type: array
+          items:
+            type: string
+        writingTone:
+          type: string
+          enum: [informative, friendly, adventurous, luxury, professional]
+
+    SuggestDayDescriptionResult:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+
     ParsePdfInput:
       type: object
       required: [fileBase64, fileName]

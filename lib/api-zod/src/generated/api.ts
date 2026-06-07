@@ -71,6 +71,7 @@ export const ListAgenciesResponseItem = zod.object({
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
   "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -84,7 +85,8 @@ export const CreateAgencyBody = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "logoUrl": zod.string().optional(),
-  "primaryColor": zod.string().optional()
+  "primaryColor": zod.string().optional(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional()
 })
 
 
@@ -101,6 +103,7 @@ export const GetAgencyResponse = zod.object({
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
   "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -117,6 +120,7 @@ export const UpdateAgencyBody = zod.object({
   "name": zod.string().optional(),
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional(),
   "active": zod.boolean().optional()
 })
 
@@ -126,6 +130,7 @@ export const UpdateAgencyResponse = zod.object({
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
   "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -232,7 +237,10 @@ export const CreateItineraryBody = zod.object({
   "numDays": zod.number(),
   "difficulty": zod.enum(['easy', 'moderate', 'demanding']).optional(),
   "description": zod.string().optional(),
-  "videoUrl": zod.string().optional()
+  "videoUrl": zod.string().optional(),
+  "recommendedMonths": zod.array(zod.string()).optional(),
+  "priceRange": zod.string().optional(),
+  "tags": zod.array(zod.string()).optional()
 })
 
 
@@ -253,6 +261,9 @@ export const GetItineraryResponse = zod.object({
   "difficulty": zod.string().nullish(),
   "description": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
+  "recommendedMonths": zod.array(zod.string()).optional(),
+  "priceRange": zod.string().nullish(),
+  "tags": zod.array(zod.string()).optional(),
   "active": zod.boolean(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
@@ -291,6 +302,9 @@ export const UpdateItineraryBody = zod.object({
   "difficulty": zod.enum(['easy', 'moderate', 'demanding']).optional(),
   "description": zod.string().optional(),
   "videoUrl": zod.string().optional(),
+  "recommendedMonths": zod.array(zod.string()).optional(),
+  "priceRange": zod.string().optional(),
+  "tags": zod.array(zod.string()).optional(),
   "active": zod.boolean().optional()
 })
 
@@ -1505,6 +1519,22 @@ export const AcceptTripShareResponse = zod.object({
   "permission": zod.enum(['full', 'read']),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Generate an AI-powered day description using agency writing tone
+ */
+export const SuggestDayDescriptionBody = zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().optional(),
+  "cityTo": zod.string().optional(),
+  "activities": zod.array(zod.string()).optional(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional()
+})
+
+export const SuggestDayDescriptionResponse = zod.object({
+  "description": zod.string()
 })
 
 

@@ -8,6 +8,9 @@ export const agenciesTable = pgTable("agencies", {
   slug: text("slug").notNull().unique(),
   logoUrl: text("logo_url"),
   primaryColor: text("primary_color"),
+  writingTone: text("writing_tone", {
+    enum: ["informative", "friendly", "adventurous", "luxury", "professional"],
+  }).notNull().default("friendly"),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

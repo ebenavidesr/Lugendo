@@ -1,8 +1,9 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { invitationsTable, usersTable } from "@workspace/db";
+import { invitationsTable, usersTable, tripsTable, agenciesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { sendInvitationEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -101,6 +102,33 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
   }
 
   const created = await db.insert(invitationsTable).values(toInsert).returning();
+
+  // Send email notifications (fire-and-forget, don't block response)
+  try {
+    const [trip] = await db
+      .select({ name: tripsTable.name, itineraryId: tripsTable.itineraryId })
+      .from(tripsTable)
+      .where(eq(tripsTable.id, tripId));
+    const agencyId = req.session.agencyId;
+    const [agency] = agencyId
+      ? await db.select({ name: agenciesTable.name }).from(agenciesTable).where(eq(agenciesTable.id, agencyId))
+      : [];
+    const agencyName = agency?.name ?? "Lugendo";
+    const tripName = trip?.name ?? "Tu viaje";
+    const baseUrl = process.env["REPLIT_DOMAINS"]?.split(",")[0]
+      ? `https://${process.env["REPLIT_DOMAINS"]!.split(",")[0]}`
+      : "https://lugendo.replit.app";
+    for (const inv of created) {
+      sendInvitationEmail({
+        to: inv.email,
+        agencyName,
+        tripName,
+        inviteCode: inv.inviteCode,
+        registerUrl: `${baseUrl}/register?code=${inv.inviteCode}`,
+      }).catch(() => undefined);
+    }
+  } catch { /* non-fatal */ }
+
   res.status(201).json(created.map(r => serialize(r as unknown as InvRow)));
 });
 
@@ -140,6 +168,13 @@ router.post("/invitations/:code/accept", requireAuth, async (req, res): Promise<
 
   if (!invite) { res.status(404).json({ error: "Invitation not found" }); return; }
   if (invite.status === "accepted") { res.status(409).json({ error: "Already accepted" }); return; }
+
+  // Security: logged-in user's email must match the invitation email
+  const [user] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, req.session.userId!));
+  if (!user || user.email.toLowerCase() !== invite.email.toLowerCase()) {
+    res.status(403).json({ error: "Esta invitación es para otro correo electrónico" });
+    return;
+  }
 
   const [updated] = await db
     .update(invitationsTable)

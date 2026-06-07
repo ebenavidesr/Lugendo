@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import {
-  Check, Upload, FileText, X, ChevronRight, Plus, Search, Hotel, Zap, Loader2,
+  Check, Upload, FileText, X, ChevronRight, Plus, Search, Hotel, Zap, Loader2, Sparkles,
 } from "lucide-react";
 import {
   useCreateItinerary,
@@ -12,6 +12,7 @@ import {
   useCreateHotel,
   useAddDayActivity,
   useParseItineraryPdf,
+  useSuggestDayDescription,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -33,9 +34,13 @@ interface WizardData {
   countries: string;
   difficulty: string;
   description: string;
+  recommendedMonths: string;
+  priceRange: string;
+  tags: string;
   parsedItinerary: ParsedItinerary | null;
   dayHotels: Record<number, string>;
   dayActivities: Record<number, number[]>;
+  dayDescriptions: Record<number, string>;
 }
 
 const STEP_LABELS = ["Modo", "Datos base", "Días", "Crear"];
@@ -92,9 +97,11 @@ export default function ItineraryWizard() {
   const [data, setData] = useState<WizardData>({
     mode: null,
     name: "", numDays: "", countries: "", difficulty: "", description: "",
+    recommendedMonths: "", priceRange: "", tags: "",
     parsedItinerary: null,
-    dayHotels: {}, dayActivities: {},
+    dayHotels: {}, dayActivities: {}, dayDescriptions: {},
   });
+  const [aiSuggestingDay, setAiSuggestingDay] = useState<number | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -118,6 +125,7 @@ export default function ItineraryWizard() {
 
   const { data: hotels } = useListHotels();
   const { data: activities } = useListActivities();
+  const { mutateAsync: suggestDay } = useSuggestDayDescription();
   const parsePdf = useParseItineraryPdf();
   const createItinerary = useCreateItinerary();
   const createDay = useCreateItineraryDay();
@@ -247,6 +255,29 @@ export default function ItineraryWizard() {
     }
   };
 
+  // ── AI suggest day description ────────────────────────────────────────────
+  const handleSuggestDayDescription = async (day: { dayNumber: number; cityFrom?: string | null; cityTo?: string | null }) => {
+    setAiSuggestingDay(day.dayNumber);
+    try {
+      const dayActs = (data.dayActivities[day.dayNumber] ?? [])
+        .map(id => activities?.find(a => a.id === id)?.name)
+        .filter(Boolean) as string[];
+      const result = await suggestDay({
+        data: {
+          dayNumber: day.dayNumber,
+          ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
+          ...(day.cityTo ? { cityTo: day.cityTo } : {}),
+          ...(dayActs.length ? { activities: dayActs } : {}),
+        },
+      });
+      set({ dayDescriptions: { ...data.dayDescriptions, [day.dayNumber]: result.description } });
+    } catch {
+      toast({ variant: "destructive", title: "Error al generar la descripción. Inténtalo de nuevo." });
+    } finally {
+      setAiSuggestingDay(null);
+    }
+  };
+
   // ── Final creation ────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!data.name || !data.numDays) {
@@ -256,6 +287,8 @@ export default function ItineraryWizard() {
     setIsCreating(true);
     try {
       const countries = data.countries ? data.countries.split(",").map(c => c.trim()).filter(Boolean) : [];
+      const tags = data.tags ? data.tags.split(",").map(t => t.trim()).filter(Boolean) : [];
+      const recommendedMonths = data.recommendedMonths ? data.recommendedMonths.split(",").map(m => m.trim()).filter(Boolean) : [];
       const numDays = parseInt(data.numDays);
 
       const itin = await createItinerary.mutateAsync({
@@ -265,6 +298,9 @@ export default function ItineraryWizard() {
           ...(countries.length ? { countries } : {}),
           ...(data.difficulty && data.difficulty !== "none" ? { difficulty: data.difficulty as "easy" | "moderate" | "demanding" } : {}),
           ...(data.description ? { description: data.description } : {}),
+          ...(recommendedMonths.length ? { recommendedMonths } : {}),
+          ...(data.priceRange && data.priceRange !== "none" ? { priceRange: data.priceRange } : {}),
+          ...(tags.length ? { tags } : {}),
         },
       });
 
@@ -279,6 +315,7 @@ export default function ItineraryWizard() {
       const createdDayMap: Record<number, number> = {};
       for (const day of sourceDays) {
         const hotelId = data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
+        const wizardDesc = data.dayDescriptions[day.dayNumber];
         const created = await createDay.mutateAsync({
           itineraryId: itin.id,
           data: {
@@ -286,7 +323,7 @@ export default function ItineraryWizard() {
             ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
             ...(day.cityTo ? { cityTo: day.cityTo } : {}),
             ...(day.transport ? { transport: day.transport } : {}),
-            ...(day.description ? { description: day.description } : {}),
+            ...(wizardDesc ? { description: wizardDesc } : day.description ? { description: day.description } : {}),
             ...(hotelId ? { hotelId } : {}),
           },
         });
@@ -499,6 +536,31 @@ export default function ItineraryWizard() {
                     onChange={e => set({ description: e.target.value })}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Meses recomendados</label>
+                    <Input placeholder="Marzo, Abril, Octubre" value={data.recommendedMonths}
+                      onChange={e => set({ recommendedMonths: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Rango de precio</label>
+                    <Select value={data.priceRange || "none"} onValueChange={v => set({ priceRange: v === "none" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin definir</SelectItem>
+                        <SelectItem value="budget">Económico</SelectItem>
+                        <SelectItem value="mid">Medio</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="luxury">Lujo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Etiquetas (separadas por coma)</label>
+                  <Input placeholder="cultural, gastronomía, familia" value={data.tags}
+                    onChange={e => set({ tags: e.target.value })} />
+                </div>
               </div>
             )}
           </div>
@@ -578,6 +640,30 @@ export default function ItineraryWizard() {
                           }}>
                           <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
                         </button>
+                      </div>
+
+                      {/* AI Description row */}
+                      <div className="px-3 pb-2 border-t border-border/50 pt-2">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Descripción del día</span>
+                          <button
+                            className="flex items-center gap-1 px-2 py-0.5 rounded-[6px] text-[11px] font-medium transition-colors"
+                            style={{ background: "#EDE9F8", color: "#3D2F6B", opacity: aiSuggestingDay === day.dayNumber ? 0.7 : 1 }}
+                            disabled={aiSuggestingDay === day.dayNumber}
+                            onClick={() => handleSuggestDayDescription(day)}>
+                            {aiSuggestingDay === day.dayNumber
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : <Sparkles className="w-3 h-3" />}
+                            {aiSuggestingDay === day.dayNumber ? "Generando…" : "✨ Sugerir"}
+                          </button>
+                        </div>
+                        <Textarea
+                          placeholder="Descripción opcional del día…"
+                          rows={2}
+                          className="text-[12px] resize-none"
+                          value={data.dayDescriptions[day.dayNumber] ?? ""}
+                          onChange={e => set({ dayDescriptions: { ...data.dayDescriptions, [day.dayNumber]: e.target.value } })}
+                        />
                       </div>
 
                       {/* Activities row */}

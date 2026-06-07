@@ -27,6 +27,14 @@ router.post("/agencies", requireRoles("admin"), async (req, res): Promise<void> 
   res.status(201).json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
 
+router.get("/agencies/me", requireAuth, async (req, res): Promise<void> => {
+  const agencyId = req.session.agencyId;
+  if (!agencyId) { res.status(404).json({ error: "No agency associated" }); return; }
+  const [agency] = await db.select().from(agenciesTable).where(eq(agenciesTable.id, agencyId));
+  if (!agency) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
+});
+
 router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
   const [agency] = await db.select().from(agenciesTable).where(eq(agenciesTable.id, id));
@@ -36,10 +44,16 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
 
 router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
-  const { name, logoUrl, primaryColor, active } = req.body;
+  const { name, logoUrl, primaryColor, writingTone, active } = req.body;
   const [agency] = await db
     .update(agenciesTable)
-    .set({ ...(name && { name }), ...(logoUrl !== undefined && { logoUrl }), ...(primaryColor !== undefined && { primaryColor }), ...(active !== undefined && { active }) })
+    .set({
+      ...(name && { name }),
+      ...(logoUrl !== undefined && { logoUrl }),
+      ...(primaryColor !== undefined && { primaryColor }),
+      ...(writingTone !== undefined && { writingTone }),
+      ...(active !== undefined && { active }),
+    })
     .where(eq(agenciesTable.id, id))
     .returning();
   if (!agency) { res.status(404).json({ error: "Not found" }); return; }

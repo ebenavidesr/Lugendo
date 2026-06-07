@@ -21,6 +21,10 @@ export interface ItineraryDetail {
   description?: string | null;
   /** @nullable */
   videoUrl?: string | null;
+  recommendedMonths?: string[];
+  /** @nullable */
+  priceRange?: string | null;
+  tags?: string[];
   active: boolean;
   createdAt: string;
   days: ItineraryDay[];

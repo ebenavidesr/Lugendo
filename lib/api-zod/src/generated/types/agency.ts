@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgencyWritingTone } from './agencyWritingTone';
 
 export interface Agency {
   id: number;
@@ -14,6 +15,7 @@ export interface Agency {
   logoUrl?: string | null;
   /** @nullable */
   primaryColor?: string | null;
+  writingTone: AgencyWritingTone;
   active: boolean;
   createdAt: string;
 }
