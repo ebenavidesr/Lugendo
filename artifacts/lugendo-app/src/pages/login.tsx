@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,7 +6,7 @@ import * as z from "zod";
 import { useLogin, useRegister } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LugendoCompass } from "@/components/logo";
-import { HelpCircle, Check, X } from "lucide-react";
+import { HelpCircle, Check, X, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -74,6 +75,10 @@ export function Login() {
   const isRegister = location === "/register";
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [showRegConfirm, setShowRegConfirm] = useState(false);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -221,7 +226,12 @@ export function Login() {
                           </Popover>
                         </div>
                         <FormControl>
-                          <Input type="password" autoComplete="new-password" {...field} data-testid="input-register-password" />
+                          <div className="relative">
+                            <Input type={showRegPassword ? "text" : "password"} autoComplete="new-password" className="pr-10" {...field} data-testid="input-register-password" />
+                            <button type="button" tabIndex={-1} onClick={() => setShowRegPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                              {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -236,7 +246,12 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Confirmar contraseña</FormLabel>
                         <FormControl>
-                          <Input type="password" autoComplete="new-password" {...field} data-testid="input-register-confirm-password" />
+                          <div className="relative">
+                            <Input type={showRegConfirm ? "text" : "password"} autoComplete="new-password" className="pr-10" {...field} data-testid="input-register-confirm-password" />
+                            <button type="button" tabIndex={-1} onClick={() => setShowRegConfirm(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                              {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -332,7 +347,12 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Contraseña</FormLabel>
                         <FormControl>
-                          <Input type="password" autoComplete="current-password" {...field} data-testid="input-login-password" />
+                          <div className="relative">
+                            <Input type={showLoginPassword ? "text" : "password"} autoComplete="current-password" className="pr-10" {...field} data-testid="input-login-password" />
+                            <button type="button" tabIndex={-1} onClick={() => setShowLoginPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                              {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
