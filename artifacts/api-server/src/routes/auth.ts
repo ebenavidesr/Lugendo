@@ -126,7 +126,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       .select()
       .from(invitationsTable)
       .where(eq(invitationsTable.inviteCode, inviteCode));
-    if (invite && invite.status === "pending") {
+    if (invite && invite.status === "pending" && invite.email.toLowerCase() === user.email.toLowerCase()) {
       await db
         .update(invitationsTable)
         .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })

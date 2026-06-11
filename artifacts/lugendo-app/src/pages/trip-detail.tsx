@@ -35,8 +35,20 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
 }
 
+const emailLine = z.string().email("Formato de email inválido");
+
 const inviteSchema = z.object({
   emails: z.string().min(1, "Introduce al menos un email"),
+}).superRefine((val, ctx) => {
+  const lines = val.emails.split(/[\n,]+/).map(e => e.trim()).filter(Boolean);
+  if (lines.length === 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Introduce al menos un email", path: ["emails"] });
+    return;
+  }
+  const invalid = lines.filter(e => emailLine.safeParse(e).success === false);
+  if (invalid.length > 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Email${invalid.length > 1 ? "s" : ""} no válido${invalid.length > 1 ? "s" : ""}: ${invalid.join(", ")}`, path: ["emails"] });
+  }
 });
 
 const statusSchema = z.object({
