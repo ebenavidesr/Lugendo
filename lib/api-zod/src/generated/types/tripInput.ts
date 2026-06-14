@@ -9,6 +9,7 @@ import type { FlightLeg } from './flightLeg';
 
 export interface TripInput {
   name: string;
+  description?: string;
   itineraryId?: number;
   startDate: string;
   endDate?: string;

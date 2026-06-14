@@ -1,6 +1,6 @@
-import { useState, useRef, Fragment } from "react";
+import { useState, useRef, Fragment, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings, Hotel, Mail, ChevronRight, Zap, Search, Plus } from "lucide-react";
+import { Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings, Hotel, Mail, ChevronRight, Zap, Search, Plus, Loader2 } from "lucide-react";
 import {
   useListItineraries,
   useListItineraryDays,
@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { TransportSelect } from "@/components/transport-select";
+import { useAutoDescription } from "@/hooks/use-auto-description";
 import { CountrySelectSmall } from "@/components/country-select";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -49,6 +50,7 @@ interface WizardData {
   outboundLegs: FlightLeg[];
   returnLegs: FlightLeg[];
   tripName: string;
+  tripDescription: string;
   emails: string;
 }
 
@@ -122,7 +124,7 @@ export default function TripWizard() {
     startDate: "", endDate: "", maxCapacity: "",
     outboundLegs: [emptyLeg()],
     returnLegs: [emptyLeg()],
-    tripName: "", emails: "",
+    tripName: "", tripDescription: "", emails: "",
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isParsing, setIsParsing] = useState(false);
@@ -169,6 +171,16 @@ export default function TripWizard() {
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
   const selectedItinerary = itineraries?.find(i => i.id === data.selectedItineraryId);
+  const { isLoading: tripDescLoading, trigger: triggerTripDesc } = useAutoDescription("destination");
+
+  useEffect(() => {
+    if (data.origin === "existing" && selectedItinerary) {
+      const query = [selectedItinerary.name, ...(selectedItinerary.countries ?? [])].join(" ");
+      triggerTripDesc(query, data.tripDescription, desc => set({ tripDescription: desc }));
+    } else if (data.origin === "new" && data.scratchName && data.scratchCountries) {
+      triggerTripDesc(`${data.scratchName} ${data.scratchCountries}`, data.tripDescription, desc => set({ tripDescription: desc }));
+    }
+  }, [data.selectedItineraryId, data.scratchName, data.scratchCountries]);
 
   const getDays = (): ParsedDay[] => {
     if (data.origin === "existing" && existingDays) {
@@ -447,6 +459,7 @@ export default function TripWizard() {
           ...(data.endDate ? { endDate: data.endDate } : {}),
           ...(itineraryId ? { itineraryId } : {}),
           ...(data.maxCapacity ? { maxCapacity: parseInt(data.maxCapacity) } : {}),
+          ...(data.tripDescription ? { description: data.tripDescription } : {}),
           ...(data.outboundLegs.some(l => l.airline || l.flightNumber) ? { outboundFlights: data.outboundLegs.filter(l => l.airline || l.flightNumber) } : {}),
           ...(data.returnLegs.some(l => l.airline || l.flightNumber) ? { returnFlights: data.returnLegs.filter(l => l.airline || l.flightNumber) } : {}),
         },
@@ -824,6 +837,22 @@ export default function TripWizard() {
             <div>
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre del viaje *</label>
               <Input placeholder="Marruecos Imperial Junio 2026" value={data.tripName} onChange={e => set({ tripName: e.target.value })} className="text-[15px]" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>Descripción (opcional)</label>
+                {tripDescLoading && (
+                  <span className="flex items-center gap-1 text-[11px]" style={{ color: "#3D2F6B" }}>
+                    <Loader2 className="w-3 h-3 animate-spin" /> Generando…
+                  </span>
+                )}
+              </div>
+              <Textarea
+                placeholder="Descripción del viaje para los viajeros…"
+                rows={3}
+                value={data.tripDescription}
+                onChange={e => set({ tripDescription: e.target.value })}
+              />
             </div>
             <div className="p-4 rounded-[12px] border border-border space-y-1.5" style={{ background: "#FAF2EB" }}>
               <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen</div>

@@ -10,6 +10,7 @@ import tripsRouter from "./trips";
 import invitationsRouter from "./invitations";
 import travelerRouter from "./traveler";
 import dashboardRouter from "./dashboard";
+import destinationsRouter from "./destinations";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(tripsRouter);
 router.use(invitationsRouter);
 router.use(travelerRouter);
 router.use(dashboardRouter);
+router.use(destinationsRouter);
 
 export default router;

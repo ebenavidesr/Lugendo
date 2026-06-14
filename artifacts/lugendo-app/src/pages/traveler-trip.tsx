@@ -288,6 +288,9 @@ export default function TravelerTrip() {
             <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</h1>
             {trip.agencyName && <p className="text-sm text-muted-foreground mt-0.5">{trip.agencyName}</p>}
             {trip.isPersonal && <p className="text-sm mt-0.5" style={{ color: "#C4793A" }}>Viaje personal</p>}
+            {trip.description && (
+              <p className="text-sm text-muted-foreground mt-2 max-w-prose leading-relaxed">{trip.description}</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {canEdit && trip.isPersonal && (

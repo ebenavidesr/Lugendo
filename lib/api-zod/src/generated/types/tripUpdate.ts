@@ -10,6 +10,7 @@ import type { TripUpdateStatus } from './tripUpdateStatus';
 
 export interface TripUpdate {
   name?: string;
+  description?: string;
   status?: TripUpdateStatus;
   startDate?: string;
   endDate?: string;

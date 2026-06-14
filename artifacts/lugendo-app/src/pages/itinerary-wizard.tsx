@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import {
   Check, Upload, FileText, X, ChevronRight, Plus, Search, Hotel, Zap, Loader2, Sparkles,
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAutoDescription } from "@/hooks/use-auto-description";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,13 @@ export default function ItineraryWizard() {
   const { data: hotels } = useListHotels();
   const { data: activities } = useListActivities();
   const { mutateAsync: suggestDay } = useSuggestDayDescription();
+  const { isLoading: descLoading, trigger: triggerDesc } = useAutoDescription("destination");
+
+  useEffect(() => {
+    if (data.name && data.countries) {
+      triggerDesc(`${data.name} ${data.countries}`, data.description, desc => set({ description: desc }));
+    }
+  }, [data.name, data.countries]);
   const parsePdf = useParseItineraryPdf();
   const createItinerary = useCreateItinerary();
   const createDay = useCreateItineraryDay();
@@ -529,7 +537,14 @@ export default function ItineraryWizard() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Descripción</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>Descripción</label>
+                    {descLoading && (
+                      <span className="flex items-center gap-1 text-[11px]" style={{ color: "#3D2F6B" }}>
+                        <Loader2 className="w-3 h-3 animate-spin" /> Generando…
+                      </span>
+                    )}
+                  </div>
                   <Textarea
                     placeholder="Un recorrido por las ciudades imperiales de Marruecos…"
                     rows={2}

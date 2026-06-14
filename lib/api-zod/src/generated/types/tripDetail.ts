@@ -18,6 +18,8 @@ export interface TripDetail {
   /** @nullable */
   itineraryName?: string | null;
   name: string;
+  /** @nullable */
+  description?: string | null;
   status: TripDetailStatus;
   startDate: string;
   /** @nullable */

@@ -30,6 +30,8 @@ tags:
     description: Activity catalog
   - name: dashboard
     description: Dashboard aggregates
+  - name: destinations
+    description: Destination description generation
 paths:
   /healthz:
     get:
@@ -43,6 +45,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── DESTINATIONS ───────────────────────────────────────────────────────────
+  /destinations/describe:
+    post:
+      operationId: describeDestination
+      tags: [destinations]
+      summary: Generate an AI-powered destination description using web search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DestinationDescribeInput"
+      responses:
+        "200":
+          description: Generated description
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DestinationDescribeResult"
 
   # ─── AUTH ───────────────────────────────────────────────────────────────────
   /auth/me:
@@ -2241,6 +2263,8 @@ components:
           type: ["string", "null"]
         name:
           type: string
+        description:
+          type: ["string", "null"]
         status:
           type: string
           enum: [draft, scheduled, active, finished, cancelled]
@@ -2309,6 +2333,8 @@ components:
           type: ["string", "null"]
         name:
           type: string
+        description:
+          type: ["string", "null"]
         status:
           type: string
           enum: [draft, scheduled, active, finished, cancelled]
@@ -2381,6 +2407,8 @@ components:
       properties:
         name:
           type: string
+        description:
+          type: string
         itineraryId:
           type: integer
         startDate:
@@ -2420,6 +2448,8 @@ components:
       type: object
       properties:
         name:
+          type: string
+        description:
           type: string
         status:
           type: string
@@ -2660,6 +2690,8 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/FlightLeg"
+        description:
+          type: ["string", "null"]
         createdAt:
           type: string
         days:
@@ -3017,3 +3049,22 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Trip"
+
+    # ─── DESTINATIONS ─────────────────────────────────────────────────────────
+    DestinationDescribeInput:
+      type: object
+      required: [query, type]
+      properties:
+        query:
+          type: string
+          description: Search query (destination name, hotel name, activity name, etc.)
+        type:
+          type: string
+          enum: [destination, hotel, activity]
+
+    DestinationDescribeResult:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string

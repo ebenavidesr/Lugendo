@@ -54,6 +54,8 @@ export interface TravelerTripDetail {
   returnReservationCode?: string | null;
   outboundFlights?: FlightLeg[] | null;
   returnFlights?: FlightLeg[] | null;
+  /** @nullable */
+  description?: string | null;
   createdAt: string;
   days: TripDay[];
 }

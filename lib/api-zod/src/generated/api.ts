@@ -17,6 +17,19 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Generate an AI-powered destination description using web search
+ */
+export const DescribeDestinationBody = zod.object({
+  "query": zod.string().describe('Search query (destination name, hotel name, activity name, etc.)'),
+  "type": zod.enum(['destination', 'hotel', 'activity'])
+})
+
+export const DescribeDestinationResponse = zod.object({
+  "description": zod.string()
+})
+
+
+/**
  * @summary Get current authenticated user
  */
 export const GetMeResponse = zod.object({
@@ -646,6 +659,7 @@ export const ListTripsResponseItem = zod.object({
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
   "name": zod.string(),
+  "description": zod.string().nullish(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
@@ -693,6 +707,7 @@ export const ListTripsResponse = zod.array(ListTripsResponseItem)
  */
 export const CreateTripBody = zod.object({
   "name": zod.string(),
+  "description": zod.string().optional(),
   "itineraryId": zod.number().optional(),
   "startDate": zod.string(),
   "endDate": zod.string().optional(),
@@ -740,6 +755,7 @@ export const GetTripResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
   "name": zod.string(),
+  "description": zod.string().nullish(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
@@ -815,6 +831,7 @@ export const UpdateTripParams = zod.object({
 
 export const UpdateTripBody = zod.object({
   "name": zod.string().optional(),
+  "description": zod.string().optional(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']).optional(),
   "startDate": zod.string().optional(),
   "endDate": zod.string().optional(),
@@ -856,6 +873,7 @@ export const UpdateTripResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
   "name": zod.string(),
+  "description": zod.string().nullish(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
@@ -1192,6 +1210,7 @@ export const GetMyTripResponse = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "description": zod.string().nullish(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1295,6 +1314,7 @@ export const UpdateMyTripResponse = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "description": zod.string().nullish(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1775,6 +1795,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
   "name": zod.string(),
+  "description": zod.string().nullish(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
@@ -1834,6 +1855,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "itineraryName": zod.string().nullish(),
   "name": zod.string(),
+  "description": zod.string().nullish(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),

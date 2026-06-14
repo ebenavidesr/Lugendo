@@ -524,6 +524,8 @@ export interface Trip {
   /** @nullable */
   itineraryName?: string | null;
   name: string;
+  /** @nullable */
+  description?: string | null;
   status: TripStatus;
   startDate: string;
   /** @nullable */
@@ -617,6 +619,8 @@ export interface TripDetail {
   /** @nullable */
   itineraryName?: string | null;
   name: string;
+  /** @nullable */
+  description?: string | null;
   status: TripDetailStatus;
   startDate: string;
   /** @nullable */
@@ -650,6 +654,7 @@ export interface TripDetail {
 
 export interface TripInput {
   name: string;
+  description?: string;
   itineraryId?: number;
   startDate: string;
   endDate?: string;
@@ -680,6 +685,7 @@ export const TripUpdateStatus = {
 
 export interface TripUpdate {
   name?: string;
+  description?: string;
   status?: TripUpdateStatus;
   startDate?: string;
   endDate?: string;
@@ -844,6 +850,8 @@ export interface TravelerTripDetail {
   returnReservationCode?: string | null;
   outboundFlights?: FlightLeg[] | null;
   returnFlights?: FlightLeg[] | null;
+  /** @nullable */
+  description?: string | null;
   createdAt: string;
   days: TripDay[];
 }
@@ -1125,5 +1133,24 @@ export interface DashboardSummary {
   upcomingTrips: Trip[];
   recentInvitations: Invitation[];
   occupancyAlerts?: Trip[];
+}
+
+export type DestinationDescribeInputType = typeof DestinationDescribeInputType[keyof typeof DestinationDescribeInputType];
+
+
+export const DestinationDescribeInputType = {
+  destination: 'destination',
+  hotel: 'hotel',
+  activity: 'activity',
+} as const;
+
+export interface DestinationDescribeInput {
+  /** Search query (destination name, hotel name, activity name, etc.) */
+  query: string;
+  type: DestinationDescribeInputType;
+}
+
+export interface DestinationDescribeResult {
+  description: string;
 }
 

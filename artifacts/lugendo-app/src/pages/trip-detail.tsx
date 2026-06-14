@@ -148,6 +148,9 @@ export default function TripDetail() {
           {trip.itineraryName && (
             <p className="text-sm text-muted-foreground mt-0.5">Itinerario: {trip.itineraryName}</p>
           )}
+          {trip.description && (
+            <p className="text-sm text-muted-foreground mt-1 max-w-xl">{trip.description}</p>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium"

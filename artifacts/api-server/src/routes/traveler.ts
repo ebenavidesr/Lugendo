@@ -354,6 +354,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
       returnReservationCode: tripsTable.returnReservationCode,
       outboundFlights: tripsTable.outboundFlights,
       returnFlights: tripsTable.returnFlights,
+      description: tripsTable.description,
       agencyName: agenciesTable.name,
       agencyLogoUrl: agenciesTable.logoUrl,
       ownerId: tripsTable.ownerId,

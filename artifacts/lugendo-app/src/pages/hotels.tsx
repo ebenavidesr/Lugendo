@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Star, Pencil, Search, Globe, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Star, Pencil, Search, Globe, Trash2, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,8 +11,10 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useAutoDescription } from "@/hooks/use-auto-description";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { CountrySelect } from "@/components/country-select";
 
@@ -33,6 +35,7 @@ const schema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   stars: z.string().optional(),
+  description: z.string().optional(),
   active: z.boolean().optional(),
 });
 
@@ -60,6 +63,17 @@ function HotelForm({
     values: defaultValues,
   });
   const { toast } = useToast();
+  const { isLoading: descLoading, trigger: triggerDesc } = useAutoDescription("hotel");
+
+  const name = form.watch("name");
+  const city = form.watch("city");
+  const country = form.watch("country");
+
+  useEffect(() => {
+    if (name && city && country) {
+      triggerDesc(`${name} ${city} ${country}`, form.getValues("description") ?? "", desc => form.setValue("description", desc, { shouldDirty: true }));
+    }
+  }, [name, city, country]);
 
   const [lookupQ, setLookupQ] = useState("");
   const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
@@ -232,6 +246,23 @@ function HotelForm({
               )} />
             </div>
 
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Descripción (opcional)</FormLabel>
+                  {descLoading && (
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "#3D2F6B" }}>
+                      <Loader2 className="w-3 h-3 animate-spin" /> Generando…
+                    </span>
+                  )}
+                </div>
+                <FormControl>
+                  <Textarea placeholder="Hotel de lujo en el corazón de la medina…" rows={3} {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="phone" render={({ field }) => (
                 <FormItem>
@@ -342,6 +373,7 @@ export default function Hotels() {
         ...(values.phone ? { phone: values.phone } : {}),
         ...(values.website ? { website: values.website } : {}),
         ...(values.stars ? { stars: parseInt(values.stars) } : {}),
+        ...(values.description ? { description: values.description } : {}),
       },
     }, {
       onSuccess: () => {
@@ -365,6 +397,7 @@ export default function Hotels() {
         ...(values.phone ? { phone: values.phone } : {}),
         ...(values.website ? { website: values.website } : {}),
         ...(values.stars ? { stars: parseInt(values.stars) } : {}),
+        description: values.description ?? "",
         ...(values.active !== undefined ? { active: values.active } : {}),
       },
     }, {
@@ -461,7 +494,7 @@ export default function Hotels() {
       {createOpen && (
         <HotelForm
           title="Nuevo hotel"
-          defaultValues={{ name: "", city: "", country: "", address: "", phone: "", website: "" }}
+          defaultValues={{ name: "", city: "", country: "", address: "", phone: "", website: "", description: "" }}
           onSubmit={handleCreate}
           isPending={create.isPending}
           onCancel={() => setCreateOpen(false)}
@@ -480,6 +513,7 @@ export default function Hotels() {
             phone: editHotel.phone ?? "",
             website: editHotel.website ?? "",
             stars: editHotel.stars ? String(editHotel.stars) : undefined,
+            description: editHotel.description ?? "",
             active: editHotel.active,
           }}
           onSubmit={handleEdit}

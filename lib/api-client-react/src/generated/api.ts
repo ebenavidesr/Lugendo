@@ -35,6 +35,8 @@ import type {
   DayHotelInput,
   DeleteItineraryResult,
   DeleteTripResult,
+  DestinationDescribeInput,
+  DestinationDescribeResult,
   HealthStatus,
   Hotel,
   HotelInput,
@@ -165,6 +167,77 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getDescribeDestinationUrl = () => {
+
+
+
+
+  return `/api/destinations/describe`
+}
+
+/**
+ * @summary Generate an AI-powered destination description using web search
+ */
+export const describeDestination = async (destinationDescribeInput: DestinationDescribeInput, options?: RequestInit): Promise<DestinationDescribeResult> => {
+
+  return customFetch<DestinationDescribeResult>(getDescribeDestinationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      destinationDescribeInput,)
+  }
+);}
+
+
+
+
+export const getDescribeDestinationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof describeDestination>>, TError,{data: BodyType<DestinationDescribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof describeDestination>>, TError,{data: BodyType<DestinationDescribeInput>}, TContext> => {
+
+const mutationKey = ['describeDestination'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof describeDestination>>, {data: BodyType<DestinationDescribeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  describeDestination(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DescribeDestinationMutationResult = NonNullable<Awaited<ReturnType<typeof describeDestination>>>
+    export type DescribeDestinationMutationBody = BodyType<DestinationDescribeInput>
+    export type DescribeDestinationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate an AI-powered destination description using web search
+ */
+export const useDescribeDestination = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof describeDestination>>, TError,{data: BodyType<DestinationDescribeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof describeDestination>>,
+        TError,
+        {data: BodyType<DestinationDescribeInput>},
+        TContext
+      > => {
+      return useMutation(getDescribeDestinationMutationOptions(options));
+    }
 
 export const getGetMeUrl = () => {
 

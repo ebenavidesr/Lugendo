@@ -22,6 +22,8 @@ export interface Trip {
   /** @nullable */
   itineraryName?: string | null;
   name: string;
+  /** @nullable */
+  description?: string | null;
   status: TripStatus;
   startDate: string;
   /** @nullable */

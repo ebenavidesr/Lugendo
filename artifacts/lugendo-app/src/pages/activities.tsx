@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, Clock, Users, Euro, Pencil, Globe, Search, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Clock, Users, Euro, Pencil, Globe, Search, Trash2, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useAutoDescription } from "@/hooks/use-auto-description";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { CountrySelect } from "@/components/country-select";
 
@@ -76,6 +77,16 @@ function ActivityForm({
     values: defaultValues,
   });
   const { toast } = useToast();
+  const { isLoading: descLoading, trigger: triggerDesc } = useAutoDescription("activity");
+
+  const name = form.watch("name");
+  const city = form.watch("city");
+
+  useEffect(() => {
+    if (name && city) {
+      triggerDesc(`${name} ${city}`, form.getValues("description") ?? "", desc => form.setValue("description", desc, { shouldDirty: true }));
+    }
+  }, [name, city]);
 
   const [lookupQ, setLookupQ] = useState("");
   const [lookupResults, setLookupResults] = useState<LookupResult[]>([]);
@@ -224,7 +235,14 @@ function ActivityForm({
 
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel>Descripción (opcional)</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Descripción (opcional)</FormLabel>
+                  {descLoading && (
+                    <span className="flex items-center gap-1 text-[11px]" style={{ color: "#3D2F6B" }}>
+                      <Loader2 className="w-3 h-3 animate-spin" /> Generando…
+                    </span>
+                  )}
+                </div>
                 <FormControl>
                   <Textarea placeholder="Descripción de la actividad y qué incluye…" rows={3} {...field} />
                 </FormControl>

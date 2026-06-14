@@ -36,6 +36,7 @@ export const tripsTable = pgTable("trips", {
   returnFlightNumber: text("return_flight_number"),
   returnFlightTime: text("return_flight_time"),
   returnReservationCode: text("return_reservation_code"),
+  description: text("description"),
   outboundFlights: jsonb("outbound_flights").$type<FlightLeg[]>(),
   returnFlights: jsonb("return_flights").$type<FlightLeg[]>(),
   createdBy: integer("created_by").references(() => usersTable.id),
