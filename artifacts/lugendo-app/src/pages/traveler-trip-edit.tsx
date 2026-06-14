@@ -480,10 +480,12 @@ export default function TravelerTripEdit() {
                     {/* Hotels */}
                     {day.id !== null ? (() => {
                       const serverDay = trip.days?.find(d => d.id === day.id);
+                      const panelEntityType = trip.daysSource === "itinerary" ? "itinerary" : "trip";
+                      const panelEntityId = trip.daysSource === "itinerary" ? (trip.itineraryId ?? tripId) : tripId;
                       return serverDay ? (
                         <DayHotelPanel
-                          entityType="trip"
-                          entityId={tripId}
+                          entityType={panelEntityType}
+                          entityId={panelEntityId}
                           day={serverDay}
                           allDays={trip.days}
                         />
@@ -499,8 +501,10 @@ export default function TravelerTripEdit() {
                     {/* Activities */}
                     {day.id !== null ? (() => {
                       const serverDay = trip.days?.find(d => d.id === day.id);
+                      const panelEntityType = trip.daysSource === "itinerary" ? "itinerary" : "trip";
+                      const panelEntityId = trip.daysSource === "itinerary" ? (trip.itineraryId ?? tripId) : tripId;
                       return (
-                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={serverDay} />
+                        <DayActivitiesPanel entityType={panelEntityType} entityId={panelEntityId} dayId={day.id} day={serverDay} />
                       );
                     })() : null}
                   </div>

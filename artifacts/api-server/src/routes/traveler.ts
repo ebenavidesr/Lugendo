@@ -327,6 +327,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
     createdAt: row.createdAt.toISOString(),
+    daysSource: tripDayRows.length > 0 ? "trip" : "itinerary",
     days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
   });
 });

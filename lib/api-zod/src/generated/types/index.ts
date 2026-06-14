@@ -68,6 +68,7 @@ export * from './suggestDayDescriptionResult';
 export * from './transportMode';
 export * from './travelerTrip';
 export * from './travelerTripDetail';
+export * from './travelerTripDetailDaysSource';
 export * from './travelerTripDetailMyPermission';
 export * from './travelerTripDetailStatus';
 export * from './travelerTripStatus';

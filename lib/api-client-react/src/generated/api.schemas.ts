@@ -778,6 +778,17 @@ export const TravelerTripDetailStatus = {
 } as const;
 
 /**
+ * Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days)
+ */
+export type TravelerTripDetailDaysSource = typeof TravelerTripDetailDaysSource[keyof typeof TravelerTripDetailDaysSource];
+
+
+export const TravelerTripDetailDaysSource = {
+  trip: 'trip',
+  itinerary: 'itinerary',
+} as const;
+
+/**
  * Permission level of the current user when accessing via a share (null if owner or agency-invited)
  * @nullable
  */
@@ -800,6 +811,10 @@ export interface TravelerTripDetail {
   isPersonal: boolean;
   /** @nullable */
   ownerId?: number | null;
+  /** @nullable */
+  itineraryId?: number | null;
+  /** Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days) */
+  daysSource: TravelerTripDetailDaysSource;
   /**
      * Permission level of the current user when accessing via a share (null if owner or agency-invited)
      * @nullable

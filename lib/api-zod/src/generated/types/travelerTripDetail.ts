@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FlightLeg } from './flightLeg';
+import type { TravelerTripDetailDaysSource } from './travelerTripDetailDaysSource';
 import type { TravelerTripDetailMyPermission } from './travelerTripDetailMyPermission';
 import type { TravelerTripDetailStatus } from './travelerTripDetailStatus';
 import type { TripDay } from './tripDay';
@@ -20,6 +21,10 @@ export interface TravelerTripDetail {
   isPersonal: boolean;
   /** @nullable */
   ownerId?: number | null;
+  /** @nullable */
+  itineraryId?: number | null;
+  /** Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days) */
+  daysSource: TravelerTripDetailDaysSource;
   /**
      * Permission level of the current user when accessing via a share (null if owner or agency-invited)
      * @nullable

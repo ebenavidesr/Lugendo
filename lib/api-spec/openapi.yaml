@@ -2601,7 +2601,7 @@ components:
 
     TravelerTripDetail:
       type: object
-      required: [id, name, status, startDate, isPersonal, createdAt, days]
+      required: [id, name, status, startDate, isPersonal, createdAt, days, daysSource]
       properties:
         id:
           type: integer
@@ -2618,6 +2618,12 @@ components:
           type: boolean
         ownerId:
           type: ["integer", "null"]
+        itineraryId:
+          type: ["integer", "null"]
+        daysSource:
+          type: string
+          enum: [trip, itinerary]
+          description: Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days)
         myPermission:
           type: ["string", "null"]
           enum: [full, read, "null"]
