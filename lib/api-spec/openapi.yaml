@@ -2157,7 +2157,22 @@ components:
     ActivityCategory:
       type: string
       nullable: true
-      enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other, null]
+      enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, transport, other, null]
+
+    TripDayActivityItem:
+      type: object
+      required: [id, activityId, activityName]
+      properties:
+        id:
+          type: integer
+        activityId:
+          type: integer
+        activityName:
+          type: string
+        activityCategory:
+          $ref: "#/components/schemas/ActivityCategory"
+        startTime:
+          type: ["string", "null"]
 
     TransportMode:
       type: string
@@ -2527,6 +2542,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DayHotel"
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripDayActivityItem"
         createdAt:
           type: string
 
@@ -2692,6 +2711,9 @@ components:
             $ref: "#/components/schemas/FlightLeg"
         description:
           type: ["string", "null"]
+        travelerCount:
+          type: integer
+          description: Number of accepted travelers (invitations) for this trip
         createdAt:
           type: string
         days:

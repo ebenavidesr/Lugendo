@@ -550,7 +550,7 @@ export const ListActivitiesResponseItem = zod.object({
   "agencyId": zod.number(),
   "name": zod.string(),
   "description": zod.string().nullish(),
-  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "durationHours": zod.number().nullish(),
   "city": zod.string().nullish(),
   "country": zod.string().nullish(),
@@ -591,7 +591,7 @@ export const GetActivityResponse = zod.object({
   "agencyId": zod.number(),
   "name": zod.string(),
   "description": zod.string().nullish(),
-  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "durationHours": zod.number().nullish(),
   "city": zod.string().nullish(),
   "country": zod.string().nullish(),
@@ -628,7 +628,7 @@ export const UpdateActivityResponse = zod.object({
   "agencyId": zod.number(),
   "name": zod.string(),
   "description": zod.string().nullish(),
-  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "category": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "durationHours": zod.number().nullish(),
   "city": zod.string().nullish(),
   "country": zod.string().nullish(),
@@ -805,6 +805,13 @@ export const GetTripResponse = zod.object({
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
+  "activities": zod.array(zod.object({
+  "id": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string(),
+  "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "startTime": zod.string().nullish()
+})).optional(),
   "createdAt": zod.string()
 })),
   "invitations": zod.array(zod.object({
@@ -960,6 +967,13 @@ export const UpdateTripDayAdminResponse = zod.object({
   "hotelCity": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
+})).optional(),
+  "activities": zod.array(zod.object({
+  "id": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string(),
+  "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "startTime": zod.string().nullish()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1211,6 +1225,7 @@ export const GetMyTripResponse = zod.object({
   "reservationCode": zod.string().optional()
 })).nullish(),
   "description": zod.string().nullish(),
+  "travelerCount": zod.number().optional().describe('Number of accepted travelers (invitations) for this trip'),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1228,6 +1243,13 @@ export const GetMyTripResponse = zod.object({
   "hotelCity": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
+})).optional(),
+  "activities": zod.array(zod.object({
+  "id": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string(),
+  "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "startTime": zod.string().nullish()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1315,6 +1337,7 @@ export const UpdateMyTripResponse = zod.object({
   "reservationCode": zod.string().optional()
 })).nullish(),
   "description": zod.string().nullish(),
+  "travelerCount": zod.number().optional().describe('Number of accepted travelers (invitations) for this trip'),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1332,6 +1355,13 @@ export const UpdateMyTripResponse = zod.object({
   "hotelCity": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
+})).optional(),
+  "activities": zod.array(zod.object({
+  "id": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string(),
+  "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "startTime": zod.string().nullish()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1388,6 +1418,13 @@ export const UpdateTripDayResponse = zod.object({
   "hotelCity": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
+})).optional(),
+  "activities": zod.array(zod.object({
+  "id": zod.number(),
+  "activityId": zod.number(),
+  "activityName": zod.string(),
+  "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
+  "startTime": zod.string().nullish()
 })).optional(),
   "createdAt": zod.string()
 })

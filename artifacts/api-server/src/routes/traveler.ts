@@ -7,7 +7,7 @@ import {
   agenciesTable, hotelsTable, tripNotesTable, itinerariesTable,
   itineraryDaysTable, tripDayHotelsTable, itineraryDayHotelsTable,
   tripDayActivitiesTable, itineraryDayActivitiesTable,
-  tripSharesTable, usersTable,
+  tripSharesTable, usersTable, activitiesTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
 
@@ -108,6 +108,29 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
   for (const r of rows) {
     if (!map[r.dayId]) map[r.dayId] = [];
     map[r.dayId].push(serializeDayHotel({ ...r, hotelCity: r.hotelCity ?? null }));
+  }
+  return map;
+}
+
+async function getTripDayActivityMap(dayIds: number[]) {
+  if (dayIds.length === 0) return {} as Record<number, Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }>>;
+  const rows = await db
+    .select({
+      id: tripDayActivitiesTable.id,
+      dayId: tripDayActivitiesTable.dayId,
+      activityId: tripDayActivitiesTable.activityId,
+      activityName: activitiesTable.name,
+      activityCategory: activitiesTable.category,
+      startTime: tripDayActivitiesTable.startTime,
+    })
+    .from(tripDayActivitiesTable)
+    .innerJoin(activitiesTable, eq(tripDayActivitiesTable.activityId, activitiesTable.id))
+    .where(inArray(tripDayActivitiesTable.dayId, dayIds))
+    .orderBy(tripDayActivitiesTable.sortOrder, tripDayActivitiesTable.startTime);
+  const map: Record<number, Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }>> = {};
+  for (const r of rows) {
+    if (!map[r.dayId]) map[r.dayId] = [];
+    map[r.dayId].push({ id: r.id, activityId: r.activityId, activityName: r.activityName, activityCategory: r.activityCategory ?? null, startTime: r.startTime ?? null });
   }
   return map;
 }
@@ -373,20 +396,32 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .where(eq(tripDaysTable.tripId, tripId))
     .orderBy(tripDaysTable.dayNumber);
 
-  let days: Array<{ id: number; tripId: number; dayNumber: number; cityFrom: string | null; cityTo: string | null; transport: string | null; description: string | null; createdAt: Date; hotels: ReturnType<typeof serializeDayHotel>[] }> = [];
+  const acceptedInvitations = await db
+    .select({ id: invitationsTable.id })
+    .from(invitationsTable)
+    .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
+  const travelerCount = acceptedInvitations.length;
+
+  let days: Array<{ id: number; tripId: number; dayNumber: number; cityFrom: string | null; cityTo: string | null; transport: string | null; description: string | null; createdAt: Date; hotels: ReturnType<typeof serializeDayHotel>[]; activities: Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }> }> = [];
 
   let effectiveTripDays = tripDayRows;
 
   if (tripDayRows.length > 0) {
-    const hotelMap = await getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip");
-    days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [] }));
+    const [hotelMap, activityMap] = await Promise.all([
+      getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
+      getTripDayActivityMap(tripDayRows.map(d => d.id)),
+    ]);
+    days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
   } else if (row.itineraryId) {
     // Lazy-migrate: copy itinerary_days → trip_days (with activities + hotels)
     // so that activity queries via GET /api/trips/:id/days/:dayId/activities work correctly
     effectiveTripDays = await copyItineraryDaysToTrip(tripId, row.itineraryId);
     if (effectiveTripDays.length > 0) {
-      const hotelMap = await getTravelerDayHotelMap(effectiveTripDays.map(d => d.id), "trip");
-      days = effectiveTripDays.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [] }));
+      const [hotelMap, activityMap] = await Promise.all([
+        getTravelerDayHotelMap(effectiveTripDays.map(d => d.id), "trip"),
+        getTripDayActivityMap(effectiveTripDays.map(d => d.id)),
+      ]);
+      days = effectiveTripDays.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
     }
   }
 
@@ -396,6 +431,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     myPermission,
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
+    travelerCount,
     createdAt: row.createdAt.toISOString(),
     daysSource: effectiveTripDays.length > 0 ? "trip" : "itinerary",
     days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),

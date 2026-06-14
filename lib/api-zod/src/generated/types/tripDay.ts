@@ -7,6 +7,7 @@
  */
 import type { DayHotel } from './dayHotel';
 import type { TransportMode } from './transportMode';
+import type { TripDayActivityItem } from './tripDayActivityItem';
 
 export interface TripDay {
   id: number;
@@ -22,5 +23,6 @@ export interface TripDay {
   /** @nullable */
   description?: string | null;
   hotels?: DayHotel[];
+  activities?: TripDayActivityItem[];
   createdAt: string;
 }

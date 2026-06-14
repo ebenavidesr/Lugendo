@@ -17,5 +17,6 @@ export const ActivityCategory = {
   beach: 'beach',
   city: 'city',
   excursion: 'excursion',
+  transport: 'transport',
   other: 'other',
 } as const;

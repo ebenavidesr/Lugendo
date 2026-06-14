@@ -405,8 +405,18 @@ export const ActivityCategory = {
   beach: 'beach',
   city: 'city',
   excursion: 'excursion',
+  transport: 'transport',
   other: 'other',
 } as const;
+
+export interface TripDayActivityItem {
+  id: number;
+  activityId: number;
+  activityName: string;
+  activityCategory?: ActivityCategory | null;
+  /** @nullable */
+  startTime?: string | null;
+}
 
 export interface Activity {
   id: number;
@@ -583,6 +593,7 @@ export interface TripDay {
   /** @nullable */
   description?: string | null;
   hotels?: DayHotel[];
+  activities?: TripDayActivityItem[];
   createdAt: string;
 }
 
@@ -852,6 +863,8 @@ export interface TravelerTripDetail {
   returnFlights?: FlightLeg[] | null;
   /** @nullable */
   description?: string | null;
+  /** Number of accepted travelers (invitations) for this trip */
+  travelerCount?: number;
   createdAt: string;
   days: TripDay[];
 }

@@ -1,15 +1,12 @@
-import { useState } from "react";
-import { useParams, Link, useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
 import {
-  ArrowLeft, Plane, Calendar, MapPin, Hotel,
-  Share2, Trash2, Users, Copy, Check, Pencil,
+  Share2, Trash2, Users, Copy, Check, Pencil, MapPin,
 } from "lucide-react";
 import {
   useGetMyTrip, useListTripShares, useShareTrip, useRevokeTripShare, useUpdateTripShare,
 } from "@workspace/api-client-react";
-import type {
-  TravelerTripDetailStatus, TripDay, TripShare,
-} from "@workspace/api-client-react";
+import type { TripShare } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -21,36 +18,16 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { TripDetailHeader } from "@/components/trip-detail-header";
+import { TripDayCard } from "@/components/trip-day-card";
 
-const statusBadge: Record<TravelerTripDetailStatus, { bg: string; color: string; label: string }> = {
-  draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Próximamente" },
-  scheduled: { bg: "#EAE6F5", color: "#3D2F6B", label: "Programado" },
-  active:    { bg: "#E4F3EC", color: "#2E7D5A", label: "En curso" },
-  finished:  { bg: "#E5D4BF", color: "#9C7A58", label: "Finalizado" },
-  cancelled: { bg: "#FDECEA", color: "#C0392B", label: "Cancelado" },
-};
+type ActiveTab = "itinerary" | "travelers" | "documents" | "notes";
 
 const statusShare: Record<string, { bg: string; color: string; label: string }> = {
   pending:  { bg: "#FFF3D6", color: "#C47A00", label: "Pendiente" },
   accepted: { bg: "#E4F3EC", color: "#2E7D5A", label: "Aceptado" },
   rejected: { bg: "#FDECEA", color: "#C0392B", label: "Rechazado" },
 };
-
-function fmt(date: string) {
-  return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
-}
-
-function InfoCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="bg-card border border-border rounded-[14px] p-4">
-      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-        <Icon className="w-3.5 h-3.5" />
-        <span className="text-[11px] uppercase tracking-wider font-medium">{label}</span>
-      </div>
-      <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>{value}</p>
-    </div>
-  );
-}
 
 // ── Share Dialog ──────────────────────────────────────────────────────────────
 
@@ -180,7 +157,6 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
                   return (
                     <div key={s.id}
                       className="p-3 rounded-[10px] border border-border bg-card space-y-2">
-                      {/* Row 1: email + status + revoke */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>
@@ -209,7 +185,6 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      {/* Row 2: permission selector */}
                       <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                         <Pencil className="w-3 h-3 shrink-0 text-muted-foreground" />
                         <Select
@@ -242,6 +217,34 @@ function ShareDialog({ tripId, open, onClose }: { tripId: number; open: boolean;
   );
 }
 
+// ── Compute initially expanded days ──────────────────────────────────────────
+
+function computeDefaultExpanded(days: { dayNumber: number }[], startDate: string): Set<number> {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const msPerDay = 86400000;
+  const daysElapsed = Math.max(0, Math.floor((today.getTime() - start.getTime()) / msPerDay));
+  const currentDayNumber = daysElapsed + 1;
+
+  const expanded = new Set<number>();
+  for (const d of days) {
+    if (d.dayNumber === currentDayNumber || d.dayNumber === currentDayNumber + 1) {
+      expanded.add(d.dayNumber);
+    }
+  }
+
+  // If nothing matches (trip not started or finished), expand first two days
+  if (expanded.size === 0 && days.length > 0) {
+    expanded.add(days[0].dayNumber);
+    if (days.length > 1) expanded.add(days[1].dayNumber);
+  }
+
+  return expanded;
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function TravelerTrip() {
@@ -251,15 +254,33 @@ export default function TravelerTrip() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [shareOpen, setShareOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("itinerary");
 
   const isOwner = !!(trip && user && trip.ownerId === user.id);
   const canEdit = isOwner || trip?.myPermission === "full";
 
+  const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set<number>());
+
+  useEffect(() => {
+    if (!trip?.days || !trip.startDate) return;
+    setExpandedDays(computeDefaultExpanded(trip.days, trip.startDate));
+  }, [trip?.id, trip?.days?.length, trip?.startDate]);
+
+  const toggleDay = (dayNumber: number) => {
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dayNumber)) next.delete(dayNumber);
+      else next.add(dayNumber);
+      return next;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 w-32 bg-muted rounded animate-pulse" />
-        <div className="h-48 bg-card border border-border rounded-[14px] animate-pulse" />
+        <div className="h-56 bg-card border border-border rounded-[18px] animate-pulse" />
+        <div className="h-20 bg-card border border-border rounded-[14px] animate-pulse" />
+        <div className="h-20 bg-card border border-border rounded-[14px] animate-pulse" />
       </div>
     );
   }
@@ -267,231 +288,73 @@ export default function TravelerTrip() {
   if (!trip) {
     return (
       <div>
-        <Link href="/traveler" className="inline-flex items-center gap-1 text-sm text-muted-foreground mb-4">
-          <ArrowLeft className="w-4 h-4" /> Mis viajes
-        </Link>
         <p className="text-muted-foreground">Viaje no encontrado</p>
       </div>
     );
   }
 
-  const s = statusBadge[trip.status] ?? statusBadge.scheduled;
-
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href="/traveler" className="inline-flex items-center gap-1 text-[12px] text-muted-foreground mb-2 hover:text-foreground">
-          <ArrowLeft className="w-3.5 h-3.5" /> Mis viajes
-        </Link>
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</h1>
-            {trip.agencyName && <p className="text-sm text-muted-foreground mt-0.5">{trip.agencyName}</p>}
-            {trip.isPersonal && <p className="text-sm mt-0.5" style={{ color: "#C4793A" }}>Viaje personal</p>}
-            {trip.description && (
-              <p className="text-sm text-muted-foreground mt-2 max-w-prose leading-relaxed">{trip.description}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {canEdit && trip.isPersonal && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/traveler/trips/${tripId}/edit`)}
-                className="gap-1.5"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Editar
-              </Button>
-            )}
-            {isOwner && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShareOpen(true)}
-                className="gap-1.5"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Compartir
-              </Button>
-            )}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium shrink-0"
-              style={{ background: s.bg, color: s.color }}>{s.label}</span>
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Full-width header (break out of px-4 layout padding) */}
+      <div className="-mx-4">
+        <TripDetailHeader
+          trip={trip}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          canEdit={canEdit}
+          isOwner={isOwner}
+          onEditClick={() => navigate(`/traveler/trips/${tripId}/edit`)}
+          onShareClick={() => setShareOpen(true)}
+        />
       </div>
 
-      {/* Info cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <InfoCard icon={Calendar} label="Inicio" value={fmt(trip.startDate)} />
-        <InfoCard icon={Calendar} label="Fin" value={trip.endDate ? fmt(trip.endDate) : "—"} />
-      </div>
-
-      {/* Unified flight card */}
-      {(() => {
-        const hasNew = (trip.outboundFlights && trip.outboundFlights.length > 0) || (trip.returnFlights && trip.returnFlights.length > 0);
-        const hasLegacy = trip.airline || trip.flightNumber || trip.flightTime || trip.reservationCode || trip.returnAirline || trip.returnFlightNumber;
-        if (!hasNew && !hasLegacy) return null;
-
-        const renderLeg = (leg: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string }, i: number) => {
-          const hasRoute = leg.cityFrom || leg.cityTo;
-          const hasTimes = leg.departureTime || leg.arrivalTime;
-          return (
-            <div key={i} className={i > 0 ? "pt-4 mt-4 border-t border-border/60" : ""}>
-              {/* Aerolínea + número de vuelo */}
-              {(leg.airline || leg.flightNumber) && (
-                <div className="flex items-center gap-2 mb-3">
-                  <Plane className="w-4 h-4 shrink-0" style={{ color: "#C4793A" }} />
-                  <span className="text-[15px] font-semibold" style={{ color: "#2D1F0E" }}>
-                    {[leg.airline, leg.flightNumber].filter(Boolean).join(" ")}
-                  </span>
-                </div>
-              )}
-
-              {/* Ruta: ciudad de salida → ciudad de llegada */}
-              {hasRoute && (
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex-1 rounded-[10px] p-3 text-center" style={{ background: "#FAF2EB" }}>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Origen</p>
-                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.cityFrom || "—"}</p>
-                  </div>
-                  <span className="text-muted-foreground text-[18px]">→</span>
-                  <div className="flex-1 rounded-[10px] p-3 text-center" style={{ background: "#FAF2EB" }}>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Destino</p>
-                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.cityTo || "—"}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Horas */}
-              {hasTimes && (
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Salida</p>
-                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.departureTime || "—"}</p>
-                  </div>
-                  <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Llegada</p>
-                    <p className="text-[14px] font-semibold" style={{ color: "#2D1F0E" }}>{leg.arrivalTime || "—"}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Código de reserva */}
-              {leg.reservationCode && (
-                <div className="rounded-[10px] p-3" style={{ background: "#FAF2EB" }}>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">Código de reserva</p>
-                  <p className="text-[14px] font-semibold tracking-widest" style={{ color: "#3D2F6B" }}>{leg.reservationCode}</p>
-                </div>
-              )}
+      {/* Tab content */}
+      {activeTab === "itinerary" && (
+        <>
+          {trip.days && trip.days.length > 0 ? (
+            <div className="space-y-3">
+              {trip.days.map((day, idx) => (
+                <TripDayCard
+                  key={day.id}
+                  day={day}
+                  dayIndex={idx}
+                  allDays={trip.days}
+                  expanded={expandedDays.has(day.dayNumber)}
+                  onToggle={() => toggleDay(day.dayNumber)}
+                />
+              ))}
             </div>
-          );
-        };
+          ) : (
+            <div className="bg-card border border-border rounded-[14px] p-8 text-center">
+              <MapPin className="w-8 h-8 mx-auto mb-3" style={{ color: "#C4793A" }} />
+              <p className="text-sm text-muted-foreground">
+                El itinerario detallado estará disponible próximamente
+              </p>
+            </div>
+          )}
+        </>
+      )}
 
-        return (
-          <div className="bg-card border border-border rounded-[14px] p-5 space-y-4">
-            <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">Vuelos</p>
-
-            {hasNew ? (
-              <>
-                {trip.outboundFlights && trip.outboundFlights.length > 0 && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
-                      <Plane className="w-3 h-3" /> Ida
-                    </div>
-                    {trip.outboundFlights.map((leg, i) => renderLeg(leg, i))}
-                  </div>
-                )}
-                {trip.returnFlights && trip.returnFlights.length > 0 && (
-                  <div className={trip.outboundFlights && trip.outboundFlights.length > 0 ? "border-t border-border pt-4" : ""}>
-                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
-                      <Plane className="w-3 h-3 rotate-180" /> Vuelta
-                    </div>
-                    {trip.returnFlights.map((leg, i) => renderLeg(leg, i))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {(trip.airline || trip.flightNumber || trip.flightTime) && (
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
-                      <Plane className="w-3 h-3" /> Ida
-                    </div>
-                    {renderLeg({ airline: trip.airline ?? undefined, flightNumber: trip.flightNumber ?? undefined, departureTime: trip.flightTime ?? undefined, reservationCode: trip.reservationCode ?? undefined }, 0)}
-                  </div>
-                )}
-                {(trip.returnAirline || trip.returnFlightNumber) && (
-                  <div className="border-t border-border pt-4">
-                    <div className="flex items-center gap-1.5 mb-2 text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
-                      <Plane className="w-3 h-3 rotate-180" /> Vuelta
-                    </div>
-                    {renderLeg({ airline: trip.returnAirline ?? undefined, flightNumber: trip.returnFlightNumber ?? undefined, departureTime: trip.returnFlightTime ?? undefined, reservationCode: trip.returnReservationCode ?? undefined }, 0)}
-                  </div>
-                )}
-                {trip.flightNotes && (
-                  <div className="p-3 rounded-[8px] text-[13px] text-muted-foreground" style={{ background: "#FAF2EB" }}>
-                    {trip.flightNotes}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Day-by-day itinerary */}
-      {trip.days && trip.days.length > 0 && (
-        <div>
-          <h2 className="text-[15px] font-medium mb-3" style={{ color: "#2D1F0E" }}>
-            Itinerario día a día
-          </h2>
-          <div className="space-y-3">
-            {trip.days.map((day: TripDay) => (
-              <div key={day.id} className="bg-card border border-border rounded-[14px] p-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-11 h-11 rounded-[10px] flex items-center justify-center shrink-0 font-medium text-[14px]"
-                    style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                    {day.dayNumber}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "#C4793A" }}>
-                        Día {day.dayNumber}
-                      </span>
-                      {day.transport && (
-                        <span className="text-[11px] text-muted-foreground">· {day.transport}</span>
-                      )}
-                    </div>
-                    <p className="text-[15px] font-medium mt-0.5" style={{ color: "#2D1F0E" }}>
-                      {day.cityFrom && day.cityTo
-                        ? `${day.cityFrom} → ${day.cityTo}`
-                        : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                    </p>
-                    {day.hotels && day.hotels.length > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2 p-2.5 rounded-[8px]" style={{ background: "#FAF2EB" }}>
-                        <Hotel className="w-3.5 h-3.5 shrink-0" style={{ color: "#C4793A" }} />
-                        <span className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{day.hotels.map(h => h.hotelName).join(", ")}</span>
-                      </div>
-                    )}
-                    {day.description && (
-                      <p className="text-[13px] text-muted-foreground mt-2 leading-relaxed">{day.description}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+      {activeTab === "travelers" && (
+        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
+          <Users className="w-8 h-8 mx-auto mb-3" style={{ color: "#C4793A" }} />
+          <p className="text-sm text-muted-foreground">Próximamente</p>
         </div>
       )}
 
-      {trip.days && trip.days.length === 0 && (
+      {activeTab === "documents" && (
         <div className="bg-card border border-border rounded-[14px] p-8 text-center">
           <MapPin className="w-8 h-8 mx-auto mb-3" style={{ color: "#C4793A" }} />
-          <p className="text-sm text-muted-foreground">El itinerario detallado estará disponible próximamente</p>
+          <p className="text-sm text-muted-foreground">Próximamente</p>
         </div>
       )}
 
+      {activeTab === "notes" && (
+        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
+          <MapPin className="w-8 h-8 mx-auto mb-3" style={{ color: "#C4793A" }} />
+          <p className="text-sm text-muted-foreground">Próximamente</p>
+        </div>
+      )}
 
       {/* Share dialog */}
       {isOwner && shareOpen && (

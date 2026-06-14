@@ -77,6 +77,7 @@ export * from './travelerTripDetailStatus';
 export * from './travelerTripStatus';
 export * from './trip';
 export * from './tripDay';
+export * from './tripDayActivityItem';
 export * from './tripDayUpdate';
 export * from './tripDetail';
 export * from './tripDetailStatus';

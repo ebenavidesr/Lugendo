@@ -56,6 +56,8 @@ export interface TravelerTripDetail {
   returnFlights?: FlightLeg[] | null;
   /** @nullable */
   description?: string | null;
+  /** Number of accepted travelers (invitations) for this trip */
+  travelerCount?: number;
   createdAt: string;
   days: TripDay[];
 }
