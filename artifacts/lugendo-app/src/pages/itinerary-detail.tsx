@@ -18,6 +18,7 @@ import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
 import type { GenericDay } from "@/components/day-hotel-panel";
 import { TransportSelect, TransportLabel } from "@/components/transport-select";
+import { CountrySelect } from "@/components/country-select";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ItineraryDay } from "@workspace/api-client-react";
@@ -33,6 +34,7 @@ const daySchema = z.object({
   dayNumber: z.string().min(1),
   cityFrom: z.string().optional(),
   cityTo: z.string().optional(),
+  country: z.string().optional(),
   transport: z.string().optional(),
   description: z.string().optional(),
 });
@@ -69,6 +71,7 @@ function EditDayDialog({
       dayNumber: String(day.dayNumber),
       cityFrom: day.cityFrom ?? "",
       cityTo: day.cityTo ?? "",
+      country: day.country ?? "",
       transport: day.transport ?? "",
       description: day.description ?? "",
     },
@@ -81,6 +84,7 @@ function EditDayDialog({
       data: {
         ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
+        ...(values.country ? { country: values.country } : {}),
         ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
       },
@@ -125,6 +129,15 @@ function EditDayDialog({
                 </FormItem>
               )} />
             </div>
+            <FormField control={form.control} name="country" render={({ field }) => (
+              <FormItem>
+                <FormLabel>País</FormLabel>
+                <FormControl>
+                  <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país del día…" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             <FormField control={form.control} name="transport" render={({ field }) => (
               <FormItem>
                 <FormLabel>Transporte</FormLabel>
@@ -148,7 +161,7 @@ function EditDayDialog({
               <p className="text-[11px] font-medium uppercase tracking-wide mb-2" style={{ color: "#9C7A58" }}>
                 Actividades del día
               </p>
-              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} compact />
+              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} compact day={day} />
             </div>
 
             <DialogFooter>
@@ -366,7 +379,7 @@ export default function ItineraryDetail() {
     resolver: zodResolver(daySchema),
     defaultValues: {
       dayNumber: String((days?.length ?? 0) + 1),
-      cityFrom: "", cityTo: "", transport: "", description: "",
+      cityFrom: "", cityTo: "", country: "", transport: "", description: "",
     },
   });
 
@@ -377,6 +390,7 @@ export default function ItineraryDetail() {
         dayNumber: parseInt(values.dayNumber),
         ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
+        ...(values.country ? { country: values.country } : {}),
         ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
       },
@@ -606,6 +620,15 @@ export default function ItineraryDetail() {
                   </FormItem>
                 )} />
               </div>
+              <FormField control={form.control} name="country" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>País (opcional)</FormLabel>
+                  <FormControl>
+                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
               <FormField control={form.control} name="transport" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporte (opcional)</FormLabel>

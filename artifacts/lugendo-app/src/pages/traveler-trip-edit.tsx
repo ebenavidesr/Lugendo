@@ -11,6 +11,7 @@ import {
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
 import { TransportSelect } from "@/components/transport-select";
+import { CountrySelectSmall } from "@/components/country-select";
 import type { TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,6 +27,7 @@ interface DayState {
   dayNumber: number;
   cityFrom: string;
   cityTo: string;
+  country: string;
   transport: string;
   description: string;
   deleted: boolean;
@@ -120,6 +122,7 @@ export default function TravelerTripEdit() {
         dayNumber: d.dayNumber,
         cityFrom: d.cityFrom ?? "",
         cityTo: d.cityTo ?? "",
+        country: d.country ?? "",
         transport: d.transport ?? "",
         description: d.description ?? "",
         deleted: false,
@@ -141,7 +144,7 @@ export default function TravelerTripEdit() {
     const nextNum = activeDays.length > 0 ? Math.max(...activeDays.map(d => d.dayNumber)) + 1 : 1;
     setDays(ds => [...ds, {
       id: null, dayNumber: nextNum,
-      cityFrom: "", cityTo: "", transport: "", description: "",
+      cityFrom: "", cityTo: "", country: "", transport: "", description: "",
       deleted: false, expanded: true,
     }]);
   };
@@ -190,6 +193,7 @@ export default function TravelerTripEdit() {
             dayNumber: d.dayNumber,
             cityFrom: d.cityFrom || null,
             cityTo: d.cityTo || null,
+            country: d.country || null,
             transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
           },
@@ -205,6 +209,7 @@ export default function TravelerTripEdit() {
             dayNumber: d.dayNumber,
             cityFrom: d.cityFrom || null,
             cityTo: d.cityTo || null,
+            country: d.country || null,
             transport: (d.transport || null) as import("@workspace/api-client-react").TransportMode | null,
             description: d.description || null,
           },
@@ -445,6 +450,15 @@ export default function TravelerTripEdit() {
                     </div>
 
                     <div className="space-y-1">
+                      <label className="text-[11px] text-muted-foreground">País</label>
+                      <CountrySelectSmall
+                        value={day.country}
+                        onChange={v => updateDayField(idx, { country: v })}
+                        placeholder="Seleccionar país…"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
                       <label className="text-[11px] text-muted-foreground">Transporte</label>
                       <TransportSelect
                         value={day.transport}
@@ -483,9 +497,12 @@ export default function TravelerTripEdit() {
                     )}
 
                     {/* Activities */}
-                    {day.id !== null ? (
-                      <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
-                    ) : null}
+                    {day.id !== null ? (() => {
+                      const serverDay = trip.days?.find(d => d.id === day.id);
+                      return (
+                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={serverDay} />
+                      );
+                    })() : null}
                   </div>
                 )}
               </div>

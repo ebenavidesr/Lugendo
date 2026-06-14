@@ -272,6 +272,7 @@ export const GetItineraryResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -345,6 +346,7 @@ export const ListItineraryDaysResponseItem = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -371,6 +373,7 @@ export const CreateItineraryDayBody = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "country": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().optional()
 })
@@ -387,6 +390,7 @@ export const UpdateItineraryDayParams = zod.object({
 export const UpdateItineraryDayBody = zod.object({
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "country": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().optional()
 })
@@ -397,6 +401,7 @@ export const UpdateItineraryDayResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -762,6 +767,7 @@ export const GetTripResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -894,6 +900,7 @@ export const UpdateTripDayAdminParams = zod.object({
 export const UpdateTripDayAdminBody = zod.object({
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish()
 })
@@ -904,6 +911,7 @@ export const UpdateTripDayAdminResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -1167,6 +1175,7 @@ export const GetMyTripResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -1267,6 +1276,7 @@ export const UpdateMyTripResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({
@@ -1293,6 +1303,7 @@ export const CreateTripDayBody = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish()
 })
@@ -1310,6 +1321,7 @@ export const UpdateTripDayBody = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish()
 })
@@ -1320,6 +1332,7 @@ export const UpdateTripDayResponse = zod.object({
   "dayNumber": zod.number(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "hotels": zod.array(zod.object({

@@ -690,7 +690,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body as Record<string, unknown>;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber es obligatorio" }); return; }
 
   const [day] = await db
@@ -700,6 +700,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
       dayNumber: Number(dayNumber),
       ...(cityFrom ? { cityFrom: String(cityFrom) } : {}),
       ...(cityTo ? { cityTo: String(cityTo) } : {}),
+      ...(country ? { country: String(country) } : {}),
       ...(transport ? { transport: String(transport) } : {}),
       ...(description ? { description: String(description) } : {}),
     })
@@ -711,6 +712,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
     dayNumber: day.dayNumber,
     cityFrom: day.cityFrom ?? null,
     cityTo: day.cityTo ?? null,
+    country: day.country ?? null,
     transport: day.transport ?? null,
     description: day.description ?? null,
     hotels: [],
@@ -726,12 +728,13 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, transport, description } = req.body as Record<string, unknown>;
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body as Record<string, unknown>;
 
   const patch: Record<string, unknown> = {};
   if (dayNumber !== undefined) patch.dayNumber = Number(dayNumber);
   if (cityFrom !== undefined) patch.cityFrom = cityFrom || null;
   if (cityTo !== undefined) patch.cityTo = cityTo || null;
+  if (country !== undefined) patch.country = country || null;
   if (transport !== undefined) patch.transport = transport || null;
   if (description !== undefined) patch.description = description || null;
 
@@ -749,6 +752,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
     dayNumber: updated.dayNumber,
     cityFrom: updated.cityFrom ?? null,
     cityTo: updated.cityTo ?? null,
+    country: updated.country ?? null,
     transport: updated.transport ?? null,
     description: updated.description ?? null,
     hotels: [],

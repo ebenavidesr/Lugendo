@@ -17,6 +17,7 @@ import {
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { CountrySelectSmall } from "@/components/country-select";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -747,8 +748,7 @@ export default function ItineraryWizard() {
                                 onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px] col-span-3" />
                               <Input placeholder="Ciudad *" value={newHotelForm.city}
                                 onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                              <Input placeholder="País *" value={newHotelForm.country}
-                                onChange={e => setNewHotelForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
+                              <CountrySelectSmall value={newHotelForm.country} onChange={v => setNewHotelForm(f => ({ ...f, country: v }))} placeholder="País *" />
                               <Input placeholder="Teléfono" value={newHotelForm.phone}
                                 onChange={e => setNewHotelForm(f => ({ ...f, phone: e.target.value }))} className="h-7 text-[12px]" />
                               <Input placeholder="Dirección" value={newHotelForm.address}

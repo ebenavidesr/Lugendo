@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { CountrySelect } from "@/components/country-select";
 
 const categoryMeta: Record<string, { label: string; bg: string; color: string; emoji: string }> = {
   cultural:    { label: "Cultural",     bg: "#EAE6F5", color: "#3D2F6B", emoji: "🏛️" },
@@ -242,7 +243,9 @@ function ActivityForm({
               <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem>
                   <FormLabel>País</FormLabel>
-                  <FormControl><Input placeholder="Marruecos" {...field} /></FormControl>
+                  <FormControl>
+                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />

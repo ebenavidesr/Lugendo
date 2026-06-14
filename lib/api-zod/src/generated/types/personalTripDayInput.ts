@@ -13,6 +13,8 @@ export interface PersonalTripDayInput {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

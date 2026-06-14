@@ -11,6 +11,7 @@ import {
 import type { DayHotel, SegmentValue } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CountrySelectSmall } from "@/components/country-select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,6 +38,7 @@ export type GenericDay = {
   hotels?: DayHotel[] | null;
   cityFrom?: string | null;
   cityTo?: string | null;
+  country?: string | null;
 };
 
 export function DayHotelPanel({
@@ -283,7 +285,7 @@ export function DayHotelPanel({
               <Plus className="w-3 h-3" /> Añadir
             </button>
             <button
-              onClick={() => { setMode("create"); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "" })); }}
+              onClick={() => { setMode("create"); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "", country: day.country ?? "" })); }}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#FAEEE4", color: "#C4793A" }}>
               <Plus className="w-3 h-3" /> Nuevo hotel
@@ -426,7 +428,7 @@ export function DayHotelPanel({
             <Input placeholder="Nombre *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-[12px]" />
             <div className="grid grid-cols-2 gap-2">
               <Input placeholder="Ciudad *" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className="h-8 text-[12px]" />
-              <Input placeholder="País *" value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} className="h-8 text-[12px]" />
+              <CountrySelectSmall value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} placeholder="País *" />
             </div>
             <Input placeholder="Dirección" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} className="h-8 text-[12px]" />
             <div className="grid grid-cols-2 gap-2">

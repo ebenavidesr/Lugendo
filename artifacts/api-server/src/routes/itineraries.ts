@@ -227,21 +227,22 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
 
 router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const { dayNumber, cityFrom, cityTo, transport, description } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
   if (!dayNumber) { res.status(400).json({ error: "dayNumber is required" }); return; }
   const [day] = await db
     .insert(itineraryDaysTable)
-    .values({ itineraryId, dayNumber, cityFrom, cityTo, transport, description })
+    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description })
     .returning();
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, transport, description } = req.body;
+  const { cityFrom, cityTo, country, transport, description } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
+  if (country !== undefined) patch.country = country;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
   const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();

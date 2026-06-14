@@ -279,7 +279,7 @@ export default function TripDetail() {
                     {isExpanded && (
                       <>
                         <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} />
-                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} />
+                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
                       </>
                     )}
                   </div>

@@ -13,6 +13,7 @@ import {
 import type { Activity } from "@workspace/api-client-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { CountrySelectSmall } from "@/components/country-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -30,16 +31,24 @@ export const categoryMeta: Record<string, { emoji: string; label: string }> = {
 
 type LookupResult = { name: string; city: string; country: string; address: string; description: string };
 
+type DayContext = {
+  country?: string | null;
+  cityFrom?: string | null;
+  cityTo?: string | null;
+};
+
 export function DayActivitiesPanel({
   entityType,
   entityId,
   dayId,
   compact = false,
+  day,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
   dayId: number;
   compact?: boolean;
+  day?: DayContext;
 }) {
   const isItinerary = entityType === "itinerary";
 
@@ -83,6 +92,12 @@ export function DayActivitiesPanel({
 
   const linkedIds = new Set((dayActivities ?? []).map(a => a.activityId));
   const availableActivities = (allActivities ?? []).filter(a => !linkedIds.has(a.id));
+
+  const openCreate = () => {
+    setNewCity(day?.cityTo ?? day?.cityFrom ?? "");
+    setNewCountry(day?.country ?? "");
+    setMode("create");
+  };
 
   const resetForm = () => {
     setMode("idle");
@@ -200,7 +215,7 @@ export function DayActivitiesPanel({
               </button>
             )}
             <button
-              onClick={() => setMode("create")}
+              onClick={openCreate}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#FAEEE4", color: "#C4793A" }}>
               <Plus className="w-3 h-3" /> Nueva
@@ -340,7 +355,7 @@ export function DayActivitiesPanel({
                 </div>
                 <div>
                   <label className="text-[11px] text-muted-foreground block mb-1">País</label>
-                  <Input placeholder="España" value={newCountry} onChange={e => setNewCountry(e.target.value)} className="h-8 text-[12px]" />
+                  <CountrySelectSmall value={newCountry} onChange={setNewCountry} placeholder="País" />
                 </div>
               </div>
               <div>

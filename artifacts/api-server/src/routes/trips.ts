@@ -119,6 +119,7 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), async (req, res
           dayNumber: d.dayNumber,
           cityFrom: d.cityFrom,
           cityTo: d.cityTo,
+          country: d.country,
           transport: d.transport,
           description: d.description,
         }))
@@ -208,13 +209,14 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 router.patch("/trips/:tripId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, transport, description } = req.body as {
-    cityFrom?: string | null; cityTo?: string | null; transport?: string | null;
+  const { cityFrom, cityTo, country, transport, description } = req.body as {
+    cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null;
     description?: string | null;
   };
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
+  if (country !== undefined) patch.country = country;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
 

@@ -12,6 +12,8 @@ export interface TripDayUpdate {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

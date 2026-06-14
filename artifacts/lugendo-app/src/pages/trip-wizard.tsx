@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { TransportSelect } from "@/components/transport-select";
+import { CountrySelectSmall } from "@/components/country-select";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1002,7 +1003,7 @@ export default function TripWizard() {
                           <div className="grid grid-cols-2 gap-2">
                             <Input placeholder="Nombre *" value={newHotelForm.name} onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
                             <Input placeholder="Ciudad *" value={newHotelForm.city} onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="País *" value={newHotelForm.country} onChange={e => setNewHotelForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
+                            <CountrySelectSmall value={newHotelForm.country} onChange={v => setNewHotelForm(f => ({ ...f, country: v }))} placeholder="País *" />
                             <Input placeholder="Dirección" value={newHotelForm.address} onChange={e => setNewHotelForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
                             <Input placeholder="Teléfono" value={newHotelForm.phone} onChange={e => setNewHotelForm(f => ({ ...f, phone: e.target.value }))} className="h-7 text-[12px]" />
                             <Input placeholder="Web" value={newHotelForm.website} onChange={e => setNewHotelForm(f => ({ ...f, website: e.target.value }))} className="h-7 text-[12px]" />
@@ -1119,8 +1120,7 @@ export default function TripWizard() {
                               <div className="grid grid-cols-2 gap-2">
                                 <Input placeholder="Ciudad" value={newActivityForm.city}
                                   onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                                <Input placeholder="País" value={newActivityForm.country}
-                                  onChange={e => setNewActivityForm(f => ({ ...f, country: e.target.value }))} className="h-7 text-[12px]" />
+                                <CountrySelectSmall value={newActivityForm.country} onChange={v => setNewActivityForm(f => ({ ...f, country: v }))} placeholder="País" />
                               </div>
                               <Select value={newActivityForm.category || "none"}
                                 onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>

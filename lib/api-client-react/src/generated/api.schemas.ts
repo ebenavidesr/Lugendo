@@ -237,6 +237,8 @@ export interface ItineraryDay {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -316,6 +318,7 @@ export interface ItineraryDayInput {
   dayNumber: number;
   cityFrom?: string;
   cityTo?: string;
+  country?: string;
   transport?: TransportMode | null;
   description?: string;
 }
@@ -323,6 +326,7 @@ export interface ItineraryDayInput {
 export interface ItineraryDayUpdate {
   cityFrom?: string;
   cityTo?: string;
+  country?: string;
   transport?: TransportMode | null;
   description?: string;
 }
@@ -560,6 +564,8 @@ export interface TripDay {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -685,6 +691,8 @@ export interface TripDayUpdate {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -803,6 +811,8 @@ export interface PersonalTripDayInput {
   cityFrom?: string | null;
   /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

@@ -10,6 +10,7 @@ import type { TransportMode } from './transportMode';
 export interface ItineraryDayUpdate {
   cityFrom?: string;
   cityTo?: string;
+  country?: string;
   transport?: TransportMode | null;
   description?: string;
 }

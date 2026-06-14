@@ -1932,6 +1932,8 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
+        country:
+          type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
@@ -1953,6 +1955,8 @@ components:
           type: string
         cityTo:
           type: string
+        country:
+          type: string
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
@@ -1964,6 +1968,8 @@ components:
         cityFrom:
           type: string
         cityTo:
+          type: string
+        country:
           type: string
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -2406,6 +2412,8 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
+        country:
+          type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
@@ -2424,6 +2432,8 @@ components:
         cityFrom:
           type: ["string", "null"]
         cityTo:
+          type: ["string", "null"]
+        country:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -2584,6 +2594,8 @@ components:
         cityFrom:
           type: ["string", "null"]
         cityTo:
+          type: ["string", "null"]
+        country:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"

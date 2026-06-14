@@ -48,6 +48,7 @@ export const tripDaysTable = pgTable("trip_days", {
   dayNumber: integer("day_number").notNull(),
   cityFrom: text("city_from"),
   cityTo: text("city_to"),
+  country: text("country"),
   transport: text("transport"),
   description: text("description"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

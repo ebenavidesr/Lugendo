@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { CountrySelect } from "@/components/country-select";
 
 function Stars({ n }: { n: number | null | undefined }) {
   if (!n) return <span className="text-muted-foreground text-[12px]">—</span>;
@@ -196,7 +197,9 @@ function HotelForm({
               <FormField control={form.control} name="country" render={({ field }) => (
                 <FormItem>
                   <FormLabel>País</FormLabel>
-                  <FormControl><Input placeholder="Marruecos" {...field} /></FormControl>
+                  <FormControl>
+                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
