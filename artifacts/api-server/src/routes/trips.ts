@@ -3,7 +3,7 @@ import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, tripDayHotelsTable,
-  itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
+  itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
   usersTable,
 } from "@workspace/db";
@@ -198,6 +198,31 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), async (req, res
 
         if (hotelCopies.length > 0) {
           await db.insert(tripDayHotelsTable).values(hotelCopies);
+        }
+      }
+
+      // Copy activity assignments from itinerary_day_activities to trip_day_activities
+      const itinActivities = itinDayIds.length > 0
+        ? await db
+            .select()
+            .from(itineraryDayActivitiesTable)
+            .where(inArray(itineraryDayActivitiesTable.dayId, itinDayIds))
+        : [];
+
+      if (itinActivities.length > 0) {
+        const itinDayToTripDay: Record<number, number> = {};
+        for (let i = 0; i < itinDays.length; i++) {
+          const td = tripDays[i];
+          if (td) itinDayToTripDay[itinDays[i].id] = td.id;
+        }
+
+        const activityCopies = itinActivities.filter(a => itinDayToTripDay[a.dayId] !== undefined);
+        for (const a of activityCopies) {
+          const tripDayId = itinDayToTripDay[a.dayId];
+          await db.execute(sql`
+            INSERT INTO trip_day_activities (day_id, activity_id, sort_order, notes, start_time)
+            VALUES (${tripDayId}, ${a.activityId}, ${a.sortOrder}, ${a.notes ?? null}, ${a.startTime ?? null})
+          `);
         }
       }
     }
