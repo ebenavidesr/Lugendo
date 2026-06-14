@@ -1847,6 +1847,8 @@ components:
           type: boolean
         tripCount:
           type: integer
+        createdByName:
+          type: ["string", "null"]
         createdAt:
           type: string
 

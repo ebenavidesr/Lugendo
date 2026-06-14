@@ -4,10 +4,12 @@ import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
 import { hotelsTable } from "./hotels";
 import { activitiesTable } from "./activities";
+import { usersTable } from "./users";
 
 export const itinerariesTable = pgTable("itineraries", {
   id: serial("id").primaryKey(),
   agencyId: integer("agency_id").references(() => agenciesTable.id),
+  createdBy: integer("created_by").references(() => usersTable.id),
   name: text("name").notNull(),
   countries: text("countries").array().notNull().default([]),
   region: text("region"),

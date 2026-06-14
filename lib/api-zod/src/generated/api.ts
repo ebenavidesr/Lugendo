@@ -222,6 +222,7 @@ export const ListItinerariesResponseItem = zod.object({
   "videoUrl": zod.string().nullish(),
   "active": zod.boolean(),
   "tripCount": zod.number().optional(),
+  "createdByName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListItinerariesResponse = zod.array(ListItinerariesResponseItem)
@@ -321,6 +322,7 @@ export const UpdateItineraryResponse = zod.object({
   "videoUrl": zod.string().nullish(),
   "active": zod.boolean(),
   "tripCount": zod.number().optional(),
+  "createdByName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 

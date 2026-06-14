@@ -23,5 +23,7 @@ export interface Itinerary {
   videoUrl?: string | null;
   active: boolean;
   tripCount?: number;
+  /** @nullable */
+  createdByName?: string | null;
   createdAt: string;
 }

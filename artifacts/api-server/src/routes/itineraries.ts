@@ -3,7 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
-  hotelsTable, tripsTable, activitiesTable,
+  hotelsTable, tripsTable, activitiesTable, usersTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { sql } from "drizzle-orm";
@@ -13,8 +13,8 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
 
-function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount = 0) {
-  return { ...i, createdAt: i.createdAt.toISOString(), tripCount };
+function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount = 0, createdByName: string | null = null) {
+  return { ...i, createdAt: i.createdAt.toISOString(), tripCount, createdByName };
 }
 
 function serializeDayHotel(r: {
@@ -56,13 +56,18 @@ router.get("/itineraries", requireAuth, async (req, res): Promise<void> => {
       ? await db.select().from(itinerariesTable).where(eq(itinerariesTable.agencyId, agencyId)).orderBy(itinerariesTable.name)
       : [];
 
-  const tripCounts = await db
-    .select({ itineraryId: tripsTable.itineraryId, count: sql<number>`count(*)::int` })
-    .from(tripsTable)
-    .groupBy(tripsTable.itineraryId);
+  const [tripCounts, creators] = await Promise.all([
+    db.select({ itineraryId: tripsTable.itineraryId, count: sql<number>`count(*)::int` })
+      .from(tripsTable)
+      .groupBy(tripsTable.itineraryId),
+    db.select({ id: usersTable.id, name: usersTable.name })
+      .from(usersTable)
+      .where(inArray(usersTable.id, [...new Set(rows.map(r => r.createdBy).filter((id): id is number => id != null))])),
+  ]);
   const countMap = Object.fromEntries(tripCounts.map(t => [t.itineraryId, t.count]));
+  const creatorMap = Object.fromEntries(creators.map(u => [u.id, u.name]));
 
-  res.json(rows.map(i => serializeItinerary(i, countMap[i.id] ?? 0)));
+  res.json(rows.map(i => serializeItinerary(i, countMap[i.id] ?? 0, i.createdBy != null ? (creatorMap[i.createdBy] ?? null) : null)));
 });
 
 // ─── PARSE PDF (must come before /:itineraryId to avoid routing conflicts) ───
@@ -164,9 +169,10 @@ router.post("/itineraries", requireAuth, async (req, res): Promise<void> => {
     return;
   }
   const agencyId = req.session.agencyId ?? null;
+  const createdBy = req.session.userId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
-    .values({ agencyId, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [] })
+    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [] })
     .returning();
   res.status(201).json(serializeItinerary(itinerary));
 });
