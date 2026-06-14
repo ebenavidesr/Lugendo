@@ -33,6 +33,8 @@ import type {
   DayActivityInput,
   DayHotel,
   DayHotelInput,
+  DeleteItineraryResult,
+  DeleteTripResult,
   HealthStatus,
   Hotel,
   HotelInput,
@@ -1353,11 +1355,11 @@ export const getDeleteItineraryUrl = (itineraryId: number,) => {
 }
 
 /**
- * @summary Delete itinerary (Admin only)
+ * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
  */
-export const deleteItinerary = async (itineraryId: number, options?: RequestInit): Promise<void> => {
+export const deleteItinerary = async (itineraryId: number, options?: RequestInit): Promise<DeleteItineraryResult> => {
 
-  return customFetch<void>(getDeleteItineraryUrl(itineraryId),
+  return customFetch<DeleteItineraryResult>(getDeleteItineraryUrl(itineraryId),
   {
     ...options,
     method: 'DELETE'
@@ -1401,7 +1403,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteItineraryMutationError = ErrorType<unknown>
 
     /**
- * @summary Delete itinerary (Admin only)
+ * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
  */
 export const useDeleteItinerary = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItinerary>>, TError,{itineraryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -2679,11 +2681,11 @@ export const getDeleteTripUrl = (tripId: number,) => {
 }
 
 /**
- * @summary Delete trip
+ * @summary Delete or cancel a trip (admin/manager always; traveler only if owner)
  */
-export const deleteTrip = async (tripId: number, options?: RequestInit): Promise<void> => {
+export const deleteTrip = async (tripId: number, options?: RequestInit): Promise<DeleteTripResult> => {
 
-  return customFetch<void>(getDeleteTripUrl(tripId),
+  return customFetch<DeleteTripResult>(getDeleteTripUrl(tripId),
   {
     ...options,
     method: 'DELETE'
@@ -2695,7 +2697,7 @@ export const deleteTrip = async (tripId: number, options?: RequestInit): Promise
 
 
 
-export const getDeleteTripMutationOptions = <TError = ErrorType<unknown>,
+export const getDeleteTripMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{tripId: number}, TContext> => {
 
@@ -2724,12 +2726,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteTripMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTrip>>>
 
-    export type DeleteTripMutationError = ErrorType<unknown>
+    export type DeleteTripMutationError = ErrorType<void>
 
     /**
- * @summary Delete trip
+ * @summary Delete or cancel a trip (admin/manager always; traveler only if owner)
  */
-export const useDeleteTrip = <TError = ErrorType<unknown>,
+export const useDeleteTrip = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteTrip>>,
@@ -4590,6 +4592,146 @@ export function useListSharedWithMe<TData = Awaited<ReturnType<typeof listShared
 
 
 
+
+export const getLeaveTripUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/leave`
+}
+
+/**
+ * @summary Leave a trip the traveler was invited to or accepted a share for
+ */
+export const leaveTrip = async (tripId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getLeaveTripUrl(tripId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getLeaveTripMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof leaveTrip>>, TError,{tripId: number}, TContext> => {
+
+const mutationKey = ['leaveTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof leaveTrip>>, {tripId: number}> = (props) => {
+          const {tripId} = props ?? {};
+
+          return  leaveTrip(tripId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LeaveTripMutationResult = NonNullable<Awaited<ReturnType<typeof leaveTrip>>>
+
+    export type LeaveTripMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Leave a trip the traveler was invited to or accepted a share for
+ */
+export const useLeaveTrip = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof leaveTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof leaveTrip>>,
+        TError,
+        {tripId: number},
+        TContext
+      > => {
+      return useMutation(getLeaveTripMutationOptions(options));
+    }
+
+export const getDismissTripUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/dismiss`
+}
+
+/**
+ * @summary Dismiss a cancelled trip from the traveler's view
+ */
+export const dismissTrip = async (tripId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissTripUrl(tripId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDismissTripMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissTrip>>, TError,{tripId: number}, TContext> => {
+
+const mutationKey = ['dismissTrip'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissTrip>>, {tripId: number}> = (props) => {
+          const {tripId} = props ?? {};
+
+          return  dismissTrip(tripId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissTripMutationResult = NonNullable<Awaited<ReturnType<typeof dismissTrip>>>
+
+    export type DismissTripMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Dismiss a cancelled trip from the traveler's view
+ */
+export const useDismissTrip = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissTrip>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissTrip>>,
+        TError,
+        {tripId: number},
+        TContext
+      > => {
+      return useMutation(getDismissTripMutationOptions(options));
+    }
 
 export const getAcceptTripShareUrl = (shareCode: string,) => {
 

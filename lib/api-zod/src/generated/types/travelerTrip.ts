@@ -15,6 +15,11 @@ export interface TravelerTrip {
   /** @nullable */
   endDate?: string | null;
   isPersonal: boolean;
+  /**
+     * ID of the trip owner (null for agency trips)
+     * @nullable
+     */
+  ownerId?: number | null;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */

@@ -711,6 +711,18 @@ export interface InvitationUpdateInput {
   segment?: SegmentValue | null;
 }
 
+export interface DeleteItineraryResult {
+  /** Number of trips that were unlinked from this itinerary before deletion */
+  unlinkedTrips: number;
+}
+
+export interface DeleteTripResult {
+  /** true if the trip was soft-cancelled (had active travelers), false if hard-deleted */
+  cancelled: boolean;
+  /** Number of travelers who had accepted invitations/shares for this trip */
+  travelersAffected: number;
+}
+
 export type TravelerTripStatus = typeof TravelerTripStatus[keyof typeof TravelerTripStatus];
 
 
@@ -730,6 +742,11 @@ export interface TravelerTrip {
   /** @nullable */
   endDate?: string | null;
   isPersonal: boolean;
+  /**
+     * ID of the trip owner (null for agency trips)
+     * @nullable
+     */
+  ownerId?: number | null;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */

@@ -227,9 +227,9 @@ export default function Trips() {
   const handleDelete = () => {
     if (!deleteTarget) return;
     remove.mutate({ tripId: deleteTarget.id }, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         qc.invalidateQueries({ queryKey: ["/api/trips"] });
-        toast({ title: "Viaje eliminado" });
+        toast({ title: result.cancelled ? "Viaje cancelado" : "Viaje eliminado" });
         setDeleteTarget(null);
       },
       onError: () => toast({ variant: "destructive", title: "Error al eliminar el viaje" }),
@@ -238,10 +238,10 @@ export default function Trips() {
 
   const handleDeactivateTrip = () => {
     if (!deleteTarget) return;
-    update.mutate({ tripId: deleteTarget.id, data: { status: "cancelled" } }, {
-      onSuccess: () => {
+    remove.mutate({ tripId: deleteTarget.id }, {
+      onSuccess: (result) => {
         qc.invalidateQueries({ queryKey: ["/api/trips"] });
-        toast({ title: "Viaje cancelado" });
+        toast({ title: result.cancelled ? "Viaje cancelado" : "Viaje eliminado" });
         setDeleteTarget(null);
       },
       onError: () => toast({ variant: "destructive", title: "Error al cancelar el viaje" }),

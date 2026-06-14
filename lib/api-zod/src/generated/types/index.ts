@@ -28,6 +28,8 @@ export * from './dayActivityInput';
 export * from './dayHotel';
 export * from './dayHotelInput';
 export * from './dayHotelInputSegment';
+export * from './deleteItineraryResult';
+export * from './deleteTripResult';
 export * from './flightLeg';
 export * from './healthStatus';
 export * from './hotel';

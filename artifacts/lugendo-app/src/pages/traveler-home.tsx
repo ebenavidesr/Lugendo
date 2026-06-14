@@ -2,13 +2,20 @@ import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import {
   useListMyTrips, useListSharedWithMe, useAcceptTripShare,
+  useDeleteTrip, useLeaveTrip, useDismissTrip,
 } from "@workspace/api-client-react";
 import type { TravelerTrip, TravelerTripStatus, SharedTripEntry } from "@workspace/api-client-react";
-import { MapPin, ArrowRight, Plus, Users, Inbox, Check } from "lucide-react";
+import { MapPin, ArrowRight, Plus, Users, Inbox, Check, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const statusBadge: Record<TravelerTripStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Próximamente" },
@@ -30,57 +37,132 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-function TripCard({ trip, idx }: { trip: TravelerTrip; idx: number }) {
+type TripAction =
+  | { type: "delete"; trip: TravelerTrip }
+  | { type: "leave"; trip: TravelerTrip }
+  | { type: "dismiss"; trip: TravelerTrip };
+
+function TripCard({
+  trip,
+  idx,
+  currentUserId,
+  onAction,
+}: {
+  trip: TravelerTrip;
+  idx: number;
+  currentUserId?: number;
+  onAction?: (action: TripAction) => void;
+}) {
   const s = statusBadge[trip.status] ?? statusBadge.draft;
   const gradient = tripGradients[idx % tripGradients.length];
-  return (
-    <Link href={`/traveler/trips/${trip.id}`}>
-      <div className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm cursor-pointer transition-shadow hover:shadow-md">
-        <div className="h-20 relative flex items-end px-5 pb-3" style={{ background: gradient }}>
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)" }} />
-          <div className="relative z-10 flex items-end justify-between w-full">
-            <div>
-              {trip.countries && trip.countries.length > 0 && (
-                <div className="flex items-center gap-1 mb-0.5">
-                  <MapPin className="w-3 h-3 text-white/70" />
-                  <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider">
-                    {trip.countries.join(" · ")}
-                  </span>
-                </div>
-              )}
-              <h3 className="text-[18px] font-medium text-white leading-tight">{trip.name}</h3>
-            </div>
-            {trip.isPersonal && (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                style={{ background: "rgba(255,255,255,0.2)", color: "#fff", backdropFilter: "blur(4px)" }}>
-                Propio
-              </span>
-            )}
-          </div>
+  const isOwner = currentUserId != null && trip.ownerId === currentUserId;
+  const isCancelled = trip.status === "cancelled";
+
+  const cardContent = (
+    <div
+      className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm transition-all"
+      style={isCancelled && !isOwner ? { opacity: 0.55 } : undefined}
+    >
+      {isCancelled && !isOwner && (
+        <div className="flex items-center gap-2 px-4 py-2 text-[12px] font-medium"
+          style={{ background: "#FDECEA", color: "#C0392B", borderBottom: "1px solid #F5C6C2" }}>
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          Viaje cancelado por el organizador
         </div>
-        <div className="px-5 py-4 flex items-center justify-between">
+      )}
+      <div className="h-20 relative flex items-end px-5 pb-3" style={{ background: gradient }}>
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)" }} />
+        <div className="relative z-10 flex items-end justify-between w-full">
           <div>
-            <p className="text-[13px] text-muted-foreground">
-              {fmt(trip.startDate)}{trip.endDate ? ` — ${fmt(trip.endDate)}` : ""}
-            </p>
-            {trip.agencyName && (
-              <p className="text-[12px] text-muted-foreground mt-0.5">{trip.agencyName}</p>
+            {trip.countries && trip.countries.length > 0 && (
+              <div className="flex items-center gap-1 mb-0.5">
+                <MapPin className="w-3 h-3 text-white/70" />
+                <span className="text-[11px] font-medium text-white/70 uppercase tracking-wider">
+                  {trip.countries.join(" · ")}
+                </span>
+              </div>
             )}
+            <h3 className="text-[18px] font-medium text-white leading-tight">{trip.name}</h3>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium"
-              style={{ background: s.bg, color: s.color }}>{s.label}</span>
-            <ArrowRight className="w-4 h-4 text-muted-foreground" />
-          </div>
+          {trip.isPersonal && isOwner && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+              style={{ background: "rgba(255,255,255,0.2)", color: "#fff", backdropFilter: "blur(4px)" }}>
+              Propio
+            </span>
+          )}
         </div>
       </div>
+      <div className="px-5 py-4 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] text-muted-foreground">
+            {fmt(trip.startDate)}{trip.endDate ? ` — ${fmt(trip.endDate)}` : ""}
+          </p>
+          {trip.agencyName && (
+            <p className="text-[12px] text-muted-foreground mt-0.5">{trip.agencyName}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {!isCancelled && isOwner && onAction && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onAction({ type: "delete", trip }); }}
+              className="p-1.5 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Eliminar viaje"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {!isCancelled && !isOwner && onAction && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onAction({ type: "leave", trip }); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium text-muted-foreground hover:text-orange-700 hover:bg-orange-50 transition-colors border border-border"
+              title="Darse de baja del viaje"
+            >
+              <LogOut className="w-3 h-3" />
+              Darme de baja
+            </button>
+          )}
+          {isCancelled && !isOwner && onAction && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onAction({ type: "dismiss", trip }); }}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium transition-colors"
+              style={{ background: "#FDECEA", color: "#C0392B", border: "1px solid #F5C6C2" }}
+            >
+              <Trash2 className="w-3 h-3" />
+              Eliminar de mi lista
+            </button>
+          )}
+          {!isCancelled && (
+            <>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium"
+                style={{ background: s.bg, color: s.color }}>{s.label}</span>
+              <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isCancelled && !isOwner) {
+    return <div>{cardContent}</div>;
+  }
+
+  return (
+    <Link href={`/traveler/trips/${trip.id}`}>
+      {cardContent}
     </Link>
   );
 }
 
 // ── Shared-with-me tab ────────────────────────────────────────────────────────
 
-function SharedWithMeSection() {
+function SharedWithMeSection({
+  currentUserId,
+  onAction,
+}: {
+  currentUserId?: number;
+  onAction?: (action: TripAction) => void;
+}) {
   const { data: entries, isLoading } = useListSharedWithMe();
   const acceptShare = useAcceptTripShare();
   const qc = useQueryClient();
@@ -119,7 +201,6 @@ function SharedWithMeSection() {
 
   return (
     <div className="space-y-6">
-      {/* Enter code manually */}
       <div className="bg-card border border-border rounded-[14px] p-4">
         <p className="text-[13px] font-medium mb-2" style={{ color: "#2D1F0E" }}>
           ¿Tienes un código de invitación?
@@ -142,7 +223,6 @@ function SharedWithMeSection() {
         </div>
       </div>
 
-      {/* Pending invitations */}
       {pending.length > 0 && (
         <div>
           <h3 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -181,7 +261,6 @@ function SharedWithMeSection() {
         </div>
       )}
 
-      {/* Accepted / shared with me */}
       {accepted.length > 0 && (
         <div>
           <h3 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
@@ -189,7 +268,13 @@ function SharedWithMeSection() {
           </h3>
           <div className="space-y-3">
             {accepted.map((entry: SharedTripEntry, idx) => (
-              <TripCard key={entry.shareId} trip={entry.trip} idx={idx + 10} />
+              <TripCard
+                key={entry.shareId}
+                trip={entry.trip}
+                idx={idx + 10}
+                currentUserId={currentUserId}
+                onAction={onAction}
+              />
             ))}
           </div>
         </div>
@@ -213,8 +298,6 @@ function SharedWithMeSection() {
   );
 }
 
-// ── Shared-by-me section (shown inside the trip detail, but also summarised here) ──
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 type Tab = "mine" | "shared";
@@ -223,12 +306,84 @@ export default function TravelerHome() {
   const [, navigate] = useLocation();
   const [tab, setTab] = useState<Tab>("mine");
   const { data: trips, isLoading } = useListMyTrips();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { toast } = useToast();
+
+  const deleteTrip = useDeleteTrip();
+  const leaveTrip = useLeaveTrip();
+  const dismissTrip = useDismissTrip();
+
+  const [pendingAction, setPendingAction] = useState<TripAction | null>(null);
 
   const hasTrips = trips && trips.length > 0;
 
+  const handleAction = (action: TripAction) => {
+    setPendingAction(action);
+  };
+
+  const handleConfirm = () => {
+    if (!pendingAction) return;
+    const { type, trip } = pendingAction;
+
+    if (type === "delete") {
+      deleteTrip.mutate({ tripId: trip.id }, {
+        onSuccess: (result) => {
+          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+          toast({ title: result.cancelled ? "Viaje cancelado (tenía viajeros)" : "Viaje eliminado" });
+          setPendingAction(null);
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al eliminar el viaje" }),
+      });
+    } else if (type === "leave") {
+      leaveTrip.mutate({ tripId: trip.id }, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+          qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
+          toast({ title: "Te has dado de baja del viaje" });
+          setPendingAction(null);
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al darse de baja" }),
+      });
+    } else if (type === "dismiss") {
+      dismissTrip.mutate({ tripId: trip.id }, {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+          qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
+          toast({ title: "Viaje eliminado de tu lista" });
+          setPendingAction(null);
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al eliminar el viaje de tu lista" }),
+      });
+    }
+  };
+
+  const isPending = deleteTrip.isPending || leaveTrip.isPending || dismissTrip.isPending;
+
+  const dialogContent = pendingAction ? (() => {
+    const { type, trip } = pendingAction;
+    if (type === "delete") return {
+      title: "Eliminar viaje",
+      description: `¿Seguro que quieres eliminar "${trip.name}"? Si hay otros viajeros en el viaje, este se marcará como cancelado y ellos lo verán como tal hasta que lo descarten.`,
+      confirmText: "Eliminar / Cancelar",
+      confirmStyle: { background: "#C0392B", color: "white" } as React.CSSProperties,
+    };
+    if (type === "leave") return {
+      title: "Darse de baja del viaje",
+      description: `¿Seguro que quieres salir del viaje "${trip.name}"? Ya no aparecerá en tu lista. El viaje seguirá existiendo para los demás participantes.`,
+      confirmText: "Darse de baja",
+      confirmStyle: { background: "#3D2F6B", color: "white" } as React.CSSProperties,
+    };
+    return {
+      title: "Eliminar de mi lista",
+      description: `¿Quieres eliminar "${trip.name}" de tu lista? Este viaje fue cancelado por el organizador.`,
+      confirmText: "Eliminar de mi lista",
+      confirmStyle: { background: "#C0392B", color: "white" } as React.CSSProperties,
+    };
+  })() : null;
+
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div>
           <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>Mis viajes</h1>
@@ -248,7 +403,6 @@ export default function TravelerHome() {
         )}
       </div>
 
-      {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-[10px] w-fit" style={{ background: "#ECD5B8" }}>
         {([
           { key: "mine",   label: "Mis viajes" },
@@ -268,7 +422,6 @@ export default function TravelerHome() {
         ))}
       </div>
 
-      {/* Tab content */}
       {tab === "mine" && (
         <>
           {isLoading && (
@@ -299,13 +452,52 @@ export default function TravelerHome() {
             </div>
           )}
 
-          {trips?.map((trip: TravelerTrip, idx) => (
-            <TripCard key={trip.id} trip={trip} idx={idx} />
-          ))}
+          <div className="space-y-4">
+            {trips?.map((trip: TravelerTrip, idx) => (
+              <TripCard
+                key={trip.id}
+                trip={trip}
+                idx={idx}
+                currentUserId={user?.id}
+                onAction={handleAction}
+              />
+            ))}
+          </div>
         </>
       )}
 
-      {tab === "shared" && <SharedWithMeSection />}
+      {tab === "shared" && (
+        <SharedWithMeSection
+          currentUserId={user?.id}
+          onAction={handleAction}
+        />
+      )}
+
+      {pendingAction && dialogContent && (
+        <AlertDialog open onOpenChange={open => !open && setPendingAction(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "#C4793A" }} />
+                {dialogContent.title}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {dialogContent.description}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirm}
+                disabled={isPending}
+                style={dialogContent.confirmStyle}
+              >
+                {isPending ? "Procesando…" : dialogContent.confirmText}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
     </div>
   );
 }

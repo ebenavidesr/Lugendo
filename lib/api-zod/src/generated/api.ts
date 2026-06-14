@@ -326,10 +326,14 @@ export const UpdateItineraryResponse = zod.object({
 
 
 /**
- * @summary Delete itinerary (Admin only)
+ * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
  */
 export const DeleteItineraryParams = zod.object({
   "itineraryId": zod.coerce.number()
+})
+
+export const DeleteItineraryResponse = zod.object({
+  "unlinkedTrips": zod.number().describe('Number of trips that were unlinked from this itinerary before deletion')
 })
 
 
@@ -882,10 +886,15 @@ export const UpdateTripResponse = zod.object({
 
 
 /**
- * @summary Delete trip
+ * @summary Delete or cancel a trip (admin/manager always; traveler only if owner)
  */
 export const DeleteTripParams = zod.object({
   "tripId": zod.coerce.number()
+})
+
+export const DeleteTripResponse = zod.object({
+  "cancelled": zod.boolean().describe('true if the trip was soft-cancelled (had active travelers), false if hard-deleted'),
+  "travelersAffected": zod.number().describe('Number of travelers who had accepted invitations\/shares for this trip')
 })
 
 
@@ -1077,6 +1086,7 @@ export const ListMyTripsResponseItem = zod.object({
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
   "isPersonal": zod.boolean(),
+  "ownerId": zod.number().nullish().describe('ID of the trip owner (null for agency trips)'),
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
@@ -1506,6 +1516,7 @@ export const ListSharedWithMeResponseItem = zod.object({
   "startDate": zod.string(),
   "endDate": zod.string().nullish(),
   "isPersonal": zod.boolean(),
+  "ownerId": zod.number().nullish().describe('ID of the trip owner (null for agency trips)'),
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
@@ -1513,6 +1524,22 @@ export const ListSharedWithMeResponseItem = zod.object({
 })
 })
 export const ListSharedWithMeResponse = zod.array(ListSharedWithMeResponseItem)
+
+
+/**
+ * @summary Leave a trip the traveler was invited to or accepted a share for
+ */
+export const LeaveTripParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Dismiss a cancelled trip from the traveler's view
+ */
+export const DismissTripParams = zod.object({
+  "tripId": zod.coerce.number()
+})
 
 
 /**

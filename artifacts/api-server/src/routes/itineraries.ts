@@ -209,8 +209,13 @@ router.get("/itineraries/:itineraryId/usage", requireAuth, async (req, res): Pro
 
 router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
+  const unlinked = await db
+    .update(tripsTable)
+    .set({ itineraryId: null })
+    .where(eq(tripsTable.itineraryId, id))
+    .returning({ id: tripsTable.id });
   await db.delete(itinerariesTable).where(eq(itinerariesTable.id, id));
-  res.sendStatus(204);
+  res.json({ unlinkedTrips: unlinked.length });
 });
 
 router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {

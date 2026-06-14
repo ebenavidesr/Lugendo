@@ -135,6 +135,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     if (row) trips.push({
       ...row,
       isPersonal: false,
+      ownerId: null,
       countries: row.countries ?? [],
       agencyName: row.agencyName ?? null,
       agencyLogoUrl: row.agencyLogoUrl ?? null,
@@ -147,6 +148,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     trips.push({
       ...row,
       isPersonal: true,
+      ownerId: userId,
       agencyName: null,
       agencyLogoUrl: null,
       countries: [],
@@ -770,6 +772,60 @@ router.delete("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (
 
   await db.delete(itineraryDaysTable)
     .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)));
+
+  res.sendStatus(204);
+});
+
+// ─── Leave a trip (remove own invitation or share) ───────────────────────────
+router.delete("/me/trips/:tripId/leave", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = meRow?.email ?? "";
+
+  // Remove accepted invitation
+  await db.delete(invitationsTable).where(and(
+    eq(invitationsTable.tripId, tripId),
+    eq(invitationsTable.travelerId, userId),
+    eq(invitationsTable.status, "accepted"),
+  ));
+
+  // Remove accepted share
+  await db.delete(tripSharesTable).where(and(
+    eq(tripSharesTable.tripId, tripId),
+    or(
+      eq(tripSharesTable.sharedWithUserId, userId),
+      eq(tripSharesTable.sharedWithEmail, myEmail),
+    ),
+    eq(tripSharesTable.status, "accepted"),
+  ));
+
+  res.sendStatus(204);
+});
+
+// ─── Dismiss a cancelled trip from the traveler's view ───────────────────────
+router.delete("/me/trips/:tripId/dismiss", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = meRow?.email ?? "";
+
+  // Remove invitation (any status)
+  await db.delete(invitationsTable).where(and(
+    eq(invitationsTable.tripId, tripId),
+    eq(invitationsTable.travelerId, userId),
+  ));
+
+  // Remove share (any status)
+  await db.delete(tripSharesTable).where(and(
+    eq(tripSharesTable.tripId, tripId),
+    or(
+      eq(tripSharesTable.sharedWithUserId, userId),
+      eq(tripSharesTable.sharedWithEmail, myEmail),
+    ),
+  ));
 
   res.sendStatus(204);
 });

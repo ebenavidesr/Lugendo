@@ -344,7 +344,7 @@ paths:
     delete:
       operationId: deleteItinerary
       tags: [itineraries]
-      summary: Delete itinerary (Admin only)
+      summary: Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
       parameters:
         - name: itineraryId
           in: path
@@ -352,8 +352,12 @@ paths:
           schema:
             type: integer
       responses:
-        "204":
-          description: Deleted
+        "200":
+          description: Deleted (with count of unlinked trips)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteItineraryResult"
 
   /itineraries/{itineraryId}/days:
     get:
@@ -693,7 +697,7 @@ paths:
     delete:
       operationId: deleteTrip
       tags: [trips]
-      summary: Delete trip
+      summary: Delete or cancel a trip (admin/manager always; traveler only if owner)
       parameters:
         - name: tripId
           in: path
@@ -701,8 +705,14 @@ paths:
           schema:
             type: integer
       responses:
-        "204":
-          description: Deleted
+        "200":
+          description: Deleted or cancelled (with affected travelers count)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteTripResult"
+        "403":
+          description: Forbidden
 
   /trips/{tripId}/days/{dayId}:
     patch:
@@ -1306,6 +1316,36 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SharedTripEntry"
+
+  /me/trips/{tripId}/leave:
+    delete:
+      operationId: leaveTrip
+      tags: [traveler]
+      summary: Leave a trip the traveler was invited to or accepted a share for
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Left the trip
+
+  /me/trips/{tripId}/dismiss:
+    delete:
+      operationId: dismissTrip
+      tags: [traveler]
+      summary: Dismiss a cancelled trip from the traveler's view
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Trip dismissed
 
   /me/shares/{shareCode}/accept:
     post:
@@ -2495,6 +2535,25 @@ components:
           $ref: "#/components/schemas/SegmentValue"
 
     # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────
+    DeleteItineraryResult:
+      type: object
+      required: [unlinkedTrips]
+      properties:
+        unlinkedTrips:
+          type: integer
+          description: Number of trips that were unlinked from this itinerary before deletion
+
+    DeleteTripResult:
+      type: object
+      required: [cancelled, travelersAffected]
+      properties:
+        cancelled:
+          type: boolean
+          description: true if the trip was soft-cancelled (had active travelers), false if hard-deleted
+        travelersAffected:
+          type: integer
+          description: Number of travelers who had accepted invitations/shares for this trip
+
     TravelerTrip:
       type: object
       required: [id, name, status, startDate, isPersonal, createdAt]
@@ -2512,6 +2571,9 @@ components:
           type: ["string", "null"]
         isPersonal:
           type: boolean
+        ownerId:
+          type: ["integer", "null"]
+          description: ID of the trip owner (null for agency trips)
         agencyName:
           type: ["string", "null"]
         agencyLogoUrl:

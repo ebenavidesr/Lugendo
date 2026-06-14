@@ -172,13 +172,13 @@ export default function Itineraries() {
 
   const handleDeactivate = () => {
     if (!deleteTarget) return;
-    update.mutate({ itineraryId: deleteTarget.id, data: { active: false } }, {
+    deleteIt.mutate({ itineraryId: deleteTarget.id }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
-        toast({ title: "Itinerario desactivado" });
+        toast({ title: "Itinerario eliminado (viajes desvinculados)" });
         setDeleteTarget(null);
       },
-      onError: () => toast({ variant: "destructive", title: "Error al desactivar" }),
+      onError: () => toast({ variant: "destructive", title: "Error al eliminar el itinerario" }),
     });
   };
 

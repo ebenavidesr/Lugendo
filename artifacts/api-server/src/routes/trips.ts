@@ -317,10 +317,18 @@ router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, asyn
 
 router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const travelers = await db
+  const shares = await db
     .select({ id: tripSharesTable.id, email: tripSharesTable.sharedWithEmail, status: tripSharesTable.status })
     .from(tripSharesTable)
-    .where(eq(tripSharesTable.tripId, id));
+    .where(and(eq(tripSharesTable.tripId, id), eq(tripSharesTable.status, "accepted")));
+  const invites = await db
+    .select({ id: invitationsTable.id, email: invitationsTable.email, status: invitationsTable.status })
+    .from(invitationsTable)
+    .where(and(eq(invitationsTable.tripId, id), eq(invitationsTable.status, "accepted")));
+  const travelers = [
+    ...shares.map(s => ({ id: s.id, email: s.email, status: "share" })),
+    ...invites.map(i => ({ id: i.id, email: i.email, status: "invited" })),
+  ];
   res.json({ travelers });
 });
 
@@ -332,10 +340,39 @@ router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), async 
   res.json(serializeTrip({ ...trip, itineraryName: null, invitedCount: 0, acceptedCount: 0 }));
 });
 
-router.delete("/trips/:tripId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  await db.delete(tripsTable).where(eq(tripsTable.id, id));
-  res.sendStatus(204);
+  const { role, userId } = req.session;
+
+  // Admins/managers can delete any trip; travelers can only delete their own
+  if (role === "traveler") {
+    const [owned] = await db
+      .select({ id: tripsTable.id })
+      .from(tripsTable)
+      .where(and(eq(tripsTable.id, id), eq(tripsTable.ownerId, userId!)));
+    if (!owned) { res.status(403).json({ error: "No tienes permisos para eliminar este viaje" }); return; }
+  } else if (role !== "admin" && role !== "manager") {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  // Count accepted travelers (invitations + shares)
+  const [inviteCount] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(invitationsTable)
+    .where(and(eq(invitationsTable.tripId, id), eq(invitationsTable.status, "accepted")));
+  const [shareCount] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(tripSharesTable)
+    .where(and(eq(tripSharesTable.tripId, id), eq(tripSharesTable.status, "accepted")));
+  const travelersAffected = (inviteCount?.count ?? 0) + (shareCount?.count ?? 0);
+
+  if (travelersAffected > 0) {
+    await db.update(tripsTable).set({ status: "cancelled" }).where(eq(tripsTable.id, id));
+    res.json({ cancelled: true, travelersAffected });
+  } else {
+    await db.delete(tripsTable).where(eq(tripsTable.id, id));
+    res.json({ cancelled: false, travelersAffected: 0 });
+  }
 });
 
 export default router;
