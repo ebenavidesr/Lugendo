@@ -15,6 +15,7 @@ import {
   useCreateActivity,
   useCreateHotel,
   useAddDayActivity,
+  useAcceptTripShare,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -174,6 +175,7 @@ export default function TravelerTripWizard() {
   const createDay = useCreateItineraryDay();
   const createMyTrip = useCreateMyTrip();
   const acceptInvitation = useAcceptInvitation();
+  const acceptShare = useAcceptTripShare();
   const createHotel = useCreateHotel();
   const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
@@ -383,9 +385,20 @@ export default function TravelerTripWizard() {
     if (!code) return;
     setIsJoining(true);
     try {
+      // Try agency invitation first
       await acceptInvitation.mutateAsync({ code });
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
       toast({ title: "¡Te has unido al viaje correctamente!" });
+      navigate("/traveler");
+      return;
+    } catch {
+      // If not found as agency invitation, try personal trip share
+    }
+    try {
+      await acceptShare.mutateAsync({ shareCode: code });
+      qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+      qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
+      toast({ title: "¡Viaje compartido añadido correctamente!" });
       navigate("/traveler");
     } catch {
       toast({ variant: "destructive", title: "Código no válido o ya utilizado" });
