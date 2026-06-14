@@ -84,6 +84,7 @@ export * from './tripShare';
 export * from './tripSharePermission';
 export * from './tripShareStatus';
 export * from './tripStatus';
+export * from './tripTravelersItem';
 export * from './tripUpdate';
 export * from './tripUpdateStatus';
 export * from './updateMyTripInput';

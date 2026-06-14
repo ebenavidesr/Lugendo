@@ -493,6 +493,12 @@ export const TripStatus = {
   cancelled: 'cancelled',
 } as const;
 
+export type TripTravelersItem = {
+  /** @nullable */
+  name?: string | null;
+  email: string;
+};
+
 export interface FlightLeg {
   airline?: string;
   flightNumber?: string;
@@ -542,6 +548,9 @@ export interface Trip {
   returnReservationCode?: string | null;
   outboundFlights?: FlightLeg[] | null;
   returnFlights?: FlightLeg[] | null;
+  /** @nullable */
+  createdByName?: string | null;
+  travelers?: TripTravelersItem[];
   createdAt: string;
 }
 

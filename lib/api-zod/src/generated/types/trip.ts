@@ -7,6 +7,7 @@
  */
 import type { FlightLeg } from './flightLeg';
 import type { TripStatus } from './tripStatus';
+import type { TripTravelersItem } from './tripTravelersItem';
 
 export interface Trip {
   id: number;
@@ -47,5 +48,8 @@ export interface Trip {
   returnReservationCode?: string | null;
   outboundFlights?: FlightLeg[] | null;
   returnFlights?: FlightLeg[] | null;
+  /** @nullable */
+  createdByName?: string | null;
+  travelers?: TripTravelersItem[];
   createdAt: string;
 }

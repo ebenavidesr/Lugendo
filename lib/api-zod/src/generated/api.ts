@@ -676,6 +676,11 @@ export const ListTripsResponseItem = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "createdByName": zod.string().nullish(),
+  "travelers": zod.array(zod.object({
+  "name": zod.string().nullish(),
+  "email": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 export const ListTripsResponse = zod.array(ListTripsResponseItem)
@@ -881,6 +886,11 @@ export const UpdateTripResponse = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "createdByName": zod.string().nullish(),
+  "travelers": zod.array(zod.object({
+  "name": zod.string().nullish(),
+  "email": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })
 
@@ -1791,6 +1801,11 @@ export const GetDashboardSummaryResponse = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "createdByName": zod.string().nullish(),
+  "travelers": zod.array(zod.object({
+  "name": zod.string().nullish(),
+  "email": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })),
   "recentInvitations": zod.array(zod.object({
@@ -1845,6 +1860,11 @@ export const GetDashboardSummaryResponse = zod.object({
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
 })).nullish(),
+  "createdByName": zod.string().nullish(),
+  "travelers": zod.array(zod.object({
+  "name": zod.string().nullish(),
+  "email": zod.string()
+})).optional(),
   "createdAt": zod.string()
 })).optional()
 })

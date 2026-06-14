@@ -5,6 +5,7 @@ import {
   tripsTable, tripDaysTable, tripDayHotelsTable,
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
+  usersTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
@@ -16,6 +17,8 @@ function serializeTrip(
     agencyName?: string | null;
     invitedCount?: number;
     acceptedCount?: number;
+    createdByName?: string | null;
+    travelers?: { name: string | null; email: string }[];
   }
 ) {
   return {
@@ -24,6 +27,8 @@ function serializeTrip(
     agencyName: t.agencyName ?? null,
     invitedCount: t.invitedCount ?? 0,
     acceptedCount: t.acceptedCount ?? 0,
+    createdByName: t.createdByName ?? null,
+    travelers: t.travelers ?? [],
     createdAt: t.createdAt.toISOString(),
   };
 }
@@ -89,8 +94,49 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
     if (r.tripId) countMap[r.tripId] = { invited: r.invited, accepted: r.accepted };
   }
 
+  const creatorIds = [...new Set(baseRows.map(r => r.t.createdBy).filter((id): id is number => id != null))];
+  const creatorMap: Record<number, string> = {};
+  if (creatorIds.length > 0) {
+    const creators = await db
+      .select({ id: usersTable.id, name: usersTable.name })
+      .from(usersTable)
+      .where(inArray(usersTable.id, creatorIds));
+    for (const c of creators) creatorMap[c.id] = c.name;
+  }
+
+  const tripIds = baseRows.map(r => r.t.id);
+  const travelersMap: Record<number, { name: string | null; email: string }[]> = {};
+  if (tripIds.length > 0) {
+    const accepted = await db
+      .select({
+        tripId: invitationsTable.tripId,
+        email: invitationsTable.email,
+        travelerName: usersTable.name,
+      })
+      .from(invitationsTable)
+      .leftJoin(usersTable, eq(invitationsTable.travelerId, usersTable.id))
+      .where(and(
+        inArray(invitationsTable.tripId, tripIds),
+        eq(invitationsTable.status, "accepted"),
+      ));
+    for (const row of accepted) {
+      if (row.tripId != null) {
+        if (!travelersMap[row.tripId]) travelersMap[row.tripId] = [];
+        travelersMap[row.tripId].push({ name: row.travelerName ?? null, email: row.email });
+      }
+    }
+  }
+
   res.json(baseRows.map(({ t, itineraryName, agencyName }) =>
-    serializeTrip({ ...t, itineraryName, agencyName, invitedCount: countMap[t.id]?.invited ?? 0, acceptedCount: countMap[t.id]?.accepted ?? 0 })
+    serializeTrip({
+      ...t,
+      itineraryName,
+      agencyName,
+      invitedCount: countMap[t.id]?.invited ?? 0,
+      acceptedCount: countMap[t.id]?.accepted ?? 0,
+      createdByName: t.createdBy != null ? (creatorMap[t.createdBy] ?? null) : null,
+      travelers: travelersMap[t.id] ?? [],
+    })
   ));
 });
 

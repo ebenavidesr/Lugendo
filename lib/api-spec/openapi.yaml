@@ -2278,6 +2278,18 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/FlightLeg"
+        createdByName:
+          type: ["string", "null"]
+        travelers:
+          type: array
+          items:
+            type: object
+            required: [email]
+            properties:
+              name:
+                type: ["string", "null"]
+              email:
+                type: string
         createdAt:
           type: string
 
