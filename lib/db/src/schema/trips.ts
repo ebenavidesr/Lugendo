@@ -1,9 +1,10 @@
-import { pgTable, serial, text, boolean, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
 import { itinerariesTable } from "./itineraries";
 import { hotelsTable } from "./hotels";
+import { activitiesTable } from "./activities";
 import { usersTable } from "./users";
 
 export interface FlightLeg {
@@ -63,12 +64,24 @@ export const tripDayHotelsTable = pgTable("trip_day_hotels", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const tripDayActivitiesTable = pgTable("trip_day_activities", {
+  id: serial("id").primaryKey(),
+  dayId: integer("day_id").notNull().references(() => tripDaysTable.id, { onDelete: "cascade" }),
+  activityId: integer("activity_id").notNull().references(() => activitiesTable.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  startTime: text("start_time"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("tda_day_idx").on(t.dayId)]);
+
 export const insertTripSchema = createInsertSchema(tripsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripDaySchema = createInsertSchema(tripDaysTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripDayHotelSchema = createInsertSchema(tripDayHotelsTable).omit({ id: true, createdAt: true });
+export const insertTripDayActivitySchema = createInsertSchema(tripDayActivitiesTable).omit({ id: true, createdAt: true });
 
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof tripsTable.$inferSelect;
 export type InsertTripDay = z.infer<typeof insertTripDaySchema>;
 export type TripDay = typeof tripDaysTable.$inferSelect;
 export type TripDayHotel = typeof tripDayHotelsTable.$inferSelect;
+export type TripDayActivity = typeof tripDayActivitiesTable.$inferSelect;
