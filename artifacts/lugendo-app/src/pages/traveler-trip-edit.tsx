@@ -471,6 +471,7 @@ export default function TravelerTripEdit() {
                           entityType="trip"
                           entityId={tripId}
                           day={serverDay}
+                          allDays={trip.days}
                         />
                       ) : null;
                     })() : (

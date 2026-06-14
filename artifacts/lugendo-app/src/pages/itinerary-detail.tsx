@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
+import type { GenericDay } from "@/components/day-hotel-panel";
 import { TransportSelect, TransportLabel } from "@/components/transport-select";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -49,11 +50,13 @@ function EditDayDialog({
   day,
   open,
   onClose,
+  allDays,
 }: {
   itineraryId: number;
   day: ItineraryDay;
   open: boolean;
   onClose: () => void;
+  allDays?: GenericDay[];
 }) {
   const updateDay = useUpdateItineraryDay();
   const { data: hotels } = useListHotels();
@@ -131,7 +134,7 @@ function EditDayDialog({
                 <FormMessage />
               </FormItem>
             )} />
-            <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} compact />
+            <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} compact allDays={allDays} />
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <FormLabel>Descripción</FormLabel>
@@ -539,7 +542,7 @@ export default function ItineraryDetail() {
 
                       {isExpanded && (
                         <>
-                          <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} />
+                          <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} allDays={days} />
                           <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} />
                         </>
                       )}
@@ -639,6 +642,7 @@ export default function ItineraryDetail() {
           day={editDay}
           open={!!editDay}
           onClose={() => setEditDay(null)}
+          allDays={days}
         />
       )}
 

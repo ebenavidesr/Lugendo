@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Hotel, Plus, X, Search, Loader2, Trash2 } from "lucide-react";
+import { Hotel, Plus, X, Search, Loader2, Trash2, Check } from "lucide-react";
 import {
   useListHotels,
   useCreateHotel,
@@ -31,8 +31,9 @@ const segmentColors: Record<NonNullable<SegmentValue>, { bg: string; color: stri
   premium:  { bg: "#EAE6F5", color: "#3D2F6B" },
 };
 
-type GenericDay = {
+export type GenericDay = {
   id: number;
+  dayNumber?: number | null;
   hotels?: DayHotel[] | null;
   cityFrom?: string | null;
   cityTo?: string | null;
@@ -43,11 +44,13 @@ export function DayHotelPanel({
   entityId,
   day,
   compact = false,
+  allDays,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
   day: GenericDay;
   compact?: boolean;
+  allDays?: GenericDay[];
 }) {
   const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
@@ -58,7 +61,7 @@ export function DayHotelPanel({
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const [mode, setMode] = useState<"idle" | "add" | "create">("idle");
+  const [mode, setMode] = useState<"idle" | "add" | "create" | "apply-more">("idle");
   const [selectedHotelId, setSelectedHotelId] = useState<string>("");
   const [selectedSegment, setSelectedSegment] = useState<string>("");
   const [searchQ, setSearchQ] = useState("");
@@ -68,6 +71,12 @@ export function DayHotelPanel({
   const [form, setForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
   const [saving, setSaving] = useState(false);
 
+  const [applyMoreCandidates, setApplyMoreCandidates] = useState<GenericDay[]>([]);
+  const [selectedDayIds, setSelectedDayIds] = useState<Set<number>>(new Set());
+  const [pendingHotelId, setPendingHotelId] = useState<number>(0);
+  const [pendingSegment, setPendingSegment] = useState<string>("");
+  const [applyingMore, setApplyingMore] = useState(false);
+
   const invalidate = () => {
     if (entityType === "itinerary") {
       qc.invalidateQueries({ queryKey: [`/api/itineraries/${entityId}/days`] });
@@ -76,27 +85,102 @@ export function DayHotelPanel({
     }
   };
 
+  const addHotelToDay = (dayId: number, hotelId: number, segment: string) => {
+    const data = {
+      hotelId,
+      ...(segment ? { segment: segment as SegmentValue } : {}),
+    };
+    return new Promise<void>((resolve) => {
+      const callbacks = {
+        onSuccess: () => resolve(),
+        onError: () => resolve(),
+      };
+      if (entityType === "itinerary") {
+        addItinHotel.mutate({ itineraryId: entityId, dayId, data }, callbacks);
+      } else {
+        addTripHotel.mutate({ tripId: entityId, dayId, data }, callbacks);
+      }
+    });
+  };
+
+  const getCandidates = (hotelId: number): GenericDay[] => {
+    if (!allDays || !day.cityTo) return [];
+    return allDays.filter(d =>
+      d.id !== day.id &&
+      d.cityTo &&
+      d.cityTo.toLowerCase() === day.cityTo!.toLowerCase() &&
+      !d.hotels?.some(h => h.hotelId === hotelId)
+    );
+  };
+
   const handleAdd = () => {
     if (!selectedHotelId) return;
+    const hotelId = parseInt(selectedHotelId);
     const data = {
-      hotelId: parseInt(selectedHotelId),
+      hotelId,
       ...(selectedSegment ? { segment: selectedSegment as SegmentValue } : {}),
     };
-    const callbacks = {
-      onSuccess: () => {
-        invalidate();
-        toast({ title: "Hotel añadido" });
-        setMode("idle");
-        setSelectedHotelId("");
-        setSelectedSegment("");
-      },
-      onError: () => toast({ variant: "destructive", title: "Error al añadir hotel" }),
-    };
     if (entityType === "itinerary") {
-      addItinHotel.mutate({ itineraryId: entityId, dayId: day.id, data }, callbacks);
+      addItinHotel.mutate({ itineraryId: entityId, dayId: day.id, data }, {
+        onSuccess: () => {
+          invalidate();
+          toast({ title: "Hotel añadido" });
+          const candidates = getCandidates(hotelId);
+          if (candidates.length > 0) {
+            setPendingHotelId(hotelId);
+            setPendingSegment(selectedSegment);
+            setApplyMoreCandidates(candidates);
+            setSelectedDayIds(new Set(candidates.map(d => d.id)));
+            setSelectedHotelId("");
+            setSelectedSegment("");
+            setMode("apply-more");
+          } else {
+            setMode("idle");
+            setSelectedHotelId("");
+            setSelectedSegment("");
+          }
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al añadir hotel" }),
+      });
     } else {
-      addTripHotel.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
+      addTripHotel.mutate({ tripId: entityId, dayId: day.id, data }, {
+        onSuccess: () => {
+          invalidate();
+          toast({ title: "Hotel añadido" });
+          const candidates = getCandidates(hotelId);
+          if (candidates.length > 0) {
+            setPendingHotelId(hotelId);
+            setPendingSegment(selectedSegment);
+            setApplyMoreCandidates(candidates);
+            setSelectedDayIds(new Set(candidates.map(d => d.id)));
+            setSelectedHotelId("");
+            setSelectedSegment("");
+            setMode("apply-more");
+          } else {
+            setMode("idle");
+            setSelectedHotelId("");
+            setSelectedSegment("");
+          }
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al añadir hotel" }),
+      });
     }
+  };
+
+  const handleApplyMore = async () => {
+    if (selectedDayIds.size === 0) {
+      setMode("idle");
+      return;
+    }
+    setApplyingMore(true);
+    const daysToApply = applyMoreCandidates.filter(d => selectedDayIds.has(d.id));
+    await Promise.all(daysToApply.map(d => addHotelToDay(d.id, pendingHotelId, pendingSegment)));
+    invalidate();
+    toast({ title: `Hotel aplicado a ${daysToApply.length} día${daysToApply.length > 1 ? "s" : ""} más` });
+    setApplyingMore(false);
+    setMode("idle");
+    setApplyMoreCandidates([]);
+    setSelectedDayIds(new Set());
   };
 
   const handleRemove = (assignmentId: number) => {
@@ -168,6 +252,17 @@ export function DayHotelPanel({
     setSelectedSegment("");
     setSearchQ(""); setLookupResults([]); setLookupDone(false);
     setForm({ name: "", city: "", country: "", address: "", phone: "", website: "" });
+    setApplyMoreCandidates([]);
+    setSelectedDayIds(new Set());
+  };
+
+  const toggleDaySelection = (dayId: number) => {
+    setSelectedDayIds(prev => {
+      const next = new Set(prev);
+      if (next.has(dayId)) next.delete(dayId);
+      else next.add(dayId);
+      return next;
+    });
   };
 
   const isPending = addItinHotel.isPending || removeItinHotel.isPending || addTripHotel.isPending || removeTripHotel.isPending;
@@ -195,7 +290,7 @@ export function DayHotelPanel({
             </button>
           </div>
         )}
-        {mode !== "idle" && (
+        {mode !== "idle" && mode !== "apply-more" && (
           <button onClick={resetMode} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] text-muted-foreground hover:text-foreground">
             <X className="w-3 h-3" /> Cancelar
           </button>
@@ -344,6 +439,61 @@ export function DayHotelPanel({
               className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40"
               style={{ background: "#C4793A", color: "#FAF2EB" }}>
               {saving ? "Guardando…" : "Crear y continuar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Apply to more days panel */}
+      {mode === "apply-more" && (
+        <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#F4F2FB" }}>
+          <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+            ¿Aplicar a más días en {day.cityTo}?
+          </p>
+          <div className="space-y-1.5">
+            {applyMoreCandidates.map(candidate => {
+              const checked = selectedDayIds.has(candidate.id);
+              return (
+                <button
+                  key={candidate.id}
+                  onClick={() => toggleDaySelection(candidate.id)}
+                  className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-[6px] border transition-colors text-left"
+                  style={{
+                    borderColor: checked ? "#3D2F6B" : "var(--border)",
+                    background: checked ? "#EAE6F5" : "white",
+                  }}>
+                  <div
+                    className="w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors"
+                    style={{
+                      borderColor: checked ? "#3D2F6B" : "#C0B8D8",
+                      background: checked ? "#3D2F6B" : "white",
+                    }}>
+                    {checked && <Check className="w-2.5 h-2.5" style={{ color: "white" }} />}
+                  </div>
+                  <span className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>
+                    Día {candidate.dayNumber}
+                  </span>
+                  {candidate.cityTo && (
+                    <span className="text-[11px] text-muted-foreground">· {candidate.cityTo}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button
+              onClick={handleApplyMore}
+              disabled={applyingMore || selectedDayIds.size === 0}
+              className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40 inline-flex items-center gap-1.5"
+              style={{ background: "#3D2F6B", color: "white" }}>
+              {applyingMore ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+              Aplicar a seleccionados
+            </button>
+            <button
+              onClick={() => setMode("idle")}
+              disabled={applyingMore}
+              className="h-8 px-3 rounded-[6px] text-[12px] text-muted-foreground hover:text-foreground border border-border disabled:opacity-40">
+              Solo este día
             </button>
           </div>
         </div>
