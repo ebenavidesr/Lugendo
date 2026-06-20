@@ -250,9 +250,13 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                             <p className="text-[13px] font-medium leading-tight" style={{ color: "var(--noche)" }}>
                               {activity.activityName}
                             </p>
-                            {timeRange && (
+                            {timeRange ? (
                               <p className="text-[11px] mt-0.5 font-medium tabular-nums" style={{ color: "var(--terra)" }}>
                                 {timeRange}
+                              </p>
+                            ) : (
+                              <p className="text-[11px] mt-0.5" style={{ color: "var(--text-ter)" }}>
+                                Hora por confirmar
                               </p>
                             )}
                           </div>

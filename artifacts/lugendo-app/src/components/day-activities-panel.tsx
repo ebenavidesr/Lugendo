@@ -294,9 +294,13 @@ export function DayActivitiesPanel({
                             )}
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                            {timeRange && (
+                            {timeRange ? (
                               <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#C4793A" }}>
                                 <Clock className="w-3 h-3" />{timeRange}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
+                                <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
                               </span>
                             )}
                             {a.notes && (
