@@ -18,12 +18,43 @@ export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 
 /**
+ * Directly add any columns that may be missing in production databases that
+ * were created before these columns were introduced. Uses ADD COLUMN IF NOT
+ * EXISTS so it is completely idempotent — a no-op when columns already exist.
+ * Runs unconditionally at every startup (negligible overhead).
+ */
+async function ensureProductionColumns(): Promise<void> {
+  const alterations = [
+    `ALTER TABLE activities ADD COLUMN IF NOT EXISTS address text`,
+    `ALTER TABLE trips ADD COLUMN IF NOT EXISTS description text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS activity_title text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS end_time text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS company_contact text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS address_override text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS included boolean NOT NULL DEFAULT true`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS transport_mode text`,
+    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS created_by_user_id integer`,
+  ];
+  for (const sql of alterations) {
+    await pool.query(sql);
+  }
+  // FK constraint — idempotent via exception handler
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE trip_day_activities
+        ADD CONSTRAINT trip_day_activities_created_by_user_id_users_id_fk
+        FOREIGN KEY (created_by_user_id) REFERENCES users(id);
+    EXCEPTION WHEN duplicate_object THEN null;
+    END $$
+  `);
+}
+
+/**
  * Stamp the baseline migration as applied if the database already has tables
  * (i.e., was previously managed by drizzle-kit push or another tool).
  * This is idempotent — safe to call even if already stamped.
  */
 async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
-  // Find the baseline SQL file (the lexicographically first .sql file)
   let baselineFile: string | undefined;
   try {
     const files = readdirSync(migrationsFolder)
@@ -32,7 +63,7 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
     if (files.length === 0) return;
     baselineFile = join(migrationsFolder, files[0]);
   } catch {
-    return; // migrations folder not found — let migrate() handle it
+    return;
   }
 
   let baselineSql: string;
@@ -44,7 +75,6 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
 
   const hash = createHash("sha256").update(baselineSql).digest("hex");
 
-  // Check whether the app tables already exist (existing DB indicator)
   const { rows: tableCheck } = await pool.query<{ exists: boolean }>(`
     SELECT EXISTS (
       SELECT 1 FROM information_schema.tables
@@ -53,11 +83,9 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
   `);
 
   if (!tableCheck[0]?.exists) {
-    // Fresh database — let migrate() create everything from scratch
-    return;
+    return; // Fresh database — let migrate() create everything
   }
 
-  // Existing DB — ensure tracking infrastructure exists and baseline is stamped
   await pool.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
@@ -84,12 +112,9 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
  * Run all pending Drizzle migrations against the connected database.
  * Pass the absolute path to the migrations folder (needed so the bundled
  * server can locate the SQL files copied next to the bundle at build time).
- *
- * Automatically stamps the baseline migration as applied if the database
- * already has existing tables (e.g., previously managed by drizzle-kit push),
- * so the first production deploy never fails trying to re-create existing tables.
  */
 export async function runMigrations(migrationsFolder: string): Promise<void> {
+  await ensureProductionColumns();
   await stampBaselineIfNeeded(migrationsFolder);
   await migrate(db, { migrationsFolder });
 }
