@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { agenciesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { AgencyInputSchema, AgencyUpdateSchema } from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -14,12 +16,8 @@ router.get("/agencies", requireRoles("admin"), async (req, res): Promise<void> =
   res.json(agencies.map(a => ({ ...a, createdAt: a.createdAt.toISOString() })));
 });
 
-router.post("/agencies", requireRoles("admin"), async (req, res): Promise<void> => {
+router.post("/agencies", requireRoles("admin"), validate(AgencyInputSchema), async (req, res): Promise<void> => {
   const { name, slug, logoUrl, primaryColor } = req.body;
-  if (!name || !slug) {
-    res.status(400).json({ error: "name and slug are required" });
-    return;
-  }
   const [agency] = await db
     .insert(agenciesTable)
     .values({ name, slug, logoUrl, primaryColor })
@@ -42,7 +40,7 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
 
-router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
   const { name, logoUrl, primaryColor, writingTone, active } = req.body;
   const [agency] = await db

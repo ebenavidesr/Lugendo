@@ -6,6 +6,8 @@ import {
   tripsTable, tripDaysTable, tripDayHotelsTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { HotelInputSchema, HotelUpdateSchema, DayHotelInputSchema } from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -30,12 +32,8 @@ router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
+router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), validate(HotelInputSchema), async (req, res): Promise<void> => {
   const { name, city, country, address, phone, website, type, stars, description } = req.body;
-  if (!name || !city || !country) {
-    res.status(400).json({ error: "name, city, country are required" });
-    return;
-  }
   const agencyId = req.session.agencyId ?? undefined;
   const [hotel] = await db
     .insert(hotelsTable)
@@ -159,7 +157,7 @@ router.get("/hotels/:hotelId/usage", requireAuth, async (req, res): Promise<void
   res.json({ itineraries, trips });
 });
 
-router.patch("/hotels/:hotelId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/hotels/:hotelId", requireAuth, validate(HotelUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
   const fields = req.body;
   const [hotel] = await db.update(hotelsTable).set(fields).where(eq(hotelsTable.id, id)).returning();

@@ -8,6 +8,11 @@ import {
   usersTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import {
+  TripInputSchema, TripUpdateSchema, TripDayUpdateSchema,
+  DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
+} from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -246,9 +251,8 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
   ));
 });
 
-router.post("/trips", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/trips", requireRoles("admin", "manager", "agent"), validate(TripInputSchema), async (req, res): Promise<void> => {
   const { name, description, itineraryId, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode, outboundFlights, returnFlights } = req.body;
-  if (!name || !startDate) { res.status(400).json({ error: "name and startDate are required" }); return; }
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
 
@@ -384,13 +388,10 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 });
 
 // ─── TRIP DAY UPDATE (back-office) ───────────────────────────────────────────
-router.patch("/trips/:tripId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description } = req.body as {
-    cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null;
-    description?: string | null;
-  };
+  const { cityFrom, cityTo, country, transport, description } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
@@ -416,10 +417,10 @@ router.get("/trips/:tripId/days/:dayId/hotels", requireAuth, async (req, res): P
   res.json(hotelMap[dayId] ?? []);
 });
 
-router.post("/trips/:tripId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const { hotelId, segment } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium" };
-  if (!hotelId || !segment) { res.status(400).json({ error: "hotelId and segment are required" }); return; }
+  if (!hotelId) { res.status(400).json({ error: "hotelId is required" }); return; }
 
   const [hotel] = await db.select().from(hotelsTable).where(eq(hotelsTable.id, hotelId));
   if (!hotel) { res.status(404).json({ error: "Hotel not found" }); return; }
@@ -497,7 +498,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
   }));
 });
 
-router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayActivityInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const currentUserId = req.session.userId!;
@@ -517,18 +518,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, re
     addressOverride,
     included,
     transportMode,
-  } = req.body as {
-    activityId?: number;
-    activityTitle?: string;
-    sortOrder?: number;
-    notes?: string;
-    startTime?: string;
-    endTime?: string;
-    companyContact?: string;
-    addressOverride?: string;
-    included?: boolean;
-    transportMode?: string;
-  };
+  } = req.body;
 
   // Agency staff must supply an activityId; travelers can create free activities (no activityId)
   const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
@@ -597,7 +587,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, re
   }));
 });
 
-router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, validate(TripDayActivityUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
@@ -641,16 +631,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async
     included,
     transportMode,
     activityTitle,
-  } = req.body as {
-    startTime?: string | null;
-    endTime?: string | null;
-    notes?: string | null;
-    companyContact?: string | null;
-    addressOverride?: string | null;
-    included?: boolean;
-    transportMode?: string | null;
-    activityTitle?: string | null;
-  };
+  } = req.body;
 
   const patch: Record<string, unknown> = {};
   if (startTime !== undefined) patch.startTime = startTime ?? null;
@@ -759,7 +740,7 @@ router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> 
   res.json({ travelers });
 });
 
-router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), validate(TripUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const fields = req.body;
   const [trip] = await db.update(tripsTable).set(fields).where(eq(tripsTable.id, id)).returning();

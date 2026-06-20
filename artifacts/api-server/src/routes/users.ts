@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { UserInputSchema, UserUpdateSchema } from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -24,12 +26,8 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/users", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.post("/users", requireRoles("admin", "manager"), validate(UserInputSchema), async (req, res): Promise<void> => {
   const { email, name, role, agencyId, password } = req.body;
-  if (!email || !name || !role) {
-    res.status(400).json({ error: "email, name, role are required" });
-    return;
-  }
   const rawPassword = password || Math.random().toString(36).slice(-10);
   const passwordHash = await bcrypt.hash(rawPassword, 12);
   const targetAgencyId = req.session.role === "admin" ? (agencyId ?? req.session.agencyId) : req.session.agencyId;
@@ -50,7 +48,7 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
   res.json(serialize(user));
 });
 
-router.patch("/users/:userId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.patch("/users/:userId", requireRoles("admin", "manager"), validate(UserUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId, 10);
   const { name, email, role, active, password } = req.body;
 

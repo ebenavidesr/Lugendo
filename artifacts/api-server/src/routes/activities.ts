@@ -3,6 +3,8 @@ import { eq, isNull, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { activitiesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { ActivityInputSchema, ActivityUpdateSchema } from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -129,9 +131,8 @@ router.get("/activities", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/activities", requireAuth, async (req, res): Promise<void> => {
+router.post("/activities", requireAuth, validate(ActivityInputSchema), async (req, res): Promise<void> => {
   const { name, description, category, durationHours, city, country, pricePerPerson, minPax, maxPax } = req.body;
-  if (!name) { res.status(400).json({ error: "name is required" }); return; }
   const agencyId = req.session.agencyId ?? null;
   try {
     const [activity] = await db
@@ -164,7 +165,7 @@ router.get("/activities/:activityId", requireAuth, async (req, res): Promise<voi
   res.json(serialize(activity));
 });
 
-router.patch("/activities/:activityId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/activities/:activityId", requireAuth, validate(ActivityUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   const fields = req.body;
   const [activity] = await db.update(activitiesTable).set(fields).where(eq(activitiesTable.id, id)).returning();

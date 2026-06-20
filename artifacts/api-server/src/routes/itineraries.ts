@@ -6,6 +6,12 @@ import {
   hotelsTable, tripsTable, activitiesTable, usersTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import {
+  ItineraryInputSchema, ItineraryUpdateSchema,
+  ItineraryDayInputSchema, ItineraryDayUpdateSchema,
+  DayHotelInputSchema, ItineraryDayActivityInputSchema,
+} from "../lib/schemas";
 import { sql } from "drizzle-orm";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
@@ -162,12 +168,8 @@ Rules:
   }
 });
 
-router.post("/itineraries", requireAuth, async (req, res): Promise<void> => {
+router.post("/itineraries", requireAuth, validate(ItineraryInputSchema), async (req, res): Promise<void> => {
   const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags } = req.body;
-  if (!name || !numDays) {
-    res.status(400).json({ error: "name and numDays are required" });
-    return;
-  }
   const agencyId = req.session.agencyId ?? null;
   const createdBy = req.session.userId ?? null;
   const [itinerary] = await db
@@ -196,7 +198,7 @@ router.get("/itineraries/:itineraryId", requireAuth, async (req, res): Promise<v
   });
 });
 
-router.patch("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent"), validate(ItineraryUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const fields = req.body;
   const [itinerary] = await db.update(itinerariesTable).set(fields).where(eq(itinerariesTable.id, id)).returning();
@@ -236,10 +238,9 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
   res.json(days.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), hotels: hotelMap[d.id] ?? [] })));
 });
 
-router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDayInputSchema), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
-  if (!dayNumber) { res.status(400).json({ error: "dayNumber is required" }); return; }
   const [day] = await db
     .insert(itineraryDaysTable)
     .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description })
@@ -247,7 +248,7 @@ router.post("/itineraries/:itineraryId/days", requireAuth, async (req, res): Pro
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });
 
-router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, async (req, res): Promise<void> => {
+router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const { cityFrom, cityTo, country, transport, description } = req.body;
   const patch: Record<string, unknown> = {};
@@ -275,10 +276,10 @@ router.get("/itineraries/:itineraryId/days/:dayId/hotels", requireAuth, async (r
   res.json(hotelMap[dayId] ?? []);
 });
 
-router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const { hotelId, segment } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium" };
-  if (!hotelId || !segment) { res.status(400).json({ error: "hotelId and segment are required" }); return; }
+  if (!hotelId) { res.status(400).json({ error: "hotelId is required" }); return; }
 
   const [hotel] = await db.select().from(hotelsTable).where(eq(hotelsTable.id, hotelId));
   if (!hotel) { res.status(404).json({ error: "Hotel not found" }); return; }
@@ -321,10 +322,9 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
   })));
 });
 
-router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, validate(ItineraryDayActivityInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { activityId, sortOrder = 0, notes, startTime } = req.body as { activityId: number; sortOrder?: number; notes?: string; startTime?: string };
-  if (!activityId) { res.status(400).json({ error: "activityId is required" }); return; }
+  const { activityId, sortOrder = 0, notes, startTime } = req.body;
 
   const insertResult = await db.execute(sql`
     INSERT INTO itinerary_day_activities (day_id, activity_id, sort_order, notes, start_time)

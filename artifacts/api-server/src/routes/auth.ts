@@ -4,6 +4,8 @@ import { eq, and } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable, agenciesTable, invitationsTable } from "@workspace/db";
 import { requireAuth } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { LoginInputSchema, RegisterInputSchema } from "../lib/schemas";
 
 const router: IRouter = Router();
 
@@ -30,12 +32,8 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   res.json(user);
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise<void> => {
   const { email, password } = req.body;
-  if (!email || !password) {
-    res.status(401).json({ error: "Invalid credentials" });
-    return;
-  }
 
   const [user] = await db
     .select({
@@ -88,16 +86,8 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", validate(RegisterInputSchema), async (req, res): Promise<void> => {
   const { email, password, name, inviteCode } = req.body;
-  if (!email || !password || !name) {
-    res.status(400).json({ error: "email, password, name are required" });
-    return;
-  }
-  if (password.length < 8) {
-    res.status(400).json({ error: "Password must be at least 8 characters" });
-    return;
-  }
 
   const [existing] = await db
     .select({ id: usersTable.id })

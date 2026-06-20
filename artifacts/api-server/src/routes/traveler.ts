@@ -10,6 +10,13 @@ import {
   tripSharesTable, usersTable, activitiesTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import {
+  PersonalTripInputSchema, PersonalTripUpdateSchema,
+  PersonalTripDayInputSchema, PersonalTripDayUpdateSchema,
+  TripNoteInputSchema, TripNoteUpdateSchema,
+  ShareTripInputSchema, UpdateShareInputSchema,
+} from "../lib/schemas";
 
 function makeShareCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase();
@@ -292,7 +299,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
 });
 
 // ─── Create personal trip ────────────────────────────────────────────────────
-router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.post("/me/trips", requireRoles("traveler"), validate(PersonalTripInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const {
     name, startDate, endDate,
@@ -301,11 +308,6 @@ router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<voi
     returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
     outboundFlights, returnFlights,
   } = req.body;
-
-  if (!name || !startDate) {
-    res.status(400).json({ error: "name y startDate son obligatorios" });
-    return;
-  }
 
   const [trip] = await db
     .insert(tripsTable)
@@ -468,7 +470,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
 });
 
 // ─── Update personal trip ─────────────────────────────────────────────────────
-router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.patch("/me/trips/:tripId", requireRoles("traveler"), validate(PersonalTripUpdateSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
@@ -481,7 +483,7 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Pr
     airline, flightNumber, flightTime, reservationCode,
     returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode,
     outboundFlights, returnFlights,
-  } = req.body as Record<string, unknown>;
+  } = req.body;
 
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
@@ -571,11 +573,10 @@ router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res)
   res.json(notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() })));
 });
 
-router.post("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.post("/me/trips/:tripId/notes", requireRoles("traveler"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { content, dayNumber } = req.body;
-  if (content == null) { res.status(400).json({ error: "content is required" }); return; }
   const [note] = await db
     .insert(tripNotesTable)
     .values({ tripId, userId, content, dayNumber })
@@ -583,11 +584,10 @@ router.post("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res
   res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString() });
 });
 
-router.patch("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.patch("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
   const { content } = req.body;
-  if (content == null) { res.status(400).json({ error: "content is required" }); return; }
   const [note] = await db
     .update(tripNotesTable)
     .set({ content })
@@ -620,12 +620,10 @@ router.get("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, res
 });
 
 // ─── Share a trip ─────────────────────────────────────────────────────────────
-router.post("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(ShareTripInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const { email, permission = "read" } = req.body as { email: string; permission?: string };
-
-  if (!email) { res.status(400).json({ error: "email is required" }); return; }
+  const { email, permission = "read" } = req.body;
 
   const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
@@ -665,7 +663,7 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, re
 });
 
 // ─── Update share permission ──────────────────────────────────────────────────
-router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), validate(UpdateShareInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const shareId = parseInt(Array.isArray(req.params.shareId) ? req.params.shareId[0] : req.params.shareId, 10);
@@ -674,10 +672,7 @@ router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), asyn
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
   if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
 
-  const { permission } = req.body as { permission?: string };
-  if (permission !== "read" && permission !== "full") {
-    res.status(400).json({ error: "permission must be 'read' or 'full'" }); return;
-  }
+  const { permission } = req.body;
 
   const [updated] = await db
     .update(tripSharesTable)
@@ -821,26 +816,25 @@ async function getTripEditAccess(tripId: number, userId: number): Promise<number
   return sharedTrip ? (sharedTrip.itineraryId ?? null) : false;
 }
 
-router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body as Record<string, unknown>;
-  if (!dayNumber) { res.status(400).json({ error: "dayNumber es obligatorio" }); return; }
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
 
   const [day] = await db
     .insert(itineraryDaysTable)
     .values({
       itineraryId: itineraryId as number,
-      dayNumber: Number(dayNumber),
-      ...(cityFrom ? { cityFrom: String(cityFrom) } : {}),
-      ...(cityTo ? { cityTo: String(cityTo) } : {}),
-      ...(country ? { country: String(country) } : {}),
-      ...(transport ? { transport: String(transport) } : {}),
-      ...(description ? { description: String(description) } : {}),
+      dayNumber,
+      ...(cityFrom ? { cityFrom } : {}),
+      ...(cityTo ? { cityTo } : {}),
+      ...(country ? { country } : {}),
+      ...(transport ? { transport } : {}),
+      ...(description ? { description } : {}),
     })
     .returning();
 
@@ -858,7 +852,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), async (req, res)
   });
 });
 
-router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (req, res): Promise<void> => {
+router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate(PersonalTripDayUpdateSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
@@ -866,15 +860,15 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (r
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body as Record<string, unknown>;
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
 
   const patch: Record<string, unknown> = {};
-  if (dayNumber !== undefined) patch.dayNumber = Number(dayNumber);
-  if (cityFrom !== undefined) patch.cityFrom = cityFrom || null;
-  if (cityTo !== undefined) patch.cityTo = cityTo || null;
-  if (country !== undefined) patch.country = country || null;
-  if (transport !== undefined) patch.transport = transport || null;
-  if (description !== undefined) patch.description = description || null;
+  if (dayNumber !== undefined) patch.dayNumber = dayNumber;
+  if (cityFrom !== undefined) patch.cityFrom = cityFrom ?? null;
+  if (cityTo !== undefined) patch.cityTo = cityTo ?? null;
+  if (country !== undefined) patch.country = country ?? null;
+  if (transport !== undefined) patch.transport = transport ?? null;
+  if (description !== undefined) patch.description = description ?? null;
 
   const [updated] = await db
     .update(itineraryDaysTable)

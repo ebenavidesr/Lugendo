@@ -38,6 +38,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - Contract-first: OpenAPI → Orval codegen → typed hooks + Zod schemas used on both client and server
 - Session auth (not JWT): express-session with connect-pg-simple storage; `sessions` table pre-created in DB
 - Roles enforced via middleware: `requireRoles('admin','manager')` on protected routes
+- Input validation: every POST/PUT/PATCH route uses `validate(Schema)` from `artifacts/api-server/src/middlewares/validate.ts`; invalid bodies return HTTP 400 with `{ error, errors: fieldErrors }`. All Zod schemas live in `artifacts/api-server/src/lib/schemas.ts`.
 - `customFetch` configured with `credentials: 'include'` for cookie-based auth through Replit proxy
 - TanStack Query configured with no-retry on 401/403 to prevent blank-screen loading loops
 

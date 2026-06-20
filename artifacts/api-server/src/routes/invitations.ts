@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { invitationsTable, usersTable, tripsTable, agenciesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
+import { validate } from "../middlewares/validate";
+import { InvitationInputSchema, InvitationUpdateSchema } from "../lib/schemas";
 import { sendInvitationEmail } from "../lib/email";
 
 const router: IRouter = Router();
@@ -61,7 +63,7 @@ router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent
   res.json(rows.map(r => serialize(r as InvRow)));
 });
 
-router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), validate(InvitationInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
   // Accept both old format {emails: string[]} and new format {invitees: [{email, segment?}]}
@@ -70,9 +72,6 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
     invitees = req.body.invitees;
   } else if (Array.isArray(req.body.emails)) {
     invitees = req.body.emails.map((email: string) => ({ email }));
-  } else {
-    res.status(400).json({ error: "invitees array is required" });
-    return;
   }
 
   if (invitees.length === 0) {
@@ -132,7 +131,7 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
   res.status(201).json(created.map(r => serialize(r as unknown as InvRow)));
 });
 
-router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), validate(InvitationUpdateSchema), async (req, res): Promise<void> => {
   const invitationId = parseInt(Array.isArray(req.params.invitationId) ? req.params.invitationId[0] : req.params.invitationId, 10);
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { segment } = req.body as { segment?: "basic" | "standard" | "premium" | null };
