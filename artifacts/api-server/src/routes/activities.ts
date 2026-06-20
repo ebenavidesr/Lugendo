@@ -11,6 +11,7 @@ function serialize(a: typeof activitiesTable.$inferSelect) {
     ...a,
     durationHours: a.durationHours ? parseFloat(a.durationHours) : null,
     pricePerPerson: a.pricePerPerson ? parseFloat(a.pricePerPerson) : null,
+    address: a.address ?? null,
     createdAt: a.createdAt.toISOString(),
     updatedAt: a.updatedAt.toISOString(),
   };

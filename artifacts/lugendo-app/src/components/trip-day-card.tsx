@@ -1,4 +1,4 @@
-import { Camera, Hotel, ChevronRight, Star } from "lucide-react";
+import { Camera, Hotel, ChevronRight, Star, MapPin, Timer, StickyNote } from "lucide-react";
 import type { TripDay, TripDayActivityItem } from "@workspace/api-client-react";
 
 type ActivityTag = "Visita" | "Gastronomía" | "Traslado" | "Libre";
@@ -197,38 +197,70 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle }: Trip
                       style={{ height: "0.5px", background: "var(--lg-border)" }}
                     />
                   )}
-                  <div className="flex items-center gap-2.5 px-4 py-2.5">
-                    {/* Time */}
-                    <span
-                      className="text-[12px] font-semibold w-12 shrink-0 tabular-nums"
-                      style={{ color: activity.startTime ? "var(--terra)" : "transparent" }}
-                    >
-                      {activity.startTime ?? "00:00"}
-                    </span>
+                  <div className="px-4 pt-2.5 pb-2">
+                    <div className="flex items-center gap-2.5">
+                      {/* Time */}
+                      <span
+                        className="text-[12px] font-semibold w-12 shrink-0 tabular-nums"
+                        style={{ color: activity.startTime ? "var(--terra)" : "transparent" }}
+                      >
+                        {activity.startTime ?? "00:00"}
+                      </span>
 
-                    {/* Dot */}
-                    <div
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: "var(--terra)" }}
-                    />
+                      {/* Dot */}
+                      <div
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: "var(--terra)" }}
+                      />
 
-                    {/* Name */}
-                    <p
-                      className="flex-1 text-[13px] font-medium truncate"
-                      style={{ color: "var(--noche)" }}
-                    >
-                      {activity.activityName}
-                    </p>
+                      {/* Name */}
+                      <p
+                        className="flex-1 text-[13px] font-medium truncate"
+                        style={{ color: "var(--noche)" }}
+                      >
+                        {activity.activityName}
+                      </p>
 
-                    {/* Tag */}
-                    <span
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
-                      style={{ background: tagStyle.bg, color: tagStyle.color }}
-                    >
-                      {tag}
-                    </span>
+                      {/* Tag */}
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                        style={{ background: tagStyle.bg, color: tagStyle.color }}
+                      >
+                        {tag}
+                      </span>
 
-                    <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-20" />
+                      <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-20" />
+                    </div>
+
+                    {/* Extra details when present */}
+                    {(activity.address || activity.durationHours != null || activity.notes) && (
+                      <div className="ml-[3.25rem] mt-1.5 space-y-1">
+                        {activity.address && (
+                          <div className="flex items-start gap-1.5">
+                            <MapPin className="w-3 h-3 shrink-0 mt-0.5 opacity-50" style={{ color: "var(--noche)" }} />
+                            <p className="text-[11px] leading-tight" style={{ color: "var(--text-sec)" }}>
+                              {activity.address}
+                            </p>
+                          </div>
+                        )}
+                        {activity.durationHours != null && (
+                          <div className="flex items-center gap-1.5">
+                            <Timer className="w-3 h-3 shrink-0 opacity-50" style={{ color: "var(--noche)" }} />
+                            <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
+                              {activity.durationHours} {activity.durationHours === 1 ? "hora" : "horas"}
+                            </p>
+                          </div>
+                        )}
+                        {activity.notes && (
+                          <div className="flex items-start gap-1.5">
+                            <StickyNote className="w-3 h-3 shrink-0 mt-0.5 opacity-50" style={{ color: "var(--noche)" }} />
+                            <p className="text-[11px] leading-tight" style={{ color: "var(--text-sec)" }}>
+                              {activity.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

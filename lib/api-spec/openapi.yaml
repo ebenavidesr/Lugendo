@@ -822,6 +822,41 @@ paths:
                 $ref: "#/components/schemas/DayActivity"
 
   /trips/{tripId}/days/{dayId}/activities/{linkId}:
+    patch:
+      operationId: updateTripDayActivity
+      tags: [trips]
+      summary: Update per-link fields (startTime, notes) for a trip day activity
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDayActivityUpdate"
+      responses:
+        "200":
+          description: Updated trip day activity link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayActivity"
+        "404":
+          description: Not found
     delete:
       operationId: removeTripDayActivity
       tags: [trips]
@@ -2173,6 +2208,12 @@ components:
           $ref: "#/components/schemas/ActivityCategory"
         startTime:
           type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        durationHours:
+          type: ["number", "null"]
+        notes:
+          type: ["string", "null"]
 
     TransportMode:
       type: string
@@ -2195,6 +2236,8 @@ components:
           $ref: "#/components/schemas/ActivityCategory"
         durationHours:
           type: ["number", "null"]
+        address:
+          type: ["string", "null"]
         city:
           type: ["string", "null"]
         country:
@@ -2223,6 +2266,8 @@ components:
           enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other]
         durationHours:
           type: number
+        address:
+          type: string
         city:
           type: string
         country:
@@ -2246,6 +2291,8 @@ components:
           enum: [cultural, gastronomic, adventure, nature, beach, city, excursion, other]
         durationHours:
           type: number
+        address:
+          type: string
         city:
           type: string
         country:
@@ -3020,6 +3067,10 @@ components:
           type: integer
         startTime:
           type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        durationHours:
+          type: ["number", "null"]
         notes:
           type: ["string", "null"]
         createdAt:
@@ -3037,6 +3088,14 @@ components:
           type: string
         notes:
           type: string
+
+    TripDayActivityUpdate:
+      type: object
+      properties:
+        startTime:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────
     DashboardSummary:

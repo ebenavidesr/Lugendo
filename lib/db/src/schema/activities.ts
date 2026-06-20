@@ -12,6 +12,7 @@ export const activitiesTable = pgTable("activities", {
     enum: ["cultural", "gastronomic", "adventure", "nature", "beach", "city", "excursion", "other"],
   }),
   durationHours: numeric("duration_hours", { precision: 5, scale: 1 }),
+  address: text("address"),
   city: text("city"),
   country: text("country"),
   pricePerPerson: numeric("price_per_person", { precision: 10, scale: 2 }),

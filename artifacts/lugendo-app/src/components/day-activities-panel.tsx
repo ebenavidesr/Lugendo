@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Clock, StickyNote, Search, Loader2 } from "lucide-react";
+import { Plus, X, Clock, StickyNote, Search, Loader2, Pencil } from "lucide-react";
 import {
   useListDayActivities,
   useAddDayActivity,
@@ -10,7 +10,8 @@ import {
   useListActivities,
   useCreateActivity,
 } from "@workspace/api-client-react";
-import type { Activity } from "@workspace/api-client-react";
+import type { Activity, DayActivity } from "@workspace/api-client-react";
+import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { CountrySelectSmall } from "@/components/country-select";
@@ -70,6 +71,8 @@ export function DayActivitiesPanel({
     : `/api/trips/${entityId}/days/${dayId}/activities`;
 
   const [mode, setMode] = useState<"idle" | "link" | "create">("idle");
+  const [editActivity, setEditActivity] = useState<DayActivity | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
 
   // link mode
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
@@ -257,14 +260,39 @@ export function DayActivitiesPanel({
                         )}
                       </div>
                     </div>
-                    <button onClick={() => doRemove(a.id)}
-                      className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0 mt-0.5">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                      {!isItinerary && (
+                        <button
+                          onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                          className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
+                          title="Editar actividad">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button onClick={() => doRemove(a.id)}
+                        className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
+          )}
+
+          {/* ── Activity detail sheet (trips only) ── */}
+          {!isItinerary && (
+            <ActivityDetailSheet
+              tripId={entityId}
+              dayId={dayId}
+              activity={editActivity}
+              open={editSheetOpen}
+              onOpenChange={(open) => {
+                setEditSheetOpen(open);
+                if (!open) setEditActivity(null);
+              }}
+              queryKey={queryKey}
+            />
           )}
 
           {/* ── Link existing ── */}

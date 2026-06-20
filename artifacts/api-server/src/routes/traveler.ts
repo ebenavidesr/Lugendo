@@ -113,7 +113,8 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
 }
 
 async function getTripDayActivityMap(dayIds: number[]) {
-  if (dayIds.length === 0) return {} as Record<number, Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }>>;
+  type ActivityItem = { id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null; address: string | null; durationHours: number | null; notes: string | null };
+  if (dayIds.length === 0) return {} as Record<number, ActivityItem[]>;
   const rows = await db
     .select({
       id: tripDayActivitiesTable.id,
@@ -122,15 +123,27 @@ async function getTripDayActivityMap(dayIds: number[]) {
       activityName: activitiesTable.name,
       activityCategory: activitiesTable.category,
       startTime: tripDayActivitiesTable.startTime,
+      notes: tripDayActivitiesTable.notes,
+      address: activitiesTable.address,
+      durationHours: activitiesTable.durationHours,
     })
     .from(tripDayActivitiesTable)
     .innerJoin(activitiesTable, eq(tripDayActivitiesTable.activityId, activitiesTable.id))
     .where(inArray(tripDayActivitiesTable.dayId, dayIds))
     .orderBy(tripDayActivitiesTable.sortOrder, tripDayActivitiesTable.startTime);
-  const map: Record<number, Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }>> = {};
+  const map: Record<number, ActivityItem[]> = {};
   for (const r of rows) {
     if (!map[r.dayId]) map[r.dayId] = [];
-    map[r.dayId].push({ id: r.id, activityId: r.activityId, activityName: r.activityName, activityCategory: r.activityCategory ?? null, startTime: r.startTime ?? null });
+    map[r.dayId].push({
+      id: r.id,
+      activityId: r.activityId,
+      activityName: r.activityName,
+      activityCategory: r.activityCategory ?? null,
+      startTime: r.startTime ?? null,
+      notes: r.notes ?? null,
+      address: r.address ?? null,
+      durationHours: r.durationHours != null ? parseFloat(r.durationHours) : null,
+    });
   }
   return map;
 }

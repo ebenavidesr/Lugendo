@@ -416,6 +416,12 @@ export interface TripDayActivityItem {
   activityCategory?: ActivityCategory | null;
   /** @nullable */
   startTime?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  durationHours?: number | null;
+  /** @nullable */
+  notes?: string | null;
 }
 
 export interface Activity {
@@ -427,6 +433,8 @@ export interface Activity {
   category?: ActivityCategory | null;
   /** @nullable */
   durationHours?: number | null;
+  /** @nullable */
+  address?: string | null;
   /** @nullable */
   city?: string | null;
   /** @nullable */
@@ -460,6 +468,7 @@ export interface ActivityInput {
   description?: string;
   category?: ActivityInputCategory;
   durationHours?: number;
+  address?: string;
   city?: string;
   country?: string;
   pricePerPerson?: number;
@@ -486,6 +495,7 @@ export interface ActivityUpdate {
   description?: string;
   category?: ActivityUpdateCategory;
   durationHours?: number;
+  address?: string;
   city?: string;
   country?: string;
   pricePerPerson?: number;
@@ -1121,6 +1131,10 @@ export interface DayActivity {
   /** @nullable */
   startTime?: string | null;
   /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  durationHours?: number | null;
+  /** @nullable */
   notes?: string | null;
   createdAt: string;
 }
@@ -1130,6 +1144,13 @@ export interface DayActivityInput {
   sortOrder?: number;
   startTime?: string;
   notes?: string;
+}
+
+export interface TripDayActivityUpdate {
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  notes?: string | null;
 }
 
 export type DashboardSummaryTripsByStatus = {

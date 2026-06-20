@@ -12,6 +12,7 @@ export interface ActivityUpdate {
   description?: string;
   category?: ActivityUpdateCategory;
   durationHours?: number;
+  address?: string;
   city?: string;
   country?: string;
   pricePerPerson?: number;

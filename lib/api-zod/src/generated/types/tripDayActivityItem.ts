@@ -14,4 +14,10 @@ export interface TripDayActivityItem {
   activityCategory?: ActivityCategory | null;
   /** @nullable */
   startTime?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  durationHours?: number | null;
+  /** @nullable */
+  notes?: string | null;
 }

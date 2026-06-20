@@ -17,6 +17,8 @@ export interface Activity {
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */
+  address?: string | null;
+  /** @nullable */
   city?: string | null;
   /** @nullable */
   country?: string | null;

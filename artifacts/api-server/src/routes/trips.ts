@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  tripsTable, tripDaysTable, tripDayHotelsTable,
+  tripsTable, tripDaysTable, tripDayHotelsTable, tripDayActivitiesTable,
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
   usersTable,
@@ -336,7 +336,8 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const rows = await db.execute(sql`
     SELECT tda.id, tda.day_id, tda.activity_id, a.name as activity_name, a.category as activity_category,
-           tda.sort_order, tda.start_time, tda.notes, tda.created_at
+           tda.sort_order, tda.start_time, tda.notes, tda.created_at,
+           a.address as activity_address, a.duration_hours as activity_duration_hours
     FROM trip_day_activities tda
     JOIN activities a ON a.id = tda.activity_id
     WHERE tda.day_id = ${dayId}
@@ -350,7 +351,9 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
     activityCategory: r.activity_category,
     sortOrder: r.sort_order,
     startTime: r.start_time ?? null,
-    notes: r.notes,
+    address: r.activity_address ?? null,
+    durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
+    notes: r.notes ?? null,
     createdAt: String(r.created_at),
   })));
 });
@@ -377,6 +380,52 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, re
     startTime: link.start_time ?? null,
     notes: link.notes,
     createdAt: String(link.created_at),
+  });
+});
+
+router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+
+  // Verify the link belongs to the specified day which belongs to the specified trip (prevents IDOR)
+  const [existing] = await db
+    .select({ id: tripDayActivitiesTable.id, activityId: tripDayActivitiesTable.activityId })
+    .from(tripDayActivitiesTable)
+    .innerJoin(tripDaysTable, eq(tripDayActivitiesTable.dayId, tripDaysTable.id))
+    .where(and(
+      eq(tripDayActivitiesTable.id, linkId),
+      eq(tripDayActivitiesTable.dayId, dayId),
+      eq(tripDaysTable.tripId, tripId),
+    ));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  const { startTime, notes } = req.body as { startTime?: string | null; notes?: string | null };
+  const patch: Partial<{ startTime: string | null; notes: string | null }> = {};
+  if (startTime !== undefined) patch.startTime = startTime ?? null;
+  if (notes !== undefined) patch.notes = notes ?? null;
+
+  const [updated] = await db
+    .update(tripDayActivitiesTable)
+    .set(patch)
+    .where(eq(tripDayActivitiesTable.id, linkId))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, updated.activityId));
+  res.json({
+    id: updated.id,
+    dayId: updated.dayId,
+    activityId: updated.activityId,
+    activityName: act?.name ?? "",
+    activityCategory: act?.category ?? null,
+    sortOrder: updated.sortOrder,
+    startTime: updated.startTime ?? null,
+    address: act?.address ?? null,
+    durationHours: act?.durationHours != null ? parseFloat(act.durationHours) : null,
+    notes: updated.notes ?? null,
+    createdAt: updated.createdAt.toISOString(),
   });
 });
 

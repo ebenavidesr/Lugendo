@@ -17,6 +17,10 @@ export interface DayActivity {
   /** @nullable */
   startTime?: string | null;
   /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  durationHours?: number | null;
+  /** @nullable */
   notes?: string | null;
   createdAt: string;
 }

@@ -12,6 +12,7 @@ export interface ActivityInput {
   description?: string;
   category?: ActivityInputCategory;
   durationHours?: number;
+  address?: string;
   city?: string;
   country?: string;
   pricePerPerson?: number;
