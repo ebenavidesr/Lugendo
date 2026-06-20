@@ -2,6 +2,7 @@ import path from "node:path";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db";
+import { setReady } from "./lib/readiness";
 
 const rawPort = process.env["PORT"];
 
@@ -24,9 +25,15 @@ const migrationsFolder = path.join(__dirname, "migrations");
 
 logger.info({ migrationsFolder }, "Running database migrations");
 
+const buildVersion =
+  process.env["BUILD_VERSION"] ??
+  process.env["npm_package_version"] ??
+  "dev";
+
 runMigrations(migrationsFolder)
   .then(() => {
     logger.info("Migrations complete");
+    setReady(buildVersion);
 
     app.listen(port, (err) => {
       if (err) {

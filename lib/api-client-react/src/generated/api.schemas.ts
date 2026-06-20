@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 export interface HealthStatus {
-  status: string;
+  ok: boolean;
+  version: string;
 }
 
 export type AuthUserRole = typeof AuthUserRole[keyof typeof AuthUserRole];

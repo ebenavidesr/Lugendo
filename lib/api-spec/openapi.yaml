@@ -45,6 +45,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+        "503":
+          description: Server not ready (migrations pending)
 
   # ─── DESTINATIONS ───────────────────────────────────────────────────────────
   /destinations/describe:
@@ -1721,9 +1723,11 @@ components:
   schemas:
     HealthStatus:
       type: object
-      required: [status]
+      required: [ok, version]
       properties:
-        status:
+        ok:
+          type: boolean
+        version:
           type: string
 
     # ─── AUTH ─────────────────────────────────────────────────────────────────
