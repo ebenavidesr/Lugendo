@@ -9,7 +9,8 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm --filter @workspace/db run generate` — generate a new versioned migration SQL file after schema changes
+- `pnpm --filter @workspace/db run migrate` — apply all pending migrations (safe; never drops data)
 - Required env: `DATABASE_URL`, `SESSION_SECRET`
 
 ## Stack
@@ -52,9 +53,42 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - Use the brand CSS variables (`--terra`, `--indigo`, `--noche`, etc.) directly in components rather than hardcoding hex values.
 - Any feature or change must work for **all user roles** (admin, manager, agent, traveler) unless explicitly stated otherwise. Both API permissions and frontend UI should be role-inclusive by default.
 
+## DB Migration Workflow
+
+The project uses **versioned migrations** (not `push`). Every schema change must go through:
+
+1. Edit the Drizzle schema file in `lib/db/src/schema/`.
+2. Run `pnpm --filter @workspace/db run generate` — produces an auditable SQL file in `lib/db/migrations/`.
+3. Run `pnpm --filter @workspace/db run migrate` — applies only the new SQL files; never drops existing data.
+
+**Never run `push-unsafe` or `push-unsafe-force` against a database that has real data.** Those commands diff and apply destructively — they can silently drop or alter columns.
+
+Rules for new columns:
+- New `NOT NULL` columns **must** include a `DEFAULT` value, OR be introduced in two phases: nullable first → backfill data → add constraint. This ensures existing rows are never invalidated.
+- `post-merge.sh` automatically runs `stamp-baseline` then `migrate` after every task merge; no manual step required in CI.
+
+### Bootstrap an existing database (one-time, per environment)
+If a database was previously managed with `push`, run this once before letting `migrate` take over:
+```
+pnpm --filter @workspace/db run stamp-baseline
+```
+`stamp-baseline` detects whether the tables already exist:
+- **Existing DB**: stamps the baseline migration as applied in Drizzle's tracking table so `migrate` doesn't try to recreate tables that are already there.
+- **Fresh DB**: exits immediately and lets `migrate` create all tables normally.
+
+After the one-time stamp, `migrate` is safe to run on that environment on every deployment.
+
+### Deploying to production
+After a new production deployment:
+```
+pnpm --filter @workspace/db run stamp-baseline   # only needed once when switching from push
+pnpm --filter @workspace/db run migrate
+```
+
 ## Gotchas
 
 - Always run `pnpm --filter @workspace/api-spec run codegen` after changing `openapi.yaml`
+- Always run `generate` + `migrate` after changing any schema file in `lib/db/src/schema/` — never `push-unsafe`
 - The `sessions` table must exist before starting the API server (already created — do not drop it)
 - `connect-pg-simple` with `createTableIfMissing: true` is BROKEN when bundled (can't find `table.sql`). The `sessions` table is pre-created manually; keep `createTableIfMissing` omitted.
 - Google Fonts `@import url(...)` must be the FIRST line in `index.css` — before any other `@import` or `@plugin` rules.
