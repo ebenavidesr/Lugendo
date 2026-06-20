@@ -79,11 +79,13 @@ pnpm --filter @workspace/db run stamp-baseline
 After the one-time stamp, `migrate` is safe to run on that environment on every deployment.
 
 ### Deploying to production
-After a new production deployment:
+The API server automatically runs pending migrations at startup (before accepting requests). If a migration fails the process exits with a non-zero code so the platform restarts rather than serving a broken app.
+
+For a **first-time** production deployment on a database that was previously managed with `push`, run this once before starting the server:
 ```
-pnpm --filter @workspace/db run stamp-baseline   # only needed once when switching from push
-pnpm --filter @workspace/db run migrate
+pnpm --filter @workspace/db run stamp-baseline
 ```
+No manual `migrate` step is needed after that — the server handles it on every start.
 
 ## Gotchas
 
