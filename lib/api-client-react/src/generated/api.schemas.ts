@@ -411,17 +411,27 @@ export const ActivityCategory = {
 
 export interface TripDayActivityItem {
   id: number;
-  activityId: number;
+  /** @nullable */
+  activityId?: number | null;
   activityName: string;
   activityCategory?: ActivityCategory | null;
   /** @nullable */
   startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
   /** @nullable */
   address?: string | null;
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  companyContact?: string | null;
+  /** @nullable */
+  addressOverride?: string | null;
+  included: boolean;
+  transportMode?: TransportMode | null;
+  canEdit: boolean;
 }
 
 export interface Activity {
@@ -1123,34 +1133,60 @@ export interface ParsedItinerary {
 export interface DayActivity {
   id: number;
   dayId: number;
-  activityId: number;
-  activityName?: string;
+  /** @nullable */
+  activityId?: number | null;
+  activityName: string;
   /** @nullable */
   activityCategory?: string | null;
   sortOrder: number;
   /** @nullable */
   startTime?: string | null;
   /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
   address?: string | null;
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  companyContact?: string | null;
+  /** @nullable */
+  addressOverride?: string | null;
+  included: boolean;
+  transportMode?: TransportMode | null;
+  canEdit: boolean;
   createdAt: string;
 }
 
 export interface DayActivityInput {
-  activityId: number;
+  activityId?: number;
+  activityTitle?: string;
   sortOrder?: number;
   startTime?: string;
+  endTime?: string;
   notes?: string;
+  companyContact?: string;
+  addressOverride?: string;
+  included?: boolean;
+  transportMode?: TransportMode | null;
 }
 
 export interface TripDayActivityUpdate {
   /** @nullable */
   startTime?: string | null;
   /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  companyContact?: string | null;
+  /** @nullable */
+  addressOverride?: string | null;
+  included?: boolean;
+  transportMode?: TransportMode | null;
+  /** @nullable */
+  activityTitle?: string | null;
 }
 
 export type DashboardSummaryTripsByStatus = {

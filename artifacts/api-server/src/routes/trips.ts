@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, sql, inArray } from "drizzle-orm";
+import { eq, and, sql, inArray, or } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, tripDayHotelsTable, tripDayActivitiesTable,
@@ -10,6 +10,69 @@ import {
 import { requireAuth, requireRoles } from "../middlewares/auth";
 
 const router: IRouter = Router();
+
+/**
+ * Verify a user is authorized to access the given trip+day.
+ * Also validates that dayId actually belongs to tripId (IDOR prevention).
+ * Returns the trip row on success, or null if unauthorized/not-found.
+ */
+async function verifyTripDayAccess(
+  tripId: number,
+  dayId: number,
+  userId: number,
+  agencyId: number | null | undefined,
+  role: string | undefined,
+): Promise<{ authorized: boolean; reason: string }> {
+  // Verify dayId belongs to tripId
+  const [day] = await db
+    .select({ id: tripDaysTable.id })
+    .from(tripDaysTable)
+    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+  if (!day) return { authorized: false, reason: "Day not found in this trip" };
+
+  // Verify the trip itself
+  const [trip] = await db
+    .select({ id: tripsTable.id, agencyId: tripsTable.agencyId, ownerId: tripsTable.ownerId })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, tripId));
+  if (!trip) return { authorized: false, reason: "Trip not found" };
+
+  // Super-admin
+  if (role === "admin") return { authorized: true, reason: "" };
+
+  // Agency staff: trip must belong to their agency
+  if ((role === "manager" || role === "agent") && agencyId != null && trip.agencyId === agencyId) {
+    return { authorized: true, reason: "" };
+  }
+
+  // Traveler: trip owner OR accepted invitation OR accepted share
+  if (role === "traveler") {
+    // Owner of the trip (personal trips created via POST /me/trips)
+    if (trip.ownerId === userId) return { authorized: true, reason: "" };
+
+    const [inv] = await db
+      .select({ id: invitationsTable.id })
+      .from(invitationsTable)
+      .where(and(
+        eq(invitationsTable.tripId, tripId),
+        eq(invitationsTable.travelerId, userId),
+        eq(invitationsTable.status, "accepted"),
+      ));
+    if (inv) return { authorized: true, reason: "" };
+
+    const [share] = await db
+      .select({ id: tripSharesTable.id })
+      .from(tripSharesTable)
+      .where(and(
+        eq(tripSharesTable.tripId, tripId),
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.status, "accepted"),
+      ));
+    if (share) return { authorized: true, reason: "" };
+  }
+
+  return { authorized: false, reason: "Not authorized for this trip" };
+}
 
 function serializeTrip(
   t: typeof tripsTable.$inferSelect & {
@@ -62,6 +125,49 @@ async function getTripDayHotelMap(dayIds: number[]) {
     map[r.dayId].push(serializeDayHotel({ ...r, hotelCity: r.hotelCity ?? null }));
   }
   return map;
+}
+
+/** Build a serialized DayActivity response object */
+function serializeDayActivity(r: {
+  id: number;
+  dayId: number;
+  activityId: number | null;
+  activityTitle: string | null;
+  activityName: string | null;
+  activityCategory: string | null;
+  sortOrder: number;
+  startTime: string | null;
+  endTime: string | null;
+  notes: string | null;
+  companyContact: string | null;
+  addressOverride: string | null;
+  included: boolean;
+  transportMode: string | null;
+  createdByUserId: number | null;
+  address: string | null;
+  durationHours: number | null;
+  createdAt: string;
+  canEdit: boolean;
+}) {
+  return {
+    id: r.id,
+    dayId: r.dayId,
+    activityId: r.activityId ?? null,
+    activityName: r.activityTitle ?? r.activityName ?? "",
+    activityCategory: r.activityCategory ?? null,
+    sortOrder: r.sortOrder,
+    startTime: r.startTime ?? null,
+    endTime: r.endTime ?? null,
+    notes: r.notes ?? null,
+    companyContact: r.companyContact ?? null,
+    addressOverride: r.addressOverride ?? null,
+    included: r.included,
+    transportMode: r.transportMode ?? null,
+    address: r.addressOverride ?? r.address ?? null,
+    durationHours: r.durationHours ?? null,
+    createdAt: r.createdAt,
+    canEdit: r.canEdit,
+  };
 }
 
 router.get("/trips", requireAuth, async (req, res): Promise<void> => {
@@ -217,11 +323,12 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), async (req, res
         }
 
         const activityCopies = itinActivities.filter(a => itinDayToTripDay[a.dayId] !== undefined);
+        const creatorId = req.session.userId ?? null;
         for (const a of activityCopies) {
           const tripDayId = itinDayToTripDay[a.dayId];
           await db.execute(sql`
-            INSERT INTO trip_day_activities (day_id, activity_id, sort_order, notes, start_time)
-            VALUES (${tripDayId}, ${a.activityId}, ${a.sortOrder}, ${a.notes ?? null}, ${a.startTime ?? null})
+            INSERT INTO trip_day_activities (day_id, activity_id, sort_order, notes, start_time, created_by_user_id)
+            VALUES (${tripDayId}, ${a.activityId}, ${a.sortOrder}, ${a.notes ?? null}, ${a.startTime ?? null}, ${creatorId})
           `);
         }
       }
@@ -333,64 +440,181 @@ router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireRoles("a
 
 // ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
 router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const currentUserId = req.session.userId!;
+
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
   const rows = await db.execute(sql`
-    SELECT tda.id, tda.day_id, tda.activity_id, a.name as activity_name, a.category as activity_category,
-           tda.sort_order, tda.start_time, tda.notes, tda.created_at,
-           a.address as activity_address, a.duration_hours as activity_duration_hours
+    SELECT
+      tda.id, tda.day_id, tda.activity_id, tda.activity_title,
+      a.name AS activity_name, a.category AS activity_category,
+      tda.sort_order, tda.start_time, tda.end_time, tda.notes,
+      tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
+      tda.created_by_user_id,
+      a.address AS activity_address, a.duration_hours AS activity_duration_hours,
+      tda.created_at
     FROM trip_day_activities tda
-    JOIN activities a ON a.id = tda.activity_id
+    LEFT JOIN activities a ON a.id = tda.activity_id
     WHERE tda.day_id = ${dayId}
-    ORDER BY tda.sort_order, tda.created_at
+    ORDER BY
+      CASE WHEN tda.start_time IS NULL THEN 1 ELSE 0 END,
+      tda.start_time ASC,
+      tda.sort_order ASC,
+      tda.created_at ASC
   `);
-  res.json((rows.rows as Array<Record<string, unknown>>).map(r => ({
-    id: r.id,
-    dayId: r.day_id,
-    activityId: r.activity_id,
-    activityName: r.activity_name,
-    activityCategory: r.activity_category,
-    sortOrder: r.sort_order,
-    startTime: r.start_time ?? null,
-    address: r.activity_address ?? null,
-    durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
-    notes: r.notes ?? null,
-    createdAt: String(r.created_at),
-  })));
+
+  const currentRole = req.session.role;
+  const isAgencyStaff = currentRole === "admin" || currentRole === "manager" || currentRole === "agent";
+
+  res.json((rows.rows as Array<Record<string, unknown>>).map(r => {
+    const createdByUserId = r.created_by_user_id != null ? Number(r.created_by_user_id) : null;
+    // Strict creator-only
+    const canEdit = createdByUserId === currentUserId;
+    return serializeDayActivity({
+      id: Number(r.id),
+      dayId: Number(r.day_id),
+      activityId: r.activity_id != null ? Number(r.activity_id) : null,
+      activityTitle: r.activity_title as string | null,
+      activityName: r.activity_name as string | null,
+      activityCategory: r.activity_category as string | null,
+      sortOrder: Number(r.sort_order),
+      startTime: r.start_time as string | null,
+      endTime: r.end_time as string | null,
+      notes: r.notes as string | null,
+      companyContact: r.company_contact as string | null,
+      addressOverride: r.address_override as string | null,
+      included: Boolean(r.included),
+      transportMode: r.transport_mode as string | null,
+      createdByUserId,
+      address: r.activity_address as string | null,
+      durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
+      createdAt: String(r.created_at),
+      canEdit,
+    });
+  }));
 });
 
 router.post("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { activityId, sortOrder = 0, notes, startTime } = req.body as { activityId: number; sortOrder?: number; notes?: string; startTime?: string };
-  if (!activityId) { res.status(400).json({ error: "activityId is required" }); return; }
+  const currentUserId = req.session.userId!;
+  const role = req.session.role;
+
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
+  const {
+    activityId,
+    activityTitle,
+    sortOrder = 0,
+    notes,
+    startTime,
+    endTime,
+    companyContact,
+    addressOverride,
+    included,
+    transportMode,
+  } = req.body as {
+    activityId?: number;
+    activityTitle?: string;
+    sortOrder?: number;
+    notes?: string;
+    startTime?: string;
+    endTime?: string;
+    companyContact?: string;
+    addressOverride?: string;
+    included?: boolean;
+    transportMode?: string;
+  };
+
+  // Agency staff must supply an activityId; travelers can create free activities (no activityId)
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+
+  if (!activityId && !activityTitle) {
+    res.status(400).json({ error: "activityId or activityTitle is required" });
+    return;
+  }
+
+  if (!activityId && isAgencyStaff) {
+    // Agency staff creating an ad-hoc activity without catalogId — allowed but title required
+  }
+
+  const isIncluded = included !== undefined ? included : (activityId ? true : false);
 
   const insertResult = await db.execute(sql`
-    INSERT INTO trip_day_activities (day_id, activity_id, sort_order, notes, start_time)
-    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null}, ${startTime ?? null})
-    RETURNING id, day_id, activity_id, sort_order, notes, start_time, created_at
+    INSERT INTO trip_day_activities
+      (day_id, activity_id, activity_title, sort_order, notes, start_time, end_time,
+       company_contact, address_override, included, transport_mode, created_by_user_id)
+    VALUES
+      (${dayId}, ${activityId ?? null}, ${activityTitle ?? null}, ${sortOrder},
+       ${notes ?? null}, ${startTime ?? null}, ${endTime ?? null},
+       ${companyContact ?? null}, ${addressOverride ?? null}, ${isIncluded},
+       ${transportMode ?? null}, ${currentUserId})
+    RETURNING id, day_id, activity_id, activity_title, sort_order, notes, start_time, end_time,
+              company_contact, address_override, included, transport_mode, created_by_user_id, created_at
   `);
   const link = insertResult.rows[0] as Record<string, unknown>;
-  const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, activityId));
-  res.status(201).json({
-    id: link.id,
-    dayId: link.day_id,
-    activityId: link.activity_id,
-    activityName: act?.name ?? "",
-    activityCategory: act?.category ?? null,
-    sortOrder: link.sort_order,
-    startTime: link.start_time ?? null,
-    notes: link.notes,
+
+  let actName: string | null = null;
+  let actCategory: string | null = null;
+  let actAddress: string | null = null;
+  let actDurationHours: number | null = null;
+
+  if (activityId) {
+    const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, activityId));
+    actName = act?.name ?? null;
+    actCategory = act?.category ?? null;
+    actAddress = act?.address ?? null;
+    actDurationHours = act?.durationHours != null ? parseFloat(act.durationHours) : null;
+  }
+
+  const createdByUserId = link.created_by_user_id != null ? Number(link.created_by_user_id) : null;
+  const canEdit = createdByUserId === currentUserId;
+
+  res.status(201).json(serializeDayActivity({
+    id: Number(link.id),
+    dayId: Number(link.day_id),
+    activityId: link.activity_id != null ? Number(link.activity_id) : null,
+    activityTitle: link.activity_title as string | null,
+    activityName: actName,
+    activityCategory: actCategory,
+    sortOrder: Number(link.sort_order),
+    startTime: link.start_time as string | null,
+    endTime: link.end_time as string | null,
+    notes: link.notes as string | null,
+    companyContact: link.company_contact as string | null,
+    addressOverride: link.address_override as string | null,
+    included: Boolean(link.included),
+    transportMode: link.transport_mode as string | null,
+    createdByUserId,
+    address: actAddress,
+    durationHours: actDurationHours,
     createdAt: String(link.created_at),
-  });
+    canEdit,
+  }));
 });
 
-router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const currentUserId = req.session.userId!;
+  const role = req.session.role;
+
+  // Verify trip/day access (authorization + IDOR prevention)
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
 
   // Verify the link belongs to the specified day which belongs to the specified trip (prevents IDOR)
   const [existing] = await db
-    .select({ id: tripDayActivitiesTable.id, activityId: tripDayActivitiesTable.activityId })
+    .select({
+      id: tripDayActivitiesTable.id,
+      activityId: tripDayActivitiesTable.activityId,
+      createdByUserId: tripDayActivitiesTable.createdByUserId,
+    })
     .from(tripDayActivitiesTable)
     .innerJoin(tripDaysTable, eq(tripDayActivitiesTable.dayId, tripDaysTable.id))
     .where(and(
@@ -400,10 +624,43 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admi
     ));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  const { startTime, notes } = req.body as { startTime?: string | null; notes?: string | null };
-  const patch: Partial<{ startTime: string | null; notes: string | null }> = {};
+  // Strict creator-only: only the person who created the activity link can edit it
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+  void isAgencyStaff; // used for canEdit response below
+  if (existing.createdByUserId !== currentUserId) {
+    res.status(403).json({ error: "Solo el creador puede editar esta actividad" });
+    return;
+  }
+
+  const {
+    startTime,
+    endTime,
+    notes,
+    companyContact,
+    addressOverride,
+    included,
+    transportMode,
+    activityTitle,
+  } = req.body as {
+    startTime?: string | null;
+    endTime?: string | null;
+    notes?: string | null;
+    companyContact?: string | null;
+    addressOverride?: string | null;
+    included?: boolean;
+    transportMode?: string | null;
+    activityTitle?: string | null;
+  };
+
+  const patch: Record<string, unknown> = {};
   if (startTime !== undefined) patch.startTime = startTime ?? null;
+  if (endTime !== undefined) patch.endTime = endTime ?? null;
   if (notes !== undefined) patch.notes = notes ?? null;
+  if (companyContact !== undefined) patch.companyContact = companyContact ?? null;
+  if (addressOverride !== undefined) patch.addressOverride = addressOverride ?? null;
+  if (included !== undefined) patch.included = included;
+  if (transportMode !== undefined) patch.transportMode = transportMode ?? null;
+  if (activityTitle !== undefined) patch.activityTitle = activityTitle ?? null;
 
   const [updated] = await db
     .update(tripDayActivitiesTable)
@@ -413,24 +670,74 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireRoles("admi
 
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
 
-  const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, updated.activityId));
-  res.json({
+  let actName: string | null = null;
+  let actCategory: string | null = null;
+  let actAddress: string | null = null;
+  let actDurationHours: number | null = null;
+
+  if (updated.activityId) {
+    const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, updated.activityId));
+    actName = act?.name ?? null;
+    actCategory = act?.category ?? null;
+    actAddress = act?.address ?? null;
+    actDurationHours = act?.durationHours != null ? parseFloat(act.durationHours) : null;
+  }
+
+  const canEdit = updated.createdByUserId === currentUserId;
+
+  res.json(serializeDayActivity({
     id: updated.id,
     dayId: updated.dayId,
-    activityId: updated.activityId,
-    activityName: act?.name ?? "",
-    activityCategory: act?.category ?? null,
+    activityId: updated.activityId ?? null,
+    activityTitle: updated.activityTitle ?? null,
+    activityName: actName,
+    activityCategory: actCategory,
     sortOrder: updated.sortOrder,
     startTime: updated.startTime ?? null,
-    address: act?.address ?? null,
-    durationHours: act?.durationHours != null ? parseFloat(act.durationHours) : null,
+    endTime: updated.endTime ?? null,
     notes: updated.notes ?? null,
+    companyContact: updated.companyContact ?? null,
+    addressOverride: updated.addressOverride ?? null,
+    included: updated.included,
+    transportMode: updated.transportMode ?? null,
+    createdByUserId: updated.createdByUserId ?? null,
+    address: actAddress,
+    durationHours: actDurationHours,
     createdAt: updated.createdAt.toISOString(),
-  });
+    canEdit,
+  }));
 });
 
 router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const currentUserId = req.session.userId!;
+  const role = req.session.role;
+
+  // Verify trip/day access (authorization + IDOR prevention)
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
+  // Verify the link belongs to the specified day/trip (prevents IDOR)
+  const [existing] = await db
+    .select({ id: tripDayActivitiesTable.id, createdByUserId: tripDayActivitiesTable.createdByUserId })
+    .from(tripDayActivitiesTable)
+    .innerJoin(tripDaysTable, eq(tripDayActivitiesTable.dayId, tripDaysTable.id))
+    .where(and(
+      eq(tripDayActivitiesTable.id, linkId),
+      eq(tripDayActivitiesTable.dayId, dayId),
+      eq(tripDaysTable.tripId, tripId),
+    ));
+
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Strict creator-only: only the creator can delete
+  if (existing.createdByUserId !== currentUserId) {
+    res.status(403).json({ error: "Solo el creador puede eliminar esta actividad" });
+    return;
+  }
+
   await db.execute(sql`DELETE FROM trip_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
 });

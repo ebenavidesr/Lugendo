@@ -2196,17 +2196,19 @@ components:
 
     TripDayActivityItem:
       type: object
-      required: [id, activityId, activityName]
+      required: [id, activityName, included, canEdit]
       properties:
         id:
           type: integer
         activityId:
-          type: integer
+          type: ["integer", "null"]
         activityName:
           type: string
         activityCategory:
           $ref: "#/components/schemas/ActivityCategory"
         startTime:
+          type: ["string", "null"]
+        endTime:
           type: ["string", "null"]
         address:
           type: ["string", "null"]
@@ -2214,6 +2216,16 @@ components:
           type: ["number", "null"]
         notes:
           type: ["string", "null"]
+        companyContact:
+          type: ["string", "null"]
+        addressOverride:
+          type: ["string", "null"]
+        included:
+          type: boolean
+        transportMode:
+          $ref: "#/components/schemas/TransportMode"
+        canEdit:
+          type: boolean
 
     TransportMode:
       type: string
@@ -3051,14 +3063,14 @@ components:
 
     DayActivity:
       type: object
-      required: [id, dayId, activityId, sortOrder, createdAt]
+      required: [id, dayId, activityName, sortOrder, included, canEdit, createdAt]
       properties:
         id:
           type: integer
         dayId:
           type: integer
         activityId:
-          type: integer
+          type: ["integer", "null"]
         activityName:
           type: string
         activityCategory:
@@ -3067,34 +3079,69 @@ components:
           type: integer
         startTime:
           type: ["string", "null"]
+        endTime:
+          type: ["string", "null"]
         address:
           type: ["string", "null"]
         durationHours:
           type: ["number", "null"]
         notes:
           type: ["string", "null"]
+        companyContact:
+          type: ["string", "null"]
+        addressOverride:
+          type: ["string", "null"]
+        included:
+          type: boolean
+        transportMode:
+          $ref: "#/components/schemas/TransportMode"
+        canEdit:
+          type: boolean
         createdAt:
           type: string
 
     DayActivityInput:
       type: object
-      required: [activityId]
       properties:
         activityId:
           type: integer
+        activityTitle:
+          type: string
         sortOrder:
           type: integer
         startTime:
           type: string
+        endTime:
+          type: string
         notes:
           type: string
+        companyContact:
+          type: string
+        addressOverride:
+          type: string
+        included:
+          type: boolean
+        transportMode:
+          $ref: "#/components/schemas/TransportMode"
 
     TripDayActivityUpdate:
       type: object
       properties:
         startTime:
           type: ["string", "null"]
+        endTime:
+          type: ["string", "null"]
         notes:
+          type: ["string", "null"]
+        companyContact:
+          type: ["string", "null"]
+        addressOverride:
+          type: ["string", "null"]
+        included:
+          type: boolean
+        transportMode:
+          $ref: "#/components/schemas/TransportMode"
+        activityTitle:
           type: ["string", "null"]
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────

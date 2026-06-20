@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, inArray, or } from "drizzle-orm";
+import { eq, and, inArray, or, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import {
@@ -18,7 +18,7 @@ function makeShareCode(): string {
 const router: IRouter = Router();
 
 // ─── Helper: copy itinerary_days + activities + hotels → trip_days ────────────
-async function copyItineraryDaysToTrip(tripId: number, itineraryId: number): Promise<Array<typeof tripDaysTable.$inferSelect>> {
+async function copyItineraryDaysToTrip(tripId: number, itineraryId: number, creatorUserId: number): Promise<Array<typeof tripDaysTable.$inferSelect>> {
   // Guard: return existing trip_days if already migrated
   const existing = await db
     .select()
@@ -58,7 +58,7 @@ async function copyItineraryDaysToTrip(tripId: number, itineraryId: number): Pro
   if (itinActivities.length > 0) {
     await db.insert(tripDayActivitiesTable).values(
       itinActivities
-        .map(a => ({ dayId: dayMap.get(a.dayId)!, activityId: a.activityId, sortOrder: a.sortOrder, startTime: a.startTime ?? null, notes: a.notes ?? null }))
+        .map(a => ({ dayId: dayMap.get(a.dayId)!, activityId: a.activityId, sortOrder: a.sortOrder, startTime: a.startTime ?? null, notes: a.notes ?? null, createdByUserId: creatorUserId }))
         .filter(a => a.dayId),
     );
   }
@@ -112,37 +112,53 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
   return map;
 }
 
-async function getTripDayActivityMap(dayIds: number[]) {
-  type ActivityItem = { id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null; address: string | null; durationHours: number | null; notes: string | null };
+async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
+  type ActivityItem = {
+    id: number; activityId: number | null; activityName: string; activityCategory: string | null;
+    startTime: string | null; endTime: string | null; address: string | null; addressOverride: string | null;
+    durationHours: number | null; notes: string | null; companyContact: string | null;
+    included: boolean; transportMode: string | null; canEdit: boolean;
+  };
   if (dayIds.length === 0) return {} as Record<number, ActivityItem[]>;
-  const rows = await db
-    .select({
-      id: tripDayActivitiesTable.id,
-      dayId: tripDayActivitiesTable.dayId,
-      activityId: tripDayActivitiesTable.activityId,
-      activityName: activitiesTable.name,
-      activityCategory: activitiesTable.category,
-      startTime: tripDayActivitiesTable.startTime,
-      notes: tripDayActivitiesTable.notes,
-      address: activitiesTable.address,
-      durationHours: activitiesTable.durationHours,
-    })
-    .from(tripDayActivitiesTable)
-    .innerJoin(activitiesTable, eq(tripDayActivitiesTable.activityId, activitiesTable.id))
-    .where(inArray(tripDayActivitiesTable.dayId, dayIds))
-    .orderBy(tripDayActivitiesTable.sortOrder, tripDayActivitiesTable.startTime);
+  const rows = await db.execute(sql`
+    SELECT
+      tda.id, tda.day_id, tda.activity_id, tda.activity_title,
+      a.name AS activity_name, a.category AS activity_category,
+      tda.sort_order, tda.start_time, tda.end_time, tda.notes,
+      tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
+      tda.created_by_user_id,
+      a.address AS activity_address, a.duration_hours AS activity_duration_hours
+    FROM trip_day_activities tda
+    LEFT JOIN activities a ON a.id = tda.activity_id
+    WHERE tda.day_id = ANY(${dayIds})
+    ORDER BY
+      tda.day_id,
+      CASE WHEN tda.start_time IS NULL THEN 1 ELSE 0 END,
+      tda.start_time ASC,
+      tda.sort_order ASC,
+      tda.created_at ASC
+  `);
   const map: Record<number, ActivityItem[]> = {};
-  for (const r of rows) {
-    if (!map[r.dayId]) map[r.dayId] = [];
-    map[r.dayId].push({
-      id: r.id,
-      activityId: r.activityId,
-      activityName: r.activityName,
-      activityCategory: r.activityCategory ?? null,
-      startTime: r.startTime ?? null,
-      notes: r.notes ?? null,
-      address: r.address ?? null,
-      durationHours: r.durationHours != null ? parseFloat(r.durationHours) : null,
+  for (const r of rows.rows as Array<Record<string, unknown>>) {
+    const dayId = Number(r.day_id);
+    if (!map[dayId]) map[dayId] = [];
+    const createdByUserId = r.created_by_user_id != null ? Number(r.created_by_user_id) : null;
+    const canEdit = currentUserId != null && createdByUserId === currentUserId;
+    map[dayId].push({
+      id: Number(r.id),
+      activityId: r.activity_id != null ? Number(r.activity_id) : null,
+      activityName: (r.activity_title as string | null) ?? (r.activity_name as string | null) ?? "",
+      activityCategory: r.activity_category as string | null,
+      startTime: r.start_time as string | null,
+      endTime: r.end_time as string | null,
+      notes: r.notes as string | null,
+      companyContact: r.company_contact as string | null,
+      addressOverride: r.address_override as string | null,
+      address: (r.address_override as string | null) ?? (r.activity_address as string | null),
+      durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
+      included: Boolean(r.included),
+      transportMode: r.transport_mode as string | null,
+      canEdit,
     });
   }
   return map;
@@ -316,7 +332,7 @@ router.post("/me/trips", requireRoles("traveler"), async (req, res): Promise<voi
 
   // Copy itinerary_days → trip_days (with activities and hotels) at creation time
   if (itineraryId) {
-    await copyItineraryDaysToTrip(trip.id, Number(itineraryId));
+    await copyItineraryDaysToTrip(trip.id, Number(itineraryId), userId);
   }
 
   res.status(201).json({
@@ -415,24 +431,24 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
   const travelerCount = acceptedInvitations.length;
 
-  let days: Array<{ id: number; tripId: number; dayNumber: number; cityFrom: string | null; cityTo: string | null; transport: string | null; description: string | null; createdAt: Date; hotels: ReturnType<typeof serializeDayHotel>[]; activities: Array<{ id: number; activityId: number; activityName: string; activityCategory: string | null; startTime: string | null }> }> = [];
-
+  const currentUserId = req.session.userId!;
+  let days: Array<Record<string, unknown>> = [];
   let effectiveTripDays = tripDayRows;
 
   if (tripDayRows.length > 0) {
     const [hotelMap, activityMap] = await Promise.all([
       getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
-      getTripDayActivityMap(tripDayRows.map(d => d.id)),
+      getTripDayActivityMap(tripDayRows.map(d => d.id), currentUserId),
     ]);
     days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
   } else if (row.itineraryId) {
     // Lazy-migrate: copy itinerary_days → trip_days (with activities + hotels)
     // so that activity queries via GET /api/trips/:id/days/:dayId/activities work correctly
-    effectiveTripDays = await copyItineraryDaysToTrip(tripId, row.itineraryId);
+    effectiveTripDays = await copyItineraryDaysToTrip(tripId, row.itineraryId, currentUserId);
     if (effectiveTripDays.length > 0) {
       const [hotelMap, activityMap] = await Promise.all([
         getTravelerDayHotelMap(effectiveTripDays.map(d => d.id), "trip"),
-        getTripDayActivityMap(effectiveTripDays.map(d => d.id)),
+        getTripDayActivityMap(effectiveTripDays.map(d => d.id), currentUserId),
       ]);
       days = effectiveTripDays.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
     }
@@ -447,7 +463,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     travelerCount,
     createdAt: row.createdAt.toISOString(),
     daysSource: effectiveTripDays.length > 0 ? "trip" : "itinerary",
-    days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })),
+    days: days.map(d => ({ ...d, createdAt: (d.createdAt as Date).toISOString() })),
   });
 });
 

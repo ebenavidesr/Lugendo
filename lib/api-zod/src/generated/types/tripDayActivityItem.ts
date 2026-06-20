@@ -6,18 +6,29 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityCategory } from './activityCategory';
+import type { TransportMode } from './transportMode';
 
 export interface TripDayActivityItem {
   id: number;
-  activityId: number;
+  /** @nullable */
+  activityId?: number | null;
   activityName: string;
   activityCategory?: ActivityCategory | null;
   /** @nullable */
   startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
   /** @nullable */
   address?: string | null;
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  companyContact?: string | null;
+  /** @nullable */
+  addressOverride?: string | null;
+  included: boolean;
+  transportMode?: TransportMode | null;
+  canEdit: boolean;
 }

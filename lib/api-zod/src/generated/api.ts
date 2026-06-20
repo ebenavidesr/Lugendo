@@ -812,13 +812,19 @@ export const GetTripResponse = zod.object({
 })).optional(),
   "activities": zod.array(zod.object({
   "id": zod.number(),
-  "activityId": zod.number(),
+  "activityId": zod.number().nullish(),
   "activityName": zod.string(),
   "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean()
 })).optional(),
   "createdAt": zod.string()
 })),
@@ -978,13 +984,19 @@ export const UpdateTripDayAdminResponse = zod.object({
 })).optional(),
   "activities": zod.array(zod.object({
   "id": zod.number(),
-  "activityId": zod.number(),
+  "activityId": zod.number().nullish(),
   "activityName": zod.string(),
   "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1001,14 +1013,20 @@ export const ListTripDayActivitiesParams = zod.object({
 export const ListTripDayActivitiesResponseItem = zod.object({
   "id": zod.number(),
   "dayId": zod.number(),
-  "activityId": zod.number(),
-  "activityName": zod.string().optional(),
+  "activityId": zod.number().nullish(),
+  "activityName": zod.string(),
   "activityCategory": zod.string().nullish(),
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListTripDayActivitiesResponse = zod.array(ListTripDayActivitiesResponseItem)
@@ -1023,10 +1041,16 @@ export const AddTripDayActivityParams = zod.object({
 })
 
 export const AddTripDayActivityBody = zod.object({
-  "activityId": zod.number(),
+  "activityId": zod.number().optional(),
+  "activityTitle": zod.string().optional(),
   "sortOrder": zod.number().optional(),
   "startTime": zod.string().optional(),
-  "notes": zod.string().optional()
+  "endTime": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "companyContact": zod.string().optional(),
+  "addressOverride": zod.string().optional(),
+  "included": zod.boolean().optional(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish()
 })
 
 
@@ -1041,20 +1065,32 @@ export const UpdateTripDayActivityParams = zod.object({
 
 export const UpdateTripDayActivityBody = zod.object({
   "startTime": zod.string().nullish(),
-  "notes": zod.string().nullish()
+  "endTime": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean().optional(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "activityTitle": zod.string().nullish()
 })
 
 export const UpdateTripDayActivityResponse = zod.object({
   "id": zod.number(),
   "dayId": zod.number(),
-  "activityId": zod.number(),
-  "activityName": zod.string().optional(),
+  "activityId": zod.number().nullish(),
+  "activityName": zod.string(),
   "activityCategory": zod.string().nullish(),
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean(),
   "createdAt": zod.string()
 })
 
@@ -1288,13 +1324,19 @@ export const GetMyTripResponse = zod.object({
 })).optional(),
   "activities": zod.array(zod.object({
   "id": zod.number(),
-  "activityId": zod.number(),
+  "activityId": zod.number().nullish(),
   "activityName": zod.string(),
   "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1403,13 +1445,19 @@ export const UpdateMyTripResponse = zod.object({
 })).optional(),
   "activities": zod.array(zod.object({
   "id": zod.number(),
-  "activityId": zod.number(),
+  "activityId": zod.number().nullish(),
   "activityName": zod.string(),
   "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1469,13 +1517,19 @@ export const UpdateTripDayResponse = zod.object({
 })).optional(),
   "activities": zod.array(zod.object({
   "id": zod.number(),
-  "activityId": zod.number(),
+  "activityId": zod.number().nullish(),
   "activityName": zod.string(),
   "activityCategory": zod.union([zod.literal('cultural'),zod.literal('gastronomic'),zod.literal('adventure'),zod.literal('nature'),zod.literal('beach'),zod.literal('city'),zod.literal('excursion'),zod.literal('transport'),zod.literal('other'),zod.literal(null)]).nullish(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1740,14 +1794,20 @@ export const ListDayActivitiesParams = zod.object({
 export const ListDayActivitiesResponseItem = zod.object({
   "id": zod.number(),
   "dayId": zod.number(),
-  "activityId": zod.number(),
-  "activityName": zod.string().optional(),
+  "activityId": zod.number().nullish(),
+  "activityName": zod.string(),
   "activityCategory": zod.string().nullish(),
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListDayActivitiesResponse = zod.array(ListDayActivitiesResponseItem)
@@ -1762,10 +1822,16 @@ export const AddDayActivityParams = zod.object({
 })
 
 export const AddDayActivityBody = zod.object({
-  "activityId": zod.number(),
+  "activityId": zod.number().optional(),
+  "activityTitle": zod.string().optional(),
   "sortOrder": zod.number().optional(),
   "startTime": zod.string().optional(),
-  "notes": zod.string().optional()
+  "endTime": zod.string().optional(),
+  "notes": zod.string().optional(),
+  "companyContact": zod.string().optional(),
+  "addressOverride": zod.string().optional(),
+  "included": zod.boolean().optional(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish()
 })
 
 

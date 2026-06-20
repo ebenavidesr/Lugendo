@@ -68,10 +68,17 @@ export const tripDayHotelsTable = pgTable("trip_day_hotels", {
 export const tripDayActivitiesTable = pgTable("trip_day_activities", {
   id: serial("id").primaryKey(),
   dayId: integer("day_id").notNull().references(() => tripDaysTable.id, { onDelete: "cascade" }),
-  activityId: integer("activity_id").notNull().references(() => activitiesTable.id, { onDelete: "cascade" }),
+  activityId: integer("activity_id").references(() => activitiesTable.id, { onDelete: "cascade" }),
+  activityTitle: text("activity_title"),
   sortOrder: integer("sort_order").notNull().default(0),
   startTime: text("start_time"),
+  endTime: text("end_time"),
   notes: text("notes"),
+  companyContact: text("company_contact"),
+  addressOverride: text("address_override"),
+  included: boolean("included").notNull().default(true),
+  transportMode: text("transport_mode"),
+  createdByUserId: integer("created_by_user_id").references(() => usersTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("tda_day_idx").on(t.dayId)]);
 

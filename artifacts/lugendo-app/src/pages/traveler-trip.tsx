@@ -321,6 +321,7 @@ export default function TravelerTrip() {
                   allDays={trip.days}
                   expanded={expandedDays.has(day.dayNumber)}
                   onToggle={() => toggleDay(day.dayNumber)}
+                  tripId={tripId}
                 />
               ))}
             </div>

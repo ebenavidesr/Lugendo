@@ -1,0 +1,2 @@
+- [Circular import pattern](circular-import-fix.md) — extract shared constants to a standalone `.ts` file; re-exporting from a consumer causes Vite HMR circular import failures.
+- [Drizzle LEFT JOIN for nullable FKs](drizzle-nullable-fk.md) — when a FK is nullable (e.g. activityId), use raw SQL with LEFT JOIN, not INNER JOIN, so rows without a linked record still appear.
