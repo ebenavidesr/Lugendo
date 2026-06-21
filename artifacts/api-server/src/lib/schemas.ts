@@ -159,7 +159,7 @@ export const ItineraryDayUpdateSchema = z.object({
   cityFrom: z.string().nullable().optional(),
   cityTo: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
-  transport: TransportModeSchema,
+  transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
 
@@ -223,7 +223,7 @@ export const TripDayUpdateSchema = z.object({
   cityFrom: z.string().nullable().optional(),
   cityTo: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
-  transport: TransportModeSchema,
+  transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
 
@@ -345,7 +345,7 @@ export const PersonalTripDayUpdateSchema = z.object({
   cityFrom: z.string().nullable().optional(),
   cityTo: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
-  transport: TransportModeSchema,
+  transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
 });
 

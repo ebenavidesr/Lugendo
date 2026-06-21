@@ -90,7 +90,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const [editCityFrom, setEditCityFrom] = useState(day.cityFrom ?? "");
   const [editCityTo, setEditCityTo] = useState(day.cityTo ?? "");
   const [editCountry, setEditCountry] = useState(day.country ?? "");
-  const [editTransport, setEditTransport] = useState(day.transport ?? "");
+  const isValidTransport = (v: string | null | undefined) => TRANSPORT_OPTIONS.some(o => o.value === v);
+  const [editTransport, setEditTransport] = useState(isValidTransport(day.transport) ? (day.transport ?? "") : "");
   const [editDescription, setEditDescription] = useState(day.description ?? "");
   const [savingDay, setSavingDay] = useState(false);
 
@@ -98,7 +99,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
     setEditCityFrom(day.cityFrom ?? "");
     setEditCityTo(day.cityTo ?? "");
     setEditCountry(day.country ?? "");
-    setEditTransport(day.transport ?? "");
+    setEditTransport(isValidTransport(day.transport) ? (day.transport ?? "") : "");
     setEditDescription(day.description ?? "");
     setDayEditOpen(true);
   };
