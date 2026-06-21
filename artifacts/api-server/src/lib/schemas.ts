@@ -372,3 +372,7 @@ export const TripDocumentInputSchema = z.object({
   mimeType: z.string().min(1),
   storageKey: z.string().min(1),
 });
+
+export const TripDocumentRenameSchema = z.object({
+  filename: z.string().min(1),
+});

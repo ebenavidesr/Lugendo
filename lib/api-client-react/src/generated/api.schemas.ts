@@ -985,6 +985,10 @@ export interface TripDocumentInput {
   storageKey: string;
 }
 
+export interface TripDocumentRename {
+  filename: string;
+}
+
 export interface UploadUrlRequest {
   name: string;
   size: number;
@@ -1251,6 +1255,11 @@ export interface DestinationDescribeInput {
 export interface DestinationDescribeResult {
   description: string;
 }
+
+export type GetTripDocumentDownloadUrlAdmin200 = {
+  /** Short-lived pre-signed URL (15 minutes) */
+  signedUrl: string;
+};
 
 export type GetTripDocumentDownloadUrl200 = {
   /** Short-lived pre-signed URL (15 minutes) */

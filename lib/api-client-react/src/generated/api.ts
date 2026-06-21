@@ -38,6 +38,7 @@ import type {
   DestinationDescribeInput,
   DestinationDescribeResult,
   GetTripDocumentDownloadUrl200,
+  GetTripDocumentDownloadUrlAdmin200,
   HealthStatus,
   Hotel,
   HotelInput,
@@ -70,6 +71,7 @@ import type {
   TripDetail,
   TripDocument,
   TripDocumentInput,
+  TripDocumentRename,
   TripInput,
   TripNote,
   TripNoteInput,
@@ -3495,6 +3497,383 @@ export const useDeleteInvitation = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteInvitationMutationOptions(options));
     }
+
+export const getListTripDocumentsAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/documents`
+}
+
+/**
+ * @summary List all documents for a trip (back-office)
+ */
+export const listTripDocumentsAdmin = async (tripId: number, options?: RequestInit): Promise<TripDocument[]> => {
+
+  return customFetch<TripDocument[]>(getListTripDocumentsAdminUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripDocumentsAdminQueryKey = (tripId: number,) => {
+    return [
+    `/api/trips/${tripId}/documents`
+    ] as const;
+    }
+
+
+export const getListTripDocumentsAdminQueryOptions = <TData = Awaited<ReturnType<typeof listTripDocumentsAdmin>>, TError = ErrorType<void>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDocumentsAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripDocumentsAdminQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripDocumentsAdmin>>> = ({ signal }) => listTripDocumentsAdmin(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripDocumentsAdmin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripDocumentsAdminQueryResult = NonNullable<Awaited<ReturnType<typeof listTripDocumentsAdmin>>>
+export type ListTripDocumentsAdminQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all documents for a trip (back-office)
+ */
+
+export function useListTripDocumentsAdmin<TData = Awaited<ReturnType<typeof listTripDocumentsAdmin>>, TError = ErrorType<void>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDocumentsAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripDocumentsAdminQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripDocumentAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/documents`
+}
+
+/**
+ * @summary Register a document for a trip (back-office, after uploading to object storage)
+ */
+export const createTripDocumentAdmin = async (tripId: number,
+    tripDocumentInput: TripDocumentInput, options?: RequestInit): Promise<TripDocument> => {
+
+  return customFetch<TripDocument>(getCreateTripDocumentAdminUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripDocumentInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripDocumentAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDocumentAdmin>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripDocumentAdmin>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext> => {
+
+const mutationKey = ['createTripDocumentAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripDocumentAdmin>>, {tripId: number;data: BodyType<TripDocumentInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripDocumentAdmin(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripDocumentAdminMutationResult = NonNullable<Awaited<ReturnType<typeof createTripDocumentAdmin>>>
+    export type CreateTripDocumentAdminMutationBody = BodyType<TripDocumentInput>
+    export type CreateTripDocumentAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Register a document for a trip (back-office, after uploading to object storage)
+ */
+export const useCreateTripDocumentAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDocumentAdmin>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripDocumentAdmin>>,
+        TError,
+        {tripId: number;data: BodyType<TripDocumentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripDocumentAdminMutationOptions(options));
+    }
+
+export const getRenameTripDocumentAdminUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/documents/${documentId}`
+}
+
+/**
+ * @summary Rename a document (back-office, admin/manager only)
+ */
+export const renameTripDocumentAdmin = async (tripId: number,
+    documentId: number,
+    tripDocumentRename: TripDocumentRename, options?: RequestInit): Promise<TripDocument> => {
+
+  return customFetch<TripDocument>(getRenameTripDocumentAdminUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripDocumentRename,)
+  }
+);}
+
+
+
+
+export const getRenameTripDocumentAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameTripDocumentAdmin>>, TError,{tripId: number;documentId: number;data: BodyType<TripDocumentRename>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof renameTripDocumentAdmin>>, TError,{tripId: number;documentId: number;data: BodyType<TripDocumentRename>}, TContext> => {
+
+const mutationKey = ['renameTripDocumentAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof renameTripDocumentAdmin>>, {tripId: number;documentId: number;data: BodyType<TripDocumentRename>}> = (props) => {
+          const {tripId,documentId,data} = props ?? {};
+
+          return  renameTripDocumentAdmin(tripId,documentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RenameTripDocumentAdminMutationResult = NonNullable<Awaited<ReturnType<typeof renameTripDocumentAdmin>>>
+    export type RenameTripDocumentAdminMutationBody = BodyType<TripDocumentRename>
+    export type RenameTripDocumentAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Rename a document (back-office, admin/manager only)
+ */
+export const useRenameTripDocumentAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameTripDocumentAdmin>>, TError,{tripId: number;documentId: number;data: BodyType<TripDocumentRename>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof renameTripDocumentAdmin>>,
+        TError,
+        {tripId: number;documentId: number;data: BodyType<TripDocumentRename>},
+        TContext
+      > => {
+      return useMutation(getRenameTripDocumentAdminMutationOptions(options));
+    }
+
+export const getDeleteTripDocumentAdminUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/documents/${documentId}`
+}
+
+/**
+ * @summary Delete a document from a trip (back-office)
+ */
+export const deleteTripDocumentAdmin = async (tripId: number,
+    documentId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripDocumentAdminUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripDocumentAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocumentAdmin>>, TError,{tripId: number;documentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocumentAdmin>>, TError,{tripId: number;documentId: number}, TContext> => {
+
+const mutationKey = ['deleteTripDocumentAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripDocumentAdmin>>, {tripId: number;documentId: number}> = (props) => {
+          const {tripId,documentId} = props ?? {};
+
+          return  deleteTripDocumentAdmin(tripId,documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripDocumentAdminMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripDocumentAdmin>>>
+
+    export type DeleteTripDocumentAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a document from a trip (back-office)
+ */
+export const useDeleteTripDocumentAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocumentAdmin>>, TError,{tripId: number;documentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripDocumentAdmin>>,
+        TError,
+        {tripId: number;documentId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripDocumentAdminMutationOptions(options));
+    }
+
+export const getGetTripDocumentDownloadUrlAdminUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/documents/${documentId}/download`
+}
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document (back-office)
+ */
+export const getTripDocumentDownloadUrlAdmin = async (tripId: number,
+    documentId: number, options?: RequestInit): Promise<GetTripDocumentDownloadUrlAdmin200> => {
+
+  return customFetch<GetTripDocumentDownloadUrlAdmin200>(getGetTripDocumentDownloadUrlAdminUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTripDocumentDownloadUrlAdminQueryKey = (tripId: number,
+    documentId: number,) => {
+    return [
+    `/api/trips/${tripId}/documents/${documentId}/download`
+    ] as const;
+    }
+
+
+export const getGetTripDocumentDownloadUrlAdminQueryOptions = <TData = Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>, TError = ErrorType<void>>(tripId: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTripDocumentDownloadUrlAdminQueryKey(tripId,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>> = ({ signal }) => getTripDocumentDownloadUrlAdmin(tripId,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId && documentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTripDocumentDownloadUrlAdminQueryResult = NonNullable<Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>>
+export type GetTripDocumentDownloadUrlAdminQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document (back-office)
+ */
+
+export function useGetTripDocumentDownloadUrlAdmin<TData = Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>, TError = ErrorType<void>>(
+ tripId: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrlAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTripDocumentDownloadUrlAdminQueryOptions(tripId,documentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getAcceptInvitationUrl = (code: string,) => {
 

@@ -1179,6 +1179,84 @@ export const DeleteInvitationParams = zod.object({
 
 
 /**
+ * @summary List all documents for a trip (back-office)
+ */
+export const ListTripDocumentsAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripDocumentsAdminResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "filename": zod.string(),
+  "mimeType": zod.string(),
+  "storageKey": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListTripDocumentsAdminResponse = zod.array(ListTripDocumentsAdminResponseItem)
+
+
+/**
+ * @summary Register a document for a trip (back-office, after uploading to object storage)
+ */
+export const CreateTripDocumentAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripDocumentAdminBody = zod.object({
+  "filename": zod.string(),
+  "mimeType": zod.string(),
+  "storageKey": zod.string()
+})
+
+
+/**
+ * @summary Rename a document (back-office, admin/manager only)
+ */
+export const RenameTripDocumentAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+export const RenameTripDocumentAdminBody = zod.object({
+  "filename": zod.string()
+})
+
+export const RenameTripDocumentAdminResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "filename": zod.string(),
+  "mimeType": zod.string(),
+  "storageKey": zod.string(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a document from a trip (back-office)
+ */
+export const DeleteTripDocumentAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document (back-office)
+ */
+export const GetTripDocumentDownloadUrlAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+export const GetTripDocumentDownloadUrlAdminResponse = zod.object({
+  "signedUrl": zod.string().describe('Short-lived pre-signed URL (15 minutes)')
+})
+
+
+/**
  * @summary Accept an invitation using the unique code
  */
 export const AcceptInvitationParams = zod.object({

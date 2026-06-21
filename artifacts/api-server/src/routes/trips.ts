@@ -5,14 +5,18 @@ import {
   tripsTable, tripDaysTable, tripDayHotelsTable, tripDayActivitiesTable,
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
-  usersTable,
+  usersTable, tripDocumentsTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import {
   TripInputSchema, TripUpdateSchema, TripDayUpdateSchema,
   DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
+  TripDocumentInputSchema, TripDocumentRenameSchema,
 } from "../lib/schemas";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorage = new ObjectStorageService();
 
 const router: IRouter = Router();
 
@@ -746,6 +750,134 @@ router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), valida
   const [trip] = await db.update(tripsTable).set(fields).where(eq(tripsTable.id, id)).returning();
   if (!trip) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeTrip({ ...trip, itineraryName: null, invitedCount: 0, acceptedCount: 0 }));
+});
+
+// ─── Back-office document endpoints ──────────────────────────────────────────
+
+async function verifyTripAccess(tripId: number, userId: number, agencyId: number | null | undefined, role: string | undefined): Promise<boolean> {
+  const [trip] = await db
+    .select({ id: tripsTable.id, agencyId: tripsTable.agencyId })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, tripId));
+  if (!trip) return false;
+  if (role === "admin") return true;
+  if ((role === "manager" || role === "agent") && agencyId != null && trip.agencyId === agencyId) return true;
+  return false;
+}
+
+router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const docs = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(eq(tripDocumentsTable.tripId, tripId))
+    .orderBy(tripDocumentsTable.createdAt);
+  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+});
+
+router.post("/trips/:tripId/documents", requireRoles("admin", "manager"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const { filename, mimeType, storageKey } = req.body as { filename: string; mimeType: string; storageKey: string };
+
+  if (!storageKey.startsWith("/objects/")) {
+    res.status(400).json({ error: "Invalid storage key" }); return;
+  }
+
+  const [doc] = await db
+    .insert(tripDocumentsTable)
+    .values({ tripId, userId: userId!, filename, mimeType, storageKey })
+    .returning();
+  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString() });
+});
+
+router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [doc] = await db
+    .select({ id: tripDocumentsTable.id })
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
+
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  const { filename } = req.body as { filename: string };
+
+  const [updated] = await db
+    .update(tripDocumentsTable)
+    .set({ filename })
+    .where(eq(tripDocumentsTable.id, documentId))
+    .returning();
+  res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+});
+
+router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [doc] = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
+
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  try {
+    const file = await objectStorage.getObjectEntityFile(doc.storageKey);
+    await file.delete();
+  } catch (_) {
+    // Best-effort delete from storage
+  }
+
+  await db.delete(tripDocumentsTable).where(eq(tripDocumentsTable.id, documentId));
+  res.sendStatus(204);
+});
+
+router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [doc] = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
+
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  try {
+    const signedUrl = await objectStorage.getSignedDownloadUrl(doc.storageKey, 900);
+    res.json({ signedUrl });
+  } catch (err) {
+    req.log.error({ err }, "Error generating signed download URL");
+    res.status(500).json({ error: "Failed to generate download URL" });
+  }
 });
 
 router.delete("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {

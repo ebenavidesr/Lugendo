@@ -982,6 +982,145 @@ paths:
         "204":
           description: Deleted
 
+  /trips/{tripId}/documents:
+    get:
+      operationId: listTripDocumentsAdmin
+      tags: [trips]
+      summary: List all documents for a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripDocument"
+        "403":
+          description: Forbidden
+        "404":
+          description: Trip not found
+    post:
+      operationId: createTripDocumentAdmin
+      tags: [trips]
+      summary: Register a document for a trip (back-office, after uploading to object storage)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDocumentInput"
+      responses:
+        "201":
+          description: Document registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDocument"
+        "403":
+          description: Forbidden
+
+  /trips/{tripId}/documents/{documentId}:
+    patch:
+      operationId: renameTripDocumentAdmin
+      tags: [trips]
+      summary: Rename a document (back-office, admin/manager only)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripDocumentRename"
+      responses:
+        "200":
+          description: Renamed document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDocument"
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteTripDocumentAdmin
+      tags: [trips]
+      summary: Delete a document from a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
+  /trips/{tripId}/documents/{documentId}/download:
+    get:
+      operationId: getTripDocumentDownloadUrlAdmin
+      tags: [trips]
+      summary: Get a short-lived signed download URL for a trip document (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Signed download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [signedUrl]
+                properties:
+                  signedUrl:
+                    type: string
+                    description: Short-lived pre-signed URL (15 minutes)
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
   /invitations/{code}/accept:
     post:
       operationId: acceptInvitation
@@ -3049,6 +3188,13 @@ components:
         mimeType:
           type: string
         storageKey:
+          type: string
+
+    TripDocumentRename:
+      type: object
+      required: [filename]
+      properties:
+        filename:
           type: string
 
     UploadUrlRequest:

@@ -8,6 +8,7 @@ import { useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays } f
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
 import { TransportLabel } from "@/components/transport-select";
+import { AgencyTripDocuments } from "@/components/agency-trip-documents";
 import { useQueryClient } from "@tanstack/react-query";
 import type { TripDetailStatus, InvitationStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusBadge: Record<TripDetailStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
@@ -79,6 +81,8 @@ export default function TripDetail() {
   const updateTrip = useUpdateTrip();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const canEditDocuments = user?.role === "admin" || user?.role === "manager";
 
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
@@ -300,6 +304,9 @@ export default function TripDetail() {
           </ul>
         </div>
       )}
+
+      {/* Documents */}
+      <AgencyTripDocuments tripId={tripId} readOnly={!canEditDocuments} />
 
       {/* Invitations */}
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
