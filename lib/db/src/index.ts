@@ -26,48 +26,9 @@ export const pool = new Pool({
 export const db = drizzle(pool, { schema });
 
 /**
- * Directly add any columns that may be missing in production databases that
- * were created before these columns were introduced. Uses ADD COLUMN IF NOT
- * EXISTS so it is completely idempotent — a no-op when columns already exist.
- * Runs unconditionally at every startup (negligible overhead).
- */
-async function ensureProductionColumns(): Promise<void> {
-  const { rows: check } = await pool.query<{ exists: boolean }>(`
-    SELECT EXISTS (
-      SELECT 1 FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = 'trip_day_activities'
-    ) AS exists
-  `);
-  if (!check[0]?.exists) return;
-
-  const alterations = [
-    `ALTER TABLE activities ADD COLUMN IF NOT EXISTS address text`,
-    `ALTER TABLE trips ADD COLUMN IF NOT EXISTS description text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS activity_title text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS end_time text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS company_contact text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS address_override text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS included boolean NOT NULL DEFAULT true`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS transport_mode text`,
-    `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS created_by_user_id integer`,
-  ];
-  for (const stmt of alterations) {
-    await pool.query(stmt);
-  }
-  await pool.query(`
-    DO $$ BEGIN
-      ALTER TABLE trip_day_activities
-        ADD CONSTRAINT trip_day_activities_created_by_user_id_users_id_fk
-        FOREIGN KEY (created_by_user_id) REFERENCES users(id);
-    EXCEPTION WHEN duplicate_object THEN null;
-    END $$
-  `);
-}
-
-/**
- * Stamp the baseline migration as applied if the database already has tables
- * (i.e., was previously managed by drizzle-kit push or another tool).
- * This is idempotent — safe to call even if already stamped.
+ * Stamp the baseline migration (index 0) as applied if the database already
+ * has tables — i.e. was previously managed by drizzle-kit push or another tool.
+ * This is idempotent and safe to call on every startup.
  */
 async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
   let baselineFile: string | undefined;
@@ -124,12 +85,93 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
 }
 
 /**
+ * For each migration file after the baseline, check whether its DDL effects
+ * are already present in the database. If so, stamp it as applied in drizzle's
+ * tracking table so migrate() skips running it.
+ *
+ * This handles migrations (like 0001) whose SQL was previously applied via
+ * the now-removed ensureProductionColumns() startup shim. Without this,
+ * migrate() would re-run ALTER TABLE statements that hang on ACCESS EXCLUSIVE
+ * locks in production when existing connections are present.
+ *
+ * Sentinels are cheap SELECT EXISTS queries — never DDL — so they can't block.
+ */
+async function stampAlreadyAppliedMigrationsIfNeeded(
+  migrationsFolder: string,
+): Promise<void> {
+  // Map from migration file index (0-based, sorted) to a sentinel query.
+  // The query must return a single row with an `applied` boolean column.
+  // Only list migrations that used idempotent DDL (IF NOT EXISTS) and whose
+  // effects may already be present from a previous shim or push.
+  const sentinels: Record<number, string> = {
+    // 0001_add_post_baseline_columns.sql — ALTER TABLE … ADD COLUMN IF NOT EXISTS
+    // Previously applied by ensureProductionColumns(); columns already exist in prod.
+    1: `SELECT EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = 'public'
+            AND table_name   = 'activities'
+            AND column_name  = 'address'
+        ) AS applied`,
+    // 0002_wonderful_mimic.sql — CREATE TABLE trip_documents
+    // Sentinel guards against the table existing from another path.
+    2: `SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name   = 'trip_documents'
+        ) AS applied`,
+  };
+
+  let files: string[];
+  try {
+    files = readdirSync(migrationsFolder)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+  } catch {
+    return;
+  }
+
+  for (let i = 1; i < files.length; i++) {
+    const sentinel = sentinels[i];
+    if (!sentinel) continue;
+
+    const filePath = join(migrationsFolder, files[i]);
+    let sql: string;
+    try {
+      sql = readFileSync(filePath, "utf-8");
+    } catch {
+      continue;
+    }
+
+    const hash = createHash("sha256").update(sql).digest("hex");
+
+    // Skip if already tracked
+    const { rows: existing } = await pool.query<{ id: number }>(
+      `SELECT id FROM drizzle.__drizzle_migrations WHERE hash = $1`,
+      [hash],
+    );
+    if (existing.length > 0) continue;
+
+    // Check if migration's effects are already present
+    const { rows: sentinelResult } =
+      await pool.query<{ applied: boolean }>(sentinel);
+    if (!sentinelResult[0]?.applied) continue; // Not yet applied — let migrate() handle it
+
+    // Stamp as applied so migrate() skips it
+    await pool.query(
+      `INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)`,
+      [hash, Date.now()],
+    );
+  }
+}
+
+/**
  * Run all pending Drizzle migrations against the connected database.
  * Pass the absolute path to the migrations folder (needed so the bundled
  * server can locate the SQL files copied next to the bundle at build time).
  */
 export async function runMigrations(migrationsFolder: string): Promise<void> {
   await stampBaselineIfNeeded(migrationsFolder);
+  await stampAlreadyAppliedMigrationsIfNeeded(migrationsFolder);
   await migrate(db, { migrationsFolder });
 }
 
