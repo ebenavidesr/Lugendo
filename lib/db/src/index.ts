@@ -14,7 +14,15 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Fail fast if the DB connection pool is exhausted (e.g. orphaned connections
+  // from a previous process after SIGTERM). Without a timeout, pool.query()
+  // hangs indefinitely, blocking migrations and delaying startup by hours.
+  connectionTimeoutMillis: 10000,
+  // Keep the pool small to avoid exhausting Replit's managed DB connection limit.
+  max: 3,
+});
 export const db = drizzle(pool, { schema });
 
 /**
@@ -24,6 +32,16 @@ export const db = drizzle(pool, { schema });
  * Runs unconditionally at every startup (negligible overhead).
  */
 async function ensureProductionColumns(): Promise<void> {
+  // Skip entirely if trip_day_activities does not yet exist — this happens on a
+  // fresh database where migrate() will create all tables with all columns.
+  const { rows: check } = await pool.query<{ exists: boolean }>(`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'trip_day_activities'
+    ) AS exists
+  `);
+  if (!check[0]?.exists) return;
+
   const alterations = [
     `ALTER TABLE activities ADD COLUMN IF NOT EXISTS address text`,
     `ALTER TABLE trips ADD COLUMN IF NOT EXISTS description text`,
