@@ -4,7 +4,6 @@ import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db";
 import { setReady } from "./lib/readiness";
 
-process.stderr.write("[startup:index] body reached\n");
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

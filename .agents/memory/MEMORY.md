@@ -3,3 +3,4 @@
 - [Post-merge codegen requirement](post-merge-codegen.md) — after any task merge touching DB schema or OpenAPI, run typecheck:libs + codegen before deploying or runtimes break.
 - [Drizzle sql array interpolation](drizzle-sql-array.md) — `${jsArray}` in drizzle sql`` generates a tuple `($1,$2)`, valid for `IN` but NOT for `= ANY()`.
 - [Google Cloud Storage bundling](gcs-bundling.md) — @google-cloud/storage must be bundled (not externalized) in production esbuild; externalizing silently hangs the prod server.
+- [ALTER TABLE hangs production startup](alter-table-startup-hang.md) — never run DDL (ALTER TABLE) inside runMigrations(); ACCESS EXCLUSIVE locks hang indefinitely in prod.

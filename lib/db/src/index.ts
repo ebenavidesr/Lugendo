@@ -129,7 +129,6 @@ async function stampBaselineIfNeeded(migrationsFolder: string): Promise<void> {
  * server can locate the SQL files copied next to the bundle at build time).
  */
 export async function runMigrations(migrationsFolder: string): Promise<void> {
-  await ensureProductionColumns();
   await stampBaselineIfNeeded(migrationsFolder);
   await migrate(db, { migrationsFolder });
 }
