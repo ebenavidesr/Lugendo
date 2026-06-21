@@ -11,6 +11,7 @@ import invitationsRouter from "./invitations";
 import travelerRouter from "./traveler";
 import dashboardRouter from "./dashboard";
 import destinationsRouter from "./destinations";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(invitationsRouter);
 router.use(travelerRouter);
 router.use(dashboardRouter);
 router.use(destinationsRouter);
+router.use(storageRouter);
 
 export default router;

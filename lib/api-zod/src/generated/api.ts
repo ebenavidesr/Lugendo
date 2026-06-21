@@ -1714,6 +1714,71 @@ export const LeaveTripParams = zod.object({
 
 
 /**
+ * @summary List documents uploaded by the current traveler for a trip
+ */
+export const ListTripDocumentsParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripDocumentsResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "filename": zod.string(),
+  "mimeType": zod.string(),
+  "storageKey": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListTripDocumentsResponse = zod.array(ListTripDocumentsResponseItem)
+
+
+/**
+ * @summary Register a document after uploading to object storage
+ */
+export const CreateTripDocumentParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripDocumentBody = zod.object({
+  "filename": zod.string(),
+  "mimeType": zod.string(),
+  "storageKey": zod.string()
+})
+
+
+/**
+ * @summary Delete a document (must be the uploader)
+ */
+export const DeleteTripDocumentParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number(),
+  "contentType": zod.string()
+})
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string(),
+  "objectPath": zod.string()
+})
+
+
+/**
+ * @summary Download a private stored object (uploader only)
+ */
+export const DownloadStorageObjectParams = zod.object({
+  "path": zod.coerce.string().describe('Object path within the private objects namespace')
+})
+
+
+/**
  * @summary Dismiss a cancelled trip from the traveler's view
  */
 export const DismissTripParams = zod.object({

@@ -16,7 +16,12 @@ import {
   PersonalTripDayInputSchema, PersonalTripDayUpdateSchema,
   TripNoteInputSchema, TripNoteUpdateSchema,
   ShareTripInputSchema, UpdateShareInputSchema,
+  TripDocumentInputSchema,
 } from "../lib/schemas";
+import { tripDocumentsTable } from "@workspace/db";
+import { ObjectStorageService } from "../lib/objectStorage";
+
+const objectStorage = new ObjectStorageService();
 
 function makeShareCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase();
@@ -613,14 +618,30 @@ router.delete("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), async
   res.sendStatus(204);
 });
 
-// ─── List shares for a trip I own ────────────────────────────────────────────
+// ─── Helper: verify the requesting user is the trip owner OR has full permission ─
+async function canManageShares(tripId: number, userId: number): Promise<boolean> {
+  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  if (owned) return true;
+
+  const [fullShare] = await db
+    .select({ id: tripSharesTable.id })
+    .from(tripSharesTable)
+    .where(and(
+      eq(tripSharesTable.tripId, tripId),
+      eq(tripSharesTable.sharedWithUserId, userId),
+      eq(tripSharesTable.status, "accepted"),
+      eq(tripSharesTable.permission, "full"),
+    ));
+  return !!fullShare;
+}
+
+// ─── List shares for a trip I own or manage ───────────────────────────────────
 router.get("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
   const shares = await db.select().from(tripSharesTable).where(eq(tripSharesTable.tripId, tripId));
   res.json(shares.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
@@ -632,9 +653,7 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { email, permission = "read" } = req.body;
 
-  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
   // Avoid duplicate pending shares to same email
   const [existing] = await db.select({ id: tripSharesTable.id }).from(tripSharesTable)
@@ -675,9 +694,7 @@ router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), vali
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const shareId = parseInt(Array.isArray(req.params.shareId) ? req.params.shareId[0] : req.params.shareId, 10);
 
-  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
   const { permission } = req.body;
 
@@ -697,9 +714,7 @@ router.delete("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), asy
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const shareId = parseInt(Array.isArray(req.params.shareId) ? req.params.shareId[0] : req.params.shareId, 10);
 
-  const [owned] = await db.select({ id: tripsTable.id }).from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-  if (!owned) { res.status(403).json({ error: "Not your trip" }); return; }
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
   await db.delete(tripSharesTable).where(and(eq(tripSharesTable.id, shareId), eq(tripSharesTable.tripId, tripId)));
   res.sendStatus(204);
@@ -983,6 +998,83 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
     .returning();
 
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+});
+
+// ─── Trip Documents ───────────────────────────────────────────────────────────
+router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const docs = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.tripId, tripId), eq(tripDocumentsTable.userId, userId)))
+    .orderBy(tripDocumentsTable.createdAt);
+  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+});
+
+router.post("/me/trips/:tripId/documents", requireRoles("traveler"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  // Ensure the user actually has access to this trip (owner or accepted share)
+  const [tripAccess] = await db
+    .select({ id: tripsTable.id })
+    .from(tripsTable)
+    .leftJoin(
+      tripSharesTable,
+      and(
+        eq(tripSharesTable.tripId, tripsTable.id),
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.status, "accepted"),
+      ),
+    )
+    .where(
+      and(
+        eq(tripsTable.id, tripId),
+        or(
+          eq(tripsTable.ownerId, userId),
+          eq(tripSharesTable.sharedWithUserId, userId),
+        ),
+      ),
+    );
+
+  if (!tripAccess) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const { filename, mimeType, storageKey } = req.body;
+
+  // Validate storageKey is within the private objects namespace
+  if (!storageKey.startsWith("/objects/")) {
+    res.status(400).json({ error: "Invalid storage key" });
+    return;
+  }
+
+  const [doc] = await db
+    .insert(tripDocumentsTable)
+    .values({ tripId, userId, filename, mimeType, storageKey })
+    .returning();
+  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString() });
+});
+
+router.delete("/me/trips/:tripId/documents/:documentId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+
+  const [doc] = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.userId, userId)));
+
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  try {
+    const file = await objectStorage.getObjectEntityFile(doc.storageKey);
+    await file.delete();
+  } catch (_) {
+    // Best-effort delete from storage; continue regardless
+  }
+
+  await db.delete(tripDocumentsTable).where(eq(tripDocumentsTable.id, documentId));
+  res.sendStatus(204);
 });
 
 export default router;

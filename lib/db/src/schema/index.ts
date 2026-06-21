@@ -7,3 +7,4 @@ export * from "./trips";
 export * from "./invitations";
 export * from "./trip_notes";
 export * from "./trip_shares";
+export * from "./trip_documents";

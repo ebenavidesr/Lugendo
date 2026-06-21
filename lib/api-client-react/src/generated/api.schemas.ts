@@ -969,6 +969,33 @@ export interface CreatePersonalTripInput {
   returnFlights?: FlightLeg[] | null;
 }
 
+export interface TripDocument {
+  id: number;
+  tripId: number;
+  userId: number;
+  filename: string;
+  mimeType: string;
+  storageKey: string;
+  createdAt: string;
+}
+
+export interface TripDocumentInput {
+  filename: string;
+  mimeType: string;
+  storageKey: string;
+}
+
+export interface UploadUrlRequest {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+}
+
 export interface TripNote {
   id: number;
   tripId: number;

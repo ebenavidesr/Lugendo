@@ -366,3 +366,9 @@ export const ShareTripInputSchema = z.object({
 export const UpdateShareInputSchema = z.object({
   permission: z.enum(["full", "read"]),
 });
+
+export const TripDocumentInputSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  storageKey: z.string().min(1),
+});

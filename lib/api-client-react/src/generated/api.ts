@@ -67,6 +67,8 @@ import type {
   TripDayActivityUpdate,
   TripDayUpdate,
   TripDetail,
+  TripDocument,
+  TripDocumentInput,
   TripInput,
   TripNote,
   TripNoteInput,
@@ -75,6 +77,8 @@ import type {
   TripUpdate,
   UpdateMyTripInput,
   UpdateShareInput,
+  UploadUrlRequest,
+  UploadUrlResponse,
   User,
   UserInput,
   UserUpdate
@@ -4812,6 +4816,375 @@ export const useLeaveTrip = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getLeaveTripMutationOptions(options));
     }
+
+export const getListTripDocumentsUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents`
+}
+
+/**
+ * @summary List documents uploaded by the current traveler for a trip
+ */
+export const listTripDocuments = async (tripId: number, options?: RequestInit): Promise<TripDocument[]> => {
+
+  return customFetch<TripDocument[]>(getListTripDocumentsUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripDocumentsQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/documents`
+    ] as const;
+    }
+
+
+export const getListTripDocumentsQueryOptions = <TData = Awaited<ReturnType<typeof listTripDocuments>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripDocumentsQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripDocuments>>> = ({ signal }) => listTripDocuments(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripDocuments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripDocumentsQueryResult = NonNullable<Awaited<ReturnType<typeof listTripDocuments>>>
+export type ListTripDocumentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List documents uploaded by the current traveler for a trip
+ */
+
+export function useListTripDocuments<TData = Awaited<ReturnType<typeof listTripDocuments>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripDocuments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripDocumentsQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripDocumentUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents`
+}
+
+/**
+ * @summary Register a document after uploading to object storage
+ */
+export const createTripDocument = async (tripId: number,
+    tripDocumentInput: TripDocumentInput, options?: RequestInit): Promise<TripDocument> => {
+
+  return customFetch<TripDocument>(getCreateTripDocumentUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripDocumentInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDocument>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripDocument>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext> => {
+
+const mutationKey = ['createTripDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripDocument>>, {tripId: number;data: BodyType<TripDocumentInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripDocument(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof createTripDocument>>>
+    export type CreateTripDocumentMutationBody = BodyType<TripDocumentInput>
+    export type CreateTripDocumentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Register a document after uploading to object storage
+ */
+export const useCreateTripDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDocument>>, TError,{tripId: number;data: BodyType<TripDocumentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripDocument>>,
+        TError,
+        {tripId: number;data: BodyType<TripDocumentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripDocumentMutationOptions(options));
+    }
+
+export const getDeleteTripDocumentUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents/${documentId}`
+}
+
+/**
+ * @summary Delete a document (must be the uploader)
+ */
+export const deleteTripDocument = async (tripId: number,
+    documentId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripDocumentUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocument>>, TError,{tripId: number;documentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocument>>, TError,{tripId: number;documentId: number}, TContext> => {
+
+const mutationKey = ['deleteTripDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripDocument>>, {tripId: number;documentId: number}> = (props) => {
+          const {tripId,documentId} = props ?? {};
+
+          return  deleteTripDocument(tripId,documentId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripDocument>>>
+
+    export type DeleteTripDocumentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a document (must be the uploader)
+ */
+export const useDeleteTripDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDocument>>, TError,{tripId: number;documentId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripDocument>>,
+        TError,
+        {tripId: number;documentId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripDocumentMutationOptions(options));
+    }
+
+export const getRequestUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const requestUploadUrl = async (uploadUrlRequest: UploadUrlRequest, options?: RequestInit): Promise<UploadUrlResponse> => {
+
+  return customFetch<UploadUrlResponse>(getRequestUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      uploadUrlRequest,)
+  }
+);}
+
+
+
+
+export const getRequestUploadUrlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext> => {
+
+const mutationKey = ['requestUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestUploadUrl>>, {data: BodyType<UploadUrlRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestUploadUrl>>>
+    export type RequestUploadUrlMutationBody = BodyType<UploadUrlRequest>
+    export type RequestUploadUrlMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request a presigned URL for file upload
+ */
+export const useRequestUploadUrl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestUploadUrl>>,
+        TError,
+        {data: BodyType<UploadUrlRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestUploadUrlMutationOptions(options));
+    }
+
+export const getDownloadStorageObjectUrl = (path: string,) => {
+
+
+
+
+  return `/api/storage/objects/${path}`
+}
+
+/**
+ * @summary Download a private stored object (uploader only)
+ */
+export const downloadStorageObject = async (path: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDownloadStorageObjectUrl(path),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadStorageObjectQueryKey = (path: string,) => {
+    return [
+    `/api/storage/objects/${path}`
+    ] as const;
+    }
+
+
+export const getDownloadStorageObjectQueryOptions = <TData = Awaited<ReturnType<typeof downloadStorageObject>>, TError = ErrorType<void>>(path: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStorageObject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadStorageObjectQueryKey(path);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadStorageObject>>> = ({ signal }) => downloadStorageObject(path, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(path), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadStorageObject>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadStorageObjectQueryResult = NonNullable<Awaited<ReturnType<typeof downloadStorageObject>>>
+export type DownloadStorageObjectQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download a private stored object (uploader only)
+ */
+
+export function useDownloadStorageObject<TData = Awaited<ReturnType<typeof downloadStorageObject>>, TError = ErrorType<void>>(
+ path: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadStorageObject>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadStorageObjectQueryOptions(path,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getDismissTripUrl = (tripId: number,) => {
 
