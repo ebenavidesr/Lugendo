@@ -1,6 +1,6 @@
 import { useParams, Link } from "wouter";
 import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -369,6 +369,13 @@ export default function ItineraryDetail() {
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const { data: itinerary, isLoading } = useGetItinerary(itineraryId);
   const { data: days, isLoading: daysLoading } = useListItineraryDays(itineraryId);
+
+  useEffect(() => {
+    if (days && days.length > 0) {
+      setExpandedDays(prev => (prev.size > 0 ? prev : new Set([days[0].id])));
+    }
+  }, [days?.[0]?.id]);
+
   const { data: hotels } = useListHotels();
   const createDay = useCreateItineraryDay();
   const deleteDay = useDeleteItineraryDay();

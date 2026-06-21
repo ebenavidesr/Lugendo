@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import {
   ArrowLeft, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight, Trash2, Loader2,
@@ -240,6 +240,12 @@ export default function TripDetail() {
   const [editingDayId, setEditingDayId] = useState<number | null>(null);
   const { data: trip, isLoading } = useGetTrip(tripId);
   const { data: itineraryDays } = useListItineraryDays(trip?.itineraryId ?? 0);
+
+  useEffect(() => {
+    if (trip?.days && trip.days.length > 0) {
+      setExpandedDays(prev => (prev.size > 0 ? prev : new Set([trip.days[0].id])));
+    }
+  }, [trip?.id]);
 
   const itineraryDayMap = Object.fromEntries(
     (itineraryDays ?? []).map(d => [d.dayNumber, d])

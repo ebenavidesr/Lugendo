@@ -59,7 +59,7 @@ export function ActivityDetailSheet({
   const [durationHours, setDurationHours] = useState("");
 
   useEffect(() => {
-    if (activity) {
+    if (open && activity) {
       setStartTime(activity.startTime ?? "");
       setEndTime(activity.endTime ?? "");
       setNotes(activity.notes ?? "");
@@ -70,7 +70,8 @@ export function ActivityDetailSheet({
       setAddress(activity.address ?? "");
       setDurationHours(activity.durationHours != null ? String(activity.durationHours) : "");
     }
-  }, [activity]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, activity?.id]);
 
   if (!activity) return null;
 
