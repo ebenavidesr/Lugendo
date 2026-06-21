@@ -183,6 +183,83 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
   return map;
 }
 
+// ─── Merge itinerary fallbacks into hotel/activity maps ──────────────────────
+// For trip days that have NO hotels in trip_day_hotels, fall back to the
+// corresponding itinerary_day_hotels (matched by day_number). Similarly, for
+// trip_day_activities with a null startTime, fall back to the itinerary
+// activity's startTime (matched by activityId + day_number). This handles the
+// common case where the admin adds/edits data on the itinerary AFTER the trip
+// was already created and copied.
+async function mergeItineraryFallbacks(
+  itineraryId: number | null,
+  tripDays: Array<typeof tripDaysTable.$inferSelect>,
+  hotelMap: Record<number, ReturnType<typeof serializeDayHotel>[]>,
+  activityMap: Record<number, Array<{ startTime: string | null; activityId: number | null }>>,
+): Promise<void> {
+  if (!itineraryId || tripDays.length === 0) return;
+
+  const itinDays = await db
+    .select()
+    .from(itineraryDaysTable)
+    .where(eq(itineraryDaysTable.itineraryId, itineraryId))
+    .orderBy(itineraryDaysTable.dayNumber);
+  if (itinDays.length === 0) return;
+
+  const dayNumToItinDay = new Map<number, typeof itinDays[0]>();
+  for (const id of itinDays) dayNumToItinDay.set(id.dayNumber, id);
+
+  // 1. Hotel fallback: days with no trip hotels → use itinerary hotels
+  const tripDaysNoHotels = tripDays.filter(d => (hotelMap[d.id] ?? []).length === 0);
+  if (tripDaysNoHotels.length > 0) {
+    const itinDayIds = tripDaysNoHotels
+      .map(d => dayNumToItinDay.get(d.dayNumber)?.id)
+      .filter((id): id is number => id !== undefined);
+    if (itinDayIds.length > 0) {
+      const fallbackHotelMap = await getTravelerDayHotelMap(itinDayIds, "itinerary");
+      for (const tripDay of tripDaysNoHotels) {
+        const itinDay = dayNumToItinDay.get(tripDay.dayNumber);
+        if (itinDay) {
+          const fallback = fallbackHotelMap[itinDay.id];
+          if (fallback && fallback.length > 0) hotelMap[tripDay.id] = fallback;
+        }
+      }
+    }
+  }
+
+  // 2. Activity time fallback: null startTime → use itinerary activity's startTime
+  const hasNullTime = tripDays.some(d =>
+    (activityMap[d.id] ?? []).some(a => a.startTime === null && a.activityId !== null),
+  );
+  if (!hasNullTime) return;
+
+  const allItinDayIds = tripDays
+    .map(d => dayNumToItinDay.get(d.dayNumber)?.id)
+    .filter((id): id is number => id !== undefined);
+  if (allItinDayIds.length === 0) return;
+
+  const itinActivities = await db
+    .select({ dayId: itineraryDayActivitiesTable.dayId, activityId: itineraryDayActivitiesTable.activityId, startTime: itineraryDayActivitiesTable.startTime })
+    .from(itineraryDayActivitiesTable)
+    .where(inArray(itineraryDayActivitiesTable.dayId, allItinDayIds));
+
+  const itinTimeMap = new Map<string, string>();
+  for (const ia of itinActivities) {
+    if (ia.startTime && ia.activityId) itinTimeMap.set(`${ia.dayId}:${ia.activityId}`, ia.startTime);
+  }
+  if (itinTimeMap.size === 0) return;
+
+  for (const tripDay of tripDays) {
+    const itinDay = dayNumToItinDay.get(tripDay.dayNumber);
+    if (!itinDay) continue;
+    for (const act of activityMap[tripDay.id] ?? []) {
+      if (act.startTime === null && act.activityId !== null) {
+        const fallback = itinTimeMap.get(`${itinDay.id}:${act.activityId}`);
+        if (fallback) act.startTime = fallback;
+      }
+    }
+  }
+}
+
 // ─── List trips (agency-invited + own personal trips) ───────────────────────
 // Statuses where a shared trip belongs in "Mis viajes" (pre-start / travel companion).
 // Ongoing/completed/cancelled shared trips go to "Compartidos" instead.
@@ -454,6 +531,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
       getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
       getTripDayActivityMap(tripDayRows.map(d => d.id), currentUserId),
     ]);
+    await mergeItineraryFallbacks(row.itineraryId, tripDayRows, hotelMap, activityMap);
     days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
   } else if (row.itineraryId) {
     // Lazy-migrate: copy itinerary_days → trip_days (with activities + hotels)
@@ -464,6 +542,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
         getTravelerDayHotelMap(effectiveTripDays.map(d => d.id), "trip"),
         getTripDayActivityMap(effectiveTripDays.map(d => d.id), currentUserId),
       ]);
+      await mergeItineraryFallbacks(row.itineraryId, effectiveTripDays, hotelMap, activityMap);
       days = effectiveTripDays.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
     }
   }

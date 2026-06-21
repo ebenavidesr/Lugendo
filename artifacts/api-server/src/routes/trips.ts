@@ -507,8 +507,8 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
 
   res.json((rows.rows as Array<Record<string, unknown>>).map(r => {
     const createdByUserId = r.created_by_user_id != null ? Number(r.created_by_user_id) : null;
-    // Strict creator-only
-    const canEdit = createdByUserId === currentUserId;
+    // Agency staff can edit any activity; travelers can only edit their own
+    const canEdit = isAgencyStaff || createdByUserId === currentUserId;
     return serializeDayActivity({
       id: Number(r.id),
       dayId: Number(r.day_id),
@@ -649,10 +649,9 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     ));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Strict creator-only: only the person who created the activity link can edit it
+  // Agency staff can edit any activity on their agency's trips; travelers can only edit their own
   const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
-  void isAgencyStaff; // used for canEdit response below
-  if (existing.createdByUserId !== currentUserId) {
+  if (!isAgencyStaff && existing.createdByUserId !== currentUserId) {
     res.status(403).json({ error: "Solo el creador puede editar esta actividad" });
     return;
   }
