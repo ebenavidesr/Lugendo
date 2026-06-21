@@ -24,6 +24,11 @@ const statusStyle: Record<string, { bg: string; color: string; label: string }> 
   rejected: { bg: "#FDECEA", color: "#C0392B", label: "Rechazado" },
 };
 
+const permStyle: Record<string, { bg: string; color: string; label: string }> = {
+  read: { bg: "#E8F0FB", color: "#2B5BAD", label: "Solo ver" },
+  full: { bg: "#EDE9F7", color: "#3D2F6B", label: "Edición completa" },
+};
+
 function InviteDialog({
   tripId, open, onClose,
 }: { tripId: number; open: boolean; onClose: () => void }) {
@@ -88,8 +93,8 @@ function InviteDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="read">Solo lectura</SelectItem>
-                <SelectItem value="full">Acceso completo — puede editar notas</SelectItem>
+                <SelectItem value="read">Solo ver</SelectItem>
+                <SelectItem value="full">Edición completa</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -225,19 +230,28 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
         ) : (
           shares.map((s: TripShare) => {
             const st = statusStyle[s.status] ?? statusStyle.pending;
+            const pm = permStyle[s.permission] ?? permStyle.read;
             return (
               <div key={s.id} className="p-4 rounded-[14px] border border-border bg-card space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
                       {s.sharedWithEmail}
                     </p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      {/* Status badge */}
                       <span
                         className="text-[11px] px-2 py-0.5 rounded-full font-medium"
                         style={{ background: st.bg, color: st.color }}
                       >
                         {st.label}
+                      </span>
+                      {/* Permission badge — always visible */}
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: pm.bg, color: pm.color }}
+                      >
+                        {pm.label}
                       </span>
                       {s.status === "pending" && (
                         <button
@@ -274,17 +288,10 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="read">Solo lectura</SelectItem>
-                        <SelectItem value="full">Acceso completo</SelectItem>
+                        <SelectItem value="read">Solo ver</SelectItem>
+                        <SelectItem value="full">Edición completa</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                )}
-                {!canEdit && (
-                  <div className="pt-2 border-t border-border/50">
-                    <span className="text-[11px] text-muted-foreground">
-                      {s.permission === "full" ? "Acceso completo" : "Solo lectura"}
-                    </span>
                   </div>
                 )}
               </div>
