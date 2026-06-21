@@ -71,7 +71,7 @@ export const HotelUpdateSchema = z.object({
 
 export const DayHotelInputSchema = z.object({
   hotelId: z.number().int().positive(),
-  segment: SegmentSchema,
+  segment: SegmentOptionalSchema,
 });
 
 export const ItineraryDayActivityInputSchema = z.object({

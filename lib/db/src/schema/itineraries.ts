@@ -42,7 +42,7 @@ export const itineraryDayHotelsTable = pgTable("itinerary_day_hotels", {
   id: serial("id").primaryKey(),
   itineraryDayId: integer("itinerary_day_id").notNull().references(() => itineraryDaysTable.id, { onDelete: "cascade" }),
   hotelId: integer("hotel_id").notNull().references(() => hotelsTable.id, { onDelete: "cascade" }),
-  segment: text("segment", { enum: ["basic", "standard", "premium"] }).notNull(),
+  segment: text("segment", { enum: ["basic", "standard", "premium"] }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

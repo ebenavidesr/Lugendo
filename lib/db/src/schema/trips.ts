@@ -61,7 +61,7 @@ export const tripDayHotelsTable = pgTable("trip_day_hotels", {
   id: serial("id").primaryKey(),
   tripDayId: integer("trip_day_id").notNull().references(() => tripDaysTable.id, { onDelete: "cascade" }),
   hotelId: integer("hotel_id").notNull().references(() => hotelsTable.id, { onDelete: "cascade" }),
-  segment: text("segment", { enum: ["basic", "standard", "premium"] }).notNull(),
+  segment: text("segment", { enum: ["basic", "standard", "premium"] }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

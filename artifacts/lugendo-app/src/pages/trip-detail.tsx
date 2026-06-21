@@ -531,7 +531,7 @@ export default function TripDetail() {
                       )}
                       {isExpanded && !isEditingThisDay && (
                         <>
-                          <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} />
+                          <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
                           <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
                         </>
                       )}
