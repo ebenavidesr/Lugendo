@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X,
+  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X, ExternalLink,
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
@@ -417,7 +417,10 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
 
       {/* Preview dialog */}
       <Dialog open={!!preview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
-        <DialogContent className="max-w-4xl w-full p-0 gap-0 overflow-hidden" style={{ maxHeight: "90vh" }}>
+        <DialogContent
+          className="w-full p-0 gap-0 overflow-hidden sm:max-w-4xl"
+          style={{ maxHeight: "90svh" }}
+        >
           <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 border-b shrink-0">
             <DialogTitle className="text-[14px] font-medium truncate pr-4" style={{ color: "var(--noche)" }}>
               {preview?.doc.filename}
@@ -427,10 +430,11 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                 size="sm"
                 variant="ghost"
                 onClick={() => preview && handleDownload(preview.doc)}
+                disabled={!!downloadingId}
                 className="h-8 gap-1.5 text-[12px]"
               >
                 <Download className="w-3.5 h-3.5" />
-                Descargar
+                <span className="hidden sm:inline">Descargar</span>
               </Button>
               <button
                 onClick={() => setPreview(null)}
@@ -441,22 +445,52 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
             </div>
           </DialogHeader>
 
-          <div className="overflow-auto flex-1" style={{ maxHeight: "calc(90vh - 57px)" }}>
+          <div className="overflow-auto flex-1" style={{ maxHeight: "calc(90svh - 57px)" }}>
             {preview?.doc.mimeType === "application/pdf" && (
-              <iframe
-                src={preview.url}
-                className="w-full border-0"
-                style={{ height: "calc(90vh - 57px)", minHeight: 400 }}
-                title={preview.doc.filename}
-              />
+              <>
+                {/* Desktop: inline iframe */}
+                <iframe
+                  src={preview.url}
+                  className="hidden sm:block w-full border-0"
+                  style={{ height: "calc(90svh - 57px)", minHeight: 400 }}
+                  title={preview.doc.filename}
+                />
+                {/* Mobile: native open prompt (iOS Safari can't render PDF in iframe) */}
+                <div className="flex sm:hidden flex-col items-center justify-center gap-4 p-8 text-center min-h-[260px]">
+                  <div
+                    className="w-16 h-16 rounded-[18px] flex items-center justify-center"
+                    style={{ background: "rgba(61,47,107,0.10)" }}
+                  >
+                    <FileText className="w-8 h-8" style={{ color: "var(--indigo)" }} />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-medium mb-1" style={{ color: "var(--noche)" }}>
+                      {preview.doc.filename}
+                    </p>
+                    <p className="text-[13px] text-muted-foreground">
+                      Abre el PDF en tu navegador para verlo o descargarlo
+                    </p>
+                  </div>
+                  <a
+                    href={preview.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[10px] text-[14px] font-medium transition-opacity hover:opacity-90"
+                    style={{ background: "var(--terra)", color: "#fff" }}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Abrir PDF
+                  </a>
+                </div>
+              </>
             )}
             {preview?.doc.mimeType.startsWith("image/") && (
-              <div className="flex items-center justify-center p-4 min-h-[300px]">
+              <div className="flex items-center justify-center p-4 min-h-[200px]">
                 <img
                   src={preview.url}
                   alt={preview.doc.filename}
                   className="max-w-full max-h-full object-contain rounded-[8px]"
-                  style={{ maxHeight: "calc(90vh - 89px)" }}
+                  style={{ maxHeight: "calc(90svh - 89px)" }}
                 />
               </div>
             )}
