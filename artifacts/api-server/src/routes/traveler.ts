@@ -139,7 +139,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
       a.address AS activity_address, a.duration_hours AS activity_duration_hours
     FROM trip_day_activities tda
     LEFT JOIN activities a ON a.id = tda.activity_id
-    WHERE tda.day_id = ANY(${dayIds})
+    WHERE tda.day_id IN ${dayIds}
     ORDER BY
       tda.day_id,
       CASE WHEN tda.start_time IS NULL THEN 1 ELSE 0 END,

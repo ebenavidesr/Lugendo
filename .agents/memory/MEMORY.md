@@ -1,3 +1,4 @@
 - [Circular import pattern](circular-import-fix.md) — extract shared constants to a standalone `.ts` file; re-exporting from a consumer causes Vite HMR circular import failures.
 - [Drizzle LEFT JOIN for nullable FKs](drizzle-nullable-fk.md) — when a FK is nullable (e.g. activityId), use raw SQL with LEFT JOIN, not INNER JOIN, so rows without a linked record still appear.
 - [Post-merge codegen requirement](post-merge-codegen.md) — after any task merge touching DB schema or OpenAPI, run typecheck:libs + codegen before deploying or runtimes break.
+- [Drizzle sql array interpolation](drizzle-sql-array.md) — `${jsArray}` in drizzle sql`` generates a tuple `($1,$2)`, valid for `IN` but NOT for `= ANY()`.

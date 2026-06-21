@@ -32,16 +32,13 @@ export const db = drizzle(pool, { schema });
  * Runs unconditionally at every startup (negligible overhead).
  */
 async function ensureProductionColumns(): Promise<void> {
-  process.stderr.write("[epc] start\n");
   const { rows: check } = await pool.query<{ exists: boolean }>(`
     SELECT EXISTS (
       SELECT 1 FROM information_schema.tables
       WHERE table_schema = 'public' AND table_name = 'trip_day_activities'
     ) AS exists
   `);
-  const tableExists = check[0]?.exists;
-  process.stderr.write(`[epc] trip_day_activities exists=${JSON.stringify(tableExists)}\n`);
-  if (!tableExists) return;
+  if (!check[0]?.exists) return;
 
   const alterations = [
     `ALTER TABLE activities ADD COLUMN IF NOT EXISTS address text`,
@@ -55,9 +52,7 @@ async function ensureProductionColumns(): Promise<void> {
     `ALTER TABLE trip_day_activities ADD COLUMN IF NOT EXISTS created_by_user_id integer`,
   ];
   for (const stmt of alterations) {
-    process.stderr.write(`[epc] running: ${stmt}\n`);
     await pool.query(stmt);
-    process.stderr.write(`[epc] ok\n`);
   }
   await pool.query(`
     DO $$ BEGIN
@@ -67,14 +62,6 @@ async function ensureProductionColumns(): Promise<void> {
     EXCEPTION WHEN duplicate_object THEN null;
     END $$
   `);
-
-  // Verify: log actual columns so we can confirm in prod logs
-  const { rows: cols } = await pool.query<{ column_name: string }>(`
-    SELECT column_name FROM information_schema.columns
-    WHERE table_schema='public' AND table_name='trip_day_activities'
-    ORDER BY ordinal_position
-  `);
-  process.stderr.write(`[epc] tda columns after alter: ${cols.map(c => c.column_name).join(",")}\n`);
 }
 
 /**
