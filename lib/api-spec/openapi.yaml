@@ -740,7 +740,50 @@ paths:
         "403":
           description: Forbidden
 
+  /trips/{tripId}/days:
+    post:
+      operationId: createTripDayAdmin
+      tags: [trips]
+      summary: Add a day to a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonalTripDayInput"
+      responses:
+        "201":
+          description: Day created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripDay"
+
   /trips/{tripId}/days/{dayId}:
+    delete:
+      operationId: deleteTripDayAdmin
+      tags: [trips]
+      summary: Delete a day from a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
     patch:
       operationId: updateTripDayAdmin
       tags: [trips]

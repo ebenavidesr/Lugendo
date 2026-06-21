@@ -951,6 +951,32 @@ export const DeleteTripResponse = zod.object({
 
 
 /**
+ * @summary Add a day to a trip (back-office)
+ */
+export const CreateTripDayAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripDayAdminBody = zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
+  "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "description": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a day from a trip (back-office)
+ */
+export const DeleteTripDayAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number()
+})
+
+
+/**
  * @summary Update a trip day (back-office)
  */
 export const UpdateTripDayAdminParams = zod.object({

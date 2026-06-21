@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Plane, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  ArrowLeft, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight, Trash2, Loader2,
+} from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays } from "@workspace/api-client-react";
+import {
+  useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays,
+  useUpdateTripDayAdmin, useCreateTripDayAdmin, useDeleteTripDayAdmin,
+  COUNTRIES,
+} from "@workspace/api-client-react";
+import type { TripDetailStatus, InvitationStatus, TransportMode } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
-import { TransportLabel } from "@/components/transport-select";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
+import { InlineField } from "@/components/inline-field";
+import { FlightEditPanel } from "@/components/flight-edit-panel";
+import type { FlightLeg } from "@/components/flight-edit-panel";
+import { TRANSPORT_OPTIONS } from "@/components/transport-select";
 import { useQueryClient } from "@tanstack/react-query";
-import type { TripDetailStatus, InvitationStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -53,15 +62,182 @@ const inviteSchema = z.object({
   }
 });
 
-const statusSchema = z.object({
-  status: z.enum(["draft", "scheduled", "active", "finished", "cancelled"]),
-});
+function toApiLeg(l: FlightLeg) {
+  return {
+    airline: l.airline || undefined,
+    flightNumber: l.flightNumber || undefined,
+    cityFrom: l.cityFrom || undefined,
+    cityTo: l.cityTo || undefined,
+    departureTime: l.departureTime || undefined,
+    arrivalTime: l.arrivalTime || undefined,
+    reservationCode: l.reservationCode || undefined,
+  };
+}
+
+function fromApiLeg(l: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string; } | null | undefined): FlightLeg {
+  return {
+    airline: l?.airline ?? "",
+    flightNumber: l?.flightNumber ?? "",
+    cityFrom: l?.cityFrom ?? "",
+    cityTo: l?.cityTo ?? "",
+    departureTime: l?.departureTime ?? "",
+    arrivalTime: l?.arrivalTime ?? "",
+    reservationCode: l?.reservationCode ?? "",
+  };
+}
+
+interface DayEditFormProps {
+  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null; description?: string | null; };
+  tripId: number;
+  onDone: () => void;
+}
+
+function DayEditForm({ day, tripId, onDone }: DayEditFormProps) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const updateDay = useUpdateTripDayAdmin();
+  const deleteDay = useDeleteTripDayAdmin();
+  const [cityFrom, setCityFrom] = useState(day.cityFrom ?? "");
+  const [cityTo, setCityTo] = useState(day.cityTo ?? "");
+  const [country, setCountry] = useState(day.country ?? "");
+  const [transport, setTransport] = useState(day.transport ?? "");
+  const [description, setDescription] = useState(day.description ?? "");
+
+  const handleSave = () => {
+    updateDay.mutate(
+      {
+        tripId,
+        dayId: day.id,
+        data: {
+          cityFrom: cityFrom.trim() || null,
+          cityTo: cityTo.trim() || null,
+          country: country || null,
+          transport: (transport || null) as TransportMode | null,
+          description: description.trim() || null,
+        },
+      },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+          toast({ title: "Día actualizado" });
+          onDone();
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al actualizar el día" }),
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    if (!confirm("¿Eliminar este día del itinerario?")) return;
+    deleteDay.mutate(
+      { tripId, dayId: day.id },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+          toast({ title: "Día eliminado" });
+          onDone();
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al eliminar el día" }),
+      }
+    );
+  };
+
+  return (
+    <div className="border-t border-border/60 px-3 py-3 space-y-2.5" style={{ background: "#FAF8FC" }}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Editar día</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">Ciudad origen</label>
+          <input
+            className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B]"
+            placeholder="Madrid"
+            value={cityFrom}
+            onChange={e => setCityFrom(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">Ciudad destino</label>
+          <input
+            className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B]"
+            placeholder="Tokio"
+            value={cityTo}
+            onChange={e => setCityTo(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">País</label>
+          <select
+            className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] bg-white"
+            value={country}
+            onChange={e => setCountry(e.target.value)}
+          >
+            <option value="">— País —</option>
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={c.code}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[11px] text-muted-foreground">Transporte</label>
+          <select
+            className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] bg-white"
+            value={transport}
+            onChange={e => setTransport(e.target.value)}
+          >
+            <option value="">— Transporte —</option>
+            {TRANSPORT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <label className="text-[11px] text-muted-foreground">Descripción</label>
+        <textarea
+          className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] resize-none"
+          rows={2}
+          placeholder="Notas sobre este día…"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+        />
+      </div>
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          onClick={handleSave}
+          disabled={updateDay.isPending}
+          className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[6px] text-[12px] font-medium disabled:opacity-50"
+          style={{ background: "#3D2F6B", color: "#FAF2EB" }}
+        >
+          {updateDay.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+          {updateDay.isPending ? "Guardando…" : "Guardar"}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={deleteDay.isPending}
+          className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[6px] text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-50"
+        >
+          <Trash2 className="w-3 h-3" />
+          Eliminar día
+        </button>
+        <button
+          onClick={onDone}
+          className="h-7 px-3 rounded-[6px] text-[12px] text-muted-foreground hover:bg-muted/40"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function TripDetail() {
   const params = useParams<{ id: string }>();
   const tripId = parseInt(params.id ?? "0");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
+  const [editingDayId, setEditingDayId] = useState<number | null>(null);
   const { data: trip, isLoading } = useGetTrip(tripId);
   const { data: itineraryDays } = useListItineraryDays(trip?.itineraryId ?? 0);
 
@@ -77,8 +253,10 @@ export default function TripDetail() {
       return next;
     });
   };
+
   const sendInv = useSendInvitations();
   const updateTrip = useUpdateTrip();
+  const createTripDay = useCreateTripDayAdmin();
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -87,11 +265,6 @@ export default function TripDetail() {
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
     defaultValues: { emails: "" },
-  });
-
-  const statusForm = useForm<z.infer<typeof statusSchema>>({
-    resolver: zodResolver(statusSchema),
-    values: { status: trip?.status ?? "draft" },
   });
 
   const onInvite = (values: z.infer<typeof inviteSchema>) => {
@@ -118,6 +291,39 @@ export default function TripDetail() {
     });
   };
 
+  const saveField = async (patch: Record<string, unknown>) => {
+    await updateTrip.mutateAsync({ tripId, data: patch as Parameters<typeof updateTrip.mutateAsync>[0]["data"] });
+    await qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+    await qc.invalidateQueries({ queryKey: ["/api/trips"] });
+  };
+
+  const handleSaveFlights = async (data: { outboundFlights: FlightLeg[]; returnFlights: FlightLeg[] }) => {
+    await updateTrip.mutateAsync({
+      tripId,
+      data: {
+        outboundFlights: data.outboundFlights.map(toApiLeg),
+        returnFlights: data.returnFlights.map(toApiLeg),
+      },
+    });
+    await qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+    toast({ title: "Vuelos guardados" });
+  };
+
+  const handleAddDay = () => {
+    const days = trip?.days ?? [];
+    const nextNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
+    createTripDay.mutate(
+      { tripId, data: { dayNumber: nextNum, cityFrom: null, cityTo: null, country: null, transport: null, description: null } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+          toast({ title: `Día ${nextNum} añadido` });
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al añadir el día" }),
+      }
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-4 max-w-5xl">
@@ -141,22 +347,44 @@ export default function TripDetail() {
   const s = statusBadge[trip.status] ?? statusBadge.draft;
   const accepted = trip.invitations?.filter(i => i.status === "accepted").length ?? 0;
 
+  const outboundFlights: FlightLeg[] = trip.outboundFlights && trip.outboundFlights.length > 0
+    ? trip.outboundFlights.map(fromApiLeg)
+    : (trip.airline || trip.flightNumber)
+      ? [fromApiLeg({ airline: trip.airline ?? "", flightNumber: trip.flightNumber ?? "", departureTime: trip.flightTime ?? "", reservationCode: trip.reservationCode ?? "" })]
+      : [];
+
+  const returnFlights: FlightLeg[] = trip.returnFlights && trip.returnFlights.length > 0
+    ? trip.returnFlights.map(fromApiLeg)
+    : [];
+
   return (
     <div className="p-6 space-y-5 max-w-5xl">
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1 min-w-0">
           <Link href="/trips" className="inline-flex items-center gap-1 text-[12px] text-muted-foreground mb-2 hover:text-foreground">
             <ArrowLeft className="w-3.5 h-3.5" /> Todos los viajes
           </Link>
-          <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{trip.name}</h1>
+          <InlineField
+            value={trip.name}
+            onSave={v => saveField({ name: v })}
+            displayClassName="text-2xl font-medium"
+            inputClassName="text-xl font-medium"
+            className="mb-0.5"
+          />
           {trip.itineraryName && (
             <p className="text-sm text-muted-foreground mt-0.5">Itinerario: {trip.itineraryName}</p>
           )}
-          {trip.description && (
-            <p className="text-sm text-muted-foreground mt-1 max-w-xl">{trip.description}</p>
-          )}
+          <InlineField
+            value={trip.description ?? ""}
+            onSave={v => saveField({ description: v || null })}
+            type="textarea"
+            emptyPlaceholder="Añadir descripción…"
+            displayClassName="text-sm text-muted-foreground mt-1 max-w-xl"
+            className="mt-1"
+            rows={3}
+          />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-4">
           <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium"
             style={{ background: s.bg, color: s.color }}>{s.label}</span>
           <Select value={trip.status} onValueChange={v => onStatusChange(v as TripDetailStatus)}>
@@ -174,134 +402,169 @@ export default function TripDetail() {
         </div>
       </div>
 
-      {/* Info cards */}
+      {/* Info cards — with inline editing for dates and capacity */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-[14px] p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Calendar className="w-3.5 h-3.5" />
             <span className="text-[11px] uppercase tracking-wider font-medium">Inicio</span>
           </div>
-          <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>{fmt(trip.startDate)}</p>
+          <InlineField
+            value={trip.startDate}
+            onSave={v => saveField({ startDate: v })}
+            type="date"
+            displayClassName="text-[14px] font-medium"
+          />
         </div>
         <div className="bg-card border border-border rounded-[14px] p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Calendar className="w-3.5 h-3.5" />
             <span className="text-[11px] uppercase tracking-wider font-medium">Fin</span>
           </div>
-          <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>
-            {trip.endDate ? fmt(trip.endDate) : "—"}
-          </p>
+          <InlineField
+            value={trip.endDate ?? ""}
+            onSave={v => saveField({ endDate: v || null })}
+            type="date"
+            emptyPlaceholder="Sin fecha"
+            displayClassName="text-[14px] font-medium"
+          />
         </div>
         <div className="bg-card border border-border rounded-[14px] p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
             <Users className="w-3.5 h-3.5" />
-            <span className="text-[11px] uppercase tracking-wider font-medium">Viajeros</span>
+            <span className="text-[11px] uppercase tracking-wider font-medium">Viajeros / Cap.</span>
           </div>
-          <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>
-            {accepted}{trip.maxCapacity ? `/${trip.maxCapacity}` : ""}
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>{accepted}</p>
+            <span className="text-muted-foreground text-[13px]">/</span>
+            <InlineField
+              value={trip.maxCapacity != null ? String(trip.maxCapacity) : ""}
+              onSave={v => saveField({ maxCapacity: v ? parseInt(v, 10) : null })}
+              type="number"
+              emptyPlaceholder="∞"
+              displayClassName="text-[14px] font-medium"
+              inputClassName="w-16"
+            />
+          </div>
         </div>
         <div className="bg-card border border-border rounded-[14px] p-4">
           <div className="flex items-center gap-2 text-muted-foreground mb-1">
-            <Plane className="w-3.5 h-3.5" />
-            <span className="text-[11px] uppercase tracking-wider font-medium">Vuelo</span>
+            <Mail className="w-3.5 h-3.5" />
+            <span className="text-[11px] uppercase tracking-wider font-medium">Invitados</span>
           </div>
           <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>
-            {trip.flightNumber ?? "—"}
+            {trip.invitations?.length ?? 0}
           </p>
-          {trip.airline && <p className="text-[11px] text-muted-foreground">{trip.airline}</p>}
         </div>
       </div>
 
-      {/* Flight details */}
-      {(trip.reservationCode || trip.flightTime || trip.flightNotes) && (
-        <div className="bg-card border border-border rounded-[14px] p-5">
-          <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3">Info de vuelo</p>
-          <div className="grid grid-cols-3 gap-4 text-[13px]">
-            {trip.reservationCode && (
-              <div>
-                <p className="text-muted-foreground text-[11px] mb-0.5">Código reserva</p>
-                <p className="font-medium font-mono" style={{ color: "#2D1F0E" }}>{trip.reservationCode}</p>
-              </div>
-            )}
-            {trip.flightTime && (
-              <div>
-                <p className="text-muted-foreground text-[11px] mb-0.5">Hora vuelo</p>
-                <p className="font-medium" style={{ color: "#2D1F0E" }}>{trip.flightTime}</p>
-              </div>
-            )}
-          </div>
-          {trip.flightNotes && (
-            <p className="text-[13px] text-muted-foreground mt-3 p-3 rounded-[8px]"
-              style={{ background: "#FAF2EB" }}>{trip.flightNotes}</p>
-          )}
-        </div>
-      )}
+      {/* Flight panel */}
+      <FlightEditPanel
+        outboundFlights={outboundFlights}
+        returnFlights={returnFlights}
+        onSave={handleSaveFlights}
+      />
 
       {/* Days */}
-      {trip.days && trip.days.length > 0 && (
+      {trip.days && (
         <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
           <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
             <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
               Días del itinerario ({trip.days.length})
             </span>
-            {trip.itineraryId && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  if (expandedDays.size > 0) setExpandedDays(new Set());
-                  else setExpandedDays(new Set(trip.days!.map(d => d.id)));
-                }}
-                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                {expandedDays.size > 0 ? "Colapsar todos" : "Expandir actividades"}
+                onClick={handleAddDay}
+                disabled={createTripDay.isPending}
+                className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full transition-colors"
+                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+              >
+                {createTripDay.isPending
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <Plus className="w-3 h-3" />}
+                Añadir día
               </button>
-            )}
+              {trip.days.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (expandedDays.size > 0) setExpandedDays(new Set());
+                    else setExpandedDays(new Set(trip.days!.map(d => d.id)));
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                  {expandedDays.size > 0 ? "Colapsar todos" : "Expandir todos"}
+                </button>
+              )}
+            </div>
           </div>
-          <ul className="divide-y divide-border/60">
-            {trip.days.map(day => {
-              const isExpanded = expandedDays.has(day.id);
-              const itDay = itineraryDayMap[day.dayNumber];
-              return (
-                <li key={day.id} className="px-5 py-3 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-medium"
-                    style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                    {day.dayNumber}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
-                      {day.cityFrom && day.cityTo
-                        ? `${day.cityFrom} → ${day.cityTo}`
-                        : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                    </p>
-                    {day.hotels && day.hotels.length > 0 && (
-                      <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
-                    )}
-                    {day.transport && (
-                      <p className="text-[12px] text-muted-foreground">
-                        <TransportLabel value={day.transport} />
+          {trip.days.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+              No hay días en este itinerario. Haz clic en "Añadir día" para empezar.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {trip.days.map(day => {
+                const isExpanded = expandedDays.has(day.id);
+                const isEditingThisDay = editingDayId === day.id;
+                return (
+                  <li key={day.id} className="flex items-start gap-4 px-5 py-3">
+                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-medium"
+                      style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                      {day.dayNumber}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+                        {day.cityFrom && day.cityTo
+                          ? `${day.cityFrom} → ${day.cityTo}`
+                          : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
                       </p>
-                    )}
-                    {day.description && (
-                      <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
-                    )}
-                    {isExpanded && (
-                      <>
-                        <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} />
-                        <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
-                      </>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => toggleDay(day.id)}
-                    className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0 mt-0.5"
-                    title={isExpanded ? "Colapsar actividades" : "Ver actividades"}>
-                    {isExpanded
-                      ? <ChevronDown className="w-4 h-4" />
-                      : <ChevronRight className="w-4 h-4" />}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                      {day.hotels && day.hotels.length > 0 && (
+                        <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
+                      )}
+                      {day.description && (
+                        <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
+                      )}
+                      {isExpanded && !isEditingThisDay && (
+                        <>
+                          <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} />
+                          <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
+                        </>
+                      )}
+                      {isEditingThisDay && (
+                        <DayEditForm
+                          day={day}
+                          tripId={tripId}
+                          onDone={() => setEditingDayId(null)}
+                        />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                      <button
+                        onClick={() => {
+                          setEditingDayId(isEditingThisDay ? null : day.id);
+                          if (!isExpanded) toggleDay(day.id);
+                        }}
+                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-[#3D2F6B] hover:bg-[#EAE6F5] transition-colors"
+                        title="Editar día"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => toggleDay(day.id)}
+                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        title={isExpanded ? "Colapsar" : "Ver actividades"}>
+                        {isExpanded
+                          ? <ChevronDown className="w-4 h-4" />
+                          : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
 

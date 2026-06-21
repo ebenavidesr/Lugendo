@@ -2823,6 +2823,150 @@ export const useDeleteTrip = <TError = ErrorType<void>,
       return useMutation(getDeleteTripMutationOptions(options));
     }
 
+export const getCreateTripDayAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days`
+}
+
+/**
+ * @summary Add a day to a trip (back-office)
+ */
+export const createTripDayAdmin = async (tripId: number,
+    personalTripDayInput: PersonalTripDayInput, options?: RequestInit): Promise<TripDay> => {
+
+  return customFetch<TripDay>(getCreateTripDayAdminUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      personalTripDayInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripDayAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDayAdmin>>, TError,{tripId: number;data: BodyType<PersonalTripDayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripDayAdmin>>, TError,{tripId: number;data: BodyType<PersonalTripDayInput>}, TContext> => {
+
+const mutationKey = ['createTripDayAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripDayAdmin>>, {tripId: number;data: BodyType<PersonalTripDayInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripDayAdmin(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripDayAdminMutationResult = NonNullable<Awaited<ReturnType<typeof createTripDayAdmin>>>
+    export type CreateTripDayAdminMutationBody = BodyType<PersonalTripDayInput>
+    export type CreateTripDayAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a day to a trip (back-office)
+ */
+export const useCreateTripDayAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripDayAdmin>>, TError,{tripId: number;data: BodyType<PersonalTripDayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripDayAdmin>>,
+        TError,
+        {tripId: number;data: BodyType<PersonalTripDayInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripDayAdminMutationOptions(options));
+    }
+
+export const getDeleteTripDayAdminUrl = (tripId: number,
+    dayId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}`
+}
+
+/**
+ * @summary Delete a day from a trip (back-office)
+ */
+export const deleteTripDayAdmin = async (tripId: number,
+    dayId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripDayAdminUrl(tripId,dayId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripDayAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDayAdmin>>, TError,{tripId: number;dayId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripDayAdmin>>, TError,{tripId: number;dayId: number}, TContext> => {
+
+const mutationKey = ['deleteTripDayAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripDayAdmin>>, {tripId: number;dayId: number}> = (props) => {
+          const {tripId,dayId} = props ?? {};
+
+          return  deleteTripDayAdmin(tripId,dayId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripDayAdminMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripDayAdmin>>>
+
+    export type DeleteTripDayAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a day from a trip (back-office)
+ */
+export const useDeleteTripDayAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripDayAdmin>>, TError,{tripId: number;dayId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripDayAdmin>>,
+        TError,
+        {tripId: number;dayId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripDayAdminMutationOptions(options));
+    }
+
 export const getUpdateTripDayAdminUrl = (tripId: number,
     dayId: number,) => {
 

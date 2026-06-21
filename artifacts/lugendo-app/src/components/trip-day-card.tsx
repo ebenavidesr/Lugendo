@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Camera, Hotel, ChevronRight, Star, X, Plus, Pencil } from "lucide-react";
+import { Camera, Hotel, ChevronRight, Star, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import type { TripDay, TripDayActivityItem, DayActivity } from "@workspace/api-client-react";
-import { useRemoveTripDayActivity } from "@workspace/api-client-react";
+import { useRemoveTripDayActivity, COUNTRIES } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { getTransportOption } from "@/components/transport-select";
+import { getTransportOption, TRANSPORT_OPTIONS } from "@/components/transport-select";
 import { FreeActivitySheet } from "@/components/free-activity-sheet";
 import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
 
@@ -55,6 +55,14 @@ function formatTimeRange(startTime: string | null | undefined, endTime: string |
   return startTime;
 }
 
+export interface DayEditData {
+  cityFrom: string | null;
+  cityTo: string | null;
+  country: string | null;
+  transport: string | null;
+  description: string | null;
+}
+
 interface TripDayCardProps {
   day: TripDay;
   dayIndex: number;
@@ -62,9 +70,12 @@ interface TripDayCardProps {
   expanded: boolean;
   onToggle: () => void;
   tripId?: number;
+  canEditDay?: boolean;
+  onSaveDay?: (data: DayEditData) => Promise<void>;
+  onDeleteDay?: () => void;
 }
 
-export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId }: TripDayCardProps) {
+export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, onSaveDay, onDeleteDay }: TripDayCardProps) {
   const hotel = day.hotels?.[0] ?? null;
   const activities: TripDayActivityItem[] = day.activities ?? [];
   const hotelNightLabel = nightLabel(dayIndex, allDays);
@@ -74,6 +85,42 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const [freeSheetOpen, setFreeSheetOpen] = useState(false);
   const [editActivity, setEditActivity] = useState<TripDayActivityItem | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+
+  const [dayEditOpen, setDayEditOpen] = useState(false);
+  const [editCityFrom, setEditCityFrom] = useState(day.cityFrom ?? "");
+  const [editCityTo, setEditCityTo] = useState(day.cityTo ?? "");
+  const [editCountry, setEditCountry] = useState(day.country ?? "");
+  const [editTransport, setEditTransport] = useState(day.transport ?? "");
+  const [editDescription, setEditDescription] = useState(day.description ?? "");
+  const [savingDay, setSavingDay] = useState(false);
+
+  const openDayEdit = () => {
+    setEditCityFrom(day.cityFrom ?? "");
+    setEditCityTo(day.cityTo ?? "");
+    setEditCountry(day.country ?? "");
+    setEditTransport(day.transport ?? "");
+    setEditDescription(day.description ?? "");
+    setDayEditOpen(true);
+  };
+
+  const handleSaveDay = async () => {
+    if (!onSaveDay) return;
+    setSavingDay(true);
+    try {
+      await onSaveDay({
+        cityFrom: editCityFrom.trim() || null,
+        cityTo: editCityTo.trim() || null,
+        country: editCountry || null,
+        transport: editTransport || null,
+        description: editDescription.trim() || null,
+      });
+      setDayEditOpen(false);
+    } catch {
+      toast({ variant: "destructive", title: "Error al guardar el día" });
+    } finally {
+      setSavingDay(false);
+    }
+  };
 
   const handleRemoveActivity = (linkId: number) => {
     if (!tripId) return;
@@ -147,7 +194,16 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
           Día {day.dayNumber}
         </div>
 
-        <div className="absolute top-3 right-3 w-10 h-7" />
+        {canEditDay && (
+          <button
+            onClick={e => { e.stopPropagation(); openDayEdit(); }}
+            className="absolute top-3 right-3 p-1.5 rounded-[8px] transition-colors"
+            style={{ background: "rgba(255,255,255,0.2)", color: "#FAF2EB" }}
+            title="Editar día"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Day title + destination */}
@@ -339,6 +395,106 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         <p className="px-4 pt-2 pb-0 text-[12px] italic" style={{ color: "var(--text-ter)" }}>
           Sin actividades ni alojamiento para este día.
         </p>
+      )}
+
+      {/* Inline day edit form */}
+      {canEditDay && dayEditOpen && (
+        <div className="mx-4 mt-3 border border-[var(--indigo)]/30 rounded-[12px] overflow-hidden">
+          <button
+            onClick={() => setDayEditOpen(false)}
+            className="w-full flex items-center justify-between px-3 py-2 text-[12px] font-medium border-b border-border/60"
+            style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+          >
+            <span>Editar información del día</span>
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          <div className="px-3 py-3 space-y-2.5 bg-white/60">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Ciudad origen</label>
+                <input
+                  className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)]"
+                  placeholder="Madrid"
+                  value={editCityFrom}
+                  onChange={e => setEditCityFrom(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Ciudad destino</label>
+                <input
+                  className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)]"
+                  placeholder="Tokio"
+                  value={editCityTo}
+                  onChange={e => setEditCityTo(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">País</label>
+                <select
+                  className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] bg-white"
+                  value={editCountry}
+                  onChange={e => setEditCountry(e.target.value)}
+                >
+                  <option value="">— País —</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[11px] text-muted-foreground">Transporte</label>
+                <select
+                  className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] bg-white"
+                  value={editTransport}
+                  onChange={e => setEditTransport(e.target.value)}
+                >
+                  <option value="">— Transporte —</option>
+                  {TRANSPORT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">Descripción</label>
+              <textarea
+                className="w-full px-2 py-1.5 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] resize-none"
+                rows={2}
+                placeholder="Notas sobre este día…"
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                onClick={handleSaveDay}
+                disabled={savingDay}
+                className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[6px] text-[12px] font-medium disabled:opacity-50"
+                style={{ background: "#3D2F6B", color: "#FAF2EB" }}
+              >
+                {savingDay ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                {savingDay ? "Guardando…" : "Guardar día"}
+              </button>
+              {onDeleteDay && (
+                <button
+                  onClick={onDeleteDay}
+                  className="inline-flex items-center gap-1.5 h-7 px-3 rounded-[6px] text-[12px] font-medium border border-red-200 text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Eliminar día
+                </button>
+              )}
+              <button
+                onClick={() => setDayEditOpen(false)}
+                className="h-7 px-3 rounded-[6px] text-[12px] text-muted-foreground hover:bg-muted/40"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="h-4" />

@@ -12,7 +12,7 @@ import { validate } from "../middlewares/validate";
 import {
   TripInputSchema, TripUpdateSchema, TripDayUpdateSchema,
   DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
-  TripDocumentInputSchema, TripDocumentRenameSchema,
+  TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
 
@@ -389,6 +389,37 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
       acceptedAt: i.acceptedAt?.toISOString() ?? null,
     })),
   });
+});
+
+// ─── TRIP DAY CREATE (back-office) ───────────────────────────────────────────
+router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
+
+  const [trip] = await db.select({ id: tripsTable.id }).from(tripsTable).where(eq(tripsTable.id, tripId));
+  if (!trip) { res.status(404).json({ error: "Trip not found" }); return; }
+
+  const [day] = await db
+    .insert(tripDaysTable)
+    .values({ tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null, transport: transport ?? null, description: description ?? null })
+    .returning();
+
+  res.status(201).json({ ...day, hotels: [], activities: [], createdAt: day.createdAt.toISOString() });
+});
+
+// ─── TRIP DAY DELETE (back-office) ───────────────────────────────────────────
+router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+
+  const [day] = await db
+    .select({ id: tripDaysTable.id })
+    .from(tripDaysTable)
+    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+  if (!day) { res.status(404).json({ error: "Day not found" }); return; }
+
+  await db.delete(tripDaysTable).where(eq(tripDaysTable.id, dayId));
+  res.sendStatus(204);
 });
 
 // ─── TRIP DAY UPDATE (back-office) ───────────────────────────────────────────

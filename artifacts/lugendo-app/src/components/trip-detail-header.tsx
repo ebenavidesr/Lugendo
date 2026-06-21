@@ -1,4 +1,4 @@
-import { ArrowLeft, Users, Hotel, Share2, Pencil } from "lucide-react";
+import { ArrowLeft, Users, Hotel, Share2, Pencil, X } from "lucide-react";
 import { Link } from "wouter";
 import type { TravelerTripDetail, TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,7 @@ interface TripDetailHeaderProps {
   onTabChange: (tab: Tab) => void;
   canEdit: boolean;
   isOwner: boolean;
+  editMode?: boolean;
   onEditClick: () => void;
   onShareClick: () => void;
 }
@@ -73,6 +74,7 @@ export function TripDetailHeader({
   onTabChange,
   canEdit,
   isOwner,
+  editMode = false,
   onEditClick,
   onShareClick,
 }: TripDetailHeaderProps) {
@@ -102,11 +104,15 @@ export function TripDetailHeader({
               size="sm"
               variant="ghost"
               onClick={onEditClick}
-              className="h-7 gap-1.5 text-[12px] opacity-75 hover:opacity-100"
-              style={{ color: "#FAF2EB" }}
+              className="h-7 gap-1.5 text-[12px] transition-opacity"
+              style={{
+                color: "#FAF2EB",
+                opacity: editMode ? 1 : 0.75,
+                background: editMode ? "rgba(255,255,255,0.15)" : "transparent",
+              }}
             >
-              <Pencil className="w-3.5 h-3.5" />
-              Editar
+              {editMode ? <X className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+              {editMode ? "Cerrar edición" : "Editar"}
             </Button>
           )}
           {isOwner && (
