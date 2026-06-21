@@ -127,7 +127,9 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
     included: boolean; transportMode: string | null; canEdit: boolean;
   };
   if (dayIds.length === 0) return {} as Record<number, ActivityItem[]>;
-  const rows = await db.execute(sql`
+  let rows: Awaited<ReturnType<typeof db.execute>>;
+  try {
+    rows = await db.execute(sql`
     SELECT
       tda.id, tda.day_id, tda.activity_id, tda.activity_title,
       a.name AS activity_name, a.category AS activity_category,
@@ -145,6 +147,11 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
       tda.sort_order ASC,
       tda.created_at ASC
   `);
+  } catch (err: unknown) {
+    const cause = (err as { cause?: { message?: string } })?.cause;
+    process.stderr.write(`[getTripDayActivityMap] pg error: ${cause?.message ?? String(err)}\n`);
+    throw err;
+  }
   const map: Record<number, ActivityItem[]> = {};
   for (const r of rows.rows as Array<Record<string, unknown>>) {
     const dayId = Number(r.day_id);
