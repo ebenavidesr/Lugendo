@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  FileText, FileImage, File, Upload, Trash2, Download, Plane,
+  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2,
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
@@ -9,6 +9,7 @@ import {
 import type { TripDocument, TravelerTripDetail } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 
 function getMimeIcon(mimeType: string) {
@@ -73,6 +74,7 @@ interface TripDocumentsTabProps {
 export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -170,6 +172,9 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     }
   };
 
+  const myDocs = documents?.filter((d: TripDocument) => d.userId === user?.id) ?? [];
+  const agencyDocs = documents?.filter((d: TripDocument) => d.userId !== user?.id) ?? [];
+
   return (
     <div className="space-y-4">
       {hasFlightInfo && (
@@ -198,91 +203,137 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
-          Mis documentos
-        </p>
-        <Button
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          style={{ background: "var(--terra)", color: "#fff" }}
-          className="h-8 gap-1.5 text-[12px]"
-        >
-          <Upload className="w-3.5 h-3.5" />
-          {isUploading ? "Subiendo…" : "Subir archivo"}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="*/*"
-          className="hidden"
-          onChange={handleFileChange}
-        />
-      </div>
-
-      {isLoading ? (
+      {/* Agency-uploaded documents */}
+      {!isLoading && agencyDocs.length > 0 && (
         <div className="space-y-2">
-          <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
-          <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
+          <div className="flex items-center gap-2">
+            <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+            <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+              Documentos de la agencia
+            </p>
+          </div>
+          <div className="space-y-2">
+            {agencyDocs.map((doc: TripDocument) => {
+              const Icon = getMimeIcon(doc.mimeType);
+              return (
+                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
+                  <div
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(61,47,107,0.08)" }}
+                  >
+                    <Icon className="w-4.5 h-4.5" style={{ color: "var(--indigo)" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
+                      {doc.filename}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleDownload(doc)}
+                      disabled={downloadingId === doc.id}
+                      className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Descargar"
+                    >
+                      <Download className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      ) : !documents || documents.length === 0 ? (
-        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
-          <FileText className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground mb-4">
-            No hay documentos subidos aún
+      )}
+
+      {/* Traveler's own documents */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
+            Mis documentos
           </p>
           <Button
             size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
             style={{ background: "var(--terra)", color: "#fff" }}
+            className="h-8 gap-1.5 text-[12px]"
           >
-            <Upload className="w-3.5 h-3.5 mr-1.5" />
-            Subir primer documento
+            <Upload className="w-3.5 h-3.5" />
+            {isUploading ? "Subiendo…" : "Subir archivo"}
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="*/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
-      ) : (
-        <div className="space-y-2">
-          {documents.map((doc: TripDocument) => {
-            const Icon = getMimeIcon(doc.mimeType);
-            return (
-              <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
-                <div
-                  className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
-                  style={{ background: "rgba(61,47,107,0.08)" }}
-                >
-                  <Icon className="w-4.5 h-4.5" style={{ color: "var(--indigo)" }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
-                    {doc.filename}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={() => handleDownload(doc)}
-                    disabled={downloadingId === doc.id}
-                    className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title="Descargar"
+
+        {isLoading ? (
+          <div className="space-y-2">
+            <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
+            <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
+          </div>
+        ) : myDocs.length === 0 ? (
+          <div className="bg-card border border-border rounded-[14px] p-8 text-center">
+            <FileText className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground mb-4">
+              No has subido documentos aún
+            </p>
+            <Button
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              style={{ background: "var(--terra)", color: "#fff" }}
+            >
+              <Upload className="w-3.5 h-3.5 mr-1.5" />
+              Subir primer documento
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {myDocs.map((doc: TripDocument) => {
+              const Icon = getMimeIcon(doc.mimeType);
+              return (
+                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
+                  <div
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(61,47,107,0.08)" }}
                   >
-                    <Download className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(doc)}
-                    disabled={deletingId === doc.id}
-                    className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <Icon className="w-4.5 h-4.5" style={{ color: "var(--indigo)" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
+                      {doc.filename}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => handleDownload(doc)}
+                      disabled={downloadingId === doc.id}
+                      className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Descargar"
+                    >
+                      <Download className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(doc)}
+                      disabled={deletingId === doc.id}
+                      className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

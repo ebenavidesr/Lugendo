@@ -781,7 +781,7 @@ router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent")
   res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
 });
 
-router.post("/trips/:tripId/documents", requireRoles("admin", "manager"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 

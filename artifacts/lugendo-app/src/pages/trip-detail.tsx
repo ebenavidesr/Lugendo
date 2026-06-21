@@ -82,7 +82,7 @@ export default function TripDetail() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const canEditDocuments = user?.role === "admin" || user?.role === "manager";
+  const canEditDocuments = user?.role === "admin" || user?.role === "manager" || user?.role === "agent";
 
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
