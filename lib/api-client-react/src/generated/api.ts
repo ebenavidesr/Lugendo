@@ -37,6 +37,7 @@ import type {
   DeleteTripResult,
   DestinationDescribeInput,
   DestinationDescribeResult,
+  GetTripDocumentDownloadUrl200,
   HealthStatus,
   Hotel,
   HotelInput,
@@ -4826,7 +4827,7 @@ export const getListTripDocumentsUrl = (tripId: number,) => {
 }
 
 /**
- * @summary List documents uploaded by the current traveler for a trip
+ * @summary List all documents for a trip accessible to the traveler (own uploads + agency-uploaded docs)
  */
 export const listTripDocuments = async (tripId: number, options?: RequestInit): Promise<TripDocument[]> => {
 
@@ -4873,7 +4874,7 @@ export type ListTripDocumentsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List documents uploaded by the current traveler for a trip
+ * @summary List all documents for a trip accessible to the traveler (own uploads + agency-uploaded docs)
  */
 
 export function useListTripDocuments<TData = Awaited<ReturnType<typeof listTripDocuments>>, TError = ErrorType<unknown>>(
@@ -5037,6 +5038,88 @@ export const useDeleteTripDocument = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteTripDocumentMutationOptions(options));
     }
+
+export const getGetTripDocumentDownloadUrlUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents/${documentId}/download`
+}
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document
+ */
+export const getTripDocumentDownloadUrl = async (tripId: number,
+    documentId: number, options?: RequestInit): Promise<GetTripDocumentDownloadUrl200> => {
+
+  return customFetch<GetTripDocumentDownloadUrl200>(getGetTripDocumentDownloadUrlUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTripDocumentDownloadUrlQueryKey = (tripId: number,
+    documentId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/documents/${documentId}/download`
+    ] as const;
+    }
+
+
+export const getGetTripDocumentDownloadUrlQueryOptions = <TData = Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>, TError = ErrorType<void>>(tripId: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTripDocumentDownloadUrlQueryKey(tripId,documentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>> = ({ signal }) => getTripDocumentDownloadUrl(tripId,documentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId && documentId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTripDocumentDownloadUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>>
+export type GetTripDocumentDownloadUrlQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document
+ */
+
+export function useGetTripDocumentDownloadUrl<TData = Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>, TError = ErrorType<void>>(
+ tripId: number,
+    documentId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripDocumentDownloadUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTripDocumentDownloadUrlQueryOptions(tripId,documentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getRequestUploadUrlUrl = () => {
 

@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
+  getTripDocumentDownloadUrl,
 } from "@workspace/api-client-react";
 import type { TripDocument, TravelerTripDetail } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -75,6 +76,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   const { data: documents, isLoading } = useListTripDocuments(tripId);
   const createDoc = useCreateTripDocument();
@@ -150,12 +152,22 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     );
   };
 
-  const handleDownload = (doc: TripDocument) => {
-    const url = `/api/storage${doc.storageKey}`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = doc.filename;
-    a.click();
+  const handleDownload = async (doc: TripDocument) => {
+    setDownloadingId(doc.id);
+    try {
+      const { signedUrl } = await getTripDocumentDownloadUrl(tripId, doc.id);
+      const a = document.createElement("a");
+      a.href = signedUrl;
+      a.download = doc.filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch {
+      toast({ variant: "destructive", title: "No se pudo obtener el enlace de descarga" });
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -251,10 +263,11 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => handleDownload(doc)}
-                    className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    disabled={downloadingId === doc.id}
+                    className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Descargar"
                   >
-                    <Download className="w-4 h-4" />
+                    <Download className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`} />
                   </button>
                   <button
                     onClick={() => handleDelete(doc)}

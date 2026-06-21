@@ -1397,7 +1397,7 @@ paths:
     get:
       operationId: listTripDocuments
       tags: [traveler]
-      summary: List documents uploaded by the current traveler for a trip
+      summary: List all documents for a trip accessible to the traveler (own uploads + agency-uploaded docs)
       parameters:
         - name: tripId
           in: path
@@ -1456,6 +1456,39 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /me/trips/{tripId}/documents/{documentId}/download:
+    get:
+      operationId: getTripDocumentDownloadUrl
+      tags: [traveler]
+      summary: Get a short-lived signed download URL for a trip document
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Signed download URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [signedUrl]
+                properties:
+                  signedUrl:
+                    type: string
+                    description: Short-lived pre-signed URL (15 minutes)
+        "403":
+          description: Forbidden
+        "404":
+          description: Document not found
 
   /storage/uploads/request-url:
     post:

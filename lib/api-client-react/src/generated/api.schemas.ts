@@ -1252,3 +1252,8 @@ export interface DestinationDescribeResult {
   description: string;
 }
 
+export type GetTripDocumentDownloadUrl200 = {
+  /** Short-lived pre-signed URL (15 minutes) */
+  signedUrl: string;
+};
+

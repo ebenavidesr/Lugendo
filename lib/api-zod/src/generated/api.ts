@@ -1714,7 +1714,7 @@ export const LeaveTripParams = zod.object({
 
 
 /**
- * @summary List documents uploaded by the current traveler for a trip
+ * @summary List all documents for a trip accessible to the traveler (own uploads + agency-uploaded docs)
  */
 export const ListTripDocumentsParams = zod.object({
   "tripId": zod.coerce.number()
@@ -1752,6 +1752,19 @@ export const CreateTripDocumentBody = zod.object({
 export const DeleteTripDocumentParams = zod.object({
   "tripId": zod.coerce.number(),
   "documentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get a short-lived signed download URL for a trip document
+ */
+export const GetTripDocumentDownloadUrlParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+export const GetTripDocumentDownloadUrlResponse = zod.object({
+  "signedUrl": zod.string().describe('Short-lived pre-signed URL (15 minutes)')
 })
 
 

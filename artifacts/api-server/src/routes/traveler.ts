@@ -1004,10 +1004,46 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
 router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  // Verify the user has access to this trip before listing documents
+  const [invite] = await db
+    .select({ id: invitationsTable.id })
+    .from(invitationsTable)
+    .where(and(
+      eq(invitationsTable.travelerId, userId),
+      eq(invitationsTable.tripId, tripId),
+      eq(invitationsTable.status, "accepted"),
+    ));
+
+  const [ownedTrip] = await db
+    .select({ id: tripsTable.id })
+    .from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+
+  const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = me?.email ?? "";
+
+  const [acceptedShare] = await db
+    .select({ id: tripSharesTable.id })
+    .from(tripSharesTable)
+    .where(and(
+      eq(tripSharesTable.tripId, tripId),
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, myEmail),
+      ),
+      eq(tripSharesTable.status, "accepted"),
+    ));
+
+  if (!invite && !ownedTrip && !acceptedShare) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  // Return all documents for the trip (own uploads + agency-uploaded docs)
   const docs = await db
     .select()
     .from(tripDocumentsTable)
-    .where(and(eq(tripDocumentsTable.tripId, tripId), eq(tripDocumentsTable.userId, userId)))
+    .where(eq(tripDocumentsTable.tripId, tripId))
     .orderBy(tripDocumentsTable.createdAt);
   res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
 });
@@ -1075,6 +1111,68 @@ router.delete("/me/trips/:tripId/documents/:documentId", requireRoles("traveler"
 
   await db.delete(tripDocumentsTable).where(eq(tripDocumentsTable.id, documentId));
   res.sendStatus(204);
+});
+
+// ─── Get signed download URL for a trip document ─────────────────────────────
+router.get("/me/trips/:tripId/documents/:documentId/download", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+
+  // Find the document for this trip
+  const [doc] = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
+
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Authorization: the user must either have uploaded the doc, or have trip access
+  const isUploader = doc.userId === userId;
+
+  if (!isUploader) {
+    // Check trip access: invited traveler, owner, or accepted share
+    const [invite] = await db
+      .select({ id: invitationsTable.id })
+      .from(invitationsTable)
+      .where(and(
+        eq(invitationsTable.travelerId, userId),
+        eq(invitationsTable.tripId, tripId),
+        eq(invitationsTable.status, "accepted"),
+      ));
+
+    const [ownedTrip] = await db
+      .select({ id: tripsTable.id })
+      .from(tripsTable)
+      .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+
+    const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+    const myEmail = me?.email ?? "";
+
+    const [acceptedShare] = await db
+      .select({ id: tripSharesTable.id })
+      .from(tripSharesTable)
+      .where(and(
+        eq(tripSharesTable.tripId, tripId),
+        or(
+          eq(tripSharesTable.sharedWithUserId, userId),
+          eq(tripSharesTable.sharedWithEmail, myEmail),
+        ),
+        eq(tripSharesTable.status, "accepted"),
+      ));
+
+    if (!invite && !ownedTrip && !acceptedShare) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
+  }
+
+  try {
+    const signedUrl = await objectStorage.getSignedDownloadUrl(doc.storageKey, 900);
+    res.json({ signedUrl });
+  } catch (err) {
+    req.log.error({ err }, "Error generating signed download URL");
+    res.status(500).json({ error: "Failed to generate download URL" });
+  }
 });
 
 export default router;

@@ -34,6 +34,7 @@ export * from './destinationDescribeInput';
 export * from './destinationDescribeInputType';
 export * from './destinationDescribeResult';
 export * from './flightLeg';
+export * from './getTripDocumentDownloadUrl200';
 export * from './healthStatus';
 export * from './hotel';
 export * from './hotelInput';
