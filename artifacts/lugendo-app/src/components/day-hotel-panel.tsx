@@ -47,12 +47,14 @@ export function DayHotelPanel({
   day,
   compact = false,
   allDays,
+  invalidateKey,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
   day: GenericDay;
   compact?: boolean;
   allDays?: GenericDay[];
+  invalidateKey?: string;
 }) {
   const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
@@ -80,7 +82,9 @@ export function DayHotelPanel({
   const [applyingMore, setApplyingMore] = useState(false);
 
   const invalidate = () => {
-    if (entityType === "itinerary") {
+    if (invalidateKey) {
+      qc.invalidateQueries({ queryKey: [invalidateKey] });
+    } else if (entityType === "itinerary") {
       qc.invalidateQueries({ queryKey: [`/api/itineraries/${entityId}/days`] });
     } else {
       qc.invalidateQueries({ queryKey: [`/api/trips/${entityId}`] });

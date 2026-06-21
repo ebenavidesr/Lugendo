@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getTransportOption, TRANSPORT_OPTIONS } from "@/components/transport-select";
 import { FreeActivitySheet } from "@/components/free-activity-sheet";
 import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
+import { DayHotelPanel } from "@/components/day-hotel-panel";
 
 const categoryEmoji: Record<string, string> = {
   cultural:    "🏛️",
@@ -219,8 +220,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         )}
       </div>
 
-      {/* Hotel row */}
-      {hotel && (
+      {/* Hotel row — read-only view */}
+      {hotel && !canEditDay && (
         <div
           className="mx-4 mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] cursor-default"
           style={{ background: "var(--arena)" }}
@@ -249,6 +250,20 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             </p>
           </div>
           <ChevronRight className="w-4 h-4 shrink-0 opacity-25" />
+        </div>
+      )}
+
+      {/* Hotel management panel — edit mode */}
+      {canEditDay && tripId && (
+        <div className="mx-4 mt-3">
+          <DayHotelPanel
+            entityType="trip"
+            entityId={tripId}
+            day={day}
+            allDays={allDays}
+            compact={true}
+            invalidateKey={`/api/me/trips/${tripId}`}
+          />
         </div>
       )}
 

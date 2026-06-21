@@ -452,8 +452,14 @@ router.get("/trips/:tripId/days/:dayId/hotels", requireAuth, async (req, res): P
   res.json(hotelMap[dayId] ?? []);
 });
 
-router.post("/trips/:tripId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/days/:dayId/hotels", requireAuth, validate(DayHotelInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const currentUserId = req.session.userId!;
+
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
   const { hotelId, segment } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium" };
   if (!hotelId) { res.status(400).json({ error: "hotelId is required" }); return; }
 
@@ -468,8 +474,15 @@ router.post("/trips/:tripId/days/:dayId/hotels", requireRoles("admin", "manager"
   res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
 });
 
-router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireAuth, async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const assignmentId = parseInt(Array.isArray(req.params.assignmentId) ? req.params.assignmentId[0] : req.params.assignmentId, 10);
+  const currentUserId = req.session.userId!;
+
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
   await db.delete(tripDayHotelsTable).where(eq(tripDayHotelsTable.id, assignmentId));
   res.sendStatus(204);
 });

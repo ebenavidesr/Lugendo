@@ -560,7 +560,7 @@ export default function TripDetail() {
                       <button
                         onClick={() => toggleDay(day.id)}
                         className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        title={isExpanded ? "Colapsar" : "Ver actividades"}>
+                        title={isExpanded ? "Colapsar" : "Ver detalle"}>
                         {isExpanded
                           ? <ChevronDown className="w-4 h-4" />
                           : <ChevronRight className="w-4 h-4" />}
