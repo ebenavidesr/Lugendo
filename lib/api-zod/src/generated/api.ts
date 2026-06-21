@@ -1218,7 +1218,8 @@ export const ListTripDocumentsAdminResponseItem = zod.object({
   "filename": zod.string(),
   "mimeType": zod.string(),
   "storageKey": zod.string(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
 })
 export const ListTripDocumentsAdminResponse = zod.array(ListTripDocumentsAdminResponseItem)
 
@@ -1256,7 +1257,8 @@ export const RenameTripDocumentAdminResponse = zod.object({
   "filename": zod.string(),
   "mimeType": zod.string(),
   "storageKey": zod.string(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
 })
 
 
@@ -1831,7 +1833,8 @@ export const ListTripDocumentsResponseItem = zod.object({
   "filename": zod.string(),
   "mimeType": zod.string(),
   "storageKey": zod.string(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
 })
 export const ListTripDocumentsResponse = zod.array(ListTripDocumentsResponseItem)
 

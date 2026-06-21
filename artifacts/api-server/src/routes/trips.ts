@@ -805,11 +805,21 @@ router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent")
   }
 
   const docs = await db
-    .select()
+    .select({
+      id: tripDocumentsTable.id,
+      tripId: tripDocumentsTable.tripId,
+      userId: tripDocumentsTable.userId,
+      filename: tripDocumentsTable.filename,
+      mimeType: tripDocumentsTable.mimeType,
+      storageKey: tripDocumentsTable.storageKey,
+      createdAt: tripDocumentsTable.createdAt,
+      uploaderRole: usersTable.role,
+    })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(eq(tripDocumentsTable.tripId, tripId))
     .orderBy(tripDocumentsTable.createdAt);
-  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), uploaderRole: d.uploaderRole ?? "traveler" })));
 });
 
 router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
@@ -830,7 +840,7 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
     .insert(tripDocumentsTable)
     .values({ tripId, userId: userId!, filename, mimeType, storageKey })
     .returning();
-  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString() });
+  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: role! });
 });
 
 router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
@@ -856,7 +866,7 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
     .set({ filename })
     .where(eq(tripDocumentsTable.id, documentId))
     .returning();
-  res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+  res.json({ ...updated, createdAt: updated.createdAt.toISOString(), uploaderRole: role! });
 });
 
 router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {

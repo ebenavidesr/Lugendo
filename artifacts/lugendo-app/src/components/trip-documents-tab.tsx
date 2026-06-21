@@ -204,8 +204,9 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     }
   };
 
-  const myDocs = documents?.filter((d: TripDocument) => d.userId === user?.id) ?? [];
-  const agencyDocs = documents?.filter((d: TripDocument) => d.userId !== user?.id) ?? [];
+  const isAgencyUpload = (d: TripDocument) => ["admin", "manager", "agent"].includes(d.uploaderRole);
+  const agencyDocs = documents?.filter((d: TripDocument) => isAgencyUpload(d)) ?? [];
+  const travelerDocs = documents?.filter((d: TripDocument) => !isAgencyUpload(d)) ?? [];
 
   return (
     <div className="space-y-4">
@@ -264,9 +265,17 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                     disabled={previewingId === doc.id}
                     className="flex-1 min-w-0 text-left disabled:opacity-50"
                   >
-                    <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
-                      {doc.filename}
-                    </p>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
+                        {doc.filename}
+                      </p>
+                      <span
+                        className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                        style={{ background: "rgba(61,47,107,0.10)", color: "var(--indigo)" }}
+                      >
+                        Agencia
+                      </span>
+                    </div>
                     <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
                   </button>
                   <div className="flex items-center gap-1 shrink-0">
@@ -296,7 +305,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
         </div>
       )}
 
-      {/* Traveler's own documents */}
+      {/* Traveler documents (own + shared-trip uploads from other travelers) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
@@ -326,7 +335,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
             <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
             <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
           </div>
-        ) : myDocs.length === 0 ? (
+        ) : travelerDocs.length === 0 ? (
           <div className="bg-card border border-border rounded-[14px] p-8 text-center">
             <FileText className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mb-4">
@@ -344,9 +353,10 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           </div>
         ) : (
           <div className="space-y-2">
-            {myDocs.map((doc: TripDocument) => {
+            {travelerDocs.map((doc: TripDocument) => {
               const Icon = getMimeIcon(doc.mimeType);
               const canPreview = isPreviewable(doc.mimeType);
+              const isOwn = doc.userId === user?.id;
               return (
                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
                   <button
@@ -387,14 +397,16 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                     >
                       <Download className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(doc)}
-                      disabled={deletingId === doc.id}
-                      className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {isOwn && (
+                      <button
+                        onClick={() => handleDelete(doc)}
+                        disabled={deletingId === doc.id}
+                        className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );

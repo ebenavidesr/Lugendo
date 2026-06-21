@@ -3205,7 +3205,7 @@ components:
 
     TripDocument:
       type: object
-      required: [id, tripId, userId, filename, mimeType, storageKey, createdAt]
+      required: [id, tripId, userId, filename, mimeType, storageKey, createdAt, uploaderRole]
       properties:
         id:
           type: integer
@@ -3221,6 +3221,9 @@ components:
           type: string
         createdAt:
           type: string
+        uploaderRole:
+          type: string
+          description: Role of the user who uploaded the document (admin, manager, agent, traveler)
 
     TripDocumentInput:
       type: object

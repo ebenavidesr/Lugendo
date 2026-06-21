@@ -1041,11 +1041,21 @@ router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, 
 
   // Return all documents for the trip (own uploads + agency-uploaded docs)
   const docs = await db
-    .select()
+    .select({
+      id: tripDocumentsTable.id,
+      tripId: tripDocumentsTable.tripId,
+      userId: tripDocumentsTable.userId,
+      filename: tripDocumentsTable.filename,
+      mimeType: tripDocumentsTable.mimeType,
+      storageKey: tripDocumentsTable.storageKey,
+      createdAt: tripDocumentsTable.createdAt,
+      uploaderRole: usersTable.role,
+    })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(eq(tripDocumentsTable.tripId, tripId))
     .orderBy(tripDocumentsTable.createdAt);
-  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString() })));
+  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), uploaderRole: d.uploaderRole ?? "traveler" })));
 });
 
 router.post("/me/trips/:tripId/documents", requireRoles("traveler"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
@@ -1088,7 +1098,7 @@ router.post("/me/trips/:tripId/documents", requireRoles("traveler"), validate(Tr
     .insert(tripDocumentsTable)
     .values({ tripId, userId, filename, mimeType, storageKey })
     .returning();
-  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString() });
+  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: "traveler" });
 });
 
 router.delete("/me/trips/:tripId/documents/:documentId", requireRoles("traveler"), async (req, res): Promise<void> => {

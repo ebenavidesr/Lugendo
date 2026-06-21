@@ -14,4 +14,6 @@ export interface TripDocument {
   mimeType: string;
   storageKey: string;
   createdAt: string;
+  /** Role of the user who uploaded the document (admin, manager, agent, traveler) */
+  uploaderRole: string;
 }
