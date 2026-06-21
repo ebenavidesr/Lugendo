@@ -9,8 +9,10 @@ import {
   setObjectAclPolicy,
 } from "./objectAcl";
 
+process.stderr.write("[startup:objectStorage] module body\n");
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
+process.stderr.write("[startup:objectStorage] before new Storage()\n");
 export const objectStorageClient = new Storage({
   credentials: {
     audience: "replit",
