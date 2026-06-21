@@ -72,11 +72,12 @@ interface TripDayCardProps {
   onToggle: () => void;
   tripId?: number;
   canEditDay?: boolean;
+  canEditHotels?: boolean;
   onSaveDay?: (data: DayEditData) => Promise<void>;
   onDeleteDay?: () => void;
 }
 
-export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, onSaveDay, onDeleteDay }: TripDayCardProps) {
+export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, onSaveDay, onDeleteDay }: TripDayCardProps) {
   const hotel = day.hotels?.[0] ?? null;
   const activities: TripDayActivityItem[] = day.activities ?? [];
   const hotelNightLabel = nightLabel(dayIndex, allDays);
@@ -221,7 +222,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
       </div>
 
       {/* Hotel row — read-only view */}
-      {hotel && !canEditDay && (
+      {hotel && !canEditHotels && (
         <div
           className="mx-4 mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] cursor-default"
           style={{ background: "var(--arena)" }}
@@ -254,7 +255,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
       )}
 
       {/* Hotel management panel — edit mode */}
-      {canEditDay && tripId && (
+      {canEditHotels && tripId && (
         <div className="mx-4 mt-3">
           <DayHotelPanel
             entityType="trip"

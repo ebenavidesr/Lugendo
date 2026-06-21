@@ -662,12 +662,9 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     ));
   if (!existing) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Agency staff can edit any activity on their agency's trips; travelers can only edit their own
+  // verifyTripDayAccess already confirmed the user has access to this trip.
+  // Any trip participant (staff or traveler) can update link-level fields (times, notes, etc.).
   const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
-  if (!isAgencyStaff && existing.createdByUserId !== currentUserId) {
-    res.status(403).json({ error: "Solo el creador puede editar esta actividad" });
-    return;
-  }
 
   const {
     startTime,

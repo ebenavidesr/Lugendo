@@ -161,8 +161,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
   for (const r of rows.rows as Array<Record<string, unknown>>) {
     const dayId = Number(r.day_id);
     if (!map[dayId]) map[dayId] = [];
-    const createdByUserId = r.created_by_user_id != null ? Number(r.created_by_user_id) : null;
-    const canEdit = currentUserId != null && createdByUserId === currentUserId;
+    const canEdit = true;
     map[dayId].push({
       id: Number(r.id),
       activityId: r.activity_id != null ? Number(r.activity_id) : null,
