@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2,
+  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X,
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
@@ -11,11 +11,21 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function getMimeIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
   if (mimeType === "application/pdf") return FileText;
   return File;
+}
+
+function isPreviewable(mimeType: string) {
+  return mimeType.startsWith("image/") || mimeType === "application/pdf";
 }
 
 function fmtDate(iso: string) {
@@ -71,6 +81,11 @@ interface TripDocumentsTabProps {
   trip: TravelerTripDetail;
 }
 
+interface PreviewState {
+  doc: TripDocument;
+  url: string;
+}
+
 export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -79,6 +94,8 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [previewingId, setPreviewingId] = useState<number | null>(null);
+  const [preview, setPreview] = useState<PreviewState | null>(null);
 
   const { data: documents, isLoading } = useListTripDocuments(tripId);
   const createDoc = useCreateTripDocument();
@@ -172,6 +189,21 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     }
   };
 
+  const handlePreview = async (doc: TripDocument) => {
+    if (!isPreviewable(doc.mimeType)) {
+      return handleDownload(doc);
+    }
+    setPreviewingId(doc.id);
+    try {
+      const { signedUrl } = await getTripDocumentDownloadUrl(tripId, doc.id);
+      setPreview({ doc, url: signedUrl });
+    } catch {
+      toast({ variant: "destructive", title: "No se pudo abrir la vista previa" });
+    } finally {
+      setPreviewingId(null);
+    }
+  };
+
   const myDocs = documents?.filter((d: TripDocument) => d.userId === user?.id) ?? [];
   const agencyDocs = documents?.filter((d: TripDocument) => d.userId !== user?.id) ?? [];
 
@@ -215,21 +247,39 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           <div className="space-y-2">
             {agencyDocs.map((doc: TripDocument) => {
               const Icon = getMimeIcon(doc.mimeType);
+              const canPreview = isPreviewable(doc.mimeType);
               return (
                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
-                  <div
-                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                  <button
+                    onClick={() => handlePreview(doc)}
+                    disabled={previewingId === doc.id}
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-opacity disabled:opacity-50"
                     style={{ background: "rgba(61,47,107,0.08)" }}
+                    title={canPreview ? "Ver documento" : "Descargar"}
                   >
                     <Icon className="w-4.5 h-4.5" style={{ color: "var(--indigo)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
+                  </button>
+                  <button
+                    onClick={() => handlePreview(doc)}
+                    disabled={previewingId === doc.id}
+                    className="flex-1 min-w-0 text-left disabled:opacity-50"
+                  >
                     <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
                       {doc.filename}
                     </p>
                     <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1 shrink-0">
+                    {canPreview && (
+                      <button
+                        onClick={() => handlePreview(doc)}
+                        disabled={previewingId === doc.id}
+                        className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Ver"
+                      >
+                        <Eye className={`w-4 h-4 ${previewingId === doc.id ? "animate-pulse" : ""}`} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDownload(doc)}
                       disabled={downloadingId === doc.id}
@@ -296,21 +346,39 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           <div className="space-y-2">
             {myDocs.map((doc: TripDocument) => {
               const Icon = getMimeIcon(doc.mimeType);
+              const canPreview = isPreviewable(doc.mimeType);
               return (
                 <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
-                  <div
-                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0"
+                  <button
+                    onClick={() => handlePreview(doc)}
+                    disabled={previewingId === doc.id}
+                    className="w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 transition-opacity disabled:opacity-50"
                     style={{ background: "rgba(61,47,107,0.08)" }}
+                    title={canPreview ? "Ver documento" : "Descargar"}
                   >
                     <Icon className="w-4.5 h-4.5" style={{ color: "var(--indigo)" }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
+                  </button>
+                  <button
+                    onClick={() => handlePreview(doc)}
+                    disabled={previewingId === doc.id}
+                    className="flex-1 min-w-0 text-left disabled:opacity-50"
+                  >
                     <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
                       {doc.filename}
                     </p>
                     <p className="text-[11px] text-muted-foreground">{fmtDate(doc.createdAt)}</p>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1 shrink-0">
+                    {canPreview && (
+                      <button
+                        onClick={() => handlePreview(doc)}
+                        disabled={previewingId === doc.id}
+                        className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Ver"
+                      >
+                        <Eye className={`w-4 h-4 ${previewingId === doc.id ? "animate-pulse" : ""}`} />
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDownload(doc)}
                       disabled={downloadingId === doc.id}
@@ -334,6 +402,55 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           </div>
         )}
       </div>
+
+      {/* Preview dialog */}
+      <Dialog open={!!preview} onOpenChange={(open) => { if (!open) setPreview(null); }}>
+        <DialogContent className="max-w-4xl w-full p-0 gap-0 overflow-hidden" style={{ maxHeight: "90vh" }}>
+          <DialogHeader className="flex flex-row items-center justify-between px-4 py-3 border-b shrink-0">
+            <DialogTitle className="text-[14px] font-medium truncate pr-4" style={{ color: "var(--noche)" }}>
+              {preview?.doc.filename}
+            </DialogTitle>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => preview && handleDownload(preview.doc)}
+                className="h-8 gap-1.5 text-[12px]"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Descargar
+              </Button>
+              <button
+                onClick={() => setPreview(null)}
+                className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </DialogHeader>
+
+          <div className="overflow-auto flex-1" style={{ maxHeight: "calc(90vh - 57px)" }}>
+            {preview?.doc.mimeType === "application/pdf" && (
+              <iframe
+                src={preview.url}
+                className="w-full border-0"
+                style={{ height: "calc(90vh - 57px)", minHeight: 400 }}
+                title={preview.doc.filename}
+              />
+            )}
+            {preview?.doc.mimeType.startsWith("image/") && (
+              <div className="flex items-center justify-center p-4 min-h-[300px]">
+                <img
+                  src={preview.url}
+                  alt={preview.doc.filename}
+                  className="max-w-full max-h-full object-contain rounded-[8px]"
+                  style={{ maxHeight: "calc(90vh - 89px)" }}
+                />
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
