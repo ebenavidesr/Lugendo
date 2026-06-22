@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, Hotel, ChevronRight, Star, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
+import { Camera, Hotel, ChevronRight, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import type { TripDay, TripDayActivityItem, DayActivity } from "@workspace/api-client-react";
 import { useRemoveTripDayActivity, COUNTRIES } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -221,41 +221,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         )}
       </div>
 
-      {/* Hotel row — read-only view */}
-      {hotel && !canEditHotels && (
-        <div
-          className="mx-4 mt-3 flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] cursor-default"
-          style={{ background: "var(--arena)" }}
-        >
-          <Hotel className="w-4 h-4 shrink-0" style={{ color: "var(--terra)" }} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5">
-              <p className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
-                {hotel.hotelName}
-              </p>
-              {hotel.segment === "premium" && (
-                <span className="inline-flex items-center gap-0.5 shrink-0">
-                  {[1,2,3,4,5].map(i => <Star key={i} className="w-2.5 h-2.5 fill-current" style={{ color: "var(--terra)" }} />)}
-                </span>
-              )}
-              {hotel.segment === "standard" && (
-                <span className="inline-flex items-center gap-0.5 shrink-0">
-                  {[1,2,3].map(i => <Star key={i} className="w-2.5 h-2.5 fill-current" style={{ color: "var(--terra)" }} />)}
-                </span>
-              )}
-            </div>
-            <p className="text-[11px]" style={{ color: "var(--text-ter)" }}>
-              {hotelNightLabel
-                ? [hotelNightLabel, hotel.hotelCity].filter(Boolean).join(" · ")
-                : ["Check-in", hotel.hotelCity].filter(Boolean).join(" · ")}
-            </p>
-          </div>
-          <ChevronRight className="w-4 h-4 shrink-0 opacity-25" />
-        </div>
-      )}
-
-      {/* Hotel management panel — edit mode */}
-      {canEditHotels && tripId && (
+      {/* Hotel section — always visible when tripId is set */}
+      {tripId && (
         <div className="mx-4 mt-3">
           <DayHotelPanel
             entityType="trip"
@@ -263,6 +230,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             day={day}
             allDays={allDays}
             compact={true}
+            readOnly={!canEditHotels}
             invalidateKey={`/api/me/trips/${tripId}`}
           />
         </div>

@@ -48,6 +48,7 @@ export function DayHotelPanel({
   compact = false,
   allDays,
   invalidateKey,
+  readOnly = false,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
@@ -55,6 +56,7 @@ export function DayHotelPanel({
   compact?: boolean;
   allDays?: GenericDay[];
   invalidateKey?: string;
+  readOnly?: boolean;
 }) {
   const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
@@ -280,7 +282,7 @@ export function DayHotelPanel({
         <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>
           Hoteles del día
         </div>
-        {mode === "idle" && (
+        {mode === "idle" && !readOnly && (
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMode("add")}
@@ -327,13 +329,15 @@ export function DayHotelPanel({
                     {SEGMENTS.find(s => s.value === seg)?.label ?? seg}
                   </span>
                 )}
-                <button
-                  onClick={() => handleRemove(h.id)}
-                  disabled={isPending}
-                  className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-                  title="Quitar hotel">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => handleRemove(h.id)}
+                    disabled={isPending}
+                    className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
+                    title="Quitar hotel">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             );
           })}
