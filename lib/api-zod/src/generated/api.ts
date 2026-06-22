@@ -2022,6 +2022,41 @@ export const AddDayActivityBody = zod.object({
 
 
 /**
+ * @summary Update per-link fields for an itinerary day activity
+ */
+export const UpdateItineraryDayActivityParams = zod.object({
+  "itineraryId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+export const UpdateItineraryDayActivityBody = zod.object({
+  "startTime": zod.string().nullish(),
+  "notes": zod.string().nullish()
+})
+
+export const UpdateItineraryDayActivityResponse = zod.object({
+  "id": zod.number(),
+  "dayId": zod.number(),
+  "activityId": zod.number().nullish(),
+  "activityName": zod.string(),
+  "activityCategory": zod.string().nullish(),
+  "sortOrder": zod.number(),
+  "startTime": zod.string().nullish(),
+  "endTime": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "durationHours": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "companyContact": zod.string().nullish(),
+  "addressOverride": zod.string().nullish(),
+  "included": zod.boolean(),
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "canEdit": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Unlink an activity from an itinerary day
  */
 export const RemoveDayActivityParams = zod.object({

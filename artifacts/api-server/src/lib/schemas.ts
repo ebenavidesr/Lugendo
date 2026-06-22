@@ -242,6 +242,11 @@ export const DayActivityInputSchema = z.object({
   transportMode: TransportModeSchema,
 });
 
+export const ItineraryDayActivityUpdateSchema = z.object({
+  startTime: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
 export const TripDayActivityUpdateSchema = z.object({
   startTime: z.string().nullable().optional(),
   endTime: z.string().nullable().optional(),

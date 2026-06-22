@@ -47,6 +47,7 @@ export * from './invitationStatus';
 export * from './invitationUpdateInput';
 export * from './itinerary';
 export * from './itineraryDay';
+export * from './itineraryDayActivityUpdate';
 export * from './itineraryDayInput';
 export * from './itineraryDayUpdate';
 export * from './itineraryDetail';

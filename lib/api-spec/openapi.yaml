@@ -1843,6 +1843,41 @@ paths:
                 $ref: "#/components/schemas/DayActivity"
 
   /itineraries/{itineraryId}/days/{dayId}/activities/{linkId}:
+    patch:
+      operationId: updateItineraryDayActivity
+      tags: [itineraries]
+      summary: Update per-link fields for an itinerary day activity
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItineraryDayActivityUpdate"
+      responses:
+        "200":
+          description: Updated activity link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DayActivity"
+        "404":
+          description: Not found
     delete:
       operationId: removeDayActivity
       tags: [itineraries]
@@ -3509,6 +3544,14 @@ components:
           type: boolean
         transportMode:
           $ref: "#/components/schemas/TransportMode"
+
+    ItineraryDayActivityUpdate:
+      type: object
+      properties:
+        startTime:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
 
     TripDayActivityUpdate:
       type: object

@@ -1206,6 +1206,13 @@ export interface DayActivityInput {
   transportMode?: TransportMode | null;
 }
 
+export interface ItineraryDayActivityUpdate {
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export interface TripDayActivityUpdate {
   /** @nullable */
   startTime?: string | null;

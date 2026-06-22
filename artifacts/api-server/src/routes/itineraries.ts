@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable,
+  itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, tripsTable, activitiesTable, usersTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
@@ -10,7 +10,7 @@ import { validate } from "../middlewares/validate";
 import {
   ItineraryInputSchema, ItineraryUpdateSchema,
   ItineraryDayInputSchema, ItineraryDayUpdateSchema,
-  DayHotelInputSchema, ItineraryDayActivityInputSchema,
+  DayHotelInputSchema, ItineraryDayActivityInputSchema, ItineraryDayActivityUpdateSchema,
 } from "../lib/schemas";
 import { sql } from "drizzle-orm";
 import pdfParse from "pdf-parse";
@@ -317,7 +317,10 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
     activityCategory: r.activity_category,
     sortOrder: r.sort_order,
     startTime: r.start_time ?? null,
-    notes: r.notes,
+    endTime: null,
+    notes: r.notes ?? null,
+    included: true,
+    canEdit: true,
     createdAt: String(r.created_at),
   })));
 });
@@ -343,6 +346,42 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, val
     startTime: link.start_time ?? null,
     notes: link.notes,
     createdAt: String(link.created_at),
+  });
+});
+
+router.patch("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), validate(ItineraryDayActivityUpdateSchema), async (req, res): Promise<void> => {
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const body = req.body as { startTime?: string | null; notes?: string | null };
+
+  const setValues: { startTime?: string | null; notes?: string | null } = {};
+  if ("startTime" in body) setValues.startTime = body.startTime ?? null;
+  if ("notes" in body) setValues.notes = body.notes ?? null;
+
+  const [updated] = await db
+    .update(itineraryDayActivitiesTable)
+    .set(setValues)
+    .where(eq(itineraryDayActivitiesTable.id, linkId))
+    .returning();
+
+  if (!updated) { res.status(404).json({ error: "Link not found" }); return; }
+
+  const [act] = await db.select({ name: activitiesTable.name, category: activitiesTable.category })
+    .from(activitiesTable)
+    .where(eq(activitiesTable.id, updated.activityId));
+
+  res.json({
+    id: updated.id,
+    dayId: updated.dayId,
+    activityId: updated.activityId,
+    activityName: act?.name ?? "",
+    activityCategory: act?.category ?? null,
+    sortOrder: updated.sortOrder,
+    startTime: updated.startTime ?? null,
+    endTime: null,
+    notes: updated.notes ?? null,
+    included: true,
+    canEdit: true,
+    createdAt: String(updated.createdAt),
   });
 });
 

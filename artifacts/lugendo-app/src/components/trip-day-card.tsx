@@ -497,7 +497,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
       {/* Edit sheet for canEdit activities */}
       {tripId && editActivity && (
         <ActivityDetailSheet
-          tripId={tripId}
+          entityId={tripId}
           dayId={day.id}
           activity={editActivity as unknown as DayActivity}
           open={editSheetOpen}

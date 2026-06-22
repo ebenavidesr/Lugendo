@@ -312,7 +312,7 @@ export function DayActivitiesPanel({
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                          {!isItinerary && canEdit && (
+                          {canEdit && (
                             <button
                               onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
                               className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
@@ -328,13 +328,7 @@ export function DayActivitiesPanel({
                               <Pencil className="w-3.5 h-3.5 opacity-40" />
                             </button>
                           )}
-                          {isItinerary && (
-                            <button onClick={() => doRemove(a.id)}
-                              className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {!isItinerary && canEdit && (
+                          {canEdit && (
                             <button onClick={() => doRemove(a.id)}
                               className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
                               <X className="w-3.5 h-3.5" />
@@ -349,20 +343,19 @@ export function DayActivitiesPanel({
             </div>
           )}
 
-          {/* ── Activity detail sheet (trips only) ── */}
-          {!isItinerary && (
-            <ActivityDetailSheet
-              tripId={entityId}
-              dayId={dayId}
-              activity={editActivity}
-              open={editSheetOpen}
-              onOpenChange={(open) => {
-                setEditSheetOpen(open);
-                if (!open) setEditActivity(null);
-              }}
-              queryKey={queryKey}
-            />
-          )}
+          {/* ── Activity detail sheet ── */}
+          <ActivityDetailSheet
+            entityType={isItinerary ? "itinerary" : "trip"}
+            entityId={entityId}
+            dayId={dayId}
+            activity={editActivity}
+            open={editSheetOpen}
+            onOpenChange={(open) => {
+              setEditSheetOpen(open);
+              if (!open) setEditActivity(null);
+            }}
+            queryKey={queryKey}
+          />
 
           {/* ── Link existing ── */}
           {mode === "link" && (

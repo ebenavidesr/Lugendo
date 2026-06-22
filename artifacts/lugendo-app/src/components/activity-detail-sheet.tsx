@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateTripDayActivity, useUpdateActivity } from "@workspace/api-client-react";
+import { useUpdateTripDayActivity, useUpdateItineraryDayActivity, useUpdateActivity } from "@workspace/api-client-react";
 import type { DayActivity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +16,8 @@ import { categoryMeta } from "@/components/activity-meta";
 import { TransportSelect } from "@/components/transport-select";
 
 interface ActivityDetailSheetProps {
-  tripId: number;
+  entityType?: "trip" | "itinerary";
+  entityId: number;
   dayId: number;
   activity: DayActivity | null;
   open: boolean;
@@ -35,7 +36,8 @@ function ReadOnlyField({ label, value }: { label: string; value: string | null |
 }
 
 export function ActivityDetailSheet({
-  tripId,
+  entityType = "trip",
+  entityId,
   dayId,
   activity,
   open,
@@ -44,8 +46,11 @@ export function ActivityDetailSheet({
 }: ActivityDetailSheetProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const updateLink = useUpdateTripDayActivity();
+  const updateTripLink = useUpdateTripDayActivity();
+  const updateItinLink = useUpdateItineraryDayActivity();
   const updateActivity = useUpdateActivity();
+
+  const isItinerary = entityType === "itinerary";
 
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -77,7 +82,7 @@ export function ActivityDetailSheet({
 
   const meta = categoryMeta[activity.activityCategory ?? ""] ?? categoryMeta.other;
   const canEdit = activity.canEdit !== false;
-  const isPending = updateLink.isPending || updateActivity.isPending;
+  const isPending = updateTripLink.isPending || updateItinLink.isPending || updateActivity.isPending;
   const isAdHoc = activity.activityId == null;
 
   const handleSave = async () => {
@@ -105,25 +110,42 @@ export function ActivityDetailSheet({
         qc.invalidateQueries({ queryKey: ["/api/activities"] });
       }
 
-      await new Promise<void>((resolve, reject) => {
-        updateLink.mutate(
-          {
-            tripId,
-            dayId,
-            linkId: activity.id,
-            data: {
-              startTime: startTime || null,
-              endTime: endTime || null,
-              notes: notes || null,
-              companyContact: companyContact || null,
-              addressOverride: addressOverride || null,
-              included,
-              transportMode: (transportMode || null) as import("@workspace/api-client-react").DayActivityInput["transportMode"],
+      if (isItinerary) {
+        await new Promise<void>((resolve, reject) => {
+          updateItinLink.mutate(
+            {
+              itineraryId: entityId,
+              dayId,
+              linkId: activity.id,
+              data: {
+                startTime: startTime || null,
+                notes: notes || null,
+              },
             },
-          },
-          { onSuccess: () => resolve(), onError: reject }
-        );
-      });
+            { onSuccess: () => resolve(), onError: reject }
+          );
+        });
+      } else {
+        await new Promise<void>((resolve, reject) => {
+          updateTripLink.mutate(
+            {
+              tripId: entityId,
+              dayId,
+              linkId: activity.id,
+              data: {
+                startTime: startTime || null,
+                endTime: endTime || null,
+                notes: notes || null,
+                companyContact: companyContact || null,
+                addressOverride: addressOverride || null,
+                included,
+                transportMode: (transportMode || null) as import("@workspace/api-client-react").DayActivityInput["transportMode"],
+              },
+            },
+            { onSuccess: () => resolve(), onError: reject }
+          );
+        });
+      }
 
       qc.invalidateQueries({ queryKey: [queryKey] });
       toast({ title: "Actividad actualizada" });
@@ -154,6 +176,7 @@ export function ActivityDetailSheet({
               <p className="text-[11px] mt-0.5" style={{ color: "var(--text-ter)" }}>
                 {meta.label}
                 {!canEdit && " · Solo lectura"}
+                {isItinerary && canEdit && " · Itinerario"}
               </p>
             </div>
           </div>
@@ -221,11 +244,11 @@ export function ActivityDetailSheet({
                   Detalles para este día
                 </p>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className={isItinerary ? "" : "grid grid-cols-2 gap-3"}>
                   <div>
                     <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
                       <Clock className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
-                      Inicio
+                      Hora de inicio
                     </label>
                     <Input
                       type="time"
@@ -234,87 +257,93 @@ export function ActivityDetailSheet({
                       className="h-9 text-[13px]"
                     />
                   </div>
-                  <div>
-                    <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
-                      <AlarmClock className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
-                      Fin
-                    </label>
-                    <Input
-                      type="time"
-                      value={endTime}
-                      onChange={e => setEndTime(e.target.value)}
-                      className="h-9 text-[13px]"
-                    />
-                  </div>
+                  {!isItinerary && (
+                    <div>
+                      <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                        <AlarmClock className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                        Hora de fin
+                      </label>
+                      <Input
+                        type="time"
+                        value={endTime}
+                        onChange={e => setEndTime(e.target.value)}
+                        className="h-9 text-[13px]"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div>
-                  <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
-                    <Building2 className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
-                    Empresa / Contacto
-                  </label>
-                  <Input
-                    placeholder="Nombre del tour, empresa, teléfono…"
-                    value={companyContact}
-                    onChange={e => setCompanyContact(e.target.value)}
-                    className="h-9 text-[13px]"
-                  />
-                </div>
+                {!isItinerary && (
+                  <>
+                    <div>
+                      <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                        <Building2 className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                        Empresa / Contacto
+                      </label>
+                      <Input
+                        placeholder="Nombre del tour, empresa, teléfono…"
+                        value={companyContact}
+                        onChange={e => setCompanyContact(e.target.value)}
+                        className="h-9 text-[13px]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
-                    Dirección (para este día)
-                  </label>
-                  <Input
-                    placeholder="Sobreescribe la dirección del catálogo…"
-                    value={addressOverride}
-                    onChange={e => setAddressOverride(e.target.value)}
-                    className="h-9 text-[13px]"
-                  />
-                </div>
+                    <div>
+                      <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                        <MapPin className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                        Dirección (para este día)
+                      </label>
+                      <Input
+                        placeholder="Sobreescribe la dirección del catálogo…"
+                        value={addressOverride}
+                        onChange={e => setAddressOverride(e.target.value)}
+                        className="h-9 text-[13px]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
-                    Transporte para llegar
-                  </label>
-                  <TransportSelect
-                    value={transportMode}
-                    onChange={setTransportMode}
-                    placeholder="Sin transporte definido"
-                    className="h-9 text-[13px]"
-                  />
-                </div>
+                    <div>
+                      <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                        Transporte para llegar
+                      </label>
+                      <TransportSelect
+                        value={transportMode}
+                        onChange={setTransportMode}
+                        placeholder="Sin transporte definido"
+                        className="h-9 text-[13px]"
+                      />
+                    </div>
 
-                <div>
-                  <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
-                    Tipo de actividad
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setIncluded(true)}
-                      className="flex-1 h-9 rounded-[8px] text-[12px] font-medium border transition-colors"
-                      style={{
-                        background: included ? "var(--indigo)" : "transparent",
-                        color: included ? "#FAF2EB" : "var(--noche)",
-                        borderColor: included ? "var(--indigo)" : "var(--border)",
-                      }}
-                    >
-                      Incluida
-                    </button>
-                    <button
-                      onClick={() => setIncluded(false)}
-                      className="flex-1 h-9 rounded-[8px] text-[12px] font-medium border transition-colors"
-                      style={{
-                        background: !included ? "#4A6A4A" : "transparent",
-                        color: !included ? "#fff" : "var(--noche)",
-                        borderColor: !included ? "#4A6A4A" : "var(--border)",
-                      }}
-                    >
-                      Por libre
-                    </button>
-                  </div>
-                </div>
+                    <div>
+                      <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                        Tipo de actividad
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setIncluded(true)}
+                          className="flex-1 h-9 rounded-[8px] text-[12px] font-medium border transition-colors"
+                          style={{
+                            background: included ? "var(--indigo)" : "transparent",
+                            color: included ? "#FAF2EB" : "var(--noche)",
+                            borderColor: included ? "var(--indigo)" : "var(--border)",
+                          }}
+                        >
+                          Incluida
+                        </button>
+                        <button
+                          onClick={() => setIncluded(false)}
+                          className="flex-1 h-9 rounded-[8px] text-[12px] font-medium border transition-colors"
+                          style={{
+                            background: !included ? "#4A6A4A" : "transparent",
+                            color: !included ? "#fff" : "var(--noche)",
+                            borderColor: !included ? "#4A6A4A" : "var(--border)",
+                          }}
+                        >
+                          Por libre
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
