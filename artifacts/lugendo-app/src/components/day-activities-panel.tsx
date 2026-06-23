@@ -174,28 +174,37 @@ export function DayActivitiesPanel({
     setLookupDone(false);
   };
 
-  const handleCreateAndLink = () => {
+  const handleCreateAndLink = async () => {
     if (!newName.trim()) return;
-    createActivity.mutate(
-      {
+    // Capture form state before any async operation to avoid stale closure issues
+    const capturedStartTime = newStartTime;
+    const capturedNotes = newNotes;
+    try {
+      const created = await createActivity.mutateAsync({
         data: {
           name: newName.trim(),
           ...(newCategory ? { category: newCategory as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
           ...(newCity ? { city: newCity } : {}),
           ...(newCountry ? { country: newCountry } : {}),
         },
-      },
-      {
-        onSuccess: (created) => {
-          qc.invalidateQueries({ queryKey: ["/api/activities"] });
-          doAdd(created.id, newStartTime || undefined, newNotes || undefined, () => {
-            toast({ title: "Actividad creada y añadida" });
-            resetForm();
-          });
-        },
-        onError: () => toast({ variant: "destructive", title: "Error al crear la actividad" }),
+      });
+      qc.invalidateQueries({ queryKey: ["/api/activities"] });
+      const addData = {
+        activityId: created.id,
+        ...(capturedStartTime ? { startTime: capturedStartTime } : {}),
+        ...(capturedNotes ? { notes: capturedNotes } : {}),
+      };
+      if (isItinerary) {
+        await addItin.mutateAsync({ itineraryId: entityId, dayId, data: addData });
+      } else {
+        await addTrip.mutateAsync({ tripId: entityId, dayId, data: addData });
       }
-    );
+      invalidate();
+      toast({ title: "Actividad creada y añadida" });
+      resetForm();
+    } catch {
+      toast({ variant: "destructive", title: "Error al crear la actividad" });
+    }
   };
 
   const isPending = addItin.isPending || addTrip.isPending || createActivity.isPending;
