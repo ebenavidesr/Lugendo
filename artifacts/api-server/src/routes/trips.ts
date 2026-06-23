@@ -15,6 +15,7 @@ import {
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { sendDocumentAddedEmail } from "../lib/email";
 
 const objectStorage = new ObjectStorageService();
 
@@ -850,9 +851,38 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
     .values({ tripId, userId: userId!, filename, mimeType, storageKey })
     .returning();
   res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: role! });
+
+  // Fire-and-forget: notify accepted travelers about the new document
+  (async () => {
+    try {
+      const [[tripInfo], travelers] = await Promise.all([
+        db.select({ name: tripsTable.name, agencyName: agenciesTable.name })
+          .from(tripsTable)
+          .leftJoin(agenciesTable, eq(agenciesTable.id, tripsTable.agencyId))
+          .where(eq(tripsTable.id, tripId)),
+        db.select({ email: invitationsTable.email, travelerName: usersTable.name })
+          .from(invitationsTable)
+          .leftJoin(usersTable, eq(invitationsTable.travelerId, usersTable.id))
+          .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted"))),
+      ]);
+      if (!tripInfo || travelers.length === 0) return;
+      const domain = (process.env.REPLIT_DOMAINS ?? "").split(",")[0];
+      const tripUrl = domain ? `https://${domain}/trips/${tripId}?tab=documents` : "";
+      await Promise.all(travelers.map(t => sendDocumentAddedEmail({
+        to: t.email,
+        travelerName: t.travelerName ?? t.email,
+        tripName: tripInfo.name,
+        agencyName: tripInfo.agencyName ?? "Tu agencia",
+        documentName: filename,
+        tripUrl,
+      })));
+    } catch (err) {
+      req.log.warn({ err }, "Failed to send document notification emails");
+    }
+  })();
 });
 
-router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
   const { userId, agencyId, role } = req.session;
@@ -862,11 +892,16 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
   }
 
   const [doc] = await db
-    .select({ id: tripDocumentsTable.id })
+    .select({ id: tripDocumentsTable.id, userId: tripDocumentsTable.userId })
     .from(tripDocumentsTable)
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Agents can only rename documents they uploaded
+  if (role === "agent" && doc.userId !== userId) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
 
   const { filename } = req.body as { filename: string };
 
@@ -878,7 +913,7 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
   res.json({ ...updated, createdAt: updated.createdAt.toISOString(), uploaderRole: role! });
 });
 
-router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
   const { userId, agencyId, role } = req.session;
@@ -893,6 +928,11 @@ router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "man
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Agents can only delete documents they uploaded
+  if (role === "agent" && doc.userId !== userId) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
 
   try {
     const file = await objectStorage.getObjectEntityFile(doc.storageKey);

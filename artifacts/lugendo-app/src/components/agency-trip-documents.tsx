@@ -11,6 +11,7 @@ import type { TripDocument } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 function getMimeIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
@@ -33,7 +34,16 @@ interface AgencyTripDocumentsProps {
 
 export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocumentsProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const qc = useQueryClient();
+
+  // Admins/managers can manage any doc; agents only their own
+  const canManageDoc = (doc: TripDocument) => {
+    if (readOnly) return false;
+    if (user?.role === "admin" || user?.role === "manager") return true;
+    if (user?.role === "agent") return doc.userId === user.id;
+    return false;
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -280,7 +290,7 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
                           className={`w-4 h-4 ${downloadingId === doc.id ? "animate-pulse" : ""}`}
                         />
                       </button>
-                      {!readOnly && (
+                      {canManageDoc(doc) && (
                         <>
                           <button
                             onClick={() => startRename(doc)}

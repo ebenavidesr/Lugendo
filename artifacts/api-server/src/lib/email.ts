@@ -80,6 +80,41 @@ export async function sendWelcomeEmail(opts: {
   );
 }
 
+export async function sendDocumentAddedEmail(opts: {
+  to: string;
+  travelerName: string;
+  tripName: string;
+  agencyName: string;
+  documentName: string;
+  tripUrl: string;
+}): Promise<void> {
+  const { to, travelerName, tripName, agencyName, documentName, tripUrl } = opts;
+  await sendEmail(
+    to,
+    `Nuevo documento en tu viaje "${tripName}"`,
+    `
+    <div style="font-family:'DM Sans',Arial,sans-serif;max-width:560px;margin:0 auto;color:#2D1F0E">
+      <div style="background:#FAF2EB;padding:32px;border-radius:16px">
+        <h1 style="margin:0 0 16px;font-size:20px">Nuevo documento disponible</h1>
+        <p style="margin:0 0 8px;font-size:15px;color:#6B5744">Hola <strong>${travelerName}</strong>,</p>
+        <p style="margin:0 0 16px;font-size:15px;color:#6B5744">
+          <strong>${agencyName}</strong> ha añadido un documento a tu viaje <strong>${tripName}</strong>:
+        </p>
+        <div style="background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:24px;font-size:14px;color:#2D1F0E;display:flex;align-items:center;gap:10px">
+          📄 <strong>${documentName}</strong>
+        </div>
+        <a href="${tripUrl}" style="display:block;background:#C4793A;color:#FAF2EB;text-align:center;padding:14px 24px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600">
+          Ver documentos →
+        </a>
+        <p style="margin:16px 0 0;font-size:12px;color:#9C7A58;text-align:center">
+          Entra a Lugendo para descargar el documento.
+        </p>
+      </div>
+    </div>
+    `,
+  );
+}
+
 export async function sendTripUpdatedEmail(opts: {
   to: string;
   name: string;
