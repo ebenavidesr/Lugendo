@@ -243,10 +243,15 @@ export function DayHotelPanel({
         },
       });
       qc.invalidateQueries({ queryKey: ["/api/hotels"] });
-      setSelectedHotelId(String(hotel.id));
-      setForm({ name: "", city: "", country: "", address: "", phone: "", website: "" });
-      setMode("add");
-      toast({ title: `Hotel "${hotel.name}" creado. Ahora elige el segmento y confirma.` });
+      const addData = { hotelId: hotel.id };
+      if (entityType === "itinerary") {
+        await addItinHotel.mutateAsync({ itineraryId: entityId, dayId: day.id, data: addData });
+      } else {
+        await addTripHotel.mutateAsync({ tripId: entityId, dayId: day.id, data: addData });
+      }
+      invalidate();
+      toast({ title: `Hotel "${hotel.name}" creado y añadido.` });
+      resetMode();
     } catch {
       toast({ variant: "destructive", title: "Error al crear el hotel" });
     } finally {
@@ -285,16 +290,10 @@ export function DayHotelPanel({
         {mode === "idle" && !readOnly && (
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setMode("add")}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
-              style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
-              <Plus className="w-3 h-3" /> Añadir
-            </button>
-            <button
               onClick={() => { setMode("create"); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "", country: day.country ?? "" })); }}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#FAEEE4", color: "#C4793A" }}>
-              <Plus className="w-3 h-3" /> Nuevo hotel
+              <Plus className="w-3 h-3" /> Añadir hotel
             </button>
           </div>
         )}
@@ -341,52 +340,6 @@ export function DayHotelPanel({
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Add from catalogue */}
-      {mode === "add" && (
-        <div className="rounded-[8px] border border-border/60 p-3 space-y-2.5" style={{ background: "#FAF8FF" }}>
-          <p className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#3D2F6B" }}>Añadir hotel al día</p>
-          <div className="space-y-2">
-            <div>
-              <label className="text-[11px] text-muted-foreground block mb-1">Hotel del catálogo</label>
-              <Select value={selectedHotelId} onValueChange={setSelectedHotelId}>
-                <SelectTrigger className="h-8 text-[12px]">
-                  <SelectValue placeholder="Seleccionar hotel…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {hotelCatalog?.map(h => (
-                    <SelectItem key={h.id} value={String(h.id)}>
-                      {h.name} — {h.city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-[11px] text-muted-foreground block mb-1">Segmento (opcional)</label>
-              <Select value={selectedSegment} onValueChange={setSelectedSegment}>
-                <SelectTrigger className="h-8 text-[12px]">
-                  <SelectValue placeholder="Sin segmento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sin segmento</SelectItem>
-                  {SEGMENTS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <button
-              onClick={handleAdd}
-              disabled={!selectedHotelId || isPending}
-              className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40 inline-flex items-center gap-1.5"
-              style={{ background: "#3D2F6B", color: "white" }}>
-              {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              Confirmar
-            </button>
-          </div>
         </div>
       )}
 
@@ -448,7 +401,7 @@ export function DayHotelPanel({
               disabled={!form.name || !form.city || !form.country || saving}
               className="h-8 px-4 rounded-[6px] text-[12px] font-medium disabled:opacity-40"
               style={{ background: "#C4793A", color: "#FAF2EB" }}>
-              {saving ? "Guardando…" : "Crear y continuar"}
+              {saving ? "Guardando…" : "Crear y añadir"}
             </button>
           </div>
         </div>
