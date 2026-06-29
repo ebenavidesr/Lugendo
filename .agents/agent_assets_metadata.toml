@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "YWlDBJLWKH2tQYYzcA18u"
+uri = "file://TESTING.md"
+type = "text"
+title = "TESTING.md — Checklist de validación"
