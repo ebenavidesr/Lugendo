@@ -900,7 +900,7 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
 
   // Agents can only rename documents they uploaded
   if (role === "agent" && doc.userId !== userId) {
-    res.status(403).json({ error: "Forbidden" }); return;
+    res.status(403).json({ error: "Agents can only rename their own documents" }); return;
   }
 
   const { filename } = req.body as { filename: string };
@@ -931,7 +931,7 @@ router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "man
 
   // Agents can only delete documents they uploaded
   if (role === "agent" && doc.userId !== userId) {
-    res.status(403).json({ error: "Forbidden" }); return;
+    res.status(403).json({ error: "Agents can only delete their own documents" }); return;
   }
 
   try {
