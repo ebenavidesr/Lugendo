@@ -55,6 +55,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - Any feature or change must work for **all user roles** (admin, manager, agent, traveler) unless explicitly stated otherwise. Both API permissions and frontend UI should be role-inclusive by default.
 - Whenever a task or feature is completed (whether built directly or merged from a task agent), automatically add its validation checkboxes to `TESTING.md` at the root of the project. Keep already-checked items intact. This applies to every project.
 - When suggesting follow-up tasks, never offer a "start" option. Only offer two choices: "Añadir a tareas" (queue it for later execution) and "Eliminar" (dismiss it). The user decides when to execute queued tasks.
+- Maintain a `BACKLOG.md` at the project root with a table of all tasks (columns: #, Tarea, Prioridad 🔴/🟡/🟢, Área, Autor). Sections: "En cola", "Completadas", "Descartadas". Update automatically when tasks are created, merged, or cancelled.
 
 ## DB Migration Workflow
 

@@ -24,3 +24,12 @@ When proposing follow-up tasks at the end of a session, never offer a "start now
 - **Eliminar** — dismisses it without queuing.
 
 **Why:** The user wants full control over when work starts. Auto-starting is disruptive to their workflow.
+
+## How to apply — BACKLOG.md
+
+Maintain a `BACKLOG.md` at the project root with three sections: "En cola", "Completadas" y "Descartadas".
+Each row has columns: `#`, `Tarea`, `Prioridad` (🔴/🟡/🟢), `Área`, `Autor` (Tú = user-proposed, Yo = agent-proposed).
+- Add new tasks to "En cola" when created. Move to "Completadas" when merged. Move to "Descartadas" when cancelled.
+- Never delete rows — only move them between sections.
+- Completadas and Descartadas sections omit the Prioridad column (no longer actionable).
+- Applies to every project.

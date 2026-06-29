@@ -6,3 +6,9 @@ id = "YWlDBJLWKH2tQYYzcA18u"
 uri = "file://TESTING.md"
 type = "text"
 title = "TESTING.md — Checklist de validación"
+
+[[outputs]]
+id = "yLmVQmNCoUMr37eOWIIQm"
+uri = "file://BACKLOG.md"
+type = "text"
+title = "BACKLOG.md — Tabla de tareas"
