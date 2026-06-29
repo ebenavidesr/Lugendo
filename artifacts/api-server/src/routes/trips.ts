@@ -15,7 +15,7 @@ import {
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
-import { sendDocumentAddedEmail } from "../lib/email";
+import { sendDocumentUploadedEmail } from "../lib/email";
 
 const objectStorage = new ObjectStorageService();
 
@@ -856,32 +856,52 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
     .returning();
   res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: role! });
 
-  // Fire-and-forget: notify accepted travelers about the new document
+  // Fire-and-forget: notify accepted travelers
   (async () => {
     try {
-      const [[tripInfo], travelers] = await Promise.all([
-        db.select({ name: tripsTable.name, agencyName: agenciesTable.name })
-          .from(tripsTable)
-          .leftJoin(agenciesTable, eq(agenciesTable.id, tripsTable.agencyId))
-          .where(eq(tripsTable.id, tripId)),
-        db.select({ email: invitationsTable.email, travelerName: usersTable.name })
-          .from(invitationsTable)
-          .leftJoin(usersTable, eq(invitationsTable.travelerId, usersTable.id))
-          .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted"))),
-      ]);
-      if (!tripInfo || travelers.length === 0) return;
-      const domain = (process.env.REPLIT_DOMAINS ?? "").split(",")[0];
-      const tripUrl = domain ? `https://${domain}/trips/${tripId}?tab=documents` : "";
-      await Promise.all(travelers.map(t => sendDocumentAddedEmail({
-        to: t.email,
-        travelerName: t.travelerName ?? t.email,
-        tripName: tripInfo.name,
-        agencyName: tripInfo.agencyName ?? "Tu agencia",
-        documentName: filename,
-        tripUrl,
-      })));
+      const [tripRow] = await db
+        .select({ name: tripsTable.name, agencyId: tripsTable.agencyId })
+        .from(tripsTable)
+        .where(eq(tripsTable.id, tripId));
+      if (!tripRow) return;
+
+      if (!tripRow.agencyId) return;
+      const [agency] = await db
+        .select({ name: agenciesTable.name })
+        .from(agenciesTable)
+        .where(eq(agenciesTable.id, tripRow.agencyId));
+      if (!agency) return;
+
+      const accepted = await db
+        .select({
+          email: invitationsTable.email,
+          name: usersTable.name,
+        })
+        .from(invitationsTable)
+        .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
+        .where(
+          and(
+            eq(invitationsTable.tripId, tripId),
+            eq(invitationsTable.status, "accepted"),
+          ),
+        );
+
+      const tripUrl = `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : ""}/#/trips/${tripId}/documents`;
+
+      await Promise.allSettled(
+        accepted.map(t =>
+          sendDocumentUploadedEmail({
+            to: t.email,
+            travelerName: t.name ?? null,
+            tripName: tripRow.name,
+            agencyName: agency.name,
+            documentName: filename,
+            tripUrl,
+          }),
+        ),
+      );
     } catch (err) {
-      req.log.warn({ err }, "Failed to send document notification emails");
+      req.log.error({ err }, "Failed to send document upload notifications");
     }
   })();
 });
