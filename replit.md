@@ -53,6 +53,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - Brand: DM Sans (body), DM Serif Display (headings/serif). Colors: Arena #FAF2EB bg, Duna #ECD5B8 cards, Terracota #C4793A CTA, Ocre #8B4420 hover, Índigo #3D2F6B accent, Noche #2D1F0E sidebar/text.
 - Use the brand CSS variables (`--terra`, `--indigo`, `--noche`, etc.) directly in components rather than hardcoding hex values.
 - Any feature or change must work for **all user roles** (admin, manager, agent, traveler) unless explicitly stated otherwise. Both API permissions and frontend UI should be role-inclusive by default.
+- Whenever a task or feature is completed (whether built directly or merged from a task agent), automatically add its validation checkboxes to `TESTING.md` at the root of the project. Keep already-checked items intact. This applies to every project.
 
 ## DB Migration Workflow
 
