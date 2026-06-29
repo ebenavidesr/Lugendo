@@ -1079,7 +1079,7 @@ paths:
     patch:
       operationId: renameTripDocumentAdmin
       tags: [trips]
-      summary: Rename a document (back-office, admin/manager only)
+      summary: Rename a document (back-office, admin/manager/agent uploader)
       parameters:
         - name: tripId
           in: path

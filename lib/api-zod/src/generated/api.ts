@@ -1254,7 +1254,7 @@ export const CreateTripDocumentAdminBody = zod.object({
 
 
 /**
- * @summary Rename a document (back-office, admin/manager only)
+ * @summary Rename a document (back-office, admin/manager/agent uploader)
  */
 export const RenameTripDocumentAdminParams = zod.object({
   "tripId": zod.coerce.number(),

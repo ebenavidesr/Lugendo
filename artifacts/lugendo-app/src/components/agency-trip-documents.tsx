@@ -37,7 +37,6 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
   const { user } = useAuth();
   const qc = useQueryClient();
 
-  // Admins/managers can manage any doc; agents only their own
   const canManageDoc = (doc: TripDocument) => {
     if (readOnly) return false;
     if (user?.role === "admin" || user?.role === "manager") return true;

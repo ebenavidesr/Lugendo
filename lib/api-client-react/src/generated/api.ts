@@ -3802,7 +3802,7 @@ export const getRenameTripDocumentAdminUrl = (tripId: number,
 }
 
 /**
- * @summary Rename a document (back-office, admin/manager only)
+ * @summary Rename a document (back-office, admin/manager/agent uploader)
  */
 export const renameTripDocumentAdmin = async (tripId: number,
     documentId: number,
@@ -3853,7 +3853,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type RenameTripDocumentAdminMutationError = ErrorType<void>
 
     /**
- * @summary Rename a document (back-office, admin/manager only)
+ * @summary Rename a document (back-office, admin/manager/agent uploader)
  */
 export const useRenameTripDocumentAdmin = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof renameTripDocumentAdmin>>, TError,{tripId: number;documentId: number;data: BodyType<TripDocumentRename>}, TContext>, request?: SecondParameter<typeof customFetch>}

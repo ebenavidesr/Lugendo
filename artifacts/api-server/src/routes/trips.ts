@@ -902,9 +902,8 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
 
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Agents can only rename documents they uploaded
   if (role === "agent" && doc.userId !== userId) {
-    res.status(403).json({ error: "Agents can only rename their own documents" }); return;
+    res.status(403).json({ error: "Agents can only rename documents they uploaded" }); return;
   }
 
   const { filename } = req.body as { filename: string };
