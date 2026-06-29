@@ -93,9 +93,10 @@ async function copyItineraryDaysToTrip(tripId: number, itineraryId: number, crea
 
 function serializeDayHotel(r: {
   id: number; hotelId: number; hotelName: string; hotelCity: string | null;
+  hotelAddress: string | null; hotelPhone: string | null; hotelWebsite: string | null;
   segment: string | null; createdAt: Date;
 }) {
-  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, segment: r.segment, createdAt: r.createdAt.toISOString() };
+  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, hotelAddress: r.hotelAddress, hotelPhone: r.hotelPhone, hotelWebsite: r.hotelWebsite, segment: r.segment, createdAt: r.createdAt.toISOString() };
 }
 
 async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerary") {
@@ -109,6 +110,9 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
       hotelId: table.hotelId,
       hotelName: hotelsTable.name,
       hotelCity: hotelsTable.city,
+      hotelAddress: hotelsTable.address,
+      hotelPhone: hotelsTable.phone,
+      hotelWebsite: hotelsTable.website,
       segment: table.segment,
       createdAt: table.createdAt,
     })

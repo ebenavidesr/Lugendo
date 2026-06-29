@@ -297,6 +297,7 @@ export default function TravelerTrip() {
                   tripId={tripId}
                   canEditDay={canEditPersonal && editMode}
                   canEditHotels={canEdit}
+                  startDate={trip.startDate}
                   onSaveDay={canEditPersonal && editMode ? (data) => handleSaveDay(day.id, day.dayNumber, data) : undefined}
                   onDeleteDay={canEditPersonal && editMode ? () => void handleDeleteDay(day.id) : undefined}
                 />

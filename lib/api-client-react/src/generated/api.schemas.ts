@@ -228,6 +228,12 @@ export interface DayHotel {
   hotelName: string;
   /** @nullable */
   hotelCity?: string | null;
+  /** @nullable */
+  hotelAddress?: string | null;
+  /** @nullable */
+  hotelPhone?: string | null;
+  /** @nullable */
+  hotelWebsite?: string | null;
   segment: SegmentValue | null;
   createdAt: string;
 }

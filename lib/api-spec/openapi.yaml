@@ -2533,6 +2533,12 @@ components:
           type: string
         hotelCity:
           type: ["string", "null"]
+        hotelAddress:
+          type: ["string", "null"]
+        hotelPhone:
+          type: ["string", "null"]
+        hotelWebsite:
+          type: ["string", "null"]
         segment:
           $ref: "#/components/schemas/SegmentValue"
         createdAt:

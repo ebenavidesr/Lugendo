@@ -56,6 +56,13 @@ function formatTimeRange(startTime: string | null | undefined, endTime: string |
   return startTime;
 }
 
+function formatDayDate(startDate: string | null | undefined, dayNumber: number): string | null {
+  if (!startDate) return null;
+  const d = new Date(startDate);
+  d.setDate(d.getDate() + dayNumber - 1);
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
+}
+
 export interface DayEditData {
   cityFrom: string | null;
   cityTo: string | null;
@@ -73,14 +80,16 @@ interface TripDayCardProps {
   tripId?: number;
   canEditDay?: boolean;
   canEditHotels?: boolean;
+  startDate?: string | null;
   onSaveDay?: (data: DayEditData) => Promise<void>;
   onDeleteDay?: () => void;
 }
 
-export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, onSaveDay, onDeleteDay }: TripDayCardProps) {
+export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, startDate, onSaveDay, onDeleteDay }: TripDayCardProps) {
   const hotel = day.hotels?.[0] ?? null;
   const activities: TripDayActivityItem[] = day.activities ?? [];
   const hotelNightLabel = nightLabel(dayIndex, allDays);
+  const dayDateStr = formatDayDate(startDate, day.dayNumber);
   const qc = useQueryClient();
   const { toast } = useToast();
   const removeActivity = useRemoveTripDayActivity();
@@ -146,11 +155,18 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         className="w-full flex items-center gap-3 px-4 bg-card border border-border rounded-[14px] text-left hover:bg-muted/40 transition-colors"
         style={{ minHeight: 44 }}
       >
-        <div
-          className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0 text-[11px] font-semibold"
-          style={{ background: "var(--indigo)", color: "#FAF2EB" }}
-        >
-          {day.dayNumber}
+        <div className="flex flex-col items-center gap-0.5 shrink-0">
+          <div
+            className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[11px] font-semibold"
+            style={{ background: "var(--indigo)", color: "#FAF2EB" }}
+          >
+            {day.dayNumber}
+          </div>
+          {dayDateStr && (
+            <span className="text-[8px] leading-none text-center" style={{ color: "var(--text-sec)", maxWidth: 36 }}>
+              {dayDateStr}
+            </span>
+          )}
         </div>
 
         <div className="flex-1 min-w-0 py-2.5">
@@ -195,6 +211,9 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
           style={{ background: "var(--indigo)", color: "#FAF2EB" }}
         >
           Día {day.dayNumber}
+          {dayDateStr && (
+            <span className="text-[10px] font-normal ml-1.5 opacity-80">{dayDateStr}</span>
+          )}
         </div>
 
         {canEditDay && (

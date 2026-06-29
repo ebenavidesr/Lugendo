@@ -25,9 +25,10 @@ function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount =
 
 function serializeDayHotel(r: {
   id: number; hotelId: number; hotelName: string; hotelCity: string | null;
+  hotelAddress: string | null; hotelPhone: string | null; hotelWebsite: string | null;
   segment: string | null; createdAt: Date;
 }) {
-  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, segment: r.segment, createdAt: r.createdAt.toISOString() };
+  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, hotelAddress: r.hotelAddress, hotelPhone: r.hotelPhone, hotelWebsite: r.hotelWebsite, segment: r.segment, createdAt: r.createdAt.toISOString() };
 }
 
 async function getDayHotelMap(dayIds: number[]) {
@@ -39,6 +40,9 @@ async function getDayHotelMap(dayIds: number[]) {
       hotelId: itineraryDayHotelsTable.hotelId,
       hotelName: hotelsTable.name,
       hotelCity: hotelsTable.city,
+      hotelAddress: hotelsTable.address,
+      hotelPhone: hotelsTable.phone,
+      hotelWebsite: hotelsTable.website,
       segment: itineraryDayHotelsTable.segment,
       createdAt: itineraryDayHotelsTable.createdAt,
     })
@@ -289,7 +293,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin"
     .values({ itineraryDayId: dayId, hotelId, segment })
     .returning();
 
-  res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
+  res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
 });
 
 router.delete("/itineraries/:itineraryId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {

@@ -295,6 +295,9 @@ export const GetItineraryResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -374,6 +377,9 @@ export const ListItineraryDaysResponseItem = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -429,6 +435,9 @@ export const UpdateItineraryDayResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -808,6 +817,9 @@ export const GetTripResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -1006,6 +1018,9 @@ export const UpdateTripDayAdminResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -1426,6 +1441,9 @@ export const GetMyTripResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -1547,6 +1565,9 @@ export const UpdateMyTripResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -1619,6 +1640,9 @@ export const UpdateTripDayResponse = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })).optional(),
@@ -2079,6 +2103,9 @@ export const ListItineraryDayHotelsResponseItem = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })
@@ -2122,6 +2149,9 @@ export const ListTripDayHotelsResponseItem = zod.object({
   "hotelId": zod.number(),
   "hotelName": zod.string(),
   "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "hotelPhone": zod.string().nullish(),
+  "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
   "createdAt": zod.string()
 })

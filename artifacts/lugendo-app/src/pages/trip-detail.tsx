@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import {
-  ArrowLeft, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight, Trash2, Loader2,
+  ArrowLeft, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight, Trash2, Loader2, Hotel,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -84,6 +84,13 @@ function fromApiLeg(l: { airline?: string; flightNumber?: string; cityFrom?: str
     arrivalTime: l?.arrivalTime ?? "",
     reservationCode: l?.reservationCode ?? "",
   };
+}
+
+function formatDayDate(startDate: string | null | undefined, dayNumber: number): string | null {
+  if (!startDate) return null;
+  const d = new Date(startDate);
+  d.setDate(d.getDate() + dayNumber - 1);
+  return d.toLocaleDateString("es-ES", { day: "numeric", month: "long" });
 }
 
 interface DayEditFormProps {
@@ -238,6 +245,7 @@ export default function TripDetail() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [editingDayId, setEditingDayId] = useState<number | null>(null);
+  const [hotelBulkOpen, setHotelBulkOpen] = useState(false);
   const { data: trip, isLoading } = useGetTrip(tripId);
   const { data: itineraryDays } = useListItineraryDays(trip?.itineraryId ?? 0);
 
@@ -491,17 +499,60 @@ export default function TripDetail() {
                 Añadir día
               </button>
               {trip.days.length > 0 && (
-                <button
-                  onClick={() => {
-                    if (expandedDays.size > 0) setExpandedDays(new Set());
-                    else setExpandedDays(new Set(trip.days!.map(d => d.id)));
-                  }}
-                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                  {expandedDays.size > 0 ? "Colapsar todos" : "Expandir todos"}
-                </button>
+                <>
+                  <button
+                    onClick={() => setHotelBulkOpen(o => !o)}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full transition-colors"
+                    style={{ background: hotelBulkOpen ? "#ECD5B8" : "#FAF2EB", color: "#8B4420" }}
+                  >
+                    <Hotel className="w-3 h-3" />
+                    Hoteles
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (expandedDays.size > 0) setExpandedDays(new Set());
+                      else setExpandedDays(new Set(trip.days!.map(d => d.id)));
+                    }}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+                    {expandedDays.size > 0 ? "Colapsar todos" : "Expandir todos"}
+                  </button>
+                </>
               )}
             </div>
           </div>
+          {hotelBulkOpen && trip.days.length > 0 && (
+            <div className="border-b border-border px-5 py-4" style={{ background: "#FEFAF7" }}>
+              <p className="text-[11px] font-medium uppercase tracking-wide mb-3" style={{ color: "#9C7A58" }}>
+                Gestión de hoteles por día
+              </p>
+              <div className="space-y-2.5">
+                {trip.days.map(day => {
+                  const dateStr = formatDayDate(trip.startDate, day.dayNumber);
+                  return (
+                    <div key={day.id} className="rounded-[10px] border border-border/80 p-3 bg-card">
+                      <p className="text-[12px] font-medium mb-1" style={{ color: "#2D1F0E" }}>
+                        Día {day.dayNumber}
+                        {dateStr && <span className="font-normal text-muted-foreground ml-1">· {dateStr}</span>}
+                        {(day.cityFrom || day.cityTo) && (
+                          <span className="font-normal text-muted-foreground ml-1">
+                            {day.cityFrom && day.cityTo ? `· ${day.cityFrom} → ${day.cityTo}` : `· ${day.cityTo ?? day.cityFrom}`}
+                          </span>
+                        )}
+                      </p>
+                      <DayHotelPanel
+                        entityType="trip"
+                        entityId={tripId}
+                        day={day}
+                        allDays={trip.days}
+                        invalidateKey={`/api/trips/${tripId}`}
+                        compact
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {trip.days.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               No hay días en este itinerario. Haz clic en "Añadir día" para empezar.
@@ -513,9 +564,16 @@ export default function TripDetail() {
                 const isEditingThisDay = editingDayId === day.id;
                 return (
                   <li key={day.id} className="flex items-start gap-4 px-5 py-3">
-                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 text-[13px] font-medium"
-                      style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                      {day.dayNumber}
+                    <div className="flex flex-col items-center gap-0.5 shrink-0">
+                      <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-medium"
+                        style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                        {day.dayNumber}
+                      </div>
+                      {formatDayDate(trip.startDate, day.dayNumber) && (
+                        <span className="text-[9px] text-muted-foreground text-center leading-tight" style={{ maxWidth: 42 }}>
+                          {formatDayDate(trip.startDate, day.dayNumber)}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
