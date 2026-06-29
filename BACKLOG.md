@@ -2,7 +2,7 @@
 
 > Actualizado automáticamente. Edita las columnas de **Prioridad**, **Área** y **Autor** según necesites.
 > - Prioridad: 🔴 Alta · 🟡 Media · 🟢 Baja
-> - Estado: ✅ Completada · 🔵 Activa · 📋 En cola · 🚫 Descartada
+> - Autor: **Tú** = sugerencia tuya · **Yo** = propuesta mía
 
 ---
 
@@ -10,32 +10,57 @@
 
 | # | Tarea | Prioridad | Área | Autor |
 |---|-------|-----------|------|-------|
-| [#6](#6) | Mostrar bandera o nombre del país junto a cada día del itinerario | 🟢 Baja | Itinerarios | Yo |
-| [#7](#7) | Pre-rellenar país del hotel/actividad desde el día al vincular | 🟡 Media | Hoteles · Actividades | Yo |
-| [#10](#10) | Notificar al viajero por email cuando se cancela su viaje | 🟡 Media | Viajeros | Yo |
-| [#11](#11) | Ver y gestionar los viajes compartidos con otros (viajero) | 🟢 Baja | Viajeros | Yo |
-| [#12](#12) | Ventana de deshacer tras eliminar (reversión de borrados accidentales) | 🟡 Media | General | Yo |
-| [#20](#20) | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General | Tú |
-| [#21](#21) | Mostrar descripciones IA en fichas de hotel e itinerario | 🟡 Media | Hoteles · Itinerarios | Yo |
-| [#22](#22) | Mostrar descripción del viaje en la vista Passport del viajero | 🟡 Media | Viajeros | Yo |
-| [#23](#23) | Permitir regenerar descripción IA tras editar campos clave | 🟢 Baja | General | Yo |
-| [#27](#27) | Editar foto del día (agencia y viajero) | 🟡 Media | Viajeros | Yo |
-| [#29](#29) | Ficha de viajero: países visitados y perfil fotográfico | 🟡 Media | Viajeros | Tú |
-| [#30](#30) | Añadir dirección de actividad desde la página del catálogo | 🟢 Baja | Actividades | Yo |
-| [#31](#31) | Edición inline de actividad al vincular (sin paso extra) | 🟢 Baja | Actividades | Yo |
-| [#33](#33) | Viajero ve detalles de actividad y puede añadir notas personales | 🟡 Media | Viajeros · Actividades | Yo |
-| [#35](#35) | Subida de fotos por día para el pasaporte del viajero | 🟡 Media | Viajeros | Yo |
-| [#36](#36) | Badge de hora al editar actividad | 🟢 Baja | Actividades | Yo |
-| [#55](#55) | Ver y aceptar invitación de viaje compartido desde la app | 🔴 Alta | Viajeros | Tú |
-| [#56](#56) | Mostrar quién compartió el viaje en el pasaporte del viajero | 🟢 Baja | Viajeros | Yo |
-| [#59](#59) | Vista previa de documentos inline en el back office | 🟡 Media | Documentos | Yo |
-| [#60](#60) | Reabrir PDF en la misma página donde se dejó | 🟢 Baja | Documentos | Yo |
-| [#61](#61) | Ver y editar fotos del viaje (portada por día) — viajero | 🟢 Baja | Viajeros | Yo |
-| [#62](#62) | Aplicar plantilla de itinerario a un viaje existente (bulk) | 🔴 Alta | Itinerarios | Tú |
-| [#63](#63) | Filtrar documentos por origen (agencia vs. personal) — Passport | 🟢 Baja | Documentos · Viajeros | Yo |
-| [#64](#64) | Badges de documentos de agencia + nombre del subidor (back office) | 🟢 Baja | Documentos | Yo |
-| [#68](#68) | Agentes pueden eliminar documentos que subieron | 🟡 Media | Documentos · Roles | Tú |
-| [#73](#73) | Tickets y recuerdos por día de viaje | 🟡 Media | Viajeros | Tú |
+| #6 | Mostrar bandera o nombre del país junto a cada día del itinerario | 🟢 Baja | Itinerarios | Tú |
+| #7 | Pre-rellenar país del hotel/actividad desde el día al vincular | 🟡 Media | Hoteles · Actividades | Tú |
+| #10 | Notificar al viajero por email cuando se cancela su viaje | 🟡 Media | Viajeros | Yo |
+| #11 | Ver y gestionar los viajes compartidos con otros (viajero) | 🟢 Baja | Viajeros | Yo |
+| #12 | Ventana de deshacer tras eliminar (reversión de borrados accidentales) | 🟡 Media | General | Yo |
+| #20 | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General | Tú |
+| #21 | Mostrar descripciones IA en fichas de hotel e itinerario | 🟡 Media | Hoteles · Itinerarios | Yo |
+| #22 | Mostrar descripción del viaje en la vista Passport del viajero | 🟡 Media | Viajeros | Yo |
+| #23 | Permitir regenerar descripción IA tras editar campos clave | 🟢 Baja | General | Yo |
+| #27 | Editar foto del día (agencia y viajero) | 🟡 Media | Viajeros | Tú |
+| #29 | Ficha de viajero: países visitados y perfil fotográfico | 🟡 Media | Viajeros | Yo |
+| #30 | Añadir dirección de actividad desde la página del catálogo | 🟢 Baja | Actividades | Tú |
+| #31 | Edición inline de actividad al vincular (sin paso extra) | 🟢 Baja | Actividades | Yo |
+| #33 | Viajero ve detalles de actividad y puede añadir notas personales | 🟡 Media | Viajeros · Actividades | Yo |
+| #35 | Subida de fotos por día para el pasaporte del viajero | 🟡 Media | Viajeros | Yo |
+| #36 | Badge de hora al editar actividad | 🟢 Baja | Actividades | Yo |
+| #55 | Ver y aceptar invitación de viaje compartido desde la app | 🔴 Alta | Viajeros | Yo |
+| #56 | Mostrar quién compartió el viaje en el pasaporte del viajero | 🟢 Baja | Viajeros | Yo |
+| #59 | Vista previa de documentos inline en el back office | 🟡 Media | Documentos | Yo |
+| #60 | Reabrir PDF en la misma página donde se dejó | 🟢 Baja | Documentos | Yo |
+| #61 | Ver y editar fotos del viaje (portada por día) — viajero | 🟢 Baja | Viajeros | Yo |
+| #62 | Aplicar plantilla de itinerario a un viaje existente (bulk) | 🔴 Alta | Itinerarios | Yo |
+| #63 | Filtrar documentos por origen (agencia vs. personal) — Passport | 🟢 Baja | Documentos · Viajeros | Yo |
+| #64 | Badges de documentos de agencia + nombre del subidor (back office) | 🟢 Baja | Documentos | Yo |
+| #68 | Agentes pueden eliminar documentos que subieron | 🟡 Media | Documentos · Roles | Yo |
+| #73 | Tickets y recuerdos por día de viaje | 🟡 Media | Viajeros | Tú |
+| #74 | Duplicar viaje | 🔴 Alta | Viajes | Yo |
+| #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | 🔴 Alta | Viajes | Yo |
+| #76 | Semáforo de cancelación en lista de viajes (rojo/amarillo/verde) | 🔴 Alta | Viajes | Yo |
+| #77 | Estado "En preparación" para viajes sin invitaciones enviadas | 🟡 Media | Viajes | Yo |
+| #78 | Lista de espera al alcanzar la capacidad máxima del viaje | 🟡 Media | Viajes · Viajeros | Yo |
+| #79 | Aprobación de viajes por Manager antes de activar | 🟡 Media | Viajes · Roles | Yo |
+| #80 | Valoración post-viaje (NPS automático al finalizar) | 🟢 Baja | Viajeros | Yo |
+| #81 | Campos avanzados del itinerario (dificultad, meses, precio, etiquetas, vídeo) | 🔴 Alta | Itinerarios | Yo |
+| #82 | Mapa de ruta por día en itinerario y viaje | 🟢 Baja | Itinerarios · Viajeros | Yo |
+| #83 | Campos avanzados de hoteles (valoración interna, comisiones, atributos…) | 🟡 Media | Hoteles | Yo |
+| #84 | Campos avanzados de actividades (precio, reserva requerida, idiomas, etiquetas) | 🟡 Media | Actividades | Yo |
+| #85 | Perfil completo del viajero con onboarding progresivo | 🟡 Media | Viajeros | Yo |
+| #86 | Viajes propios del viajero (alta manual e importación desde PDF/Word) | 🟡 Media | Viajeros | Yo |
+| #87 | Configuración de agencia (identidad visual, plantillas, semáforo, aprobación) | 🔴 Alta | Agencia | Yo |
+| #88 | Notificaciones de recordatorio para el viajero (30 días, 7 días, día de salida) | 🔴 Alta | Viajeros | Yo |
+| #89 | Dashboard avanzado: GANTT de viajes, alertas y carga por agente | 🔴 Alta | Agencia | Yo |
+| #90 | Log de auditoría de acciones (quién creó, editó, eliminó) | 🟡 Media | Agencia · Roles | Yo |
+| #91 | Rol Guía local (solo lectura en itinerario y viajeros del viaje) | 🟡 Media | Roles | Yo |
+| #92 | Módulo de facturación Lugendo (fees de agencias y suscripciones) | 🟢 Baja | Agencia | Yo |
+| #93 | CRM básico: segmentos, score e insignias de viajero | 🟢 Baja | Viajeros · Agencia | Yo |
+| #94 | Seguimiento de documentación por viajero en el back office | 🔴 Alta | Documentos | Yo |
+| #95 | Check-in digital en destino (viajero confirma llegada, agente lo ve) | 🟡 Media | Viajeros | Yo |
+| #96 | Presupuesto personal del viajero (gastos por día y categoría) | 🟢 Baja | Viajeros | Yo |
+| #97 | Foro privado del viaje (chat entre viajeros y agente) | 🟡 Media | Viajeros | Yo |
+| #98 | Lista de equipaje inteligente sugerida por destino y actividades | 🟢 Baja | Viajeros | Yo |
 
 ---
 
