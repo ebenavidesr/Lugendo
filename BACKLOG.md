@@ -20,7 +20,7 @@
 | #22 | Mostrar descripción del viaje en la vista Passport del viajero | 🟡 Media | Viajeros | Yo |
 | #23 | Permitir regenerar descripción IA tras editar campos clave | 🟢 Baja | General | Yo |
 | #27 | Editar foto del día (agencia y viajero) | 🟡 Media | Viajeros | Tú |
-| #29 | Ficha de viajero: países visitados y perfil fotográfico | 🟡 Media | Viajeros | Yo |
+| ~~#29~~ | ~~Ficha de viajero: países visitados y perfil~~ | ~~🟡 Media~~ | ~~Viajeros~~ | ~~Yo~~ |
 | #30 | Añadir dirección de actividad desde la página del catálogo | 🟢 Baja | Actividades | Tú |
 | #31 | Edición inline de actividad al vincular (sin paso extra) | 🟢 Baja | Actividades | Yo |
 | #33 | Viajero ve detalles de actividad y puede añadir notas personales | 🟡 Media | Viajeros · Actividades | Yo |
@@ -37,7 +37,7 @@
 | #68 | Agentes pueden eliminar documentos que subieron | 🟡 Media | Documentos · Roles | Yo |
 | #73 | Tickets y recuerdos por día de viaje | 🟡 Media | Viajeros | Tú |
 | #74 | Duplicar viaje | 🔴 Alta | Viajes | Yo |
-| #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | 🔴 Alta | Viajes | Yo |
+| ~~#75~~ | ~~Datos de vuelo en el viaje~~ | ~~🔴 Alta~~ | ~~Viajes~~ | ~~Yo~~ |
 | #76 | Semáforo de cancelación en lista de viajes (rojo/amarillo/verde) | 🔴 Alta | Viajes | Yo |
 | #77 | Estado "En preparación" para viajes sin invitaciones enviadas | 🟡 Media | Viajes | Yo |
 | #78 | Lista de espera al alcanzar la capacidad máxima del viaje | 🟡 Media | Viajes · Viajeros | Yo |
@@ -99,6 +99,8 @@
 | #58 | Agentes pueden renombrar documentos que subieron | Documentos · Roles |
 | #71 | Fecha junto al número de día del viaje | General |
 | #72 | Detalles del hotel: dirección, teléfono y web | Hoteles |
+| #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | Viajes |
+| #29 | Ficha del viajero: países visitados y perfil | Viajeros |
 
 ---
 

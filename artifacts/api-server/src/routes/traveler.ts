@@ -270,6 +270,62 @@ async function mergeItineraryFallbacks(
 // active/finished/cancelled trips stay in "Compartidos" (reference/inspiration context).
 const SHARED_MINE_STATUSES = ["draft", "scheduled"] as const;
 
+router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+
+  const [me] = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, createdAt: usersTable.createdAt })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId));
+
+  if (!me) { res.status(404).json({ error: "User not found" }); return; }
+
+  // Collect all trip IDs the user has access to
+  const ownedTripIds = (await db
+    .select({ id: tripsTable.id })
+    .from(tripsTable)
+    .where(eq(tripsTable.ownerId, userId))).map(r => r.id);
+
+  const invitedTripIds = (await db
+    .select({ tripId: invitationsTable.tripId })
+    .from(invitationsTable)
+    .where(and(eq(invitationsTable.email, me.email), eq(invitationsTable.status, "accepted")))).map(r => r.tripId);
+
+  const sharedTripIds = (await db
+    .select({ tripId: tripSharesTable.tripId })
+    .from(tripSharesTable)
+    .where(and(
+      or(eq(tripSharesTable.sharedWithUserId, userId), eq(tripSharesTable.sharedWithEmail, me.email)),
+      eq(tripSharesTable.status, "accepted"),
+    ))).map(r => r.tripId);
+
+  const allTripIds = [...new Set([...ownedTripIds, ...invitedTripIds, ...sharedTripIds])];
+  const tripCount = allTripIds.length;
+
+  const allCountries = new Set<string>();
+
+  if (allTripIds.length > 0) {
+    // Countries from trip_days
+    const dayCountryRows = await db
+      .selectDistinct({ country: tripDaysTable.country })
+      .from(tripDaysTable)
+      .where(inArray(tripDaysTable.tripId, allTripIds));
+    for (const r of dayCountryRows) if (r.country) allCountries.add(r.country);
+
+    // Countries from itineraries linked to those trips
+    const itinRows = await db
+      .select({ countries: itinerariesTable.countries })
+      .from(tripsTable)
+      .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
+      .where(inArray(tripsTable.id, allTripIds));
+    for (const r of itinRows) if (r.countries) for (const c of r.countries) allCountries.add(c);
+  }
+
+  const countriesVisited = Array.from(allCountries).filter(Boolean).sort();
+
+  res.json({ id: me.id, name: me.name, email: me.email, createdAt: me.createdAt, tripCount, countriesVisited });
+});
+
 router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
 

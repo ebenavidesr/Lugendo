@@ -23,6 +23,7 @@ import TravelerHome from "@/pages/traveler-home";
 import TravelerTrip from "@/pages/traveler-trip";
 import TravelerTripWizard from "@/pages/traveler-trip-wizard";
 import TravelerTripEdit from "@/pages/traveler-trip-edit";
+import TravelerProfile from "@/pages/traveler-profile";
 import Agencies from "@/pages/agencies";
 import AgencySettings from "@/pages/agency-settings";
 
@@ -102,6 +103,9 @@ function Router() {
       </Route>
 
       {/* Traveler Portal */}
+      <Route path="/traveler/profile">
+        <ProtectedTraveler><TravelerProfile /></ProtectedTraveler>
+      </Route>
       <Route path="/traveler/trips/new">
         <ProtectedTraveler><TravelerTripWizard /></ProtectedTraveler>
       </Route>

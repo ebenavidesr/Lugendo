@@ -810,6 +810,15 @@ export interface TravelerTrip {
   createdAt: string;
 }
 
+export interface TravelerProfile {
+  id: number;
+  name: string;
+  email: string;
+  createdAt: string;
+  tripCount: number;
+  countriesVisited: string[];
+}
+
 export type TravelerTripDetailStatus = typeof TravelerTripDetailStatus[keyof typeof TravelerTripDetailStatus];
 
 

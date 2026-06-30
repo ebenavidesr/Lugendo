@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LogOut } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,10 +29,17 @@ export function TravelerLayout({ children }: { children: ReactNode }) {
           <LugendoCompass size={22} variant="light" />
           <LugendoWordmark variant="light" size="sm" />
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-sans hidden sm:inline-block" style={{ color: "#7A5C3A" }}>
-            {user?.name}
-          </span>
+        <div className="flex items-center gap-1">
+          <Link href="/traveler/profile">
+            <button
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-sm font-sans transition-colors hover:bg-muted/40"
+              style={{ color: "#7A5C3A" }}
+              title="Ver mi perfil"
+            >
+              <User className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline-block">{user?.name}</span>
+            </button>
+          </Link>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-foreground" data-testid="button-logout">
             <LogOut className="w-5 h-5" />
           </Button>

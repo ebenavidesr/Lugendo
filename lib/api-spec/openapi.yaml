@@ -1188,6 +1188,23 @@ paths:
           description: Already accepted
 
   # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────────
+  /me/profile:
+    get:
+      operationId: getMyProfile
+      tags: [traveler]
+      summary: Get the logged-in traveler's profile with countries visited
+      security:
+        - session: []
+      responses:
+        "200":
+          description: Traveler profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelerProfile"
+        "401":
+          description: Unauthorized
+
   /me/trips:
     get:
       operationId: listMyTrips
@@ -3073,6 +3090,25 @@ components:
             type: string
         createdAt:
           type: string
+
+    TravelerProfile:
+      type: object
+      required: [id, name, email, createdAt, tripCount, countriesVisited]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+        tripCount:
+          type: integer
+        countriesVisited:
+          type: array
+          items:
+            type: string
 
     TravelerTripDetail:
       type: object

@@ -72,6 +72,7 @@ export * from './suggestDayDescriptionInput';
 export * from './suggestDayDescriptionInputWritingTone';
 export * from './suggestDayDescriptionResult';
 export * from './transportMode';
+export * from './travelerProfile';
 export * from './travelerTrip';
 export * from './travelerTripDetail';
 export * from './travelerTripDetailDaysSource';

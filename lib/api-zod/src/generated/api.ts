@@ -1321,6 +1321,19 @@ export const AcceptInvitationResponse = zod.object({
 
 
 /**
+ * @summary Get the logged-in traveler's profile with countries visited
+ */
+export const GetMyProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "createdAt": zod.string(),
+  "tripCount": zod.number(),
+  "countriesVisited": zod.array(zod.string())
+})
+
+
+/**
  * @summary Get all trips for the logged-in traveler (agency + personal)
  */
 export const ListMyTripsResponseItem = zod.object({

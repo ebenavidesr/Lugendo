@@ -262,14 +262,17 @@ export default function TravelerTrip() {
             </div>
           </div>
 
-          <div className="border-t border-border pt-4">
-            <FlightEditPanel
-              outboundFlights={outboundFlights}
-              returnFlights={returnFlights}
-              onSave={handleSaveFlights}
-            />
-          </div>
         </div>
+      )}
+
+      {/* Flight panel — editable for personal trip owners, read-only for agency trips */}
+      {(canEditPersonal || outboundFlights.length > 0 || returnFlights.length > 0) && (
+        <FlightEditPanel
+          outboundFlights={outboundFlights}
+          returnFlights={returnFlights}
+          onSave={handleSaveFlights}
+          readOnly={!canEditPersonal}
+        />
       )}
 
       {activeTab === "itinerary" && (

@@ -63,6 +63,7 @@ import type {
   SharedTripEntry,
   SuggestDayDescriptionInput,
   SuggestDayDescriptionResult,
+  TravelerProfile,
   TravelerTrip,
   TravelerTripDetail,
   Trip,
@@ -4089,6 +4090,83 @@ export const useAcceptInvitation = <TError = ErrorType<void>,
       > => {
       return useMutation(getAcceptInvitationMutationOptions(options));
     }
+
+export const getGetMyProfileUrl = () => {
+
+
+
+
+  return `/api/me/profile`
+}
+
+/**
+ * @summary Get the logged-in traveler's profile with countries visited
+ */
+export const getMyProfile = async ( options?: RequestInit): Promise<TravelerProfile> => {
+
+  return customFetch<TravelerProfile>(getGetMyProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyProfileQueryKey = () => {
+    return [
+    `/api/me/profile`
+    ] as const;
+    }
+
+
+export const getGetMyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyProfile>>> = ({ signal }) => getMyProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getMyProfile>>>
+export type GetMyProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the logged-in traveler's profile with countries visited
+ */
+
+export function useGetMyProfile<TData = Awaited<ReturnType<typeof getMyProfile>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListMyTripsUrl = () => {
 

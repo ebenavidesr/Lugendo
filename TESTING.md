@@ -35,6 +35,22 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Cada día del panel tiene su propio `DayHotelPanel` funcional (añadir / quitar hoteles)
 - [ ] El panel muestra la fecha y la ciudad del día si los tiene
 
+### #75 — Datos de vuelo en el viaje
+- [ ] Back office: el panel de vuelos aparece en la ficha del viaje y permite añadir/editar vuelos de ida y vuelta con aerolínea, nº vuelo, origen, destino, hora salida/llegada y código de reserva
+- [ ] Back office: se puede añadir más de un tramo (escala) tanto en ida como en vuelta
+- [ ] Passport del viajero (viaje de agencia): el panel de vuelos aparece en modo solo lectura con el resumen de vuelos configurado por la agencia
+- [ ] Passport del viajero (viaje propio en modo edición): el panel de vuelos es editable desde el modo de edición del viaje personal
+- [ ] Si no hay vuelos configurados, el panel muestra "Sin vuelos" en modo solo lectura o la invitación a añadirlos en modo edición
+
+### #29 — Ficha del viajero: países visitados y perfil
+- [ ] El nombre/icono de usuario en el header del Passport es un enlace clickable que lleva a `/traveler/profile`
+- [ ] La página de perfil muestra: avatar con iniciales del nombre (con color), nombre completo, email y fecha de alta
+- [ ] La página muestra stats de "Viajes" (total) y "Países" (únicos)
+- [ ] La sección "Países visitados" lista todos los países únicos de los trip_days de los viajes del viajero (propios + de agencia + compartidos)
+- [ ] Los países de los itinerarios de agencia (campo `countries` del itinerario) también contribuyen a la lista
+- [ ] Si no hay países, aparece un estado vacío con mensaje informativo
+- [ ] El botón "← Mis viajes" lleva de vuelta a la home del viajero
+
 ---
 
 ## Tasks mergeados recientemente
