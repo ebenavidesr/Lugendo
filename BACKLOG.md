@@ -118,6 +118,7 @@
 | #113 | Bloquear borrado de tareas de agencia en checklist | 🟡 Media | Viajeros |
 | #112 | Fix checklist de viaje: estado "completada" por defecto y persistencia del toggle | 🔴 Alta | Viajeros |
 | #115 | Noche en transporte (toggle en panel de hotel) | 🟡 Media | Itinerarios · Viajes |
+| #118 | Toggle Incluida/Por libre al crear itinerario | | Itinerarios |
 
 ---
 

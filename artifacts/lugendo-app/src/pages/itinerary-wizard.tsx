@@ -29,6 +29,11 @@ import { useAutoDescription } from "@/hooks/use-auto-description";
 type NewMode = "scratch" | "pdf";
 type Step = 1 | 2 | 3 | 4;
 
+interface DayActivityEntry {
+  activityId: number;
+  included: boolean;
+}
+
 interface WizardData {
   mode: NewMode | null;
   name: string;
@@ -41,7 +46,7 @@ interface WizardData {
   tags: string;
   parsedItinerary: ParsedItinerary | null;
   dayHotels: Record<number, string>;
-  dayActivities: Record<number, number[]>;
+  dayActivities: Record<number, DayActivityEntry[]>;
   dayDescriptions: Record<number, string>;
 }
 
@@ -143,6 +148,24 @@ export default function ItineraryWizard() {
   const addDayActivity = useAddDayActivity();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
+
+  const setDayActivityIncluded = (dayNum: number, activityId: number, included: boolean) => {
+    set({
+      dayActivities: {
+        ...data.dayActivities,
+        [dayNum]: (data.dayActivities[dayNum] ?? []).map(e => (e.activityId === activityId ? { ...e, included } : e)),
+      },
+    });
+  };
+
+  const removeDayActivity = (dayNum: number, activityId: number) => {
+    set({
+      dayActivities: {
+        ...data.dayActivities,
+        [dayNum]: (data.dayActivities[dayNum] ?? []).filter(e => e.activityId !== activityId),
+      },
+    });
+  };
 
   // Computed days list
   const getDays = (): ParsedDay[] => {
@@ -253,7 +276,7 @@ export default function ItineraryWizard() {
         },
       });
       qc.invalidateQueries({ queryKey: ["/api/activities"] });
-      set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), act.id] } });
+      set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), { activityId: act.id, included: true }] } });
       setNewActivityMode(false);
       setNewActivityForm({ name: "", category: "", city: "" });
       toast({ title: `Actividad "${act.name}" creada` });
@@ -269,7 +292,7 @@ export default function ItineraryWizard() {
     setAiSuggestingDay(day.dayNumber);
     try {
       const dayActs = (data.dayActivities[day.dayNumber] ?? [])
-        .map(id => activities?.find(a => a.id === id)?.name)
+        .map(entry => activities?.find(a => a.id === entry.activityId)?.name)
         .filter(Boolean) as string[];
       const result = await suggestDay({
         data: {
@@ -340,12 +363,12 @@ export default function ItineraryWizard() {
       }
 
       // Link activities
-      for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {
+      for (const [dayNumStr, entries] of Object.entries(data.dayActivities)) {
         const dayNum = parseInt(dayNumStr);
         const dayId = createdDayMap[dayNum];
-        if (!dayId || !actIds.length) continue;
-        for (const actId of actIds) {
-          await addDayActivity.mutateAsync({ itineraryId: itin.id, dayId, data: { activityId: actId } });
+        if (!dayId || !entries.length) continue;
+        for (const entry of entries) {
+          await addDayActivity.mutateAsync({ itineraryId: itin.id, dayId, data: { activityId: entry.activityId, included: entry.included } });
         }
       }
 
@@ -604,8 +627,11 @@ export default function ItineraryWizard() {
                   const isActOpen = inlineActivityDay === day.dayNumber;
                   const assignedHotel = data.dayHotels[day.dayNumber];
                   const dayActs = (data.dayActivities[day.dayNumber] ?? [])
-                    .map(id => activities?.find(a => a.id === id))
-                    .filter((a): a is NonNullable<typeof a> => Boolean(a));
+                    .map(entry => {
+                      const activity = activities?.find(a => a.id === entry.activityId);
+                      return activity ? { activity, included: entry.included } : null;
+                    })
+                    .filter((a): a is { activity: NonNullable<typeof activities>[number]; included: boolean } => Boolean(a));
 
                   return (
                     <div key={day.dayNumber} className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
@@ -684,23 +710,45 @@ export default function ItineraryWizard() {
 
                       {/* Activities row */}
                       <div className="px-3 pb-3 flex items-start gap-2">
-                        <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#9C7A58" }} />
-                        <div className="flex-1 flex flex-wrap gap-1 items-center">
-                          {dayActs.map(a => (
-                            <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
-                              style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
-                              {a.name}
+                        <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-1" style={{ color: "#9C7A58" }} />
+                        <div className="flex-1 space-y-1">
+                          {dayActs.map(({ activity: a, included }) => (
+                            <div key={a.id} className="flex items-center gap-1.5 px-2 py-1 rounded-[8px]"
+                              style={{ background: included ? "#EDE9F8" : "#EAF0EA" }}>
+                              <span className="flex-1 min-w-0 truncate text-[11px] font-medium"
+                                style={{ color: included ? "#3D2F6B" : "#4A6A4A" }}>
+                                {a.name}
+                              </span>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setDayActivityIncluded(day.dayNumber, a.id, true)}
+                                  className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium border transition-colors"
+                                  style={{
+                                    background: included ? "var(--indigo)" : "transparent",
+                                    color: included ? "#FAF2EB" : "var(--noche)",
+                                    borderColor: included ? "var(--indigo)" : "var(--border)",
+                                  }}>
+                                  Incluida
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDayActivityIncluded(day.dayNumber, a.id, false)}
+                                  className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium border transition-colors"
+                                  style={{
+                                    background: !included ? "#4A6A4A" : "transparent",
+                                    color: !included ? "#fff" : "var(--noche)",
+                                    borderColor: !included ? "#4A6A4A" : "var(--border)",
+                                  }}>
+                                  Por libre
+                                </button>
+                              </div>
                               <button
-                                onClick={() => set({
-                                  dayActivities: {
-                                    ...data.dayActivities,
-                                    [day.dayNumber]: (data.dayActivities[day.dayNumber] ?? []).filter(id => id !== a.id),
-                                  },
-                                })}
-                                className="opacity-60 hover:opacity-100 ml-0.5">
-                                <X className="w-2.5 h-2.5" />
+                                onClick={() => removeDayActivity(day.dayNumber, a.id)}
+                                className="opacity-60 hover:opacity-100 flex-shrink-0">
+                                <X className="w-3 h-3" />
                               </button>
-                            </span>
+                            </div>
                           ))}
                           <button
                             className="text-[11px] font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full transition-colors"
@@ -798,9 +846,10 @@ export default function ItineraryWizard() {
                           {(() => {
                             const catalogue = activities ?? [];
                             const alreadyAdded = data.dayActivities[day.dayNumber] ?? [];
+                            const alreadyAddedIds = alreadyAdded.map(e => e.activityId);
                             const filtered = catalogue
                               .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
-                              .filter(a => !alreadyAdded.includes(a.id))
+                              .filter(a => !alreadyAddedIds.includes(a.id))
                               .slice(0, 12);
                             if (catalogue.length === 0) {
                               return (
@@ -823,7 +872,7 @@ export default function ItineraryWizard() {
                                     className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
                                     style={{ color: "#2D1F0E" }}
                                     onClick={() => {
-                                      set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, a.id] } });
+                                      set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, { activityId: a.id, included: true }] } });
                                     }}>
                                     {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
                                   </button>
