@@ -115,6 +115,7 @@
 | #98 | Lista de equipaje inteligente sugerida por destino y actividades | 🟢 Baja | Viajeros |
 | #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | 🟡 Media | Viajeros |
 | #113 | Bloquear borrado de tareas de agencia en checklist | 🟡 Media | Viajeros |
+| #112 | Fix checklist de viaje: estado "completada" por defecto y persistencia del toggle | 🔴 Alta | Viajeros |
 
 ---
 

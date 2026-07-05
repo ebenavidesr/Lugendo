@@ -45,6 +45,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Los agentes no pueden gestionar plantillas de agencia (solo admin/manager)
 - [x] La funcionalidad respeta el mismo scoping por rol usado en notas/documentos (viajero solo ve/edita su propia checklist)
 
+### #112 — Fix checklist de viaje: estado "completada" por defecto y persistencia del toggle
+- [x] Al crear la checklist, todos los ítems (sugeridos, de agencia y personales) aparecen SIN marcar por defecto, reflejando el estado real guardado en la base de datos
+- [x] Marcar/desmarcar un ítem guarda el cambio de inmediato en el servidor, sin ningún botón de "guardar"
+- [x] Al cambiar de pestaña (desmontando y remontando el componente) después de marcar/desmarcar, el estado mostrado sigue siendo el correcto
+- [x] Al recargar la página por completo, el estado marcado/desmarcado persiste correctamente
+- [x] Alternar el mismo ítem varias veces seguidas (incluso cambiando de pestaña rápido entre cada toggle) siempre refleja el estado final correcto, sin quedarse "atascado" en un valor
+- [x] El progreso (%) del checklist siempre refleja el estado real persistido
+
 ### #103 — Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist
 - [x] En la pantalla de creación, cada ítem sugerido y cada plantilla de agencia tiene su propio checkbox individual (no se incluyen todos automáticamente)
 - [x] Todos los ítems vienen premarcados por defecto, pero el viajero puede desmarcar cualquiera antes de crear la checklist

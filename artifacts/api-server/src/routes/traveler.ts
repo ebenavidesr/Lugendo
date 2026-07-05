@@ -848,7 +848,7 @@ router.get("/me/trips/:tripId/checklist", requireRoles("traveler"), async (req, 
     .select()
     .from(tripChecklistItemsTable)
     .where(and(eq(tripChecklistItemsTable.tripId, tripId), eq(tripChecklistItemsTable.userId, userId)))
-    .orderBy(tripChecklistItemsTable.createdAt);
+    .orderBy(tripChecklistItemsTable.createdAt, tripChecklistItemsTable.id);
   res.json(items.map(serializeChecklistItem));
 });
 

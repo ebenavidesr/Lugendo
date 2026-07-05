@@ -37,6 +37,8 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
 
+  const checklistQueryKey = useMemo(() => [`/api/me/trips/${tripId}/checklist`], [tripId]);
+
   const { data: items, isLoading } = useGetMyTripChecklist(tripId);
   const { data: suggestions, isLoading: suggestionsLoading } = useGetTripChecklistSuggestions(tripId);
   const createChecklist = useCreateTripChecklist();
@@ -49,7 +51,18 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
   const [initialized, setInitialized] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/checklist`] });
+  // Invalidating alone is not enough here: this query is also observed by the
+  // trip detail page (for the KPI/progress summary), and the checklist tab is
+  // mounted/unmounted as the traveler switches tabs. Relying only on
+  // `invalidateQueries` + a background refetch leaves a window where an
+  // in-flight (slower) GET from another observer can resolve *after* our
+  // fresher one and clobber the cache with stale data — which shows up as a
+  // toggle "reverting" or a remounted tab briefly showing outdated state.
+  // Writing the server response straight into the cache with `setQueryData`
+  // makes each mutation's result authoritative and immune to that race, while
+  // we still invalidate afterwards so any other stale observers eventually
+  // reconcile.
+  const invalidate = () => qc.invalidateQueries({ queryKey: checklistQueryKey });
 
   if (suggestions && !initialized) {
     setInitialized(true);
@@ -88,7 +101,11 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
     createChecklist.mutate(
       { tripId, data: { items: payload } },
       {
-        onSuccess: () => { invalidate(); toast({ title: "Checklist creado" }); },
+        onSuccess: (created) => {
+          qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, created);
+          invalidate();
+          toast({ title: "Checklist creado" });
+        },
         onError: () => toast({ variant: "destructive", title: "Error al crear el checklist" }),
       }
     );
@@ -99,18 +116,50 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
     createItem.mutate(
       { tripId, data: { title: newTitle.trim() } },
       {
-        onSuccess: () => { invalidate(); setNewTitle(""); },
+        onSuccess: (created) => {
+          qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, (prev) =>
+            prev ? [...prev, created] : [created]
+          );
+          invalidate();
+          setNewTitle("");
+        },
         onError: () => toast({ variant: "destructive", title: "Error al añadir la tarea" }),
       }
     );
   };
 
-  const handleToggleItem = (item: TripChecklistItem) => {
+  const handleToggleItem = async (item: TripChecklistItem) => {
+    const nextCompleted = !item.completed;
+
+    // Prevent a slower, already in-flight GET for this query from resolving
+    // after our optimistic update and clobbering it with pre-toggle data.
+    await qc.cancelQueries({ queryKey: checklistQueryKey });
+
+    const previous = qc.getQueryData<TripChecklistItem[]>(checklistQueryKey);
+    qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, (prev) =>
+      (prev ?? []).map((i) =>
+        i.id === item.id
+          ? { ...i, completed: nextCompleted, completedAt: nextCompleted ? new Date().toISOString() : null }
+          : i
+      )
+    );
+
     updateItem.mutate(
-      { tripId, itemId: item.id, data: { completed: !item.completed } },
+      { tripId, itemId: item.id, data: { completed: nextCompleted } },
       {
-        onSuccess: () => invalidate(),
-        onError: () => toast({ variant: "destructive", title: "Error al actualizar la tarea" }),
+        onSuccess: (updated) => {
+          // Write the server's canonical item back into the cache — this is
+          // what makes the toggle authoritative instead of just hoping a
+          // subsequent refetch wins the race against other observers.
+          qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, (prev) =>
+            (prev ?? []).map((i) => (i.id === updated.id ? updated : i))
+          );
+          invalidate();
+        },
+        onError: () => {
+          qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, previous);
+          toast({ variant: "destructive", title: "Error al actualizar la tarea" });
+        },
       }
     );
   };
@@ -120,7 +169,12 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
     deleteItem.mutate(
       { tripId, itemId: item.id },
       {
-        onSuccess: () => invalidate(),
+        onSuccess: () => {
+          qc.setQueryData<TripChecklistItem[]>(checklistQueryKey, (prev) =>
+            (prev ?? []).filter((i) => i.id !== item.id)
+          );
+          invalidate();
+        },
         onError: () => toast({ variant: "destructive", title: "Error al eliminar la tarea" }),
       }
     );
