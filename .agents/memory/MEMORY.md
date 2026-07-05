@@ -10,3 +10,4 @@
 - [Notion roadmap sync](notion-roadmap-sync.md) — BACKLOG.md/TESTING.md task changes must auto-sync to the "Product Roadmap" Notion DB; has DB id + exact field mapping.
 - [Trip day admin vs traveler hooks](trip-day-hooks.md) — `useUpdateTripDay` is traveler-only; back-office code must use `useUpdateTripDayAdmin`.
 - [Dead computed-but-unrendered values](dead-computed-values.md) — a correctly computed label/counter can still be invisible if no JSX renders it; check every render site, not just one shared component.
+- [RHF reactive `values` resets form](rhf-reactive-values-reset.md) — inline object literal passed to useForm's `values` option resets the form on every render, wiping in-progress edits.

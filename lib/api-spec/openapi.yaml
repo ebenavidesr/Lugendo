@@ -2787,15 +2787,15 @@ components:
       type: object
       properties:
         cityFrom:
-          type: string
+          type: ["string", "null"]
         cityTo:
-          type: string
+          type: ["string", "null"]
         country:
-          type: string
+          type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
-          type: string
+          type: ["string", "null"]
         isTransitNight:
           type: boolean
 

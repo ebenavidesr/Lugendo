@@ -67,7 +67,7 @@ function EditDayDialog({
 
   const form = useForm<z.infer<typeof daySchema>>({
     resolver: zodResolver(daySchema),
-    values: {
+    defaultValues: {
       dayNumber: String(day.dayNumber),
       cityFrom: day.cityFrom ?? "",
       cityTo: day.cityTo ?? "",
@@ -82,11 +82,11 @@ function EditDayDialog({
       itineraryId,
       dayId: day.id,
       data: {
-        ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
-        ...(values.cityTo ? { cityTo: values.cityTo } : {}),
-        ...(values.country ? { country: values.country } : {}),
-        ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
-        ...(values.description ? { description: values.description } : {}),
+        cityFrom: values.cityFrom?.trim() || null,
+        cityTo: values.cityTo?.trim() || null,
+        country: values.country || null,
+        transport: (values.transport || null) as import("@workspace/api-client-react").TransportMode | null,
+        description: values.description?.trim() || null,
       },
     }, {
       onSuccess: () => {

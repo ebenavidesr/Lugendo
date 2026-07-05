@@ -1358,19 +1358,22 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
 
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
+  // Make sure trip_days is materialized (lazy-copied from the itinerary template)
+  // before inserting, so new rows aren't split across two different day tables.
+  if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
   const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
   const [day] = await db
-    .insert(itineraryDaysTable)
+    .insert(tripDaysTable)
     .values({
-      itineraryId: itineraryId as number,
+      tripId,
       dayNumber,
-      ...(cityFrom ? { cityFrom } : {}),
-      ...(cityTo ? { cityTo } : {}),
-      ...(country ? { country } : {}),
-      ...(transport ? { transport } : {}),
-      ...(description ? { description } : {}),
+      cityFrom: cityFrom ?? null,
+      cityTo: cityTo ?? null,
+      country: country ?? null,
+      transport: transport ?? null,
+      description: description ?? null,
       ...(isTransitNight !== undefined ? { isTransitNight } : {}),
     })
     .returning();
@@ -1397,6 +1400,9 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
 
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
+  // Lazy-migrate itinerary_days → trip_days first, so we're editing the row that
+  // GET /me/trips/:tripId and the rest of the traveler UI actually reads from.
+  if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
   const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
@@ -1410,12 +1416,14 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
 
   const [updated] = await db
-    .update(itineraryDaysTable)
+    .update(tripDaysTable)
     .set(patch)
-    .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)))
+    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)))
     .returning();
 
   if (!updated) { res.status(404).json({ error: "Día no encontrado" }); return; }
+
+  const hotelMap = await getTravelerDayHotelMap([updated.id], "trip");
 
   res.json({
     id: updated.id,
@@ -1427,7 +1435,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
     transport: updated.transport ?? null,
     description: updated.description ?? null,
     isTransitNight: updated.isTransitNight,
-    hotels: [],
+    hotels: hotelMap[updated.id] ?? [],
     createdAt: updated.createdAt.toISOString(),
   });
 });
@@ -1439,9 +1447,10 @@ router.delete("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), async (
 
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
+  if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
-  await db.delete(itineraryDaysTable)
-    .where(and(eq(itineraryDaysTable.id, dayId), eq(itineraryDaysTable.itineraryId, itineraryId as number)));
+  await db.delete(tripDaysTable)
+    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
 
   res.sendStatus(204);
 });

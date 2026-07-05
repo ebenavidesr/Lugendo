@@ -8,10 +8,14 @@
 import type { TransportMode } from './transportMode';
 
 export interface ItineraryDayUpdate {
-  cityFrom?: string;
-  cityTo?: string;
-  country?: string;
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
   transport?: TransportMode | null;
-  description?: string;
+  /** @nullable */
+  description?: string | null;
   isTransitNight?: boolean;
 }

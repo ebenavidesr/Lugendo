@@ -416,11 +416,11 @@ export const UpdateItineraryDayParams = zod.object({
 })
 
 export const UpdateItineraryDayBody = zod.object({
-  "cityFrom": zod.string().optional(),
-  "cityTo": zod.string().optional(),
-  "country": zod.string().optional(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().optional(),
+  "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional()
 })
 
