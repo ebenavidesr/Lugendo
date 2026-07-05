@@ -586,11 +586,26 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     .where(eq(tripDaysTable.tripId, tripId))
     .orderBy(tripDaysTable.dayNumber);
 
-  const acceptedInvitations = await db
-    .select({ id: invitationsTable.id })
-    .from(invitationsTable)
-    .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
-  const travelerCount = acceptedInvitations.length;
+  // Anyone with access to this trip (checked above: owner, accepted invitation, or accepted
+  // share) may see the total "traveler count" — it's not sensitive, and this endpoint is
+  // already the single role-safe source every viewer calls, so compute it accurately here
+  // rather than relying on a permission-gated endpoint (e.g. GET /shares) client-side.
+  let travelerCount: number;
+  if (row.ownerId != null && row.agencyName == null) {
+    // Personal trip: owner + everyone with an accepted share.
+    const acceptedShares = await db
+      .select({ id: tripSharesTable.id })
+      .from(tripSharesTable)
+      .where(and(eq(tripSharesTable.tripId, tripId), eq(tripSharesTable.status, "accepted")));
+    travelerCount = acceptedShares.length + 1;
+  } else {
+    // Agency trip: no personal "owner" — count accepted invited travelers.
+    const acceptedInvitations = await db
+      .select({ id: invitationsTable.id })
+      .from(invitationsTable)
+      .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
+    travelerCount = acceptedInvitations.length;
+  }
 
   const currentUserId = req.session.userId!;
   let days: Array<Record<string, unknown>> = [];

@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #106 — Fila de KPIs en Pasaporte del viajero
+- [x] Al abrir el detalle de un viaje en la vista de Pasaporte, aparece una fila de 5 tarjetas justo antes del bloque morado con el nombre del viaje
+- [x] En desktop las 5 tarjetas se ven en una sola línea; en móvil se acomodan en un grid de 2-3 columnas sin cortarse ni superponerse
+- [x] Tarjeta Hoteles muestra "días con hotel / total de días"
+- [x] Tarjeta Actividades muestra "días con actividades / total de días"
+- [x] Tarjeta Checklist muestra "tareas completadas / total de tareas"
+- [x] Tarjeta Documentos muestra el número total de documentos subidos (sin formato X/Y)
+- [x] Tarjeta Viajeros muestra el número total de personas con acceso (shares aceptados + propietario)
+- [x] El valor se resalta en ámbar si el KPI de ratio está por debajo del 50%, y en verde si está al 100%
+- [x] Las tarjetas son informativas (no clicables) y se muestran igual para todos los roles que acceden a esta vista
+
 ### #99 — Checklist de viaje (Passport) + plantillas de agencia
 - [x] En la ficha de viaje del viajero aparece la pestaña "Checklist" entre "Documentos" y "Notas"
 - [x] Al abrir la pestaña por primera vez se muestra una pantalla de creación con ítems sugeridos por el sistema (marcados por defecto) y las plantillas de la agencia (si las hay)

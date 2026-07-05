@@ -3,6 +3,7 @@ import { useParams } from "wouter";
 import { MapPin, Plus } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useUpdateTripDay, useCreateTripDay, useDeleteTripDay,
+  useGetMyTripChecklist, useListTripDocuments,
 } from "@workspace/api-client-react";
 import type { TravelerTripDetailStatus, TransportMode } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,6 +13,7 @@ import { TripTravelersTab } from "@/components/trip-travelers-tab";
 import { TripDocumentsTab } from "@/components/trip-documents-tab";
 import { TripChecklistTab } from "@/components/trip-checklist-tab";
 import { TripNotesTab } from "@/components/trip-notes-tab";
+import { TripKpiRow } from "@/components/trip-kpi-row";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
 import type { FlightLeg } from "@/components/flight-edit-panel";
@@ -105,6 +107,22 @@ export default function TravelerTrip() {
   const createDay = useCreateTripDay();
   const deleteDay = useDeleteTripDay();
 
+  const { data: checklistItems } = useGetMyTripChecklist(tripId);
+  const { data: tripDocuments } = useListTripDocuments(tripId);
+
+  const totalDays = trip?.days?.length ?? 0;
+  const daysWithHotel = (trip?.days ?? []).filter(d => (d.hotels?.length ?? 0) > 0).length;
+  const daysWithActivity = (trip?.days ?? []).filter(d => (d.activities?.length ?? 0) > 0).length;
+  const checklistTotal = checklistItems?.length ?? 0;
+  const checklistCompleted = (checklistItems ?? []).filter(i => i.completed).length;
+  const documentCount = tripDocuments?.length ?? 0;
+  // Viajeros = personas con acceso al viaje, incluyendo al propietario.
+  // trip.travelerCount is computed role-safely on the backend (GET /me/trips/:id, the same
+  // endpoint every viewer already calls to load the trip): owner + accepted shares for
+  // personal trips, accepted invitations for agency trips. See traveler-role-scoped-endpoints
+  // memory — don't recompute this client-side from permission-gated endpoints like /shares.
+  const travelerCount = trip?.travelerCount ?? 1;
+
   const invalidateTrip = async () => {
     await qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}`] });
     await qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
@@ -192,6 +210,16 @@ export default function TravelerTrip() {
 
   return (
     <div className="space-y-4">
+      <TripKpiRow
+        daysWithHotel={daysWithHotel}
+        daysWithActivity={daysWithActivity}
+        totalDays={totalDays}
+        checklistCompleted={checklistCompleted}
+        checklistTotal={checklistTotal}
+        documentCount={documentCount}
+        travelerCount={travelerCount}
+      />
+
       <div className="-mx-4">
         <TripDetailHeader
           trip={trip}
