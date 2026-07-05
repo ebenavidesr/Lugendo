@@ -2004,6 +2004,116 @@ export const DeleteTripChecklistItemParams = zod.object({
 
 
 /**
+ * @summary Get the traveler's packing list for a trip (auto-generated on first access)
+ */
+export const GetMyTripPackingListParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetMyTripPackingListResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "category": zod.enum(['ropa', 'higiene', 'documentos', 'electronica', 'actividades', 'otros']),
+  "packed": zod.boolean(),
+  "origin": zod.enum(['suggested', 'personal']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const GetMyTripPackingListResponse = zod.array(GetMyTripPackingListResponseItem)
+
+
+/**
+ * @summary Add a personal packing item to a trip
+ */
+export const CreateTripPackingItemParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripPackingItemBody = zod.object({
+  "title": zod.string(),
+  "category": zod.enum(['ropa', 'higiene', 'documentos', 'electronica', 'actividades', 'otros'])
+})
+
+
+/**
+ * @summary Mark a packing item as packed/pending
+ */
+export const UpdateTripPackingItemParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "itemId": zod.coerce.number()
+})
+
+export const UpdateTripPackingItemBody = zod.object({
+  "packed": zod.boolean()
+})
+
+export const UpdateTripPackingItemResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "category": zod.enum(['ropa', 'higiene', 'documentos', 'electronica', 'actividades', 'otros']),
+  "packed": zod.boolean(),
+  "origin": zod.enum(['suggested', 'personal']),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a packing item
+ */
+export const DeleteTripPackingItemParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "itemId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Get official travel advisories for the trip's countries (marks them as seen)
+ */
+export const GetMyTripTravelAdvisoriesParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetMyTripTravelAdvisoriesResponse = zod.object({
+  "international": zod.boolean().describe('False when all trip days are in Spain (or country is undefined) — only a disclaimer should be shown'),
+  "advisories": zod.array(zod.object({
+  "countryName": zod.string(),
+  "sourceUrl": zod.string(),
+  "contentText": zod.string().nullable(),
+  "officialUpdatedAt": zod.string().nullable(),
+  "lastCheckedAt": zod.string().nullable(),
+  "lastChangedAt": zod.string().nullable(),
+  "changed": zod.boolean().describe('True if the content has changed since this traveler last viewed it')
+}))
+})
+
+
+/**
+ * @summary Read-only view of official travel advisories for the trip's countries (back office)
+ */
+export const GetTripTravelAdvisoriesParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetTripTravelAdvisoriesResponse = zod.object({
+  "international": zod.boolean().describe('False when all trip days are in Spain (or country is undefined) — only a disclaimer should be shown'),
+  "advisories": zod.array(zod.object({
+  "countryName": zod.string(),
+  "sourceUrl": zod.string(),
+  "contentText": zod.string().nullable(),
+  "officialUpdatedAt": zod.string().nullable(),
+  "lastCheckedAt": zod.string().nullable(),
+  "lastChangedAt": zod.string().nullable(),
+  "changed": zod.boolean().describe('True if the content has changed since this traveler last viewed it')
+}))
+})
+
+
+/**
  * @summary List the agency's checklist templates
  */
 export const ListChecklistTemplatesResponseItem = zod.object({

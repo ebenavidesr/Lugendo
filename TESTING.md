@@ -6,6 +6,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #101 — Pestaña "Viaja Seguro" con recomendaciones oficiales
+- [x] En el Passport del viajero aparece la pestaña "Viaja Seguro" entre "Viajeros" y "Documentos"
+- [x] Si todos los días del viaje son en España (o el país no está definido), la pestaña muestra únicamente el disclaimer de que esta sección sólo tiene contenido para viajes fuera de España
+- [x] Si el viaje incluye uno o más países fuera de España, se muestran las recomendaciones por país con la fecha de última actualización (o un mensaje de que aún no se pudo obtener el contenido oficial, de forma resiliente sin romper la pantalla)
+- [x] La información se refresca automáticamente una vez al día durante los 15 días previos al inicio del viaje y durante todos los días del viaje
+- [ ] Si el contenido oficial de un país cambia respecto a la última vez que el viajero lo consultó, se muestra un aviso destacado de "han cambiado las recomendaciones"
+- [x] La pestaña incluye la sección de descarga de la app oficial MAUC con enlaces a App Store y Google Play
+- [x] La agencia (admin/manager/agent) puede consultar la misma información de recomendaciones en modo sólo lectura desde la ficha de viaje del back office
+- [x] Se añade "Registro del viajero en la app del Ministerio de Asuntos Exteriores" a la lista de tareas sugeridas del checklist de viaje
+
 ### #106 — Fila de KPIs en Pasaporte del viajero
 - [x] Al abrir el detalle de un viaje en la vista de Pasaporte, aparece una fila de 5 tarjetas justo antes del bloque morado con el nombre del viaje
 - [x] En desktop las 5 tarjetas se ven en una sola línea; en móvil se acomodan en un grid de 2-3 columnas sin cortarse ni superponerse
@@ -29,11 +39,36 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Los agentes no pueden gestionar plantillas de agencia (solo admin/manager)
 - [x] La funcionalidad respeta el mismo scoping por rol usado en notas/documentos (viajero solo ve/edita su propia checklist)
 
+### #103 — Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist
+- [x] En la pantalla de creación, cada ítem sugerido y cada plantilla de agencia tiene su propio checkbox individual (no se incluyen todos automáticamente)
+- [x] Todos los ítems vienen premarcados por defecto, pero el viajero puede desmarcar cualquiera antes de crear la checklist
+- [x] Solo los ítems que quedan marcados se envían y aparecen en la checklist creada
+- [x] Si el viajero desmarca todos los ítems, no puede crear la checklist (aviso de "selecciona al menos una tarea")
+
 ### #71 — Fecha junto al número de día
 - [ ] En detalle de viaje (back office): el badge del día muestra la fecha debajo en letra pequeña
 - [ ] En el panel bulk de hoteles: aparece la fecha junto al número de día
 - [ ] En la tarjeta del viajero (`trip-day-card`): la fecha aparece como badge en el encabezado colapsado
 - [ ] En la tarjeta del viajero: al expandir el día, la fecha aparece en la zona de foto
+
+### #109 — Toggle vista resumen/detalle en itinerario
+- [ ] El toggle "Detalle / Resumen" es visible en la cabecera de la sección de días.
+- [ ] La "Vista resumen" muestra filas compactas con número de día, fecha, origen → destino, hoteles y conteo de actividades.
+- [ ] Al hacer clic en una fila de la vista resumen, el día se expande mostrando el detalle completo.
+- [ ] La "Vista detalle" mantiene el comportamiento anterior (badges de día, paneles de hotel/actividades).
+- [ ] Las transiciones entre vistas y expansiones son suaves (animaciones CSS).
+
+### #107 — TripHeader: cuenta regresiva y ciudades clickables
+- [x] Si el viaje aún no ha empezado, la cabecera muestra una cuenta regresiva ("Faltan X días" / "Falta 1 día")
+- [x] Las ciudades del itinerario en la cabecera son clickables y abren un popover con el listado completo ("Itinerario completo")
+
+### #110 — Wizard de viaje: de 7 pasos a 4
+- [x] El wizard de "Crear viaje propio" tiene exactamente 4 pasos visibles: Inicio, Programa, Datos del viaje, Crear
+- [x] El paso de Vuelos desaparece por completo (sin campos ni resumen de vuelos en ningún paso)
+- [x] El paso 4 ("Crear") combina en una sola pantalla la asignación de hoteles/actividades por día y el resumen final con el botón de creación
+- [x] El modo "Unirse con código" sigue funcionando igual dentro del nuevo stepper de 4 pasos
+- [x] Crear un viaje de principio a fin en modo "Desde cero" funciona correctamente y crea el viaje, el itinerario y los días sin enviar datos de vuelo
+- [x] No quedan referencias a pasos antiguos (5/6/7) ni código muerto en la pantalla final
 
 ### #72 — Detalles del hotel (dirección / teléfono / web)
 - [ ] Al asignar un hotel a un día, si tiene dirección se muestra debajo del nombre
@@ -73,6 +108,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Los países de los itinerarios de agencia (campo `countries` del itinerario) también contribuyen a la lista
 - [ ] Si no hay países, aparece un estado vacío con mensaje informativo
 - [ ] El botón "← Mis viajes" lleva de vuelta a la home del viajero
+
+### #98 — Lista de equipaje inteligente sugerida por destino y actividades
+- [x] En la ficha de viaje del viajero aparece la pestaña "Equipaje" entre "Checklist" y "Notas"
+- [x] Al abrir la pestaña por primera vez, la lista se genera automáticamente (sin pantalla de creación manual) con ítems sugeridos según duración del viaje, mes/clima y actividades del itinerario
+- [x] Los ítems se agrupan por categoría (Documentos, Ropa, Higiene, Electrónica, Actividades, Otros)
+- [x] Una tarjeta de progreso muestra "X de Y elementos empaquetados" con barra y porcentaje
+- [x] Marcar/desmarcar un ítem actualiza el progreso de inmediato
+- [x] El viajero puede añadir ítems personales propios eligiendo categoría
+- [x] El viajero puede eliminar cualquier ítem (sugerido o propio) con confirmación
+- [x] La funcionalidad respeta el mismo scoping de acceso usado en checklist/notas (propietario, invitado o compartido)
 
 ### #100 — Empty states para tabs Documentos y Notas
 - [x] Tab "Documentos": cuando el viajero no tiene documentos propios, se muestra un icono de archivo, el texto "Guarda aquí tu e-ticket, seguro de viaje o reservas de hotel" y un botón "Subir archivo" que abre el selector de archivos

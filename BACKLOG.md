@@ -58,17 +58,11 @@
 | #95 | Check-in digital en destino (viajero confirma llegada, agente lo ve) | 🟡 Media | Viajeros | Yo |
 | #96 | Presupuesto personal del viajero (gastos por día y categoría) | 🟢 Baja | Viajeros | Yo |
 | #97 | Foro privado del viaje (chat entre viajeros y agente) | 🟡 Media | Viajeros | Yo |
-| #98 | Lista de equipaje inteligente sugerida por destino y actividades | 🟢 Baja | Viajeros | Yo |
 | #61 | Foto del día: placeholder compacto y subida inline | 🟡 Media | Viajeros | Yo |
 | #100 | Empty states para tabs Documentos y Notas | 🟢 Baja | General | Yo |
-| #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | 🟡 Media | Viajeros | Yo |
 | #102 | Notificar cambios de "Viaja Seguro" por email y push | 🟢 Baja | Viajeros | Yo |
-| #103 | Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist | 🟡 Media | Viajeros | Yo |
 | #104 | Notificar al viajero cuando la agencia añade una plantilla de checklist | 🟢 Baja | Viajeros | Yo |
 | #105 | Ver progreso de checklist de cada viajero (vista agencia) | 🟡 Media | Agencia · Viajeros | Yo |
-| #107 | TripHeader: cuenta regresiva y ciudades clickables | 🟡 Media | Viajes | Yo |
-| #109 | Toggle vista resumen/detalle en itinerario | 🟢 Baja | Itinerarios | Yo |
-| #110 | Wizard de viaje: de 7 pasos a 4 | 🟡 Media | Viajes | Yo |
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
 
 ---
@@ -112,6 +106,12 @@
 | #29 | Ficha del viajero: países visitados y perfil | Viajeros |
 | #99 | Checklist de viaje (Passport) + plantillas de agencia | Viajeros · Agencia |
 | #106 | Fila de KPIs en Pasaporte del viajero | Viajeros |
+| #103 | Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist | Viajeros |
+| #109 | Toggle vista resumen/detalle en itinerario | Itinerarios |
+| #107 | TripHeader: cuenta regresiva y ciudades clickables | Viajes |
+| #110 | Wizard de viaje: de 7 pasos a 4 | Viajes |
+| #98 | Lista de equipaje inteligente sugerida por destino y actividades | Viajeros |
+| #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | Viajeros |
 
 ---
 

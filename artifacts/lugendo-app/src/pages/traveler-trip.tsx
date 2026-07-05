@@ -10,8 +10,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { TripDetailHeader } from "@/components/trip-detail-header";
 import { TripDayCard, type DayEditData } from "@/components/trip-day-card";
 import { TripTravelersTab } from "@/components/trip-travelers-tab";
+import { TripSafetyTab } from "@/components/trip-safety-tab";
 import { TripDocumentsTab } from "@/components/trip-documents-tab";
 import { TripChecklistTab } from "@/components/trip-checklist-tab";
+import { TripPackingListTab } from "@/components/trip-packing-list-tab";
 import { TripNotesTab } from "@/components/trip-notes-tab";
 import { TripKpiRow } from "@/components/trip-kpi-row";
 import { InlineField } from "@/components/inline-field";
@@ -21,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-type ActiveTab = "itinerary" | "travelers" | "documents" | "checklist" | "notes";
+type ActiveTab = "itinerary" | "travelers" | "safety" | "documents" | "checklist" | "packing" | "notes";
 
 function computeDefaultExpanded(days: { dayNumber: number }[], startDate: string): Set<number> {
   const today = new Date();
@@ -362,12 +364,20 @@ export default function TravelerTrip() {
         <TripTravelersTab tripId={tripId} isOwner={isOwner} canEdit={canEdit} />
       )}
 
+      {activeTab === "safety" && (
+        <TripSafetyTab tripId={tripId} />
+      )}
+
       {activeTab === "documents" && (
         <TripDocumentsTab tripId={tripId} trip={trip} />
       )}
 
       {activeTab === "checklist" && (
         <TripChecklistTab tripId={tripId} />
+      )}
+
+      {activeTab === "packing" && (
+        <TripPackingListTab tripId={tripId} />
       )}
 
       {activeTab === "notes" && (

@@ -86,7 +86,11 @@ import type {
   TripNote,
   TripNoteInput,
   TripNoteUpdate,
+  TripPackingItem,
+  TripPackingItemInput,
+  TripPackingItemUpdate,
   TripShare,
+  TripTravelAdvisoriesResponse,
   TripUpdate,
   UpdateMyTripInput,
   UpdateShareInput,
@@ -6092,6 +6096,455 @@ export const useDeleteTripChecklistItem = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDeleteTripChecklistItemMutationOptions(options));
     }
+
+export const getGetMyTripPackingListUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/packing-list`
+}
+
+/**
+ * @summary Get the traveler's packing list for a trip (auto-generated on first access)
+ */
+export const getMyTripPackingList = async (tripId: number, options?: RequestInit): Promise<TripPackingItem[]> => {
+
+  return customFetch<TripPackingItem[]>(getGetMyTripPackingListUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyTripPackingListQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/packing-list`
+    ] as const;
+    }
+
+
+export const getGetMyTripPackingListQueryOptions = <TData = Awaited<ReturnType<typeof getMyTripPackingList>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripPackingList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTripPackingListQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTripPackingList>>> = ({ signal }) => getMyTripPackingList(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTripPackingList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyTripPackingListQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTripPackingList>>>
+export type GetMyTripPackingListQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the traveler's packing list for a trip (auto-generated on first access)
+ */
+
+export function useGetMyTripPackingList<TData = Awaited<ReturnType<typeof getMyTripPackingList>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripPackingList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyTripPackingListQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripPackingItemUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/packing-list/items`
+}
+
+/**
+ * @summary Add a personal packing item to a trip
+ */
+export const createTripPackingItem = async (tripId: number,
+    tripPackingItemInput: TripPackingItemInput, options?: RequestInit): Promise<TripPackingItem> => {
+
+  return customFetch<TripPackingItem>(getCreateTripPackingItemUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripPackingItemInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripPackingItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripPackingItem>>, TError,{tripId: number;data: BodyType<TripPackingItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripPackingItem>>, TError,{tripId: number;data: BodyType<TripPackingItemInput>}, TContext> => {
+
+const mutationKey = ['createTripPackingItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripPackingItem>>, {tripId: number;data: BodyType<TripPackingItemInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripPackingItem(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripPackingItemMutationResult = NonNullable<Awaited<ReturnType<typeof createTripPackingItem>>>
+    export type CreateTripPackingItemMutationBody = BodyType<TripPackingItemInput>
+    export type CreateTripPackingItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a personal packing item to a trip
+ */
+export const useCreateTripPackingItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripPackingItem>>, TError,{tripId: number;data: BodyType<TripPackingItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripPackingItem>>,
+        TError,
+        {tripId: number;data: BodyType<TripPackingItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripPackingItemMutationOptions(options));
+    }
+
+export const getUpdateTripPackingItemUrl = (tripId: number,
+    itemId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/packing-list/items/${itemId}`
+}
+
+/**
+ * @summary Mark a packing item as packed/pending
+ */
+export const updateTripPackingItem = async (tripId: number,
+    itemId: number,
+    tripPackingItemUpdate: TripPackingItemUpdate, options?: RequestInit): Promise<TripPackingItem> => {
+
+  return customFetch<TripPackingItem>(getUpdateTripPackingItemUrl(tripId,itemId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripPackingItemUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTripPackingItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripPackingItem>>, TError,{tripId: number;itemId: number;data: BodyType<TripPackingItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTripPackingItem>>, TError,{tripId: number;itemId: number;data: BodyType<TripPackingItemUpdate>}, TContext> => {
+
+const mutationKey = ['updateTripPackingItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripPackingItem>>, {tripId: number;itemId: number;data: BodyType<TripPackingItemUpdate>}> = (props) => {
+          const {tripId,itemId,data} = props ?? {};
+
+          return  updateTripPackingItem(tripId,itemId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTripPackingItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateTripPackingItem>>>
+    export type UpdateTripPackingItemMutationBody = BodyType<TripPackingItemUpdate>
+    export type UpdateTripPackingItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a packing item as packed/pending
+ */
+export const useUpdateTripPackingItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripPackingItem>>, TError,{tripId: number;itemId: number;data: BodyType<TripPackingItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTripPackingItem>>,
+        TError,
+        {tripId: number;itemId: number;data: BodyType<TripPackingItemUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTripPackingItemMutationOptions(options));
+    }
+
+export const getDeleteTripPackingItemUrl = (tripId: number,
+    itemId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/packing-list/items/${itemId}`
+}
+
+/**
+ * @summary Delete a packing item
+ */
+export const deleteTripPackingItem = async (tripId: number,
+    itemId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripPackingItemUrl(tripId,itemId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripPackingItemMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripPackingItem>>, TError,{tripId: number;itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripPackingItem>>, TError,{tripId: number;itemId: number}, TContext> => {
+
+const mutationKey = ['deleteTripPackingItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripPackingItem>>, {tripId: number;itemId: number}> = (props) => {
+          const {tripId,itemId} = props ?? {};
+
+          return  deleteTripPackingItem(tripId,itemId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripPackingItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripPackingItem>>>
+
+    export type DeleteTripPackingItemMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a packing item
+ */
+export const useDeleteTripPackingItem = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripPackingItem>>, TError,{tripId: number;itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripPackingItem>>,
+        TError,
+        {tripId: number;itemId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripPackingItemMutationOptions(options));
+    }
+
+export const getGetMyTripTravelAdvisoriesUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/travel-advisories`
+}
+
+/**
+ * @summary Get official travel advisories for the trip's countries (marks them as seen)
+ */
+export const getMyTripTravelAdvisories = async (tripId: number, options?: RequestInit): Promise<TripTravelAdvisoriesResponse> => {
+
+  return customFetch<TripTravelAdvisoriesResponse>(getGetMyTripTravelAdvisoriesUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyTripTravelAdvisoriesQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/travel-advisories`
+    ] as const;
+    }
+
+
+export const getGetMyTripTravelAdvisoriesQueryOptions = <TData = Awaited<ReturnType<typeof getMyTripTravelAdvisories>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripTravelAdvisories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTripTravelAdvisoriesQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTripTravelAdvisories>>> = ({ signal }) => getMyTripTravelAdvisories(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTripTravelAdvisories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyTripTravelAdvisoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTripTravelAdvisories>>>
+export type GetMyTripTravelAdvisoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get official travel advisories for the trip's countries (marks them as seen)
+ */
+
+export function useGetMyTripTravelAdvisories<TData = Awaited<ReturnType<typeof getMyTripTravelAdvisories>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripTravelAdvisories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyTripTravelAdvisoriesQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTripTravelAdvisoriesUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/travel-advisories`
+}
+
+/**
+ * @summary Read-only view of official travel advisories for the trip's countries (back office)
+ */
+export const getTripTravelAdvisories = async (tripId: number, options?: RequestInit): Promise<TripTravelAdvisoriesResponse> => {
+
+  return customFetch<TripTravelAdvisoriesResponse>(getGetTripTravelAdvisoriesUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTripTravelAdvisoriesQueryKey = (tripId: number,) => {
+    return [
+    `/api/trips/${tripId}/travel-advisories`
+    ] as const;
+    }
+
+
+export const getGetTripTravelAdvisoriesQueryOptions = <TData = Awaited<ReturnType<typeof getTripTravelAdvisories>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripTravelAdvisories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTripTravelAdvisoriesQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripTravelAdvisories>>> = ({ signal }) => getTripTravelAdvisories(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTripTravelAdvisories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTripTravelAdvisoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getTripTravelAdvisories>>>
+export type GetTripTravelAdvisoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read-only view of official travel advisories for the trip's countries (back office)
+ */
+
+export function useGetTripTravelAdvisories<TData = Awaited<ReturnType<typeof getTripTravelAdvisories>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripTravelAdvisories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTripTravelAdvisoriesQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListChecklistTemplatesUrl = () => {
 

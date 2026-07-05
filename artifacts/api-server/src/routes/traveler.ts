@@ -19,9 +19,13 @@ import {
   ShareTripInputSchema, UpdateShareInputSchema,
   TripDocumentInputSchema,
   CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
+  TripPackingItemInputSchema, TripPackingItemUpdateSchema,
 } from "../lib/schemas";
-import { tripDocumentsTable } from "@workspace/db";
+import { tripDocumentsTable, tripPackingItemsTable, countryAdvisoriesTable, tripAdvisoryViewsTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { generatePackingList } from "../lib/packing-list-generator";
+import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
+import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 
 const objectStorage = new ObjectStorageService();
 
@@ -32,6 +36,7 @@ const SUGGESTED_CHECKLIST_ITEMS = [
   "Alojamiento reservado",
   "Cambio de moneda",
   "Descargar mapas offline",
+  "Registro del viajero en la app del Ministerio de Asuntos Exteriores",
 ];
 
 function makeShareCode(): string {
@@ -936,6 +941,174 @@ router.delete("/me/trips/:tripId/checklist/items/:itemId", requireRoles("travele
       eq(tripChecklistItemsTable.userId, userId),
     ));
   res.sendStatus(204);
+});
+
+function serializePackingItem(i: typeof tripPackingItemsTable.$inferSelect) {
+  return {
+    ...i,
+    createdAt: i.createdAt.toISOString(),
+    updatedAt: i.updatedAt.toISOString(),
+  };
+}
+
+// Lazily generates the packing list for a trip the first time it's requested, based on
+// trip duration, start month, and the categories of activities already scheduled in the
+// itinerary. Generating on read (rather than at invitation/join time) guarantees the list
+// exists for every access path — owner, invited traveler, or accepted share — without
+// needing a trigger in each of those separate routes.
+async function ensurePackingListGenerated(tripId: number, userId: number): Promise<void> {
+  const existing = await db
+    .select({ id: tripPackingItemsTable.id })
+    .from(tripPackingItemsTable)
+    .where(and(eq(tripPackingItemsTable.tripId, tripId), eq(tripPackingItemsTable.userId, userId)));
+  if (existing.length > 0) return;
+
+  const [trip] = await db
+    .select({ startDate: tripsTable.startDate, endDate: tripsTable.endDate })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, tripId));
+  if (!trip) return;
+
+  const days = await db.select({ id: tripDaysTable.id }).from(tripDaysTable).where(eq(tripDaysTable.tripId, tripId));
+  const durationDays = days.length > 0
+    ? days.length
+    : (trip.endDate
+        ? Math.max(1, Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / 86400000) + 1)
+        : 1);
+
+  const dayIds = days.map(d => d.id);
+  const activityCategories: string[] = dayIds.length > 0
+    ? (await db
+        .selectDistinct({ category: activitiesTable.category })
+        .from(tripDayActivitiesTable)
+        .innerJoin(activitiesTable, eq(tripDayActivitiesTable.activityId, activitiesTable.id))
+        .where(inArray(tripDayActivitiesTable.dayId, dayIds)))
+        .map(r => r.category)
+        .filter((c): c is NonNullable<typeof c> => !!c)
+    : [];
+
+  const generated = generatePackingList({ durationDays, startDate: trip.startDate, activityCategories });
+  if (generated.length === 0) return;
+
+  await db.insert(tripPackingItemsTable).values(
+    generated.map(item => ({ tripId, userId, title: item.title, category: item.category, origin: "suggested" as const })),
+  );
+}
+
+router.get("/me/trips/:tripId/packing-list", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await ensurePackingListGenerated(tripId, userId);
+
+  const items = await db
+    .select()
+    .from(tripPackingItemsTable)
+    .where(and(eq(tripPackingItemsTable.tripId, tripId), eq(tripPackingItemsTable.userId, userId)))
+    .orderBy(tripPackingItemsTable.createdAt);
+  res.json(items.map(serializePackingItem));
+});
+
+router.post("/me/trips/:tripId/packing-list/items", requireRoles("traveler"), validate(TripPackingItemInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { title, category } = req.body;
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [item] = await db
+    .insert(tripPackingItemsTable)
+    .values({ tripId, userId, title, category, origin: "personal" })
+    .returning();
+  res.status(201).json(serializePackingItem(item));
+});
+
+router.patch("/me/trips/:tripId/packing-list/items/:itemId", requireRoles("traveler"), validate(TripPackingItemUpdateSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const itemId = parseInt(Array.isArray(req.params.itemId) ? req.params.itemId[0] : req.params.itemId, 10);
+  const { packed } = req.body;
+  const [item] = await db
+    .update(tripPackingItemsTable)
+    .set({ packed })
+    .where(and(
+      eq(tripPackingItemsTable.id, itemId),
+      eq(tripPackingItemsTable.tripId, tripId),
+      eq(tripPackingItemsTable.userId, userId),
+    ))
+    .returning();
+  if (!item) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(serializePackingItem(item));
+});
+
+router.delete("/me/trips/:tripId/packing-list/items/:itemId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const itemId = parseInt(Array.isArray(req.params.itemId) ? req.params.itemId[0] : req.params.itemId, 10);
+  await db
+    .delete(tripPackingItemsTable)
+    .where(and(
+      eq(tripPackingItemsTable.id, itemId),
+      eq(tripPackingItemsTable.tripId, tripId),
+      eq(tripPackingItemsTable.userId, userId),
+    ));
+  res.sendStatus(204);
+});
+
+router.get("/me/trips/:tripId/travel-advisories", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const countries = await getTripCountries(tripId);
+  if (countries.length === 0) { res.json({ international: false, advisories: [] }); return; }
+
+  await Promise.all(countries.map(c => ensureCountryAdvisoryFresh(c)));
+
+  const rows = await db
+    .select()
+    .from(countryAdvisoriesTable)
+    .where(inArray(countryAdvisoriesTable.countryName, countries));
+  const rowByCountry = new Map(rows.map(r => [r.countryName, r]));
+
+  const views = await db
+    .select()
+    .from(tripAdvisoryViewsTable)
+    .where(and(eq(tripAdvisoryViewsTable.tripId, tripId), eq(tripAdvisoryViewsTable.userId, userId)));
+  const viewByCountry = new Map(views.map(v => [v.countryName, v]));
+
+  const advisories = countries.map(countryName => {
+    const row = rowByCountry.get(countryName);
+    const view = viewByCountry.get(countryName);
+    const changed = !!row?.contentHash && view !== undefined && view.seenHash !== row.contentHash;
+    return {
+      countryName,
+      sourceUrl: row?.sourceUrl ?? buildAdvisoryUrl(countryName),
+      contentText: row?.contentText ?? null,
+      officialUpdatedAt: row?.officialUpdatedAt ?? null,
+      lastCheckedAt: row?.lastCheckedAt?.toISOString() ?? null,
+      lastChangedAt: row?.lastChangedAt?.toISOString() ?? null,
+      changed,
+    };
+  });
+
+  for (const row of rows) {
+    await db
+      .insert(tripAdvisoryViewsTable)
+      .values({ tripId, userId, countryName: row.countryName, seenHash: row.contentHash })
+      .onConflictDoUpdate({
+        target: [tripAdvisoryViewsTable.tripId, tripAdvisoryViewsTable.userId, tripAdvisoryViewsTable.countryName],
+        set: { seenHash: row.contentHash, seenAt: new Date() },
+      });
+  }
+
+  res.json({ international: true, advisories });
 });
 
 // ─── Helper: verify the requesting user is the trip owner OR has full permission ─

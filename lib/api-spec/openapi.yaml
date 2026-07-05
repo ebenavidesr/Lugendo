@@ -1796,6 +1796,138 @@ paths:
         "204":
           description: Deleted
 
+  /me/trips/{tripId}/packing-list:
+    get:
+      operationId: getMyTripPackingList
+      tags: [traveler]
+      summary: Get the traveler's packing list for a trip (auto-generated on first access)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of packing items, generated automatically on first request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripPackingItem"
+
+  /me/trips/{tripId}/packing-list/items:
+    post:
+      operationId: createTripPackingItem
+      tags: [traveler]
+      summary: Add a personal packing item to a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripPackingItemInput"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPackingItem"
+
+  /me/trips/{tripId}/packing-list/items/{itemId}:
+    patch:
+      operationId: updateTripPackingItem
+      tags: [traveler]
+      summary: Mark a packing item as packed/pending
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripPackingItemUpdate"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPackingItem"
+    delete:
+      operationId: deleteTripPackingItem
+      tags: [traveler]
+      summary: Delete a packing item
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /me/trips/{tripId}/travel-advisories:
+    get:
+      operationId: getMyTripTravelAdvisories
+      tags: [traveler]
+      summary: Get official travel advisories for the trip's countries (marks them as seen)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Travel advisories for the trip's non-Spain countries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripTravelAdvisoriesResponse"
+
+  /trips/{tripId}/travel-advisories:
+    get:
+      operationId: getTripTravelAdvisories
+      tags: [trips]
+      summary: Read-only view of official travel advisories for the trip's countries (back office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Travel advisories for the trip's non-Spain countries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripTravelAdvisoriesResponse"
+
   /checklist-templates:
     get:
       operationId: listChecklistTemplates
@@ -3641,6 +3773,84 @@ components:
       properties:
         completed:
           type: boolean
+
+    TripPackingItem:
+      type: object
+      required: [id, tripId, userId, title, category, packed, origin, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        category:
+          type: string
+          enum: [ropa, higiene, documentos, electronica, actividades, otros]
+        packed:
+          type: boolean
+        origin:
+          type: string
+          enum: [suggested, personal]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    TripPackingItemInput:
+      type: object
+      required: [title, category]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+          enum: [ropa, higiene, documentos, electronica, actividades, otros]
+
+    TripPackingItemUpdate:
+      type: object
+      required: [packed]
+      properties:
+        packed:
+          type: boolean
+
+    TripCountryAdvisory:
+      type: object
+      required: [countryName, sourceUrl, contentText, officialUpdatedAt, lastCheckedAt, lastChangedAt, changed]
+      properties:
+        countryName:
+          type: string
+        sourceUrl:
+          type: string
+        contentText:
+          type: string
+          nullable: true
+        officialUpdatedAt:
+          type: string
+          nullable: true
+        lastCheckedAt:
+          type: string
+          nullable: true
+        lastChangedAt:
+          type: string
+          nullable: true
+        changed:
+          type: boolean
+          description: True if the content has changed since this traveler last viewed it
+
+    TripTravelAdvisoriesResponse:
+      type: object
+      required: [international, advisories]
+      properties:
+        international:
+          type: boolean
+          description: False when all trip days are in Spain (or country is undefined) — only a disclaimer should be shown
+        advisories:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripCountryAdvisory"
 
     UploadUrlRequest:
       type: object

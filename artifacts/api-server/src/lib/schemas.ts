@@ -411,3 +411,16 @@ export const TripChecklistItemInputSchema = z.object({
 export const TripChecklistItemUpdateSchema = z.object({
   completed: z.boolean(),
 });
+
+// ─── Packing lists ──────────────────────────────────────────────────────────
+
+const PackingCategorySchema = z.enum(["ropa", "higiene", "documentos", "electronica", "actividades", "otros"]);
+
+export const TripPackingItemInputSchema = z.object({
+  title: z.string().min(1),
+  category: PackingCategorySchema,
+});
+
+export const TripPackingItemUpdateSchema = z.object({
+  packed: z.boolean(),
+});

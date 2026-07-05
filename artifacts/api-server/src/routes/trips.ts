@@ -5,7 +5,7 @@ import {
   tripsTable, tripDaysTable, tripDayHotelsTable, tripDayActivitiesTable,
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
-  usersTable, tripDocumentsTable,
+  usersTable, tripDocumentsTable, countryAdvisoriesTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -16,6 +16,8 @@ import {
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { sendDocumentUploadedEmail } from "../lib/email";
+import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
+import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 
 const objectStorage = new ObjectStorageService();
 
@@ -809,6 +811,41 @@ async function verifyTripAccess(tripId: number, userId: number, agencyId: number
   if ((role === "manager" || role === "agent") && agencyId != null && trip.agencyId === agencyId) return true;
   return false;
 }
+
+router.get("/trips/:tripId/travel-advisories", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const countries = await getTripCountries(tripId);
+  if (countries.length === 0) { res.json({ international: false, advisories: [] }); return; }
+
+  await Promise.all(countries.map(c => ensureCountryAdvisoryFresh(c)));
+
+  const rows = await db
+    .select()
+    .from(countryAdvisoriesTable)
+    .where(inArray(countryAdvisoriesTable.countryName, countries));
+  const rowByCountry = new Map(rows.map(r => [r.countryName, r]));
+
+  const advisories = countries.map(countryName => {
+    const row = rowByCountry.get(countryName);
+    return {
+      countryName,
+      sourceUrl: row?.sourceUrl ?? buildAdvisoryUrl(countryName),
+      contentText: row?.contentText ?? null,
+      officialUpdatedAt: row?.officialUpdatedAt ?? null,
+      lastCheckedAt: row?.lastCheckedAt?.toISOString() ?? null,
+      lastChangedAt: row?.lastChangedAt?.toISOString() ?? null,
+      changed: false,
+    };
+  });
+
+  res.json({ international: true, advisories });
+});
 
 router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);

@@ -33,7 +33,7 @@ import { CountrySelectSmall } from "@/components/country-select";
 
 type Origin = "join" | "create";
 type NewMode = "scratch" | "pdf";
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type Step = 1 | 2 | 3 | 4;
 
 interface WizardData {
   origin: Origin | null;
@@ -49,34 +49,17 @@ interface WizardData {
   dayActivities: Record<number, number[]>;
   startDate: string;
   endDate: string;
-  outboundLegs: FlightLeg[];
-  returnLegs: FlightLeg[];
   tripName: string;
 }
 
-interface FlightLeg {
-  airline: string;
-  flightNumber: string;
-  cityFrom: string;
-  cityTo: string;
-  departureTime: string;
-  arrivalTime: string;
-  reservationCode: string;
-}
-
-const emptyLeg = (): FlightLeg => ({
-  airline: "", flightNumber: "", cityFrom: "", cityTo: "",
-  departureTime: "", arrivalTime: "", reservationCode: "",
-});
-
-const STEP_LABELS = ["Inicio", "Programa", "Fechas", "Vuelos", "Nombre", "Itinerario", "Crear"];
-const STEP_ICONS = [MapPin, FileText, Calendar, Plane, Settings, Hotel, Check];
+const STEP_LABELS = ["Inicio", "Programa", "Datos del viaje", "Crear"];
+const STEP_ICONS = [MapPin, FileText, Settings, Check];
 
 // ── Stepper ──────────────────────────────────────────────────────────────────
 
 function Stepper({ step, joinMode }: { step: Step; joinMode: boolean }) {
-  const labels = joinMode ? ["Inicio", "Unirse", "", "", "", "", ""] : STEP_LABELS;
-  const maxVisible = joinMode ? 2 : 7;
+  const labels = joinMode ? ["Inicio", "Unirse", "", ""] : STEP_LABELS;
+  const maxVisible = joinMode ? 2 : 4;
 
   return (
     <div className="flex items-start gap-0 mb-8">
@@ -137,8 +120,6 @@ export default function TravelerTripWizard() {
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
     parsedItinerary: null, dayHotels: {}, dayActivities: {},
     startDate: "", endDate: "",
-    outboundLegs: [emptyLeg()],
-    returnLegs: [emptyLeg()],
     tripName: "",
   });
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -193,7 +174,7 @@ export default function TravelerTripWizard() {
   const days = getDays();
   const hasDays = days.length > 0;
 
-  const nextStep = () => setStep(s => Math.min(s + 1, 7) as Step);
+  const nextStep = () => setStep(s => Math.min(s + 1, 4) as Step);
   const prevStep = () => setStep(s => Math.max(s - 1, 1) as Step);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -483,8 +464,6 @@ export default function TravelerTripWizard() {
           startDate: data.startDate,
           ...(data.endDate ? { endDate: data.endDate } : {}),
           ...(itineraryId ? { itineraryId } : {}),
-          ...(data.outboundLegs.some(l => l.airline || l.flightNumber) ? { outboundFlights: data.outboundLegs.filter(l => l.airline || l.flightNumber) } : {}),
-          ...(data.returnLegs.some(l => l.airline || l.flightNumber) ? { returnFlights: data.returnLegs.filter(l => l.airline || l.flightNumber) } : {}),
         },
       });
 
@@ -623,27 +602,17 @@ export default function TravelerTripWizard() {
                     <Input type="number" placeholder="10" value={data.scratchNumDays} onChange={e => set({ scratchNumDays: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Países</label>
-                    <Input placeholder="Japón" value={data.scratchCountries} onChange={e => set({ scratchCountries: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Dificultad</label>
-                    <Select value={data.scratchDifficulty} onValueChange={v => set({ scratchDifficulty: v })}>
-                      <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Sin definir</SelectItem>
-                        <SelectItem value="easy">Fácil</SelectItem>
-                        <SelectItem value="moderate">Moderado</SelectItem>
-                        <SelectItem value="demanding">Exigente</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
                 <div>
-                  <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Descripción</label>
-                  <Textarea placeholder="Descripción del viaje…" rows={2} value={data.scratchDescription} onChange={e => set({ scratchDescription: e.target.value })} />
+                  <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Dificultad</label>
+                  <Select value={data.scratchDifficulty} onValueChange={v => set({ scratchDifficulty: v })}>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sin definir</SelectItem>
+                      <SelectItem value="easy">Fácil</SelectItem>
+                      <SelectItem value="moderate">Moderado</SelectItem>
+                      <SelectItem value="demanding">Exigente</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
@@ -707,400 +676,204 @@ export default function TravelerTripWizard() {
           </div>
         );
 
-      // ── STEP 3: Fechas ──────────────────────────────────────────────────────
+      // ── STEP 3: Datos del viaje ───────────────────────────────────────────
       case 3:
         return (
           <div className="space-y-4">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Fechas del viaje</h2>
-              <p className="text-[13px] text-muted-foreground">Define cuándo empieza y acaba el viaje.</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Datos del viaje</h2>
+              <p className="text-[13px] text-muted-foreground">Configura los detalles básicos de tu aventura.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3">
               <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de salida *</label>
-                <Input type="date" value={data.startDate} onChange={e => set({ startDate: e.target.value })} />
+                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre del viaje *</label>
+                <Input
+                  placeholder="Japón otoño 2026"
+                  value={data.tripName}
+                  onChange={e => set({ tripName: e.target.value })}
+                  className="text-[15px]"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de salida *</label>
+                  <Input type="date" value={data.startDate} onChange={e => set({ startDate: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de regreso</label>
+                  <Input type="date" value={data.endDate} onChange={e => set({ endDate: e.target.value })} min={data.startDate} />
+                </div>
               </div>
               <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de regreso</label>
-                <Input type="date" value={data.endDate} onChange={e => set({ endDate: e.target.value })} min={data.startDate} />
+                <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Países</label>
+                <Input
+                  placeholder="Ej. Japón, Corea"
+                  value={data.scratchCountries}
+                  onChange={e => set({ scratchCountries: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-medium block mb-1" style={{ color: "#2D1F0E" }}>Descripción</label>
+                <Textarea
+                  placeholder="Descripción del viaje…"
+                  rows={2}
+                  value={data.scratchDescription}
+                  onChange={e => set({ scratchDescription: e.target.value })}
+                />
               </div>
             </div>
           </div>
         );
 
-      // ── STEP 4: Vuelos ──────────────────────────────────────────────────────
+      // ── STEP 4: Crear ───────────────────────────────────────────────────────
       case 4:
         return (
           <div className="space-y-5">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Información de vuelos</h2>
-              <p className="text-[13px] text-muted-foreground">Datos del vuelo de ida y de vuelta (opcional).</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Itinerario y confirmación</h2>
+              <p className="text-[13px] text-muted-foreground">Revisa tu viaje y añade hoteles o actividades si lo deseas.</p>
             </div>
 
-            <div className="p-4 rounded-[12px] border border-border space-y-3" style={{ background: "white" }}>
-              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#C4793A" }}>
-                <Plane className="w-3.5 h-3.5" /> Vuelo de ida
-              </div>
-              {data.outboundLegs.map((leg, idx) => (
-                <div key={idx}>
-                  {idx > 0 && (
-                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
-                      <button onClick={() => set({ outboundLegs: data.outboundLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar tramo</button>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label><Input placeholder="Iberia" value={leg.airline} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label><Input placeholder="IB1234" value={leg.flightNumber} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label><Input placeholder="Madrid" value={leg.cityFrom} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label><Input placeholder="Edimburgo" value={leg.cityTo} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label><Input type="time" value={leg.departureTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label><Input type="time" value={leg.arrivalTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
-                    <div className="col-span-2"><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label><Input placeholder="ABCDEF" value={leg.reservationCode} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={() => set({ outboundLegs: [...data.outboundLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                <Plus className="w-3 h-3" /> Añadir tramo
-              </button>
-            </div>
+            {hasDays && (
+              <div className="space-y-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#9C7A58" }}>Itinerario detallado (Opcional)</div>
+                <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                  {days.map((day, idx) => {
+                    const dayDate = data.startDate ? new Date(data.startDate + "T00:00:00") : null;
+                    if (dayDate) dayDate.setDate(dayDate.getDate() + (day.dayNumber - 1));
+                    const dateStr = dayDate
+                      ? dayDate.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
+                      : null;
+                    const dayActs = (data.dayActivities[day.dayNumber] ?? [])
+                      .map(id => activities?.find(a => a.id === id))
+                      .filter((a): a is NonNullable<typeof a> => Boolean(a));
+                    const isHotelOpen = inlineHotelDay === day.dayNumber;
+                    const isActOpen = inlineActivityDay === day.dayNumber;
+                    const assignedHotel = data.dayHotels[day.dayNumber];
 
-            <div className="p-4 rounded-[12px] border border-border space-y-4" style={{ background: "white" }}>
-              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#3D2F6B" }}>
-                <Plane className="w-3.5 h-3.5 rotate-180" /> Vuelo de vuelta
-              </div>
-              {data.returnLegs.map((leg, idx) => (
-                <div key={idx}>
-                  {idx > 0 && (
-                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
-                      <button onClick={() => set({ returnLegs: data.returnLegs.filter((_, i) => i !== idx) })} className="ml-auto text-[11px] text-destructive hover:underline">Eliminar tramo</button>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label><Input placeholder="Iberia" value={leg.airline} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label><Input placeholder="IB5678" value={leg.flightNumber} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label><Input placeholder="Edimburgo" value={leg.cityFrom} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label><Input placeholder="Madrid" value={leg.cityTo} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label><Input type="time" value={leg.departureTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} /></div>
-                    <div><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label><Input type="time" value={leg.arrivalTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} /></div>
-                    <div className="col-span-2"><label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label><Input placeholder="FEDCBA" value={leg.reservationCode} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} /></div>
-                  </div>
-                </div>
-              ))}
-              <button onClick={() => set({ returnLegs: [...data.returnLegs, emptyLeg()] })} className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
-                <Plus className="w-3 h-3" /> Añadir tramo
-              </button>
-            </div>
-          </div>
-        );
-
-      // ── STEP 5: Nombre ──────────────────────────────────────────────────────
-      case 5:
-        return (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Nombre del viaje</h2>
-              <p className="text-[13px] text-muted-foreground">Ponle un nombre que lo identifique fácilmente.</p>
-            </div>
-            <div>
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre del viaje *</label>
-              <Input
-                placeholder="Japón otoño 2026"
-                value={data.tripName}
-                onChange={e => set({ tripName: e.target.value })}
-                className="text-[15px]"
-              />
-            </div>
-            <div className="p-4 rounded-[12px] border border-border space-y-1.5" style={{ background: "#FAF2EB" }}>
-              <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen</div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
-                <span className="text-muted-foreground">Programa</span>
-                <span style={{ color: "#2D1F0E" }}>
-                  {data.scratchName || data.parsedItinerary?.name || "—"}
-                </span>
-                <span className="text-muted-foreground">Salida</span>
-                <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
-                <span className="text-muted-foreground">Regreso</span>
-                <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
-                {data.outboundLegs.some(l => l.airline || l.flightNumber) && (
-                  <>
-                    <span className="text-muted-foreground">Vuelo ida</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.outboundLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                  </>
-                )}
-                {data.returnLegs.some(l => l.airline || l.flightNumber) && (
-                  <>
-                    <span className="text-muted-foreground">Vuelo vuelta</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.returnLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
-      // ── STEP 6: Itinerario detallado ────────────────────────────────────────
-      case 6:
-        return (
-          <div className="space-y-3">
-            <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Itinerario detallado</h2>
-              <p className="text-[13px] text-muted-foreground">Hoteles y actividades por día. Opcional — puedes completarlo después.</p>
-            </div>
-            {!hasDays ? (
-              <div className="p-6 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
-                <Hotel className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <div className="text-[13px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Sin días definidos</div>
-                <div className="text-[12px] text-muted-foreground">
-                  {data.newMode === "scratch"
-                    ? "Los días se configuran desde el detalle del viaje."
-                    : "Sube un archivo en el paso anterior para extraer el itinerario con IA."}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
-                {days.map((day, idx) => {
-                  const dayDate = data.startDate ? new Date(data.startDate + "T00:00:00") : null;
-                  if (dayDate) dayDate.setDate(dayDate.getDate() + (day.dayNumber - 1));
-                  const dateStr = dayDate
-                    ? dayDate.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" })
-                    : null;
-                  const dayActs = (data.dayActivities[day.dayNumber] ?? [])
-                    .map(id => activities?.find(a => a.id === id))
-                    .filter((a): a is NonNullable<typeof a> => Boolean(a));
-                  const isHotelOpen = inlineHotelDay === day.dayNumber;
-                  const isActOpen = inlineActivityDay === day.dayNumber;
-                  const assignedHotel = data.dayHotels[day.dayNumber];
-
-                  return (
-                    <Fragment key={day.dayNumber}>
-                    <div className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
-                      <div className="flex items-center gap-3 px-3 pt-3 pb-2">
-                        <div
-                          className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 text-[12px] font-semibold"
-                          style={{ background: "#FAEEE4", color: "#C4793A" }}
-                        >
-                          {day.dayNumber}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>
-                            {day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                          </div>
-                          {dateStr && <div className="text-[11px] capitalize" style={{ color: "#9C7A58" }}>{dateStr}</div>}
-                        </div>
-                      </div>
-
-                      <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">
-                        <Hotel className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9C7A58" }} />
-                        <div className="flex-1 min-w-0">
-                          <Select
-                            value={assignedHotel || "none"}
-                            onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}
+                    return (
+                      <Fragment key={day.dayNumber}>
+                      <div className="rounded-[12px] border border-border overflow-hidden" style={{ background: "white" }}>
+                        <div className="flex items-center gap-3 px-3 pt-3 pb-2">
+                          <div
+                            className="w-8 h-8 rounded-[8px] flex items-center justify-center flex-shrink-0 text-[12px] font-semibold"
+                            style={{ background: "#FAEEE4", color: "#C4793A" }}
                           >
-                            <SelectTrigger className="text-[12px] h-7 border-0 bg-transparent px-0 focus:ring-0 shadow-none w-full">
-                              <SelectValue placeholder="Sin hotel asignado" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Sin hotel</SelectItem>
-                              {hotels?.map(h => (
-                                <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {day.dayNumber}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>
+                                {day.cityTo || day.cityFrom || "Día de viaje"}
+                              </span>
+                              {dateStr && <span className="text-[10px] text-muted-foreground uppercase">{dateStr}</span>}
+                            </div>
+                            {day.description && <div className="text-[11px] text-muted-foreground line-clamp-1">{day.description}</div>}
+                          </div>
                         </div>
-                        <button
-                          className="flex-shrink-0 text-[11px] font-medium flex items-center gap-0.5 px-2 py-1 rounded-[6px] transition-colors"
-                          style={{ color: "#C4793A", background: isHotelOpen ? "#FAEEE4" : "transparent" }}
-                          onClick={() => {
-                            setInlineHotelDay(isHotelOpen ? null : day.dayNumber);
-                            setInlineActivityDay(null);
-                            setHotelSearchQ("");
-                            setHotelLookupResults([]);
-                            setNewHotelForm({ name: "", city: day.cityTo ?? day.cityFrom ?? "", country: "", address: "", phone: "", website: "" });
-                          }}
-                        >
-                          <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
-                        </button>
-                      </div>
 
-                      <div className="px-3 pb-3 flex items-start gap-2">
-                        <Zap className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: "#9C7A58" }} />
-                        <div className="flex-1 flex flex-wrap gap-1 items-center">
+                        {/* Activities & Hotel list */}
+                        <div className="px-3 pb-3 flex flex-wrap gap-1.5">
+                          {assignedHotel ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                              <Hotel className="w-3 h-3" />
+                              <span className="max-w-[100px] truncate">{hotels?.find(h => String(h.id) === assignedHotel)?.name}</span>
+                              <button onClick={() => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: "" } })} className="hover:text-destructive"><X className="w-2.5 h-2.5" /></button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setInlineHotelDay(isHotelOpen ? null : day.dayNumber); setInlineActivityDay(null); }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border border-dashed transition-colors hover:bg-muted"
+                              style={{ borderColor: "#E5D4BF", color: "#9C7A58" }}
+                            >
+                              <Plus className="w-2.5 h-2.5" /> Hotel
+                            </button>
+                          )}
+
                           {dayActs.map(a => (
-                            <span key={a.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
-                              {a.name}
+                            <div key={a.id} className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                              <Zap className="w-3 h-3" />
+                              <span className="max-w-[100px] truncate">{a.name}</span>
                               <button
-                                onClick={() => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: (data.dayActivities[day.dayNumber] ?? []).filter(id => id !== a.id) } })}
-                                className="opacity-60 hover:opacity-100 ml-0.5"
+                                onClick={() => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: data.dayActivities[day.dayNumber].filter(id => id !== a.id) } })}
+                                className="hover:text-destructive"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>
-                            </span>
+                            </div>
                           ))}
+
                           <button
-                            className="text-[11px] font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full transition-colors"
-                            style={{ color: "#3D2F6B", background: isActOpen ? "#EDE9F8" : "#F5F3FB" }}
-                            onClick={() => {
-                              setInlineActivityDay(isActOpen ? null : day.dayNumber);
-                              setInlineHotelDay(null);
-                              setActivitySearchQ("");
-                              setNewActivityMode(false);
-                            }}
+                            onClick={() => { setInlineActivityDay(isActOpen ? null : day.dayNumber); setInlineHotelDay(null); }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border border-dashed transition-colors hover:bg-muted"
+                            style={{ borderColor: "#E5D4BF", color: "#9C7A58" }}
                           >
-                            <Plus className="w-3 h-3" /> Actividad
+                            <Plus className="w-2.5 h-2.5" /> Actividad
                           </button>
                         </div>
-                      </div>
 
-                      {isHotelOpen && (
-                        <div className="border-t border-border p-3 space-y-3" style={{ background: "#FAF8F5" }}>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
-                            Buscar o crear hotel
-                          </div>
-                          <div className="flex gap-2">
+                        {/* Inline Hotel Search/Create */}
+                        {isHotelOpen && (
+                          <div className="border-t border-border p-3 space-y-2" style={{ background: "#FAF8F6" }}>
+                            <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#9C7A58" }}>
+                              Asignar Hotel
+                            </div>
                             <Input
-                              placeholder="Nombre del hotel…"
+                              placeholder="Buscar en el catálogo…"
                               value={hotelSearchQ}
                               onChange={e => setHotelSearchQ(e.target.value)}
-                              onKeyDown={e => e.key === "Enter" && handleHotelLookup()}
-                              className="h-8 text-[12px] flex-1"
+                              className="h-7 text-[12px]"
                             />
-                            <Button
-                              type="button" size="sm" className="h-8 text-[11px] gap-1 flex-shrink-0"
-                              style={{ background: "#C4793A", color: "white" }}
-                              onClick={handleHotelLookup}
-                              disabled={hotelLookupLoading || !hotelSearchQ.trim()}
-                            >
-                              <Search className="w-3 h-3" />
-                              {hotelLookupLoading ? "Buscando…" : "Buscar"}
-                            </Button>
-                          </div>
-                          {hotelSearchDone && hotelLookupResults.length === 0 && (
-                            <div className="text-[12px] py-1.5 px-2 rounded-[8px] text-center" style={{ background: "#FFF3E0", color: "#8B4420" }}>
-                              Sin resultados — rellena el formulario manualmente
-                            </div>
-                          )}
-                          {hotelLookupResults.length > 0 && (
-                            <div className="space-y-1">
-                              <div className="text-[11px]" style={{ color: "#9C7A58" }}>Selecciona para pre-rellenar:</div>
-                              {hotelLookupResults.map((r, i) => (
-                                <button key={i}
-                                  onClick={() => setNewHotelForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website })}
-                                  className="w-full text-left p-2 rounded-[8px] border border-border hover:border-[#C4793A] text-[12px] transition-colors"
-                                >
-                                  <div className="font-medium" style={{ color: "#2D1F0E" }}>{r.name}</div>
-                                  <div style={{ color: "#9C7A58" }}>{r.city}{r.country ? `, ${r.country}` : ""}</div>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Datos del hotel</div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="Nombre *" value={newHotelForm.name} onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Ciudad *" value={newHotelForm.city} onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                            <CountrySelectSmall value={newHotelForm.country} onChange={v => setNewHotelForm(f => ({ ...f, country: v }))} placeholder="País *" />
-                            <Input placeholder="Dirección" value={newHotelForm.address} onChange={e => setNewHotelForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Teléfono" value={newHotelForm.phone} onChange={e => setNewHotelForm(f => ({ ...f, phone: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Web" value={newHotelForm.website} onChange={e => setNewHotelForm(f => ({ ...f, website: e.target.value }))} className="h-7 text-[12px]" />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button type="button" variant="ghost" size="sm" className="h-7 text-[12px]" onClick={() => setInlineHotelDay(null)}>Cancelar</Button>
-                            <Button
-                              type="button" size="sm" className="h-7 text-[12px]"
-                              style={{ background: "#C4793A", color: "white" }}
-                              disabled={!newHotelForm.name || !newHotelForm.city || !newHotelForm.country || creatingHotel}
-                              onClick={() => handleCreateHotel(day.dayNumber)}
-                            >
-                              {creatingHotel ? "Guardando…" : "Guardar hotel"}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      {isActOpen && (
-                        <div className="border-t border-border p-3 space-y-2" style={{ background: "#F8F6FC" }}>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
-                            Añadir actividad
-                          </div>
-                          <Input
-                            placeholder="Buscar en el catálogo…"
-                            value={activitySearchQ}
-                            onChange={e => setActivitySearchQ(e.target.value)}
-                            className="h-7 text-[12px]"
-                          />
-                          {(() => {
-                            const catalogue = activities ?? [];
-                            const alreadyAdded = data.dayActivities[day.dayNumber] ?? [];
-                            const filtered = catalogue
-                              .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
-                              .filter(a => !alreadyAdded.includes(a.id))
-                              .slice(0, 12);
-                            if (catalogue.length === 0) {
+                            {(() => {
+                              const catalogue = hotels ?? [];
+                              const filtered = catalogue
+                                .filter(h => !hotelSearchQ || h.name.toLowerCase().includes(hotelSearchQ.toLowerCase()) || h.city.toLowerCase().includes(hotelSearchQ.toLowerCase()))
+                                .slice(0, 5);
+                              if (filtered.length === 0 && hotelSearchQ) return null;
                               return (
-                                <div className="text-[12px] py-2 text-center rounded-[8px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
-                                  El catálogo está vacío — crea una nueva actividad abajo
+                                <div className="space-y-1">
+                                  {filtered.map(h => (
+                                    <button
+                                      key={h.id}
+                                      className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#FAEEE4] text-[12px] transition-colors"
+                                      style={{ color: "#2D1F0E" }}
+                                      onClick={() => {
+                                        set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: String(h.id) } });
+                                        setInlineHotelDay(null);
+                                      }}
+                                    >
+                                      {h.name} <span style={{ color: "#9C7A58" }}>· {h.city}</span>
+                                    </button>
+                                  ))}
                                 </div>
                               );
-                            }
-                            if (filtered.length === 0) {
-                              return (
-                                <div className="text-[11px] py-2 text-center" style={{ color: "#9C7A58" }}>
-                                  {activitySearchQ ? `Sin coincidencias para "${activitySearchQ}"` : "Todas las actividades ya están añadidas"}
-                                </div>
-                              );
-                            }
-                            return (
-                              <div className="max-h-36 overflow-y-auto space-y-0.5">
-                                {filtered.map(a => (
-                                  <button
-                                    key={a.id}
-                                    className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
-                                    style={{ color: "#2D1F0E" }}
-                                    onClick={() => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, a.id] } })}
-                                  >
-                                    {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                          {!newActivityMode ? (
-                            <button
-                              className="w-full text-[11px] font-medium py-1 rounded-[6px] flex items-center justify-center gap-1 transition-colors"
-                              style={{ color: "#3D2F6B", background: "#EDE9F8" }}
-                              onClick={() => setNewActivityMode(true)}
-                            >
-                              <Plus className="w-3 h-3" /> Nueva actividad
-                            </button>
-                          ) : (
-                            <div className="space-y-2 pt-2 border-t border-border">
-                              <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Nueva actividad</div>
-                              {/* Web search */}
+                            })()}
+                            {/* Web search / Manual */}
+                            <div className="pt-2 border-t border-border space-y-2">
                               <div className="flex gap-1.5">
                                 <Input
                                   placeholder="Buscar en internet…"
-                                  value={activityLookupQ}
-                                  onChange={e => setActivityLookupQ(e.target.value)}
-                                  onKeyDown={e => e.key === "Enter" && handleActivityLookup()}
+                                  value={hotelSearchQ}
+                                  onChange={e => setHotelSearchQ(e.target.value)}
+                                  onKeyDown={e => e.key === "Enter" && handleHotelLookup()}
                                   className="h-7 text-[12px] flex-1"
                                 />
                                 <button
                                   type="button"
-                                  onClick={handleActivityLookup}
-                                  disabled={!activityLookupQ.trim() || activityLookupLoading}
-                                  className="h-7 px-2 rounded-[6px] text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
-                                  style={{ background: "#3D2F6B", color: "white" }}>
-                                  {activityLookupLoading ? "…" : <Search className="w-3 h-3" />}
+                                  onClick={handleHotelLookup}
+                                  disabled={!hotelSearchQ.trim() || hotelLookupLoading}
+                                  className="h-7 px-2 rounded-[6px] text-[11px] font-medium disabled:opacity-40"
+                                  style={{ background: "#C4793A", color: "white" }}>
+                                  {hotelLookupLoading ? "…" : <Search className="w-3.5 h-3.5" />}
                                 </button>
                               </div>
-                              {activityLookupResults.length > 0 && (
+                              {hotelLookupResults.length > 0 && (
                                 <div className="rounded-[6px] border border-border bg-card overflow-hidden divide-y divide-border/60 max-h-32 overflow-y-auto">
-                                  {activityLookupResults.map((r, i) => (
+                                  {hotelLookupResults.map((r, i) => (
                                     <button key={i} type="button"
                                       onClick={() => {
-                                        setNewActivityForm(f => ({ ...f, name: r.name, city: r.city, country: r.country }));
-                                        setActivityLookupResults([]); setActivityLookupQ(""); setActivityLookupDone(false);
+                                        setNewHotelForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website });
+                                        setHotelLookupResults([]); setHotelSearchQ(""); setHotelSearchDone(false);
                                       }}
                                       className="w-full text-left px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
                                       <p className="text-[11px] font-medium truncate" style={{ color: "#2D1F0E" }}>{r.name}</p>
@@ -1109,118 +882,171 @@ export default function TravelerTripWizard() {
                                   ))}
                                 </div>
                               )}
-                              {activityLookupDone && activityLookupResults.length === 0 && (
-                                <p className="text-[10px] text-muted-foreground">Sin resultados. Rellena manualmente.</p>
-                              )}
-                              {/* Manual fields */}
-                              <Input placeholder="Nombre *" value={newActivityForm.name}
-                                onChange={e => setNewActivityForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
                               <div className="grid grid-cols-2 gap-2">
-                                <Input placeholder="Ciudad" value={newActivityForm.city}
-                                  onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                                <CountrySelectSmall value={newActivityForm.country} onChange={v => setNewActivityForm(f => ({ ...f, country: v }))} placeholder="País" />
+                                <Input placeholder="Nombre *" value={newHotelForm.name} onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
+                                <Input placeholder="Ciudad *" value={newHotelForm.city} onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
+                                <CountrySelectSmall value={newHotelForm.country} onChange={v => setNewHotelForm(f => ({ ...f, country: v }))} placeholder="País *" />
+                                <Input placeholder="Dirección" value={newHotelForm.address} onChange={e => setNewHotelForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
                               </div>
-                              <Select value={newActivityForm.category || "none"}
-                                onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>
-                                <SelectTrigger className="h-7 text-[12px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Sin categoría</SelectItem>
-                                  <SelectItem value="cultural">Cultural</SelectItem>
-                                  <SelectItem value="gastronomic">Gastronómica</SelectItem>
-                                  <SelectItem value="adventure">Aventura</SelectItem>
-                                  <SelectItem value="nature">Naturaleza</SelectItem>
-                                  <SelectItem value="beach">Playa</SelectItem>
-                                  <SelectItem value="city">Ciudad</SelectItem>
-                                  <SelectItem value="excursion">Excursión</SelectItem>
-                                  <SelectItem value="other">Otra</SelectItem>
-                                </SelectContent>
-                              </Select>
                               <div className="flex justify-end gap-2">
-                                <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px]"
-                                  onClick={() => {
-                                    setNewActivityMode(false);
-                                    setNewActivityForm({ name: "", category: "", city: "", country: "" });
-                                    setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
-                                  }}>
-                                  Cancelar
-                                </Button>
-                                <Button type="button" size="sm" className="h-6 text-[11px]"
-                                  style={{ background: "#3D2F6B", color: "white" }}
-                                  disabled={!newActivityForm.name || creatingActivity}
-                                  onClick={() => handleCreateActivity(day.dayNumber)}>
-                                  {creatingActivity ? "…" : "Crear"}
+                                <Button type="button" variant="ghost" size="sm" className="h-7 text-[12px]" onClick={() => setInlineHotelDay(null)}>Cancelar</Button>
+                                <Button
+                                  type="button" size="sm" className="h-7 text-[12px]"
+                                  style={{ background: "#C4793A", color: "white" }}
+                                  disabled={!newHotelForm.name || !newHotelForm.city || !newHotelForm.country || creatingHotel}
+                                  onClick={() => handleCreateHotel(day.dayNumber)}
+                                >
+                                  {creatingHotel ? "…" : "Guardar"}
                                 </Button>
                               </div>
                             </div>
-                          )}
+                          </div>
+                        )}
+
+                        {/* Inline Activity Search/Create */}
+                        {isActOpen && (
+                          <div className="border-t border-border p-3 space-y-2" style={{ background: "#F8F6FC" }}>
+                            <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
+                              Añadir actividad
+                            </div>
+                            <Input
+                              placeholder="Buscar en el catálogo…"
+                              value={activitySearchQ}
+                              onChange={e => setActivitySearchQ(e.target.value)}
+                              className="h-7 text-[12px]"
+                            />
+                            {(() => {
+                              const catalogue = activities ?? [];
+                              const alreadyAdded = data.dayActivities[day.dayNumber] ?? [];
+                              const filtered = catalogue
+                                .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
+                                .filter(a => !alreadyAdded.includes(a.id))
+                                .slice(0, 5);
+                              if (filtered.length > 0) return (
+                                <div className="space-y-1">
+                                  {filtered.map(a => (
+                                    <button
+                                      key={a.id}
+                                      className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
+                                      style={{ color: "#2D1F0E" }}
+                                      onClick={() => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, a.id] } })}
+                                    >
+                                      {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
+                                    </button>
+                                  ))}
+                                </div>
+                              );
+                              return null;
+                            })()}
+                            {!newActivityMode ? (
+                              <button
+                                className="w-full text-[11px] font-medium py-1.5 rounded-[6px] flex items-center justify-center gap-1 transition-colors"
+                                style={{ color: "#3D2F6B", background: "#EDE9F8" }}
+                                onClick={() => setNewActivityMode(true)}
+                              >
+                                <Plus className="w-3 h-3" /> Nueva actividad
+                              </button>
+                            ) : (
+                              <div className="space-y-2 pt-2 border-t border-border">
+                                <div className="flex gap-1.5">
+                                  <Input
+                                    placeholder="Buscar en internet…"
+                                    value={activityLookupQ}
+                                    onChange={e => setActivityLookupQ(e.target.value)}
+                                    onKeyDown={e => e.key === "Enter" && handleActivityLookup()}
+                                    className="h-7 text-[12px] flex-1"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={handleActivityLookup}
+                                    disabled={!activityLookupQ.trim() || activityLookupLoading}
+                                    className="h-7 px-2 rounded-[6px] text-[11px] font-medium disabled:opacity-40"
+                                    style={{ background: "#3D2F6B", color: "white" }}>
+                                    {activityLookupLoading ? "…" : <Search className="w-3.5 h-3.5" />}
+                                  </button>
+                                </div>
+                                {activityLookupResults.length > 0 && (
+                                  <div className="rounded-[6px] border border-border bg-card overflow-hidden divide-y divide-border/60 max-h-32 overflow-y-auto">
+                                    {activityLookupResults.map((r, i) => (
+                                      <button key={i} type="button"
+                                        onClick={() => {
+                                          setNewActivityForm(f => ({ ...f, name: r.name, city: r.city, country: r.country }));
+                                          setActivityLookupResults([]); setActivityLookupQ(""); setActivityLookupDone(false);
+                                        }}
+                                        className="w-full text-left px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
+                                        <p className="text-[11px] font-medium truncate" style={{ color: "#2D1F0E" }}>{r.name}</p>
+                                        {(r.city || r.country) && <p className="text-[10px] text-muted-foreground truncate">{[r.city, r.country].filter(Boolean).join(", ")}</p>}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                <Input placeholder="Nombre *" value={newActivityForm.name}
+                                  onChange={e => setNewActivityForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Input placeholder="Ciudad" value={newActivityForm.city}
+                                    onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
+                                  <CountrySelectSmall value={newActivityForm.country} onChange={v => setNewActivityForm(f => ({ ...f, country: v }))} placeholder="País" />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button type="button" variant="ghost" size="sm" className="h-7 text-[12px]"
+                                    onClick={() => {
+                                      setNewActivityMode(false);
+                                      setNewActivityForm({ name: "", category: "", city: "", country: "" });
+                                      setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
+                                    }}>
+                                    Cancelar
+                                  </Button>
+                                  <Button type="button" size="sm" className="h-7 text-[12px]"
+                                    style={{ background: "#3D2F6B", color: "white" }}
+                                    disabled={!newActivityForm.name || creatingActivity}
+                                    onClick={() => handleCreateActivity(day.dayNumber)}>
+                                    {creatingActivity ? "…" : "Crear"}
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {idx < days.length - 1 && (
+                        <div className="flex items-center gap-2 py-1">
+                          <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
+                          <TransportSelect
+                            value={dayTransports[days[idx + 1].dayNumber] ?? ""}
+                            onChange={v => setDayTransports(prev => ({ ...prev, [days[idx + 1].dayNumber]: v }))}
+                            placeholder="Sin transporte"
+                            className="h-6 text-[10px] w-36 border-dashed"
+                          />
+                          <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
                         </div>
                       )}
-                    </div>
-                    {idx < days.length - 1 && (
-                      <div className="flex items-center gap-2 py-1">
-                        <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
-                        <TransportSelect
-                          value={dayTransports[days[idx + 1].dayNumber] ?? ""}
-                          onChange={v => setDayTransports(prev => ({ ...prev, [days[idx + 1].dayNumber]: v }))}
-                          placeholder="Sin transporte"
-                          className="h-7 text-[11px] w-48 border-dashed"
-                        />
-                        <div className="flex-1 h-px" style={{ background: "#ECD5B8" }} />
-                      </div>
-                    )}
-                    </Fragment>
-                  );
-                })}
+                      </Fragment>
+                    );
+                  })}
+                </div>
               </div>
             )}
-          </div>
-        );
 
-      // ── STEP 7: Crear ───────────────────────────────────────────────────────
-      case 7:
-        return (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Listo para crear tu viaje</h2>
-              <p className="text-[13px] text-muted-foreground">Revisa el resumen y confirma para crear tu viaje personal.</p>
-            </div>
             <div className="p-5 rounded-[12px] border border-border space-y-3" style={{ background: "#FAF2EB" }}>
-              <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen del viaje</div>
+              <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen final</div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
                 <span className="text-muted-foreground">Nombre</span>
                 <span className="font-medium" style={{ color: "#2D1F0E" }}>{data.tripName || "—"}</span>
-                {(data.scratchName || data.parsedItinerary?.name) && (
-                  <>
-                    <span className="text-muted-foreground">Programa</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.scratchName || data.parsedItinerary?.name}</span>
-                  </>
-                )}
                 <span className="text-muted-foreground">Salida</span>
                 <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
                 <span className="text-muted-foreground">Regreso</span>
                 <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
-                {data.outboundLegs.some(l => l.airline || l.flightNumber) && (
-                  <>
-                    <span className="text-muted-foreground">Vuelo ida</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.outboundLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                  </>
-                )}
-                {data.returnLegs.some(l => l.airline || l.flightNumber) && (
-                  <>
-                    <span className="text-muted-foreground">Vuelo vuelta</span>
-                    <span style={{ color: "#2D1F0E" }}>{data.returnLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                  </>
-                )}
                 {hasDays && (
                   <>
-                    <span className="text-muted-foreground">Días</span>
-                    <span style={{ color: "#2D1F0E" }}>{days.length} días con itinerario</span>
+                    <span className="text-muted-foreground">Itinerario</span>
+                    <span style={{ color: "#2D1F0E" }}>{days.length} días extraídos</span>
                   </>
                 )}
               </div>
             </div>
           </div>
         );
+
     }
   };
 
@@ -1233,16 +1059,13 @@ export default function TravelerTripWizard() {
         if (data.newMode === "scratch") return !!data.scratchName && !!data.scratchNumDays;
         if (data.newMode === "pdf") return !!data.parsedItinerary;
         return false;
-      case 3: return !!data.startDate;
+      case 3: return !!data.tripName && !!data.startDate;
       case 4: return true;
-      case 5: return !!data.tripName;
-      case 6: return true;
-      case 7: return true;
       default: return true;
     }
   };
 
-  const isLastStep = step === 7;
+  const isLastStep = step === 4;
   const isJoinStep = step === 2 && data.origin === "join";
 
   return (

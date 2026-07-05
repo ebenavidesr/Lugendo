@@ -1087,6 +1087,76 @@ export interface TripChecklistItemUpdate {
   completed: boolean;
 }
 
+export type TripPackingItemCategory = typeof TripPackingItemCategory[keyof typeof TripPackingItemCategory];
+
+
+export const TripPackingItemCategory = {
+  ropa: 'ropa',
+  higiene: 'higiene',
+  documentos: 'documentos',
+  electronica: 'electronica',
+  actividades: 'actividades',
+  otros: 'otros',
+} as const;
+
+export type TripPackingItemOrigin = typeof TripPackingItemOrigin[keyof typeof TripPackingItemOrigin];
+
+
+export const TripPackingItemOrigin = {
+  suggested: 'suggested',
+  personal: 'personal',
+} as const;
+
+export interface TripPackingItem {
+  id: number;
+  tripId: number;
+  userId: number;
+  title: string;
+  category: TripPackingItemCategory;
+  packed: boolean;
+  origin: TripPackingItemOrigin;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TripPackingItemInputCategory = typeof TripPackingItemInputCategory[keyof typeof TripPackingItemInputCategory];
+
+
+export const TripPackingItemInputCategory = {
+  ropa: 'ropa',
+  higiene: 'higiene',
+  documentos: 'documentos',
+  electronica: 'electronica',
+  actividades: 'actividades',
+  otros: 'otros',
+} as const;
+
+export interface TripPackingItemInput {
+  title: string;
+  category: TripPackingItemInputCategory;
+}
+
+export interface TripPackingItemUpdate {
+  packed: boolean;
+}
+
+export interface TripCountryAdvisory {
+  countryName: string;
+  sourceUrl: string;
+  contentText: string | null;
+  officialUpdatedAt: string | null;
+  lastCheckedAt: string | null;
+  lastChangedAt: string | null;
+  /** True if the content has changed since this traveler last viewed it */
+  changed: boolean;
+}
+
+export interface TripTravelAdvisoriesResponse {
+  /** False when all trip days are in Spain (or country is undefined) — only a disclaimer should be shown */
+  international: boolean;
+  advisories: TripCountryAdvisory[];
+}
+
 export interface UploadUrlRequest {
   name: string;
   size: number;

@@ -3,6 +3,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db";
 import { setReady } from "./lib/readiness";
+import { scheduleAdvisoryRefresh } from "./lib/travel-advisory-refresh";
 
 const rawPort = process.env["PORT"];
 
@@ -34,6 +35,7 @@ runMigrations(migrationsFolder)
   .then(() => {
     logger.info("Migrations complete");
     setReady(buildVersion);
+    scheduleAdvisoryRefresh();
 
     app.listen(port, (err) => {
       if (err) {

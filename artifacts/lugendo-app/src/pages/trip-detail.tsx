@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import {
   ArrowLeft, Users, Calendar, Mail, Plus, ChevronDown, ChevronRight, Trash2, Loader2, Hotel,
+  LayoutList, List,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,12 +10,14 @@ import * as z from "zod";
 import {
   useGetTrip, useSendInvitations, useUpdateTrip, useListItineraryDays,
   useUpdateTripDayAdmin, useCreateTripDayAdmin, useDeleteTripDayAdmin,
+  useListTripDayActivities, useGetTripTravelAdvisories,
   COUNTRIES,
 } from "@workspace/api-client-react";
 import type { TripDetailStatus, InvitationStatus, TransportMode } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel } from "@/components/day-hotel-panel";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
+import { TripSafetyAdvisories } from "@/components/trip-safety-advisories";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
 import type { FlightLeg } from "@/components/flight-edit-panel";
@@ -25,6 +28,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -239,15 +243,70 @@ function DayEditForm({ day, tripId, onDone }: DayEditFormProps) {
   );
 }
 
+function CompactDayRow({
+  day,
+  startDate,
+  onClick,
+  tripId,
+}: {
+  day: any;
+  startDate?: string | null;
+  onClick: () => void;
+  tripId: number;
+}) {
+  const dateStr = formatDayDate(startDate, day.dayNumber);
+  const { data: dayActivities } = useListTripDayActivities(tripId, day.id);
+  const hotelNames = (day.hotels ?? []).map((h: any) => h.hotelName).join(", ");
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors text-left border-b border-border/40 last:border-0"
+    >
+      <div className="flex flex-col items-center justify-center min-w-[48px] h-10 rounded-lg bg-muted/40 border border-border/50">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase leading-none mb-0.5">Día</span>
+        <span className="text-[16px] font-bold leading-none" style={{ color: "#3D2F6B" }}>{day.dayNumber}</span>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[13px] font-semibold text-foreground truncate">
+            {day.cityFrom && day.cityTo ? `${day.cityFrom} → ${day.cityTo}` : (day.cityTo ?? day.cityFrom ?? "Sin destino")}
+          </span>
+          {dateStr && <span className="text-[11px] text-muted-foreground">· {dateStr}</span>}
+        </div>
+        <div className="flex items-center gap-3">
+          {hotelNames ? (
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-[200px]">
+              <Hotel className="w-3 h-3 shrink-0" />
+              <span className="truncate">{hotelNames}</span>
+            </div>
+          ) : (
+            <span className="text-[11px] text-muted-foreground/60 italic">Sin hotel</span>
+          )}
+          <span className="text-[11px] text-muted-foreground/60">·</span>
+          <span className="text-[11px] text-muted-foreground">
+            {dayActivities?.length ?? 0} {dayActivities?.length === 1 ? "actividad" : "actividades"}
+          </span>
+        </div>
+      </div>
+
+      <ChevronRight className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+    </button>
+  );
+}
+
 export default function TripDetail() {
   const params = useParams<{ id: string }>();
   const tripId = parseInt(params.id ?? "0");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"detail" | "summary">("detail");
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [editingDayId, setEditingDayId] = useState<number | null>(null);
   const [hotelBulkOpen, setHotelBulkOpen] = useState(false);
   const { data: trip, isLoading } = useGetTrip(tripId);
   const { data: itineraryDays } = useListItineraryDays(trip?.itineraryId ?? 0);
+  const { data: advisories, isLoading: isLoadingAdvisories } = useGetTripTravelAdvisories(tripId);
 
   useEffect(() => {
     if (trip?.days && trip.days.length > 0) {
@@ -486,7 +545,31 @@ export default function TripDetail() {
             <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
               Días del itinerario ({trip.days.length})
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={(v) => v && setViewMode(v as "detail" | "summary")}
+                className="bg-muted/40 p-0.5 rounded-lg border border-border/50"
+              >
+                <ToggleGroupItem
+                  value="detail"
+                  className="h-7 px-2.5 text-[11px] font-medium data-[state=on]:bg-white data-[state=on]:shadow-sm rounded-md"
+                >
+                  <LayoutList className="w-3 h-3 mr-1.5" />
+                  Detalle
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="summary"
+                  className="h-7 px-2.5 text-[11px] font-medium data-[state=on]:bg-white data-[state=on]:shadow-sm rounded-md"
+                >
+                  <List className="w-3 h-3 mr-1.5" />
+                  Resumen
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <div className="h-4 w-px bg-border/60 mx-1" />
+
               <button
                 onClick={handleAddDay}
                 disabled={createTripDay.isPending}
@@ -521,7 +604,7 @@ export default function TripDetail() {
             </div>
           </div>
           {hotelBulkOpen && trip.days.length > 0 && (
-            <div className="border-b border-border px-5 py-4" style={{ background: "#FEFAF7" }}>
+            <div className="border-b border-border px-5 py-4 animate-in fade-in slide-in-from-top-2 duration-200" style={{ background: "#FEFAF7" }}>
               <p className="text-[11px] font-medium uppercase tracking-wide mb-3" style={{ color: "#9C7A58" }}>
                 Gestión de hoteles por día
               </p>
@@ -553,84 +636,120 @@ export default function TripDetail() {
               </div>
             </div>
           )}
+
           {trip.days.length === 0 ? (
             <div className="px-5 py-8 text-center text-sm text-muted-foreground">
               No hay días en este itinerario. Haz clic en "Añadir día" para empezar.
             </div>
           ) : (
-            <ul className="divide-y divide-border/60">
+            <div className="divide-y divide-border/60">
               {trip.days.map(day => {
                 const isExpanded = expandedDays.has(day.id);
                 const isEditingThisDay = editingDayId === day.id;
-                return (
-                  <li key={day.id} className="flex items-start gap-4 px-5 py-3">
-                    <div className="flex flex-col items-center gap-0.5 shrink-0">
-                      <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-medium"
-                        style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                        {day.dayNumber}
-                      </div>
-                      {formatDayDate(trip.startDate, day.dayNumber) && (
-                        <span className="text-[9px] text-muted-foreground text-center leading-tight" style={{ maxWidth: 42 }}>
-                          {formatDayDate(trip.startDate, day.dayNumber)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
-                        {day.cityFrom && day.cityTo
-                          ? `${day.cityFrom} → ${day.cityTo}`
-                          : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                      </p>
-                      {day.hotels && day.hotels.length > 0 && (
-                        <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
-                      )}
-                      {day.description && (
-                        <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
-                      )}
-                      {isExpanded && !isEditingThisDay && (
-                        <>
-                          <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
-                          <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
-                        </>
-                      )}
-                      {isEditingThisDay && (
-                        <DayEditForm
-                          day={day}
-                          tripId={tripId}
-                          onDone={() => setEditingDayId(null)}
-                        />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                      <button
-                        onClick={() => {
-                          setEditingDayId(isEditingThisDay ? null : day.id);
-                          if (!isExpanded) toggleDay(day.id);
-                        }}
-                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-[#3D2F6B] hover:bg-[#EAE6F5] transition-colors"
-                        title="Editar día"
-                      >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button
+
+                if (viewMode === "summary" && !isExpanded) {
+                  return (
+                    <div key={day.id} className="animate-in fade-in duration-200">
+                      <CompactDayRow
+                        day={day}
+                        startDate={trip.startDate}
+                        tripId={tripId}
                         onClick={() => toggleDay(day.id)}
-                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        title={isExpanded ? "Colapsar" : "Ver detalle"}>
-                        {isExpanded
-                          ? <ChevronDown className="w-4 h-4" />
-                          : <ChevronRight className="w-4 h-4" />}
-                      </button>
+                      />
                     </div>
-                  </li>
+                  );
+                }
+
+                return (
+                  <div key={day.id} className="animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="flex items-start gap-4 px-5 py-3">
+                      <div className="flex flex-col items-center gap-0.5 shrink-0">
+                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-medium"
+                          style={{ background: "#FAEEE4", color: "#C4793A" }}>
+                          {day.dayNumber}
+                        </div>
+                        {formatDayDate(trip.startDate, day.dayNumber) && (
+                          <span className="text-[9px] text-muted-foreground text-center leading-tight" style={{ maxWidth: 42 }}>
+                            {formatDayDate(trip.startDate, day.dayNumber)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+                          {day.cityFrom && day.cityTo
+                            ? `${day.cityFrom} → ${day.cityTo}`
+                            : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
+                        </p>
+                        {day.hotels && day.hotels.length > 0 && (
+                          <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
+                        )}
+                        {day.description && !isExpanded && (
+                          <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
+                        )}
+                        {isExpanded && !isEditingThisDay && (
+                          <div className="animate-in fade-in slide-in-from-top-2 duration-200 mt-3 space-y-4">
+                            {day.description && (
+                              <p className="text-[13px] text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40">
+                                {day.description}
+                              </p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
+                              <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
+                            </div>
+                          </div>
+                        )}
+                        {isEditingThisDay && (
+                          <div className="animate-in fade-in slide-in-from-top-2 duration-200 mt-3">
+                            <DayEditForm
+                              day={day}
+                              tripId={tripId}
+                              onDone={() => setEditingDayId(null)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <button
+                          onClick={() => {
+                            setEditingDayId(isEditingThisDay ? null : day.id);
+                            if (!isExpanded) toggleDay(day.id);
+                          }}
+                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-[#3D2F6B] hover:bg-[#EAE6F5] transition-colors"
+                          title="Editar día"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => toggleDay(day.id)}
+                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          title={isExpanded ? "Colapsar" : "Ver detalle"}>
+                          {isExpanded
+                            ? <ChevronDown className="w-4 h-4" />
+                            : <ChevronRight className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
-            </ul>
+            </div>
           )}
         </div>
       )}
+
+      {/* Viaja Seguro (sólo lectura) */}
+      <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+          <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>Viaja Seguro</span>
+        </div>
+        <div className="p-4">
+          <TripSafetyAdvisories data={advisories} isLoading={isLoadingAdvisories} />
+        </div>
+      </div>
 
       {/* Documents */}
       <AgencyTripDocuments tripId={tripId} readOnly={!canEditDocuments} />
