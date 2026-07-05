@@ -13,4 +13,5 @@ export interface ItineraryDayUpdate {
   country?: string;
   transport?: TransportMode | null;
   description?: string;
+  isTransitNight?: boolean;
 }

@@ -289,6 +289,7 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), validate(TripIn
           country: d.country,
           transport: d.transport,
           description: d.description,
+          isTransitNight: d.isTransitNight,
         }))
       ).returning();
 
@@ -401,14 +402,14 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 // ─── TRIP DAY CREATE (back-office) ───────────────────────────────────────────
 router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
   const [trip] = await db.select({ id: tripsTable.id }).from(tripsTable).where(eq(tripsTable.id, tripId));
   if (!trip) { res.status(404).json({ error: "Trip not found" }); return; }
 
   const [day] = await db
     .insert(tripDaysTable)
-    .values({ tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null, transport: transport ?? null, description: description ?? null })
+    .values({ tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null, transport: transport ?? null, description: description ?? null, ...(isTransitNight !== undefined ? { isTransitNight } : {}) })
     .returning();
 
   res.status(201).json({ ...day, hotels: [], activities: [], createdAt: day.createdAt.toISOString() });
@@ -433,13 +434,14 @@ router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "ag
 router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description } = req.body;
+  const { cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
   if (country !== undefined) patch.country = country;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
+  if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
 
   const [updated] = await db
     .update(tripDaysTable)

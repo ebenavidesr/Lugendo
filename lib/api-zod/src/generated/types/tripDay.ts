@@ -22,6 +22,7 @@ export interface TripDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
   hotels?: DayHotel[];
   activities?: TripDayActivityItem[];
   createdAt: string;

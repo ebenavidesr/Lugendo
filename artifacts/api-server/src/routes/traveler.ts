@@ -72,6 +72,7 @@ async function copyItineraryDaysToTrip(tripId: number, itineraryId: number, crea
       country: d.country ?? null,
       transport: d.transport ?? null,
       description: d.description ?? null,
+      isTransitNight: d.isTransitNight ?? false,
     })))
     .returning();
 
@@ -1358,7 +1359,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
   const [day] = await db
     .insert(itineraryDaysTable)
@@ -1370,6 +1371,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
       ...(country ? { country } : {}),
       ...(transport ? { transport } : {}),
       ...(description ? { description } : {}),
+      ...(isTransitNight !== undefined ? { isTransitNight } : {}),
     })
     .returning();
 
@@ -1382,6 +1384,7 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
     country: day.country ?? null,
     transport: day.transport ?? null,
     description: day.description ?? null,
+    isTransitNight: day.isTransitNight,
     hotels: [],
     createdAt: day.createdAt.toISOString(),
   });
@@ -1395,7 +1398,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   const itineraryId = await getTripEditAccess(tripId, userId);
   if (itineraryId === false) { res.status(403).json({ error: "No tienes permisos para editar este viaje" }); return; }
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
   const patch: Record<string, unknown> = {};
   if (dayNumber !== undefined) patch.dayNumber = dayNumber;
@@ -1404,6 +1407,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   if (country !== undefined) patch.country = country ?? null;
   if (transport !== undefined) patch.transport = transport ?? null;
   if (description !== undefined) patch.description = description ?? null;
+  if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
 
   const [updated] = await db
     .update(itineraryDaysTable)
@@ -1422,6 +1426,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
     country: updated.country ?? null,
     transport: updated.transport ?? null,
     description: updated.description ?? null,
+    isTransitNight: updated.isTransitNight,
     hotels: [],
     createdAt: updated.createdAt.toISOString(),
   });

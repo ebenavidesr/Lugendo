@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Hotel, Plus, X, Search, Loader2, Trash2, Check } from "lucide-react";
+import { Hotel, Plus, X, Search, Loader2, Trash2, Check, Plane } from "lucide-react";
 import {
   useListHotels,
   useCreateHotel,
@@ -7,6 +7,8 @@ import {
   useRemoveItineraryDayHotel,
   useAddTripDayHotel,
   useRemoveTripDayHotel,
+  useUpdateItineraryDay,
+  useUpdateTripDayAdmin,
 } from "@workspace/api-client-react";
 import type { DayHotel, SegmentValue } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
@@ -39,7 +41,54 @@ export type GenericDay = {
   cityFrom?: string | null;
   cityTo?: string | null;
   country?: string | null;
+  isTransitNight?: boolean | null;
 };
+
+export function TransitNightBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full font-medium ${className}`}
+      style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+    >
+      <Plane className="w-3 h-3" />
+      Noche en transporte
+    </span>
+  );
+}
+
+export function getNightLabel(dayIndex: number, allDays: GenericDay[]): string | null {
+  const day = allDays[dayIndex];
+  if (!day || day.isTransitNight) return null;
+  const currentHotelId = day.hotels?.[0]?.hotelId;
+  if (!currentHotelId) return null;
+
+  let nights = 1;
+  for (let i = dayIndex - 1; i >= 0; i--) {
+    if (allDays[i]?.isTransitNight) continue;
+    const prevHotelId = allDays[i]?.hotels?.[0]?.hotelId;
+    if (prevHotelId === currentHotelId) {
+      nights++;
+    } else {
+      break;
+    }
+  }
+  if (nights === 1) return null;
+
+  const ordinals = ["1ª", "2ª", "3ª", "4ª", "5ª", "6ª", "7ª", "8ª", "9ª", "10ª"];
+  const label = ordinals[nights - 1] ?? `${nights}ª`;
+  return `${label} noche`;
+}
+
+export function NightLabelBadge({ label }: { label: string }) {
+  return (
+    <span
+      className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+      style={{ background: "#FAEEE4", color: "#C4793A" }}
+    >
+      {label}
+    </span>
+  );
+}
 
 export function DayHotelPanel({
   entityType,
@@ -49,6 +98,7 @@ export function DayHotelPanel({
   allDays,
   invalidateKey,
   readOnly = false,
+  transitReadOnly = false,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
@@ -57,6 +107,8 @@ export function DayHotelPanel({
   allDays?: GenericDay[];
   invalidateKey?: string;
   readOnly?: boolean;
+  /** Forces the "noche en transporte" toggle to read-only, independent of `readOnly` (which only gates hotel add/remove). Use for traveler-facing views, which must never let travelers toggle transit nights even if they can otherwise edit hotels. */
+  transitReadOnly?: boolean;
 }) {
   const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
@@ -64,8 +116,11 @@ export function DayHotelPanel({
   const removeItinHotel = useRemoveItineraryDayHotel();
   const addTripHotel = useAddTripDayHotel();
   const removeTripHotel = useRemoveTripDayHotel();
+  const updateItinDay = useUpdateItineraryDay();
+  const updateTripDay = useUpdateTripDayAdmin();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [togglingTransit, setTogglingTransit] = useState(false);
 
   const [mode, setMode] = useState<"idle" | "add" | "create" | "apply-more">("idle");
   const [selectedHotelId, setSelectedHotelId] = useState<string>("");
@@ -327,6 +382,51 @@ export function DayHotelPanel({
 
   const isPending = addItinHotel.isPending || removeItinHotel.isPending || addTripHotel.isPending || removeTripHotel.isPending;
   const currentHotels = day.hotels ?? [];
+  const isTransitNight = !!day.isTransitNight;
+
+  const setTransitNight = async (value: boolean) => {
+    setTogglingTransit(true);
+    try {
+      if (value && currentHotels.length > 0) {
+        const ok = confirm(
+          `Este día tiene ${currentHotels.length} hotel${currentHotels.length > 1 ? "es" : ""} asignado${currentHotels.length > 1 ? "s" : ""}. ` +
+          "Al marcarlo como noche en transporte se eliminarán. ¿Continuar?"
+        );
+        if (!ok) { setTogglingTransit(false); return; }
+        for (const h of currentHotels) {
+          await new Promise<void>((resolve, reject) => {
+            const callbacks = { onSuccess: () => resolve(), onError: () => reject() };
+            if (entityType === "itinerary") {
+              removeItinHotel.mutate({ itineraryId: entityId, dayId: day.id, assignmentId: h.id }, callbacks);
+            } else {
+              removeTripHotel.mutate({ tripId: entityId, dayId: day.id, assignmentId: h.id }, callbacks);
+            }
+          });
+        }
+      }
+      const data = { isTransitNight: value };
+      await new Promise<void>((resolve, reject) => {
+        const callbacks = { onSuccess: () => resolve(), onError: () => reject() };
+        if (entityType === "itinerary") {
+          updateItinDay.mutate({ itineraryId: entityId, dayId: day.id, data }, callbacks);
+        } else {
+          updateTripDay.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
+        }
+      });
+      invalidate();
+      resetMode();
+      toast({ title: value ? "Marcado como noche en transporte" : "Noche en transporte desactivada" });
+    } catch {
+      invalidate();
+      toast({
+        variant: "destructive",
+        title: "Error al actualizar el día",
+        description: value ? "No se pudo desvincular algún hotel o guardar el cambio. Revisa el estado del día antes de reintentar." : undefined,
+      });
+    } finally {
+      setTogglingTransit(false);
+    }
+  };
 
   return (
     <div className={compact ? "space-y-2" : "mt-3 pt-3 border-t border-border/60"}>
@@ -334,16 +434,29 @@ export function DayHotelPanel({
         <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>
           Hoteles del día
         </div>
-        {mode === "idle" && !readOnly && (
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1">
+          {!readOnly && !transitReadOnly && (
+            <button
+              onClick={() => setTransitNight(!isTransitNight)}
+              disabled={togglingTransit}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium disabled:opacity-60 transition-colors"
+              style={isTransitNight
+                ? { background: "#3D2F6B", color: "#FAF2EB" }
+                : { background: "#F0EEF7", color: "#3D2F6B" }}
+              title="Marcar este día como noche en transporte">
+              {togglingTransit ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plane className="w-3 h-3" />}
+              Noche en transporte
+            </button>
+          )}
+          {mode === "idle" && !readOnly && !isTransitNight && (
             <button
               onClick={() => { setMode("add"); setSearchQ(""); }}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] font-medium"
               style={{ background: "#FAEEE4", color: "#C4793A" }}>
               <Plus className="w-3 h-3" /> Añadir hotel
             </button>
-          </div>
-        )}
+          )}
+        </div>
         {mode !== "idle" && mode !== "apply-more" && (
           <button onClick={resetMode} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-[6px] text-[11px] text-muted-foreground hover:text-foreground">
             <X className="w-3 h-3" /> Cancelar
@@ -351,13 +464,20 @@ export function DayHotelPanel({
         )}
       </div>
 
+      {isTransitNight && (
+        <div className="rounded-[8px] border border-border/60 px-3 py-2.5 flex items-center gap-2" style={{ background: "#F4F2FB" }}>
+          <TransitNightBadge />
+          <span className="text-[11px] text-muted-foreground">Sin hotel asignado para este día.</span>
+        </div>
+      )}
+
       {/* Existing hotel assignments */}
-      {currentHotels.length === 0 && mode === "idle" && (
+      {!isTransitNight && currentHotels.length === 0 && mode === "idle" && (
         <div className="text-[11px] text-muted-foreground italic py-1">
           Sin hoteles asignados.
         </div>
       )}
-      {currentHotels.length > 0 && (
+      {!isTransitNight && currentHotels.length > 0 && (
         <div className="space-y-1 mb-2">
           {currentHotels.map(h => {
             const seg = h.segment as SegmentValue | null;

@@ -15,7 +15,7 @@ import {
   useUpdateItinerary,
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
-import { DayHotelPanel } from "@/components/day-hotel-panel";
+import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import type { GenericDay } from "@/components/day-hotel-panel";
 import { TransportSelect, TransportLabel } from "@/components/transport-select";
 import { CountrySelect } from "@/components/country-select";
@@ -553,8 +553,16 @@ export default function ItineraryDetail() {
                             <TransportLabel value={day.transport} />
                           </span>
                         )}
-                        {day.hotels && day.hotels.length > 0 && (
-                          <span className="text-[12px] text-muted-foreground">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</span>
+                        {day.isTransitNight ? (
+                          <TransitNightBadge />
+                        ) : day.hotels && day.hotels.length > 0 && (
+                          <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                            🏨 {day.hotels.map(h => h.hotelName).join(", ")}
+                            {(() => {
+                              const label = getNightLabel(days.findIndex((d: ItineraryDay) => d.id === day.id), days);
+                              return label ? <NightLabelBadge label={label} /> : null;
+                            })()}
+                          </span>
                         )}
                       </div>
                       {day.description && (

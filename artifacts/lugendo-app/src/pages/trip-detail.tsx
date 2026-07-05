@@ -15,7 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import type { TripDetailStatus, InvitationStatus, TransportMode } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
-import { DayHotelPanel } from "@/components/day-hotel-panel";
+import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
 import { TripSafetyAdvisories } from "@/components/trip-safety-advisories";
 import { InlineField } from "@/components/inline-field";
@@ -276,7 +276,9 @@ function CompactDayRow({
           {dateStr && <span className="text-[11px] text-muted-foreground">· {dateStr}</span>}
         </div>
         <div className="flex items-center gap-3">
-          {hotelNames ? (
+          {day.isTransitNight ? (
+            <TransitNightBadge />
+          ) : hotelNames ? (
             <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate max-w-[200px]">
               <Hotel className="w-3 h-3 shrink-0" />
               <span className="truncate">{hotelNames}</span>
@@ -680,8 +682,16 @@ export default function TripDetail() {
                             ? `${day.cityFrom} → ${day.cityTo}`
                             : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
                         </p>
-                        {day.hotels && day.hotels.length > 0 && (
-                          <p className="text-[12px] text-muted-foreground mt-0.5">🏨 {day.hotels.map(h => h.hotelName).join(", ")}</p>
+                        {day.isTransitNight ? (
+                          <p className="mt-0.5"><TransitNightBadge /></p>
+                        ) : day.hotels && day.hotels.length > 0 && (
+                          <p className="text-[12px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span>🏨 {day.hotels.map(h => h.hotelName).join(", ")}</span>
+                            {(() => {
+                              const label = getNightLabel(trip.days.findIndex(d => d.id === day.id), trip.days);
+                              return label ? <NightLabelBadge label={label} /> : null;
+                            })()}
+                          </p>
                         )}
                         {day.description && !isExpanded && (
                           <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
@@ -694,7 +704,15 @@ export default function TripDetail() {
                               </p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
+                              <div>
+                                {(() => {
+                                  const label = getNightLabel(trip.days.findIndex(d => d.id === day.id), trip.days);
+                                  return label ? (
+                                    <div className="mb-1.5"><NightLabelBadge label={label} /></div>
+                                  ) : null;
+                                })()}
+                                <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
+                              </div>
                               <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
                             </div>
                           </div>

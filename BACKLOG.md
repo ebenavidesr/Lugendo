@@ -64,6 +64,7 @@
 | #104 | Notificar al viajero cuando la agencia añade una plantilla de checklist | 🟢 Baja | Viajeros | Yo |
 | #105 | Ver progreso de checklist de cada viajero (vista agencia) | 🟡 Media | Agencia · Viajeros | Yo |
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
+| #116 | Verificar el toggle de noche en transporte con una cuenta de viajero real | 🟢 Baja | Viajeros | Yo |
 
 ---
 
@@ -116,6 +117,7 @@
 | #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | 🟡 Media | Viajeros |
 | #113 | Bloquear borrado de tareas de agencia en checklist | 🟡 Media | Viajeros |
 | #112 | Fix checklist de viaje: estado "completada" por defecto y persistencia del toggle | 🔴 Alta | Viajeros |
+| #115 | Noche en transporte (toggle en panel de hotel) | 🟡 Media | Itinerarios · Viajes |
 
 ---
 

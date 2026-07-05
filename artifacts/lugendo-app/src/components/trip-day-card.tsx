@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getTransportOption, TRANSPORT_OPTIONS } from "@/components/transport-select";
 import { FreeActivitySheet } from "@/components/free-activity-sheet";
 import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
-import { DayHotelPanel } from "@/components/day-hotel-panel";
+import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 
 const categoryEmoji: Record<string, string> = {
   cultural:    "🏛️",
@@ -22,27 +22,6 @@ const categoryEmoji: Record<string, string> = {
 
 function getCategoryEmoji(category: string | null | undefined): string {
   return categoryEmoji[category ?? ""] ?? "⭐";
-}
-
-function nightLabel(dayIndex: number, allDays: TripDay[]): string | null {
-  const day = allDays[dayIndex];
-  const currentHotelId = day?.hotels?.[0]?.hotelId;
-  if (!currentHotelId) return null;
-
-  let nights = 1;
-  for (let i = dayIndex - 1; i >= 0; i--) {
-    const prevHotelId = allDays[i]?.hotels?.[0]?.hotelId;
-    if (prevHotelId === currentHotelId) {
-      nights++;
-    } else {
-      break;
-    }
-  }
-  if (nights === 1) return null;
-
-  const ordinals = ["1ª", "2ª", "3ª", "4ª", "5ª", "6ª", "7ª", "8ª", "9ª", "10ª"];
-  const label = ordinals[nights - 1] ?? `${nights}ª`;
-  return `${label} noche`;
 }
 
 function dayTitle(day: TripDay): string {
@@ -88,7 +67,7 @@ interface TripDayCardProps {
 export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, startDate, onSaveDay, onDeleteDay }: TripDayCardProps) {
   const hotel = day.hotels?.[0] ?? null;
   const activities: TripDayActivityItem[] = day.activities ?? [];
-  const hotelNightLabel = nightLabel(dayIndex, allDays);
+  const hotelNightLabel = getNightLabel(dayIndex, allDays);
   const dayDateStr = formatDayDate(startDate, day.dayNumber);
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -179,7 +158,9 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                 {activities.length} {activities.length === 1 ? "actividad" : "actividades"}
               </span>
             )}
-            {hotel && (
+            {day.isTransitNight ? (
+              <TransitNightBadge />
+            ) : hotel && (
               <span
                 className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full"
                 style={{ background: "var(--arena)", color: "var(--text-sec)" }}
@@ -243,6 +224,11 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
       {/* Hotel section — always visible when tripId is set */}
       {tripId && (
         <div className="mx-4 mt-3">
+          {hotelNightLabel && (
+            <div className="flex items-center gap-1 mb-1.5">
+              <NightLabelBadge label={hotelNightLabel} />
+            </div>
+          )}
           <DayHotelPanel
             entityType="trip"
             entityId={tripId}
@@ -250,6 +236,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             allDays={allDays}
             compact={true}
             readOnly={!canEditHotels}
+            transitReadOnly
             invalidateKey={`/api/me/trips/${tripId}`}
           />
         </div>

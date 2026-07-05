@@ -18,4 +18,5 @@ export interface PersonalTripDayInput {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
 }

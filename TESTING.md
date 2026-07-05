@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #115 — Noche en transporte (toggle en panel de hotel)
+- [x] En el panel de hotel de un día (itinerario o viaje) hay un toggle "Noche en transporte" visible para admin/manager/agente
+- [x] Al activar el toggle, si el día ya tenía hotel(es) asignado(s), se pide confirmación antes de desvincularlos
+- [x] Con el toggle activo, no se muestra la UI de búsqueda/asignación de hotel; en su lugar aparece un panel informativo de "noche en transporte"
+- [x] El badge "Noche en transporte" aparece en la fila colapsada del día (itinerario y viaje, back office)
+- [x] El badge aparece también en la vista expandida del día junto al resto de la info del hotel
+- [x] El viajero ve el mismo badge en su Passport, en modo solo lectura (sin el toggle)
+- [x] El contador de "Nth noche" (noches consecutivas en el mismo hotel) salta las noches marcadas como tránsito sin romper ni reiniciar la racha
+- [x] La funcionalidad es idéntica para itinerarios y para viajes
+- [x] `pnpm run typecheck` pasa sin errores tras los cambios de schema, OpenAPI y frontend
+
 ### #113 — Bloquear borrado de tareas de agencia en checklist
 - [ ] En la pestaña Checklist del viajero, las tareas con badge "Agencia" no muestran el botón de eliminar activo (aparece deshabilitado/gris con tooltip explicativo)
 - [ ] Las tareas "Sugerido" y "Personal" siguen mostrando el botón de eliminar funcional, con confirmación como antes

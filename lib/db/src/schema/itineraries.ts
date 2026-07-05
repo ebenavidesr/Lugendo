@@ -34,6 +34,7 @@ export const itineraryDaysTable = pgTable("itinerary_days", {
   country: text("country"),
   transport: text("transport"),
   description: text("description"),
+  isTransitNight: boolean("is_transit_night").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

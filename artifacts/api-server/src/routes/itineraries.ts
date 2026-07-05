@@ -254,13 +254,14 @@ router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDay
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description } = req.body;
+  const { cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
   if (country !== undefined) patch.country = country;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
+  if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
   const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();
   if (!day) { res.status(404).json({ error: "Not found" }); return; }
   const hotelMap = await getDayHotelMap([day.id]);

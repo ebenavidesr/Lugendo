@@ -251,6 +251,7 @@ export interface ItineraryDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
   hotels?: DayHotel[];
   createdAt: string;
 }
@@ -338,6 +339,7 @@ export interface ItineraryDayUpdate {
   country?: string;
   transport?: TransportMode | null;
   description?: string;
+  isTransitNight?: boolean;
 }
 
 export interface Hotel {
@@ -619,6 +621,7 @@ export interface TripDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
   hotels?: DayHotel[];
   activities?: TripDayActivityItem[];
   createdAt: string;
@@ -751,6 +754,7 @@ export interface TripDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
 }
 
 export type InvitationInputInviteesItem = {
@@ -916,6 +920,7 @@ export interface PersonalTripDayInput {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
 }
 
 export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];

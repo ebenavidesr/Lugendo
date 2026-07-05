@@ -2757,6 +2757,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
+        isTransitNight:
+          type: boolean
         hotels:
           type: array
           items:
@@ -2794,6 +2796,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: string
+        isTransitNight:
+          type: boolean
 
     # ─── HOTEL ────────────────────────────────────────────────────────────────
     Hotel:
@@ -3302,6 +3306,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
+        isTransitNight:
+          type: boolean
 
     TripDay:
       type: object
@@ -3323,6 +3329,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
+        isTransitNight:
+          type: boolean
         hotels:
           type: array
           items:
@@ -3541,6 +3549,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
+        isTransitNight:
+          type: boolean
 
     UpdateMyTripInput:
       type: object

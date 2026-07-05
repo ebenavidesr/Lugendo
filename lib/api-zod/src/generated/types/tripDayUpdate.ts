@@ -17,4 +17,5 @@ export interface TripDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  isTransitNight?: boolean;
 }

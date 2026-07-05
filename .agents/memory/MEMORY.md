@@ -8,3 +8,5 @@
 - [Mutation must invalidate query cache on every success path](checklist-toggle-invalidation.md) — a sibling mutation missing `onSuccess: invalidate()` silently breaks UI refresh even when the server returns 200.
 - [Traveler-facing aggregates must avoid permission-scoped endpoints](traveler-role-scoped-endpoints.md) — don't compute shared-with-all-roles aggregates from endpoints gated to the owner/full-permission sharer; prefer existing server-computed fields.
 - [Notion roadmap sync](notion-roadmap-sync.md) — BACKLOG.md/TESTING.md task changes must auto-sync to the "Product Roadmap" Notion DB; has DB id + exact field mapping.
+- [Trip day admin vs traveler hooks](trip-day-hooks.md) — `useUpdateTripDay` is traveler-only; back-office code must use `useUpdateTripDayAdmin`.
+- [Dead computed-but-unrendered values](dead-computed-values.md) — a correctly computed label/counter can still be invisible if no JSX renders it; check every render site, not just one shared component.
