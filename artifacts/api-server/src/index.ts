@@ -5,6 +5,25 @@ import { runMigrations } from "@workspace/db";
 import { setReady } from "./lib/readiness";
 import { scheduleAdvisoryRefresh } from "./lib/travel-advisory-refresh";
 
+// First line executed after all module imports resolve. If a future deploy
+// hangs before this line ever appears in the logs, the problem is in module
+// loading / process bootstrap (upstream of our code — infra, not app logic).
+// If it appears but nothing after it does, the problem is in the code below.
+logger.info("Boot: modules loaded, starting up");
+
+// Surface any error that would otherwise be swallowed silently (e.g. a
+// rejection from code with no attached .catch, or a throw outside any
+// try/catch) as a loud, logged exit instead of an indefinite silent hang
+// that only ends when the platform's deploy healthcheck times out.
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught exception — exiting");
+  process.exit(1);
+});
+process.on("unhandledRejection", (err) => {
+  logger.error({ err }, "Unhandled rejection — exiting");
+  process.exit(1);
+});
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
