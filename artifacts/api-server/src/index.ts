@@ -50,19 +50,27 @@ const buildVersion =
   process.env["npm_package_version"] ??
   "dev";
 
-runMigrations(migrationsFolder)
+runMigrations(migrationsFolder, (step) => {
+  logger.info({ step }, "Migration progress");
+})
   .then(() => {
     logger.info("Migrations complete");
     setReady(buildVersion);
     scheduleAdvisoryRefresh();
 
-    app.listen(port, (err) => {
-      if (err) {
-        logger.error({ err }, "Error listening on port");
-        process.exit(1);
-      }
-
+    const server = app.listen(port, () => {
       logger.info({ port }, "Server listening");
+    });
+
+    // `app.listen`'s own callback only ever fires on success — a bind
+    // failure (e.g. EADDRINUSE from a leftover process still holding the
+    // port) is reported via the server's 'error' event instead. Without
+    // this handler, that error had no listener, which makes Node throw it
+    // as an uncaught exception from inside the net module's internals —
+    // logged, if at all, with no indication it was a listen failure.
+    server.on("error", (err) => {
+      logger.error({ err, port }, "Error listening on port");
+      process.exit(1);
     });
   })
   .catch((err) => {

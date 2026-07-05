@@ -29,6 +29,17 @@ export const pool = new Pool({
   // the container; a fast, loud error lets the platform retry instead.
   options: "-c lock_timeout=10000",
 });
+
+// `pg.Pool` emits 'error' for problems on *idle* clients (e.g. the DB
+// terminating a connection in the background). With no listener, Node
+// treats that as an uncaught exception thrown from deep inside libuv's
+// callback — outside any try/catch — which can be far harder to trace back
+// to "the DB connection died" than a direct, loud log line here.
+pool.on("error", (err) => {
+  // eslint-disable-next-line no-console
+  console.error("[db] pool error on idle client", err);
+});
+
 export const db = drizzle(pool, { schema });
 
 /**
@@ -206,8 +217,12 @@ async function stampAlreadyAppliedMigrationsIfNeeded(
  * indistinguishable from a healthy slow migration. A loud timeout error lets
  * the platform retry instead, and gives the next debugging session a log line.
  */
-export async function runMigrations(migrationsFolder: string): Promise<void> {
+export async function runMigrations(
+  migrationsFolder: string,
+  onProgress?: (step: string) => void,
+): Promise<void> {
   const MIGRATIONS_DEADLINE_MS = 30_000;
+  const report = onProgress ?? (() => {});
 
   let timer!: NodeJS.Timeout;
   const deadline = new Promise<never>((_, reject) => {
@@ -224,9 +239,15 @@ export async function runMigrations(migrationsFolder: string): Promise<void> {
   try {
     await Promise.race([
       (async () => {
+        report("stampBaselineIfNeeded: start");
         await stampBaselineIfNeeded(migrationsFolder);
+        report("stampBaselineIfNeeded: done");
+        report("stampAlreadyAppliedMigrationsIfNeeded: start");
         await stampAlreadyAppliedMigrationsIfNeeded(migrationsFolder);
+        report("stampAlreadyAppliedMigrationsIfNeeded: done");
+        report("migrate: start");
         await migrate(db, { migrationsFolder });
+        report("migrate: done");
       })(),
       deadline,
     ]);
