@@ -20,7 +20,7 @@ Sync target: Notion database **"Product Roadmap"** (id `39431a55-67cc-8079-86b2-
 | `Sugerido Por` | select | BACKLOG.md Autor column as-is (`Tú` / `Yo`) — only present for "En cola" rows |
 | `Status` | select | mapping above; valid options already in the DB: `Planned`, `Backlog`, `Completed`, `Cancelled`, `In progress` |
 
-Completadas/Descartadas rows in BACKLOG.md have no Prioridad/Autor columns — omit those properties for those pages (don't guess a value).
+Completadas/Descartadas rows in BACKLOG.md have no Prioridad/Autor columns by default — omit those properties for those pages (don't guess a value). Exception: the user confirmed Completadas tasks should get their Prioridad backfilled if it can be recovered from `git log -- BACKLOG.md` (i.e. the task had a Prioridad while still listed under "En cola" in an older commit, before it moved to Completadas) — cross-reference old commits by task number to recover it, then add a real `Prioridad` column to the Completadas table in BACKLOG.md (blank for tasks that never had one) and PATCH the matching Notion pages. Never fabricate a default priority for tasks with no historical record — leave blank per explicit user instruction. Descartadas tasks never get a Prioridad, period (user confirmed, no git-history lookup needed there).
 
 **Page body (children blocks)**, not a property:
 - `heading_3` "Plan" + `paragraph` with the task's one-line description as the plan text.

@@ -69,49 +69,51 @@
 
 ## ✅ Completadas
 
-| # | Tarea | Área |
-|---|-------|------|
-| #1 | Hotel multi-día: sugerir misma ciudad al asignar | Hoteles |
-| #2 | País desde lista y defaults del día | Itinerarios |
-| #3 | Hotel: buscar antes de listar en el panel de día | Hoteles |
-| #4 | Aplicar lógica misma ciudad al crear hotel nuevo | Hoteles |
-| #5 | Asignación bulk de hoteles en todos los días del viaje | Hoteles |
-| #8 | Borrar viajes e itinerarios con flujo de cancelación | General |
-| #9 | Columnas de creador y viajeros en tabla de viajes | General |
-| #15 | Descripción del destino desde internet | General |
-| #16 | Copiar actividades al crear viaje desde itinerario | Actividades |
-| #19 | Rediseño UI: Vista Detalle de Viaje (viajero) | Viajeros |
-| #28 | Ficha y edición de actividades en viajes | Actividades |
-| #32 | Campos de actividad y actividades libres del viajero | Actividades · Viajeros |
-| #34 | Orden correcto de actividades cuando falta startTime | Actividades |
-| #37 | Edición inline de viajes e itinerarios (todos los roles) | General |
-| #38 | Pestañas de la ficha del viaje (Viajeros, Documentos, Notas) | General |
-| #39 | Migraciones versionadas de base de datos | Infraestructura |
-| #40 | Schema changes seguros para producción | Infraestructura |
-| #41 | Validación de datos antes de guardar en BD | Infraestructura |
-| #42 | Smoke-test del servidor tras desplegar | Infraestructura |
-| #47 | Viajeros pueden descargar sus documentos | Documentos · Viajeros |
-| #48 | Agencia puede subir documentos al viaje del viajero | Documentos |
-| #49 | Permisos de compartir en tiempo real en la ficha del viaje | General |
-| #50 | Staff puede subir documentos visibles al viajero | Documentos |
-| #51 | Vista previa de documentos inline | Documentos |
-| #52 | Viajero distingue documentos de agencia vs. propios | Documentos · Viajeros |
-| #53 | Viajeros descargan documentos de agencia sin paso extra | Documentos · Viajeros |
-| #54 | Agentes pueden renombrar documentos que subieron | Documentos · Roles |
-| #57 | Notificación al viajero cuando la agencia sube un documento | Viajeros |
-| #58 | Agentes pueden renombrar documentos que subieron | Documentos · Roles |
-| #71 | Fecha junto al número de día del viaje | General |
-| #72 | Detalles del hotel: dirección, teléfono y web | Hoteles |
-| #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | Viajes |
-| #29 | Ficha del viajero: países visitados y perfil | Viajeros |
-| #99 | Checklist de viaje (Passport) + plantillas de agencia | Viajeros · Agencia |
-| #106 | Fila de KPIs en Pasaporte del viajero | Viajeros |
-| #103 | Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist | Viajeros |
-| #109 | Toggle vista resumen/detalle en itinerario | Itinerarios |
-| #107 | TripHeader: cuenta regresiva y ciudades clickables | Viajes |
-| #110 | Wizard de viaje: de 7 pasos a 4 | Viajes |
-| #98 | Lista de equipaje inteligente sugerida por destino y actividades | Viajeros |
-| #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | Viajeros |
+> Prioridad: solo se muestra cuando quedó registrada mientras la tarea estaba "En cola". Las que nunca tuvieron prioridad asignada quedan en blanco.
+
+| # | Tarea | Prioridad | Área |
+|---|-------|-----------|------|
+| #1 | Hotel multi-día: sugerir misma ciudad al asignar | | Hoteles |
+| #2 | País desde lista y defaults del día | | Itinerarios |
+| #3 | Hotel: buscar antes de listar en el panel de día | | Hoteles |
+| #4 | Aplicar lógica misma ciudad al crear hotel nuevo | | Hoteles |
+| #5 | Asignación bulk de hoteles en todos los días del viaje | | Hoteles |
+| #8 | Borrar viajes e itinerarios con flujo de cancelación | | General |
+| #9 | Columnas de creador y viajeros en tabla de viajes | | General |
+| #15 | Descripción del destino desde internet | | General |
+| #16 | Copiar actividades al crear viaje desde itinerario | | Actividades |
+| #19 | Rediseño UI: Vista Detalle de Viaje (viajero) | | Viajeros |
+| #28 | Ficha y edición de actividades en viajes | | Actividades |
+| #32 | Campos de actividad y actividades libres del viajero | | Actividades · Viajeros |
+| #34 | Orden correcto de actividades cuando falta startTime | | Actividades |
+| #37 | Edición inline de viajes e itinerarios (todos los roles) | | General |
+| #38 | Pestañas de la ficha del viaje (Viajeros, Documentos, Notas) | | General |
+| #39 | Migraciones versionadas de base de datos | | Infraestructura |
+| #40 | Schema changes seguros para producción | | Infraestructura |
+| #41 | Validación de datos antes de guardar en BD | | Infraestructura |
+| #42 | Smoke-test del servidor tras desplegar | | Infraestructura |
+| #47 | Viajeros pueden descargar sus documentos | | Documentos · Viajeros |
+| #48 | Agencia puede subir documentos al viaje del viajero | | Documentos |
+| #49 | Permisos de compartir en tiempo real en la ficha del viaje | | General |
+| #50 | Staff puede subir documentos visibles al viajero | | Documentos |
+| #51 | Vista previa de documentos inline | | Documentos |
+| #52 | Viajero distingue documentos de agencia vs. propios | | Documentos · Viajeros |
+| #53 | Viajeros descargan documentos de agencia sin paso extra | | Documentos · Viajeros |
+| #54 | Agentes pueden renombrar documentos que subieron | | Documentos · Roles |
+| #57 | Notificación al viajero cuando la agencia sube un documento | | Viajeros |
+| #58 | Agentes pueden renombrar documentos que subieron | | Documentos · Roles |
+| #71 | Fecha junto al número de día del viaje | | General |
+| #72 | Detalles del hotel: dirección, teléfono y web | | Hoteles |
+| #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | 🔴 Alta | Viajes |
+| #29 | Ficha del viajero: países visitados y perfil | 🟡 Media | Viajeros |
+| #99 | Checklist de viaje (Passport) + plantillas de agencia | | Viajeros · Agencia |
+| #106 | Fila de KPIs en Pasaporte del viajero | | Viajeros |
+| #103 | Elegir qué ítems sugeridos/de plantilla incluir al crear la checklist | 🟡 Media | Viajeros |
+| #109 | Toggle vista resumen/detalle en itinerario | 🟢 Baja | Itinerarios |
+| #107 | TripHeader: cuenta regresiva y ciudades clickables | 🟡 Media | Viajes |
+| #110 | Wizard de viaje: de 7 pasos a 4 | 🟡 Media | Viajes |
+| #98 | Lista de equipaje inteligente sugerida por destino y actividades | 🟢 Baja | Viajeros |
+| #101 | Pestaña "Viaja Seguro" con recomendaciones oficiales | 🟡 Media | Viajeros |
 
 ---
 
