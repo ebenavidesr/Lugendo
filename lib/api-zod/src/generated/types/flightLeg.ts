@@ -11,6 +11,7 @@ export interface FlightLeg {
   flightNumber?: string;
   cityFrom?: string;
   cityTo?: string;
+  date?: string;
   departureTime?: string;
   arrivalTime?: string;
   reservationCode?: string;

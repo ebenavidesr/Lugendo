@@ -3198,6 +3198,8 @@ components:
           type: string
         cityTo:
           type: string
+        date:
+          type: string
         departureTime:
           type: string
         arrivalTime:

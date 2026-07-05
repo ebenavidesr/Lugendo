@@ -173,6 +173,7 @@ const FlightLegSchema = z.object({
   flightNumber: z.string().optional(),
   cityFrom: z.string().optional(),
   cityTo: z.string().optional(),
+  date: z.string().optional(),
   departureTime: z.string().optional(),
   arrivalTime: z.string().optional(),
   reservationCode: z.string().optional(),

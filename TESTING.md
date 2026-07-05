@@ -11,6 +11,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Tras un nuevo despliegue, si vuelve a fallar el healthcheck, los logs de producción muestran ahora una línea `"Unhandled request error"` con el error real (no solo `500` sin contexto)
 - [ ] El despliegue completa el healthcheck de arranque y el servicio queda "Running" en Autoscale
 
+### #119 — Rediseñar estado por defecto de vuelos
+- [x] Si el viaje no tiene ningún vuelo (ida ni vuelta), la sección "Vuelos" aparece expandida automáticamente mostrando "No has añadido tu vuelo todavía" y un botón CTA "Añadir vuelo" que abre el formulario
+- [x] Si ya hay al menos un vuelo, la sección muestra siempre el resumen del primer vuelo de ida (y de vuelta si existe) con origen → destino, fecha y horas de salida/llegada, visible sin necesidad de expandir el acordeón
+- [x] El acordeón sigue existiendo, pero ahora solo controla la visibilidad de tramos adicionales y del formulario completo de edición
+- [x] Cada tramo de vuelo (`FlightLeg`) incluye un campo de fecha, capturable en el formulario y persistido correctamente (schema Drizzle, OpenAPI y validación Zod del servidor)
+- [x] El comportamiento es consistente para agencia (`trip-detail.tsx`) y viajero (`traveler-trip.tsx`, incluyendo modo solo lectura)
+- [x] `pnpm run typecheck` pasa sin errores tras los cambios de schema, OpenAPI y frontend
+
 ### #118 — Toggle Incluida/Por libre al crear itinerario
 - [x] En el paso 3 del asistente de creación de itinerarios, cada actividad añadida a un día (vinculada desde catálogo o creada nueva) muestra un selector "Incluida / Por libre" con el mismo estilo visual que en `ActivityDetailSheet`
 - [x] Por defecto las actividades quedan marcadas como "Incluida", y se puede cambiar a "Por libre" antes de finalizar la creación

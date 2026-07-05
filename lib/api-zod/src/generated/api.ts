@@ -698,6 +698,7 @@ export const ListTripsResponseItem = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -707,6 +708,7 @@ export const ListTripsResponseItem = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -745,6 +747,7 @@ export const CreateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -754,6 +757,7 @@ export const CreateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -793,6 +797,7 @@ export const GetTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -802,6 +807,7 @@ export const GetTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -889,6 +895,7 @@ export const UpdateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -898,6 +905,7 @@ export const UpdateTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -932,6 +940,7 @@ export const UpdateTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -941,6 +950,7 @@ export const UpdateTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1382,6 +1392,7 @@ export const CreateMyTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1391,6 +1402,7 @@ export const CreateMyTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1432,6 +1444,7 @@ export const GetMyTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1441,6 +1454,7 @@ export const GetMyTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1515,6 +1529,7 @@ export const UpdateMyTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1524,6 +1539,7 @@ export const UpdateMyTripBody = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1557,6 +1573,7 @@ export const UpdateMyTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -1566,6 +1583,7 @@ export const UpdateMyTripResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -2515,6 +2533,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -2524,6 +2543,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -2575,6 +2595,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()
@@ -2584,6 +2605,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "flightNumber": zod.string().optional(),
   "cityFrom": zod.string().optional(),
   "cityTo": zod.string().optional(),
+  "date": zod.string().optional(),
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional(),
   "reservationCode": zod.string().optional()

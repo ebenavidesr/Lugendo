@@ -56,18 +56,20 @@ function toApiLeg(l: FlightLeg) {
     flightNumber: l.flightNumber || undefined,
     cityFrom: l.cityFrom || undefined,
     cityTo: l.cityTo || undefined,
+    date: l.date || undefined,
     departureTime: l.departureTime || undefined,
     arrivalTime: l.arrivalTime || undefined,
     reservationCode: l.reservationCode || undefined,
   };
 }
 
-function fromApiLeg(l: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string; } | null | undefined): FlightLeg {
+function fromApiLeg(l: { airline?: string; flightNumber?: string; cityFrom?: string; cityTo?: string; date?: string; departureTime?: string; arrivalTime?: string; reservationCode?: string; } | null | undefined): FlightLeg {
   return {
     airline: l?.airline ?? "",
     flightNumber: l?.flightNumber ?? "",
     cityFrom: l?.cityFrom ?? "",
     cityTo: l?.cityTo ?? "",
+    date: l?.date ?? "",
     departureTime: l?.departureTime ?? "",
     arrivalTime: l?.arrivalTime ?? "",
     reservationCode: l?.reservationCode ?? "",
@@ -297,14 +299,12 @@ export default function TravelerTrip() {
       )}
 
       {/* Flight panel — editable for personal trip owners, read-only for agency trips */}
-      {(canEditPersonal || outboundFlights.length > 0 || returnFlights.length > 0) && (
-        <FlightEditPanel
-          outboundFlights={outboundFlights}
-          returnFlights={returnFlights}
-          onSave={handleSaveFlights}
-          readOnly={!canEditPersonal}
-        />
-      )}
+      <FlightEditPanel
+        outboundFlights={outboundFlights}
+        returnFlights={returnFlights}
+        onSave={handleSaveFlights}
+        readOnly={!canEditPersonal}
+      />
 
       {activeTab === "itinerary" && (
         <>
