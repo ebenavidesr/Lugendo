@@ -197,11 +197,42 @@ async function stampAlreadyAppliedMigrationsIfNeeded(
  * Run all pending Drizzle migrations against the connected database.
  * Pass the absolute path to the migrations folder (needed so the bundled
  * server can locate the SQL files copied next to the bundle at build time).
+ *
+ * Wrapped in an overall deadline: `connectionTimeoutMillis` and `lock_timeout`
+ * cover specific known failure modes (pool exhaustion, lock contention), but
+ * they don't cover every possible hang (e.g. a stalled DNS/TLS handshake).
+ * Without this, an unanticipated hang here is silent until the platform's
+ * deploy healthcheck kills the container ~60s later with no error logged —
+ * indistinguishable from a healthy slow migration. A loud timeout error lets
+ * the platform retry instead, and gives the next debugging session a log line.
  */
 export async function runMigrations(migrationsFolder: string): Promise<void> {
-  await stampBaselineIfNeeded(migrationsFolder);
-  await stampAlreadyAppliedMigrationsIfNeeded(migrationsFolder);
-  await migrate(db, { migrationsFolder });
+  const MIGRATIONS_DEADLINE_MS = 30_000;
+
+  let timer!: NodeJS.Timeout;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(
+        new Error(
+          `Migrations did not complete within ${MIGRATIONS_DEADLINE_MS}ms — ` +
+            "likely a DB connectivity stall not covered by connectionTimeoutMillis/lock_timeout",
+        ),
+      );
+    }, MIGRATIONS_DEADLINE_MS);
+  });
+
+  try {
+    await Promise.race([
+      (async () => {
+        await stampBaselineIfNeeded(migrationsFolder);
+        await stampAlreadyAppliedMigrationsIfNeeded(migrationsFolder);
+        await migrate(db, { migrationsFolder });
+      })(),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export * from "./schema";
