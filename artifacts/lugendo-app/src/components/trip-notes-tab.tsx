@@ -164,10 +164,13 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
           <div className="h-20 bg-card border border-border rounded-[14px] animate-pulse" />
         </div>
       ) : !notes || notes.length === 0 ? (
-        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
-          <StickyNote className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+        <div
+          className="border border-border rounded-[14px] p-8 text-center"
+          style={{ background: "var(--arena)" }}
+        >
+          <StickyNote className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--indigo)" }} />
           <p className="text-sm text-muted-foreground mb-4">
-            No tienes notas para este viaje aún
+            Apunta ideas, listas de equipaje o cosas que no quieres olvidar
           </p>
           {!showForm && (
             <Button
@@ -176,7 +179,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
               style={{ background: "var(--terra)", color: "#fff" }}
             >
               <Plus className="w-3.5 h-3.5 mr-1.5" />
-              Añadir primera nota
+              Nueva nota
             </Button>
           )}
         </div>

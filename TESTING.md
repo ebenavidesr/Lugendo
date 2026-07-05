@@ -74,6 +74,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Si no hay países, aparece un estado vacío con mensaje informativo
 - [ ] El botón "← Mis viajes" lleva de vuelta a la home del viajero
 
+### #100 — Empty states para tabs Documentos y Notas
+- [x] Tab "Documentos": cuando el viajero no tiene documentos propios, se muestra un icono de archivo, el texto "Guarda aquí tu e-ticket, seguro de viaje o reservas de hotel" y un botón "Subir archivo" que abre el selector de archivos
+- [x] Tab "Notas": cuando no hay notas para el viaje, se muestra un icono de bloc de notas, el texto "Apunta ideas, listas de equipaje o cosas que no quieres olvidar" y un botón "Nueva nota" que abre el formulario de creación
+- [x] Ambos estados vacíos usan los tokens de marca (`--indigo` para el icono, `--arena` para el fondo) en vez de valores hex sueltos
+- [ ] El resto del comportamiento de las tabs (listados, subida, edición, borrado) sigue funcionando igual
+
 ---
 
 ## Tasks mergeados recientemente

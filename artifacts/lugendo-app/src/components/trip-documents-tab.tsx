@@ -336,10 +336,13 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
             <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />
           </div>
         ) : travelerDocs.length === 0 ? (
-          <div className="bg-card border border-border rounded-[14px] p-8 text-center">
-            <FileText className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+          <div
+            className="border border-border rounded-[14px] p-8 text-center"
+            style={{ background: "var(--arena)" }}
+          >
+            <FileText className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--indigo)" }} />
             <p className="text-sm text-muted-foreground mb-4">
-              No has subido documentos aún
+              Guarda aquí tu e-ticket, seguro de viaje o reservas de hotel
             </p>
             <Button
               size="sm"
@@ -348,7 +351,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
               style={{ background: "var(--terra)", color: "#fff" }}
             >
               <Upload className="w-3.5 h-3.5 mr-1.5" />
-              Subir primer documento
+              Subir archivo
             </Button>
           </div>
         ) : (
