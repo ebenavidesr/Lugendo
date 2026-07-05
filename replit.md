@@ -56,6 +56,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - Whenever a task or feature is completed (whether built directly or merged from a task agent), automatically add its validation checkboxes to `TESTING.md` at the root of the project. Keep already-checked items intact. This applies to every project.
 - When suggesting follow-up tasks, never offer a "start" option. Only offer two choices: "Añadir a tareas" (queue it for later execution) and "Eliminar" (dismiss it). The user decides when to execute queued tasks.
 - Maintain a `BACKLOG.md` at the project root with a table of all tasks (columns: #, Tarea, Prioridad 🔴/🟡/🟢, Área, Autor). Sections: "En cola", "Completadas", "Descartadas". Update automatically when tasks are created, merged, or cancelled.
+- At the start of every session, show by default two lists before anything else: (1) completed tasks still pending review — tasks in `TESTING.md` with unchecked validation items, and (2) pending tasks from `BACKLOG.md`'s "En cola" section with their priority and área.
 
 ## DB Migration Workflow
 
