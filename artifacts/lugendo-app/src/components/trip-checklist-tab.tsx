@@ -239,13 +239,22 @@ export function TripChecklistTab({ tripId }: TripChecklistTabProps) {
               </span>
               <OriginBadge origin={item.origin} />
             </div>
-            <button
-              onClick={() => handleDeleteItem(item)}
-              className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors shrink-0"
-              title="Eliminar tarea"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {item.origin === "agency" ? (
+              <span
+                className="p-1.5 rounded-[8px] text-muted-foreground/40 shrink-0 cursor-not-allowed"
+                title="Definida por tu agencia, no se puede eliminar"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </span>
+            ) : (
+              <button
+                onClick={() => handleDeleteItem(item)}
+                className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors shrink-0"
+                title="Eliminar tarea"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         ))}
       </div>

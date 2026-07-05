@@ -933,6 +933,26 @@ router.delete("/me/trips/:tripId/checklist/items/:itemId", requireRoles("travele
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const itemId = parseInt(Array.isArray(req.params.itemId) ? req.params.itemId[0] : req.params.itemId, 10);
+
+  const [existing] = await db
+    .select()
+    .from(tripChecklistItemsTable)
+    .where(and(
+      eq(tripChecklistItemsTable.id, itemId),
+      eq(tripChecklistItemsTable.tripId, tripId),
+      eq(tripChecklistItemsTable.userId, userId),
+    ));
+
+  if (!existing) {
+    res.sendStatus(204);
+    return;
+  }
+
+  if (existing.origin === "agency") {
+    res.status(403).json({ error: "Esta tarea fue definida por tu agencia y no se puede eliminar." });
+    return;
+  }
+
   await db
     .delete(tripChecklistItemsTable)
     .where(and(
