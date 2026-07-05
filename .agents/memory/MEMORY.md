@@ -7,3 +7,4 @@
 - [ALTER TABLE hangs production startup](alter-table-startup-hang.md) — never run DDL (ALTER TABLE) inside runMigrations(); ACCESS EXCLUSIVE locks hang indefinitely in prod.
 - [Mutation must invalidate query cache on every success path](checklist-toggle-invalidation.md) — a sibling mutation missing `onSuccess: invalidate()` silently breaks UI refresh even when the server returns 200.
 - [Traveler-facing aggregates must avoid permission-scoped endpoints](traveler-role-scoped-endpoints.md) — don't compute shared-with-all-roles aggregates from endpoints gated to the owner/full-permission sharer; prefer existing server-computed fields.
+- [Notion roadmap sync](notion-roadmap-sync.md) — BACKLOG.md/TESTING.md task changes must auto-sync to the "Product Roadmap" Notion DB; has DB id + exact field mapping.
