@@ -1,9 +1,24 @@
+import fs from "node:fs";
 import path from "node:path";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db";
 import { setReady } from "./lib/readiness";
 import { scheduleAdvisoryRefresh } from "./lib/travel-advisory-refresh";
+
+// Diagnostic instrumentation added after repeated silent Autoscale promote
+// failures where pino's buffered/async stdout writes appeared to stop after
+// exactly one line, with no crash and no further logs ever surfacing.
+// `fs.writeSync` bypasses any logger buffering/transport entirely — it's a
+// raw, synchronous syscall — so if these lines are also missing from deploy
+// logs, the problem is in the platform's log capture, not our logging setup.
+// __BUILD_ID__ (an ISO timestamp baked in at build time, see build.mjs) lets
+// us confirm a failed deploy actually ran the latest build and isn't serving
+// a stale cached bundle.
+fs.writeSync(1, `BUILD ${__BUILD_ID__}\n`);
+setInterval(() => {
+  fs.writeSync(2, `heartbeat ${new Date().toISOString()}\n`);
+}, 1000).unref();
 
 // First line executed after all module imports resolve. If a future deploy
 // hangs before this line ever appears in the logs, the problem is in module
@@ -58,8 +73,14 @@ runMigrations(migrationsFolder, (step) => {
     setReady(buildVersion);
     scheduleAdvisoryRefresh();
 
-    const server = app.listen(port, () => {
+    // Bind explicitly to 0.0.0.0 (IPv4) rather than letting Node default to
+    // `::` (IPv6 dual-stack). The platform's port-detection has a fallback
+    // path that reads /proc/net/tcp (IPv4-only sockets) when its primary
+    // (seccomp-based) detection is unavailable — a server bound to `::` is
+    // invisible to that fallback even though it's listening and healthy.
+    const server = app.listen(port, "0.0.0.0", () => {
       logger.info({ port }, "Server listening");
+      fs.writeSync(1, `LISTENING port=${port}\n`);
     });
 
     // `app.listen`'s own callback only ever fires on success — a bind

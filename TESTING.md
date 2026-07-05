@@ -6,9 +6,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
-### Diagnóstico — Healthcheck 500 en producción (Autoscale)
+### Diagnóstico — Healthcheck 500 / promote colgado en producción (Autoscale)
 - [ ] El endpoint `/api/healthz` sigue respondiendo `200 {"ok":true}` en desarrollo tras el cambio
 - [ ] Tras un nuevo despliegue, si vuelve a fallar el healthcheck, los logs de producción muestran ahora una línea `"Unhandled request error"` con el error real (no solo `500` sin contexto)
+- [ ] El servidor arranca con bind explícito a `0.0.0.0` (en vez de `::`) para que la detección de puertos por fallback (`/proc/net/tcp`, solo IPv4) lo vea correctamente
+- [ ] Los logs de despliegue muestran la línea `BUILD <timestamp>` y, tras el arranque, `LISTENING port=8080`, confirmando que el build desplegado es el más reciente y que el proceso sí llega a escuchar
+- [ ] Si el despliegue vuelve a colgarse, los `heartbeat <timestamp>` (escritos cada segundo vía `fs.writeSync`, sin pasar por el logger) siguen apareciendo — si dejan de aparecer, confirma un cuelgue real del proceso; si nunca aparecen ni el primero, confirma que es un problema de captura de logs de la plataforma, no de la app
 - [ ] El despliegue completa el healthcheck de arranque y el servicio queda "Running" en Autoscale
 
 ### #119 — Rediseñar estado por defecto de vuelos

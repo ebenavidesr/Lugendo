@@ -11,5 +11,5 @@
 - [Trip day admin vs traveler hooks](trip-day-hooks.md) — `useUpdateTripDay` is traveler-only; back-office code must use `useUpdateTripDayAdmin`.
 - [Dead computed-but-unrendered values](dead-computed-values.md) — a correctly computed label/counter can still be invisible if no JSX renders it; check every render site, not just one shared component.
 - [RHF reactive `values` resets form](rhf-reactive-values-reset.md) — inline object literal passed to useForm's `values` option resets the form on every render, wiping in-progress edits.
-- [Production deploy hang after boot](production-migration-hang.md) — Autoscale deploy stalls silently post-boot with no crash; reproduce locally against real prod DB first before assuming an app-code cause.
+- [Production deploy hang after boot](production-migration-hang.md) — Autoscale deploy stalls silently post-boot; likely IPv6 `::` bind invisible to `/proc/net/tcp` port-detection fallback; use `fs.writeSync` heartbeat/BUILD_ID to diagnose.
 - [Zod schema field sync](zod-schema-field-in-sync.md) — new field on a shared nested type must also be added to the hand-written Zod validation object in schemas.ts, or it's silently stripped on save.
