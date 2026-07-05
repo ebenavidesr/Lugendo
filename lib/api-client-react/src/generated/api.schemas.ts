@@ -1006,6 +1006,87 @@ export interface TripDocumentRename {
   filename: string;
 }
 
+export interface ChecklistTemplate {
+  id: number;
+  agencyId: number;
+  title: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChecklistTemplateInput {
+  title: string;
+  active?: boolean;
+}
+
+export interface ChecklistTemplateUpdate {
+  title?: string;
+  active?: boolean;
+}
+
+export type TripChecklistItemOrigin = typeof TripChecklistItemOrigin[keyof typeof TripChecklistItemOrigin];
+
+
+export const TripChecklistItemOrigin = {
+  suggested: 'suggested',
+  agency: 'agency',
+  personal: 'personal',
+} as const;
+
+export interface TripChecklistItem {
+  id: number;
+  tripId: number;
+  userId: number;
+  title: string;
+  completed: boolean;
+  /** @nullable */
+  completedAt?: string | null;
+  origin: TripChecklistItemOrigin;
+  /** @nullable */
+  templateId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type TripChecklistSuggestionsAgencyItem = {
+  id: number;
+  title: string;
+};
+
+export interface TripChecklistSuggestions {
+  suggested: string[];
+  agency: TripChecklistSuggestionsAgencyItem[];
+}
+
+export type CreateTripChecklistInputItemsItemOrigin = typeof CreateTripChecklistInputItemsItemOrigin[keyof typeof CreateTripChecklistInputItemsItemOrigin];
+
+
+export const CreateTripChecklistInputItemsItemOrigin = {
+  suggested: 'suggested',
+  agency: 'agency',
+  personal: 'personal',
+} as const;
+
+export type CreateTripChecklistInputItemsItem = {
+  title: string;
+  origin: CreateTripChecklistInputItemsItemOrigin;
+  templateId?: number;
+};
+
+export interface CreateTripChecklistInput {
+  /** @minItems 1 */
+  items: CreateTripChecklistInputItemsItem[];
+}
+
+export interface TripChecklistItemInput {
+  title: string;
+}
+
+export interface TripChecklistItemUpdate {
+  completed: boolean;
+}
+
 export interface UploadUrlRequest {
   name: string;
   size: number;

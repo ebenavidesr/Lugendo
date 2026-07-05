@@ -10,6 +10,7 @@ import { TripDetailHeader } from "@/components/trip-detail-header";
 import { TripDayCard, type DayEditData } from "@/components/trip-day-card";
 import { TripTravelersTab } from "@/components/trip-travelers-tab";
 import { TripDocumentsTab } from "@/components/trip-documents-tab";
+import { TripChecklistTab } from "@/components/trip-checklist-tab";
 import { TripNotesTab } from "@/components/trip-notes-tab";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
@@ -18,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-type ActiveTab = "itinerary" | "travelers" | "documents" | "notes";
+type ActiveTab = "itinerary" | "travelers" | "documents" | "checklist" | "notes";
 
 function computeDefaultExpanded(days: { dayNumber: number }[], startDate: string): Set<number> {
   const today = new Date();
@@ -335,6 +336,10 @@ export default function TravelerTrip() {
 
       {activeTab === "documents" && (
         <TripDocumentsTab tripId={tripId} trip={trip} />
+      )}
+
+      {activeTab === "checklist" && (
+        <TripChecklistTab tripId={tripId} />
       )}
 
       {activeTab === "notes" && (

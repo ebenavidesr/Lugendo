@@ -3,12 +3,13 @@ import { Link } from "wouter";
 import type { TravelerTripDetail, TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 
-type Tab = "itinerary" | "travelers" | "documents" | "notes";
+type Tab = "itinerary" | "travelers" | "documents" | "checklist" | "notes";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "itinerary",  label: "Itinerario" },
   { id: "travelers",  label: "Viajeros" },
   { id: "documents",  label: "Documentos" },
+  { id: "checklist",  label: "Checklist" },
   { id: "notes",      label: "Notas" },
 ];
 

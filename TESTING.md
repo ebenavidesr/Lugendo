@@ -6,6 +6,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #99 — Checklist de viaje (Passport) + plantillas de agencia
+- [x] En la ficha de viaje del viajero aparece la pestaña "Checklist" entre "Documentos" y "Notas"
+- [x] Al abrir la pestaña por primera vez se muestra una pantalla de creación con ítems sugeridos por el sistema (marcados por defecto) y las plantillas de la agencia (si las hay)
+- [x] Al crear la checklist se genera la lista de tareas seleccionadas con una barra de progreso
+- [x] Marcar/desmarcar un ítem actualiza el progreso de inmediato
+- [x] El viajero puede añadir ítems personales propios
+- [x] El viajero puede eliminar sus ítems personales (con confirmación)
+- [x] Los ítems sugeridos y los de plantilla de agencia muestran su badge de origen ("Sugerido" / nombre de plantilla)
+- [x] Administradores y managers tienen una sección "Checklists" en Configuración (`/settings`) para crear, editar (título) y activar/desactivar plantillas de agencia
+- [x] Los agentes no pueden gestionar plantillas de agencia (solo admin/manager)
+- [x] La funcionalidad respeta el mismo scoping por rol usado en notas/documentos (viajero solo ve/edita su propia checklist)
+
 ### #71 — Fecha junto al número de día
 - [ ] En detalle de viaje (back office): el badge del día muestra la fecha debajo en letra pequeña
 - [ ] En el panel bulk de hoteles: aparece la fecha junto al número de día

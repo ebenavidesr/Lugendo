@@ -12,6 +12,7 @@ import travelerRouter from "./traveler";
 import dashboardRouter from "./dashboard";
 import destinationsRouter from "./destinations";
 import storageRouter from "./storage";
+import checklistTemplatesRouter from "./checklist-templates";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(travelerRouter);
 router.use(dashboardRouter);
 router.use(destinationsRouter);
 router.use(storageRouter);
+router.use(checklistTemplatesRouter);
 
 export default router;

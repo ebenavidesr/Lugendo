@@ -381,3 +381,33 @@ export const TripDocumentInputSchema = z.object({
 export const TripDocumentRenameSchema = z.object({
   filename: z.string().min(1),
 });
+
+// ─── Checklists ───────────────────────────────────────────────────────────────
+
+export const ChecklistTemplateInputSchema = z.object({
+  title: z.string().min(1),
+  active: z.boolean().optional(),
+});
+
+export const ChecklistTemplateUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  active: z.boolean().optional(),
+});
+
+const ChecklistItemOriginSchema = z.enum(["suggested", "agency", "personal"]);
+
+export const CreateTripChecklistInputSchema = z.object({
+  items: z.array(z.object({
+    title: z.string().min(1),
+    origin: ChecklistItemOriginSchema,
+    templateId: z.number().int().positive().nullable().optional(),
+  })).min(1),
+});
+
+export const TripChecklistItemInputSchema = z.object({
+  title: z.string().min(1),
+});
+
+export const TripChecklistItemUpdateSchema = z.object({
+  completed: z.boolean(),
+});

@@ -60,6 +60,7 @@
 | #95 | Check-in digital en destino (viajero confirma llegada, agente lo ve) | 🟡 Media | Viajeros | Yo |
 | #96 | Presupuesto personal del viajero (gastos por día y categoría) | 🟢 Baja | Viajeros | Yo |
 | #97 | Foro privado del viaje (chat entre viajeros y agente) | 🟡 Media | Viajeros | Yo |
+| ~~#99~~ | ~~Checklist de viaje (Passport) + plantillas de agencia~~ | ~~🔴 Alta~~ | ~~Viajeros · Agencia~~ | ~~Tú~~ |
 | #98 | Lista de equipaje inteligente sugerida por destino y actividades | 🟢 Baja | Viajeros | Yo |
 
 ---
@@ -101,6 +102,7 @@
 | #72 | Detalles del hotel: dirección, teléfono y web | Hoteles |
 | #75 | Datos de vuelo en el viaje (aerolínea, aeropuerto, horario, código) | Viajes |
 | #29 | Ficha del viajero: países visitados y perfil | Viajeros |
+| #99 | Checklist de viaje (Passport) + plantillas de agencia | Viajeros · Agencia |
 
 ---
 

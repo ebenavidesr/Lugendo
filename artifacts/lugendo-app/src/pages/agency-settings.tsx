@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useGetAgency, useUpdateAgency } from "@workspace/api-client-react";
+import { useGetAgency, useUpdateAgency, AuthUserRole } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
 import { Settings, Palette, Mic2, Save, Loader2 } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
@@ -185,6 +186,8 @@ export default function AgencySettings() {
           ))}
         </div>
       </div>
+
+      {(user?.role === AuthUserRole.admin || user?.role === AuthUserRole.manager) && <ChecklistTemplatesSettings />}
 
       {/* Save button */}
       <div className="flex justify-end">

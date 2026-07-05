@@ -1656,6 +1656,216 @@ paths:
         "204":
           description: Deleted
 
+  /me/trips/{tripId}/checklist:
+    get:
+      operationId: getMyTripChecklist
+      tags: [traveler]
+      summary: Get the traveler's checklist items for a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of checklist items (empty if no checklist created yet)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripChecklistItem"
+    post:
+      operationId: createTripChecklist
+      tags: [traveler]
+      summary: Create the initial checklist for a trip from selected items
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTripChecklistInput"
+      responses:
+        "201":
+          description: Checklist created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripChecklistItem"
+        "409":
+          description: Checklist already exists for this trip
+
+  /me/trips/{tripId}/checklist/suggestions:
+    get:
+      operationId: getTripChecklistSuggestions
+      tags: [traveler]
+      summary: Get suggested checklist items (system defaults + active agency templates)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Suggested items
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripChecklistSuggestions"
+
+  /me/trips/{tripId}/checklist/items:
+    post:
+      operationId: createTripChecklistItem
+      tags: [traveler]
+      summary: Add a personal checklist item to a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripChecklistItemInput"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripChecklistItem"
+
+  /me/trips/{tripId}/checklist/items/{itemId}:
+    patch:
+      operationId: updateTripChecklistItem
+      tags: [traveler]
+      summary: Mark a checklist item as completed/pending
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripChecklistItemUpdate"
+      responses:
+        "200":
+          description: Updated item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripChecklistItem"
+    delete:
+      operationId: deleteTripChecklistItem
+      tags: [traveler]
+      summary: Delete a checklist item
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /checklist-templates:
+    get:
+      operationId: listChecklistTemplates
+      tags: [checklist-templates]
+      summary: List the agency's checklist templates
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistTemplate"
+    post:
+      operationId: createChecklistTemplate
+      tags: [checklist-templates]
+      summary: Create a checklist template for the agency
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistTemplateInput"
+      responses:
+        "201":
+          description: Template created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistTemplate"
+
+  /checklist-templates/{templateId}:
+    patch:
+      operationId: updateChecklistTemplate
+      tags: [checklist-templates]
+      summary: Update a checklist template
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistTemplateUpdate"
+      responses:
+        "200":
+          description: Updated template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistTemplate"
+    delete:
+      operationId: deleteChecklistTemplate
+      tags: [checklist-templates]
+      summary: Delete a checklist template
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /me/trips/{tripId}/documents/{documentId}/download:
     get:
       operationId: getTripDocumentDownloadUrl
@@ -3319,6 +3529,118 @@ components:
       properties:
         filename:
           type: string
+
+    ChecklistTemplate:
+      type: object
+      required: [id, agencyId, title, active, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        title:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ChecklistTemplateInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        active:
+          type: boolean
+
+    ChecklistTemplateUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        active:
+          type: boolean
+
+    TripChecklistItem:
+      type: object
+      required: [id, tripId, userId, title, completed, origin, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        completed:
+          type: boolean
+        completedAt:
+          type: ["string", "null"]
+        origin:
+          type: string
+          enum: [suggested, agency, personal]
+        templateId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    TripChecklistSuggestions:
+      type: object
+      required: [suggested, agency]
+      properties:
+        suggested:
+          type: array
+          items:
+            type: string
+        agency:
+          type: array
+          items:
+            type: object
+            required: [id, title]
+            properties:
+              id:
+                type: integer
+              title:
+                type: string
+
+    CreateTripChecklistInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [title, origin]
+            properties:
+              title:
+                type: string
+              origin:
+                type: string
+                enum: [suggested, agency, personal]
+              templateId:
+                type: integer
+
+    TripChecklistItemInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+
+    TripChecklistItemUpdate:
+      type: object
+      required: [completed]
+      properties:
+        completed:
+          type: boolean
 
     UploadUrlRequest:
       type: object

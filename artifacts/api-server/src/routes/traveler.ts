@@ -8,6 +8,7 @@ import {
   itineraryDaysTable, tripDayHotelsTable, itineraryDayHotelsTable,
   tripDayActivitiesTable, itineraryDayActivitiesTable,
   tripSharesTable, usersTable, activitiesTable,
+  tripChecklistItemsTable, checklistTemplatesTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -17,11 +18,21 @@ import {
   TripNoteInputSchema, TripNoteUpdateSchema,
   ShareTripInputSchema, UpdateShareInputSchema,
   TripDocumentInputSchema,
+  CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
 } from "../lib/schemas";
 import { tripDocumentsTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const objectStorage = new ObjectStorageService();
+
+const SUGGESTED_CHECKLIST_ITEMS = [
+  "Visado confirmado",
+  "Seguro de viaje contratado",
+  "Vacunas revisadas",
+  "Alojamiento reservado",
+  "Cambio de moneda",
+  "Descargar mapas offline",
+];
 
 function makeShareCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase();
@@ -753,6 +764,162 @@ router.delete("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), async
   await db
     .delete(tripNotesTable)
     .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.userId, userId)));
+  res.sendStatus(204);
+});
+
+// ─── Checklist ────────────────────────────────────────────────────────────────
+
+function serializeChecklistItem(i: typeof tripChecklistItemsTable.$inferSelect) {
+  return {
+    ...i,
+    completedAt: i.completedAt ? i.completedAt.toISOString() : null,
+    createdAt: i.createdAt.toISOString(),
+    updatedAt: i.updatedAt.toISOString(),
+  };
+}
+
+// Verifies the traveler has access to the trip (owner, accepted invite, or accepted share)
+// and returns the trip's agencyId (null for personal trips), or false if no access.
+async function getTripChecklistAccess(tripId: number, userId: number): Promise<number | null | false> {
+  const [ownedTrip] = await db
+    .select({ id: tripsTable.id, agencyId: tripsTable.agencyId })
+    .from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  if (ownedTrip) return ownedTrip.agencyId ?? null;
+
+  const [invite] = await db
+    .select({ id: invitationsTable.id })
+    .from(invitationsTable)
+    .where(and(
+      eq(invitationsTable.travelerId, userId),
+      eq(invitationsTable.tripId, tripId),
+      eq(invitationsTable.status, "accepted"),
+    ));
+
+  const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const myEmail = me?.email ?? "";
+
+  const [acceptedShare] = await db
+    .select({ id: tripSharesTable.id })
+    .from(tripSharesTable)
+    .where(and(
+      eq(tripSharesTable.tripId, tripId),
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, myEmail),
+      ),
+      eq(tripSharesTable.status, "accepted"),
+    ));
+
+  if (!invite && !acceptedShare) return false;
+
+  const [trip] = await db.select({ agencyId: tripsTable.agencyId }).from(tripsTable).where(eq(tripsTable.id, tripId));
+  return trip ? (trip.agencyId ?? null) : false;
+}
+
+router.get("/me/trips/:tripId/checklist", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const items = await db
+    .select()
+    .from(tripChecklistItemsTable)
+    .where(and(eq(tripChecklistItemsTable.tripId, tripId), eq(tripChecklistItemsTable.userId, userId)))
+    .orderBy(tripChecklistItemsTable.createdAt);
+  res.json(items.map(serializeChecklistItem));
+});
+
+router.get("/me/trips/:tripId/checklist/suggestions", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const agencyId = await getTripChecklistAccess(tripId, userId);
+  if (agencyId === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  let agencyTemplates: Array<typeof checklistTemplatesTable.$inferSelect> = [];
+  if (agencyId) {
+    agencyTemplates = await db
+      .select()
+      .from(checklistTemplatesTable)
+      .where(and(eq(checklistTemplatesTable.agencyId, agencyId), eq(checklistTemplatesTable.active, true)))
+      .orderBy(checklistTemplatesTable.title);
+  }
+  res.json({
+    suggested: SUGGESTED_CHECKLIST_ITEMS,
+    agency: agencyTemplates.map(t => ({ id: t.id, title: t.title })),
+  });
+});
+
+router.post("/me/trips/:tripId/checklist", requireRoles("traveler"), validate(CreateTripChecklistInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { items } = req.body as { items: Array<{ title: string; origin: "suggested" | "agency" | "personal"; templateId?: number | null }> };
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const existing = await db
+    .select({ id: tripChecklistItemsTable.id })
+    .from(tripChecklistItemsTable)
+    .where(and(eq(tripChecklistItemsTable.tripId, tripId), eq(tripChecklistItemsTable.userId, userId)));
+  if (existing.length > 0) { res.status(409).json({ error: "Checklist already exists for this trip" }); return; }
+
+  const inserted = await db
+    .insert(tripChecklistItemsTable)
+    .values(items.map(item => ({
+      tripId, userId, title: item.title, origin: item.origin, templateId: item.templateId ?? null,
+    })))
+    .returning();
+  res.status(201).json(inserted.map(serializeChecklistItem));
+});
+
+router.post("/me/trips/:tripId/checklist/items", requireRoles("traveler"), validate(TripChecklistItemInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { title } = req.body;
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [item] = await db
+    .insert(tripChecklistItemsTable)
+    .values({ tripId, userId, title, origin: "personal" })
+    .returning();
+  res.status(201).json(serializeChecklistItem(item));
+});
+
+router.patch("/me/trips/:tripId/checklist/items/:itemId", requireRoles("traveler"), validate(TripChecklistItemUpdateSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const itemId = parseInt(Array.isArray(req.params.itemId) ? req.params.itemId[0] : req.params.itemId, 10);
+  const { completed } = req.body;
+  const [item] = await db
+    .update(tripChecklistItemsTable)
+    .set({ completed, completedAt: completed ? new Date() : null })
+    .where(and(
+      eq(tripChecklistItemsTable.id, itemId),
+      eq(tripChecklistItemsTable.tripId, tripId),
+      eq(tripChecklistItemsTable.userId, userId),
+    ))
+    .returning();
+  if (!item) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(serializeChecklistItem(item));
+});
+
+router.delete("/me/trips/:tripId/checklist/items/:itemId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const itemId = parseInt(Array.isArray(req.params.itemId) ? req.params.itemId[0] : req.params.itemId, 10);
+  await db
+    .delete(tripChecklistItemsTable)
+    .where(and(
+      eq(tripChecklistItemsTable.id, itemId),
+      eq(tripChecklistItemsTable.tripId, tripId),
+      eq(tripChecklistItemsTable.userId, userId),
+    ));
   res.sendStatus(204);
 });
 

@@ -1900,6 +1900,163 @@ export const DeleteTripDocumentParams = zod.object({
 
 
 /**
+ * @summary Get the traveler's checklist items for a trip
+ */
+export const GetMyTripChecklistParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetMyTripChecklistResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "origin": zod.enum(['suggested', 'agency', 'personal']),
+  "templateId": zod.number().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const GetMyTripChecklistResponse = zod.array(GetMyTripChecklistResponseItem)
+
+
+/**
+ * @summary Create the initial checklist for a trip from selected items
+ */
+export const CreateTripChecklistParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+
+
+
+export const CreateTripChecklistBody = zod.object({
+  "items": zod.array(zod.object({
+  "title": zod.string(),
+  "origin": zod.enum(['suggested', 'agency', 'personal']),
+  "templateId": zod.number().optional()
+})).min(1)
+})
+
+
+/**
+ * @summary Get suggested checklist items (system defaults + active agency templates)
+ */
+export const GetTripChecklistSuggestionsParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetTripChecklistSuggestionsResponse = zod.object({
+  "suggested": zod.array(zod.string()),
+  "agency": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string()
+}))
+})
+
+
+/**
+ * @summary Add a personal checklist item to a trip
+ */
+export const CreateTripChecklistItemParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripChecklistItemBody = zod.object({
+  "title": zod.string()
+})
+
+
+/**
+ * @summary Mark a checklist item as completed/pending
+ */
+export const UpdateTripChecklistItemParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "itemId": zod.coerce.number()
+})
+
+export const UpdateTripChecklistItemBody = zod.object({
+  "completed": zod.boolean()
+})
+
+export const UpdateTripChecklistItemResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "completed": zod.boolean(),
+  "completedAt": zod.string().nullish(),
+  "origin": zod.enum(['suggested', 'agency', 'personal']),
+  "templateId": zod.number().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a checklist item
+ */
+export const DeleteTripChecklistItemParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "itemId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List the agency's checklist templates
+ */
+export const ListChecklistTemplatesResponseItem = zod.object({
+  "id": zod.number(),
+  "agencyId": zod.number(),
+  "title": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+export const ListChecklistTemplatesResponse = zod.array(ListChecklistTemplatesResponseItem)
+
+
+/**
+ * @summary Create a checklist template for the agency
+ */
+export const CreateChecklistTemplateBody = zod.object({
+  "title": zod.string(),
+  "active": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Update a checklist template
+ */
+export const UpdateChecklistTemplateParams = zod.object({
+  "templateId": zod.coerce.number()
+})
+
+export const UpdateChecklistTemplateBody = zod.object({
+  "title": zod.string().optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateChecklistTemplateResponse = zod.object({
+  "id": zod.number(),
+  "agencyId": zod.number(),
+  "title": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a checklist template
+ */
+export const DeleteChecklistTemplateParams = zod.object({
+  "templateId": zod.coerce.number()
+})
+
+
+/**
  * @summary Get a short-lived signed download URL for a trip document
  */
 export const GetTripDocumentDownloadUrlParams = zod.object({
