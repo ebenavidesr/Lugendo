@@ -22,6 +22,12 @@ export const pool = new Pool({
   connectionTimeoutMillis: 10000,
   // Keep the pool small to avoid exhausting Replit's managed DB connection limit.
   max: 3,
+  // Fail fast (instead of hanging indefinitely) if a statement can't acquire a
+  // lock — e.g. an ALTER TABLE ADD CONSTRAINT blocked by a lingering connection
+  // from a previous deploy. A silent multi-minute hang here is indistinguishable
+  // from a healthy slow migration until the platform's deploy healthcheck kills
+  // the container; a fast, loud error lets the platform retry instead.
+  options: "-c lock_timeout=10000",
 });
 export const db = drizzle(pool, { schema });
 
@@ -118,6 +124,29 @@ async function stampAlreadyAppliedMigrationsIfNeeded(
           SELECT 1 FROM information_schema.tables
           WHERE table_schema = 'public'
             AND table_name   = 'trip_documents'
+        ) AS applied`,
+    // 0004_ancient_doctor_octopus.sql — CREATE TABLE checklist_templates, trip_checklist_items
+    // A prior deploy attempt committed this DDL (confirmed present in production
+    // with matching columns/FKs) but was killed before its tracking row committed,
+    // likely due to lock contention on the referenced trips/users/agencies tables.
+    4: `SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name   = 'checklist_templates'
+        ) AS applied`,
+    // 0005_thin_the_anarchist.sql — CREATE TABLE trip_packing_items
+    // Same partial-apply situation as migration 0004 above.
+    5: `SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name   = 'trip_packing_items'
+        ) AS applied`,
+    // 0006_melodic_brood.sql — CREATE TABLE country_advisories, trip_advisory_views
+    // Same partial-apply situation as migration 0004 above.
+    6: `SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_name   = 'country_advisories'
         ) AS applied`,
   };
 
