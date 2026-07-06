@@ -102,10 +102,10 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Si el viajero desmarca todos los ítems, no puede crear la checklist (aviso de "selecciona al menos una tarea")
 
 ### #71 — Fecha junto al número de día
-- [ ] En detalle de viaje (back office): el badge del día muestra la fecha debajo en letra pequeña
-- [ ] En el panel bulk de hoteles: aparece la fecha junto al número de día
-- [ ] En la tarjeta del viajero (`trip-day-card`): la fecha aparece como badge en el encabezado colapsado
-- [ ] En la tarjeta del viajero: al expandir el día, la fecha aparece en la zona de foto
+- [x] En detalle de viaje (back office): el badge del día muestra la fecha debajo en letra pequeña
+- [x] En el panel bulk de hoteles: aparece la fecha junto al número de día
+- [x] En la tarjeta del viajero (`trip-day-card`): la fecha aparece como badge en el encabezado colapsado
+- [x] En la tarjeta del viajero: al expandir el día, la fecha aparece en la zona de foto
 
 ### #109 — Toggle vista resumen/detalle en itinerario
 - [ ] El toggle "Detalle / Resumen" es visible en la cabecera de la sección de días.
@@ -133,10 +133,10 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Los campos vacíos no muestran línea en blanco
 
 ### #3 — Búsqueda antes de listar hoteles
-- [ ] Botón "Añadir hotel" abre un campo de búsqueda (no va directo al formulario de creación)
-- [ ] Al escribir, filtra hoteles del catálogo por nombre o ciudad
-- [ ] Al hacer clic en un resultado se asigna el hotel al día
-- [ ] El enlace "Crear hotel nuevo" al fondo lleva al formulario completo
+- [x] Botón "Añadir hotel" abre un campo de búsqueda (no va directo al formulario de creación)
+- [x] Al escribir, filtra hoteles del catálogo por nombre o ciudad
+- [x] Al hacer clic en un resultado se asigna el hotel al día
+- [x] El enlace "Crear hotel nuevo" al fondo lleva al formulario completo
 
 ### #4 — Pre-relleno de ciudad al crear hotel
 - [ ] Al ir a "Crear hotel nuevo" desde un día, el campo Ciudad viene pre-relleno con la ciudad de destino del día
