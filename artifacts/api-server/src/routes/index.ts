@@ -1,5 +1,4 @@
 import { Router, type IRouter } from "express";
-import { isReady } from "../lib/readiness";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import agenciesRouter from "./agencies";
@@ -17,22 +16,7 @@ import checklistTemplatesRouter from "./checklist-templates";
 
 const router: IRouter = Router();
 
-// Liveness first: /healthz must answer before migrations finish (the server
-// now opens the port before running them), so it's mounted ahead of the gate.
 router.use(healthRouter);
-
-// Readiness gate: block real API traffic with 503 until migrations/init have
-// completed. Because the port opens before migrations now, requests can
-// arrive against a not-yet-migrated schema; this keeps them from hitting the
-// DB until it's ready. /healthz already responded above, so it's unaffected.
-router.use((_req, res, next) => {
-  if (!isReady()) {
-    res.status(503).json({ error: "Service starting up, please retry shortly" });
-    return;
-  }
-  next();
-});
-
 router.use(authRouter);
 router.use(agenciesRouter);
 router.use(usersRouter);

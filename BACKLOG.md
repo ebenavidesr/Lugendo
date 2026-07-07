@@ -119,7 +119,6 @@
 | #112 | Fix checklist de viaje: estado "completada" por defecto y persistencia del toggle | 🔴 Alta | Viajeros |
 | #115 | Noche en transporte (toggle en panel de hotel) | 🟡 Media | Itinerarios · Viajes |
 | #118 | Toggle Incluida/Por libre al crear itinerario | | Itinerarios |
-| #120 | Abrir el puerto antes de las migraciones (fix healthcheck de deploy) | 🔴 Alta | Infraestructura |
 
 ---
 

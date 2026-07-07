@@ -58,51 +58,43 @@ if (Number.isNaN(port) || port <= 0) {
 // so __dirname points at the same dist/ directory as the SQL files.
 const migrationsFolder = path.join(__dirname, "migrations");
 
+logger.info({ migrationsFolder }, "Running database migrations");
+
 const buildVersion =
   process.env["BUILD_VERSION"] ??
   process.env["npm_package_version"] ??
   "dev";
 
-// Open the port FIRST, before running migrations. Binding late — only after
-// migrations had finished — was causing deploy health-checks to time out
-// (~60s) whenever migrations took a while, because the port never opened in
-// time. Now the socket starts listening immediately; migrations and the rest
-// of init run inside the listen callback below, once we're already accepting
-// connections. Real API traffic stays gated (503) behind the readiness flag
-// until migrations complete — only /api/healthz answers before then.
-//
-// Bind explicitly to 0.0.0.0 (IPv4) rather than letting Node default to `::`
-// (IPv6 dual-stack). The platform's port-detection has a fallback path that
-// reads /proc/net/tcp (IPv4-only sockets) when its primary (seccomp-based)
-// detection is unavailable — a server bound to `::` is invisible to that
-// fallback even though it's listening and healthy.
-const server = app.listen(port, "0.0.0.0", () => {
-  logger.info({ port }, "Server listening");
-  fs.writeSync(1, `LISTENING port=${port}\n`);
+runMigrations(migrationsFolder, (step) => {
+  logger.info({ step }, "Migration progress");
+})
+  .then(() => {
+    logger.info("Migrations complete");
+    setReady(buildVersion);
+    scheduleAdvisoryRefresh();
 
-  logger.info({ migrationsFolder }, "Running database migrations");
-  runMigrations(migrationsFolder, (step) => {
-    logger.info({ step }, "Migration progress");
-  })
-    .then(() => {
-      logger.info("Migrations complete");
-      setReady(buildVersion);
-      scheduleAdvisoryRefresh();
-    })
-    .catch((err) => {
-      logger.error({ err }, "Migration failed — exiting");
+    // Bind explicitly to 0.0.0.0 (IPv4) rather than letting Node default to
+    // `::` (IPv6 dual-stack). The platform's port-detection has a fallback
+    // path that reads /proc/net/tcp (IPv4-only sockets) when its primary
+    // (seccomp-based) detection is unavailable — a server bound to `::` is
+    // invisible to that fallback even though it's listening and healthy.
+    const server = app.listen(port, "0.0.0.0", () => {
+      logger.info({ port }, "Server listening");
+      fs.writeSync(1, `LISTENING port=${port}\n`);
+    });
+
+    // `app.listen`'s own callback only ever fires on success — a bind
+    // failure (e.g. EADDRINUSE from a leftover process still holding the
+    // port) is reported via the server's 'error' event instead. Without
+    // this handler, that error had no listener, which makes Node throw it
+    // as an uncaught exception from inside the net module's internals —
+    // logged, if at all, with no indication it was a listen failure.
+    server.on("error", (err) => {
+      logger.error({ err, port }, "Error listening on port");
       process.exit(1);
     });
-});
-
-// `app.listen`'s own callback only ever fires on success — a bind failure
-// (e.g. EADDRINUSE from a leftover process still holding the port) is
-// reported via the server's 'error' event instead. Without this handler,
-// that error had no listener, which makes Node throw it as an uncaught
-// exception from inside the net module's internals — logged, if at all, with
-// no indication it was a listen failure. Exit non-zero so the platform
-// restarts us rather than serving a broken app.
-server.on("error", (err) => {
-  logger.error({ err, port }, "Error listening on port");
-  process.exit(1);
-});
+  })
+  .catch((err) => {
+    logger.error({ err }, "Migration failed — exiting");
+    process.exit(1);
+  });

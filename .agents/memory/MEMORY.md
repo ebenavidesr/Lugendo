@@ -13,4 +13,3 @@
 - [RHF reactive `values` resets form](rhf-reactive-values-reset.md) — inline object literal passed to useForm's `values` option resets the form on every render, wiping in-progress edits.
 - [Production deploy hang after boot](production-migration-hang.md) — Autoscale deploy stalls silently post-boot; likely IPv6 `::` bind invisible to `/proc/net/tcp` port-detection fallback; use `fs.writeSync` heartbeat/BUILD_ID to diagnose.
 - [Zod schema field sync](zod-schema-field-in-sync.md) — new field on a shared nested type must also be added to the hand-written Zod validation object in schemas.ts, or it's silently stripped on save.
-- [API server startup ordering](server-startup-ordering.md) — bind port BEFORE migrations; /healthz is pure liveness (200 always), a readiness-gate middleware 503s real traffic until migrations finish.
