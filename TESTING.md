@@ -29,6 +29,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] La fila resumen de cada actividad añadida en el día refleja visualmente si es "Incluida" o "Por libre" (colores igual que en el panel de edición)
 - [x] El valor persistido se refleja correctamente en la vista de edición del itinerario tras crearlo
 
+### #116 — Verificar el toggle de noche en transporte con una cuenta de viajero real
+- [x] Login con un usuario de rol `traveler` real (`e2e-transit-t116@lugendo.io` / `e2etest1234`, viaje de prueba "Viaje E2E Tránsito" en `/traveler/trips/11`) y redirección al Passport del viajero
+- [x] El badge "Noche en transporte" se muestra en el día marcado como tránsito (día 2), tanto en la fila colapsada como en la vista expandida ("Sin hotel asignado para este día.")
+- [x] NO aparece ningún control de edición/toggle de "Noche en transporte" para el viajero (solo lectura), ni siquiera en un viaje personal donde los hoteles sí son editables
+- [x] El contador "Nth noche" se muestra correctamente: día 3 con el mismo hotel que día 1 muestra "2ª noche" (la noche en tránsito del día 2 no rompe la racha), y día 1 no muestra contador
+
 ### #115 — Noche en transporte (toggle en panel de hotel)
 - [x] En el panel de hotel de un día (itinerario o viaje) hay un toggle "Noche en transporte" visible para admin/manager/agente
 - [x] Al activar el toggle, si el día ya tenía hotel(es) asignado(s), se pide confirmación antes de desvincularlos
