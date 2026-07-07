@@ -17,5 +17,7 @@ export interface ItineraryDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  meals?: string | null;
   isTransitNight?: boolean;
 }

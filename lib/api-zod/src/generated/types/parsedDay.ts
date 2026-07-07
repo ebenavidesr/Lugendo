@@ -5,10 +5,18 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ParsedActivity } from './parsedActivity';
+import type { ParsedHotel } from './parsedHotel';
 import type { TransportMode } from './transportMode';
 
 export interface ParsedDay {
   dayNumber: number;
+  /**
+     * Full day title, possibly multi-locality (not truncated)
+     * @nullable
+     */
+  title?: string | null;
+  localities?: string[];
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
@@ -16,6 +24,14 @@ export interface ParsedDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /**
+     * Normalized meal plan for the day (e.g. 'Desayuno y cena')
+     * @nullable
+     */
+  meals?: string | null;
+  hotel?: ParsedHotel | null;
+  parsedActivities?: ParsedActivity[];
+  dayNotes?: string[];
   activities?: string[];
   hotels?: string[];
 }

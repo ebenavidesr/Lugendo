@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChecklistEntry } from './checklistEntry';
 import type { ParsedDay } from './parsedDay';
 
 export interface ParsedItinerary {
@@ -23,5 +24,8 @@ export interface ParsedItinerary {
      * @nullable
      */
   endDate?: string | null;
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
   days: ParsedDay[];
 }

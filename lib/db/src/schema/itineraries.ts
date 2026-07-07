@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
@@ -20,6 +20,9 @@ export const itinerariesTable = pgTable("itineraries", {
   recommendedMonths: text("recommended_months").array().notNull().default([]),
   priceRange: text("price_range"),
   tags: text("tags").array().notNull().default([]),
+  tripNotes: text("trip_notes").array().notNull().default([]),
+  recommendations: text("recommendations").array().notNull().default([]),
+  checklist: jsonb("checklist").$type<{ item: string; category: string | null }[]>().notNull().default([]),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -34,6 +37,7 @@ export const itineraryDaysTable = pgTable("itinerary_days", {
   country: text("country"),
   transport: text("transport"),
   description: text("description"),
+  meals: text("meals"),
   isTransitNight: boolean("is_transit_night").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
@@ -44,6 +48,9 @@ export const itineraryDayHotelsTable = pgTable("itinerary_day_hotels", {
   itineraryDayId: integer("itinerary_day_id").notNull().references(() => itineraryDaysTable.id, { onDelete: "cascade" }),
   hotelId: integer("hotel_id").notNull().references(() => hotelsTable.id, { onDelete: "cascade" }),
   segment: text("segment", { enum: ["basic", "standard", "premium"] }),
+  guaranteed: boolean("guaranteed").notNull().default(true),
+  alternatives: text("alternatives").array().notNull().default([]),
+  reviewManually: boolean("review_manually").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -53,6 +60,7 @@ export const itineraryDayActivitiesTable = pgTable("itinerary_day_activities", {
   activityId: integer("activity_id").notNull().references(() => activitiesTable.id, { onDelete: "cascade" }),
   sortOrder: integer("sort_order").notNull().default(0),
   startTime: text("start_time"),
+  timeOfDay: text("time_of_day"),
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("ida_day_idx").on(t.dayId)]);

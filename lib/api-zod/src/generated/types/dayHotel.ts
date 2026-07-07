@@ -20,5 +20,8 @@ export interface DayHotel {
   /** @nullable */
   hotelWebsite?: string | null;
   segment: SegmentValue | null;
+  guaranteed?: boolean;
+  alternatives?: string[];
+  reviewManually?: boolean;
   createdAt: string;
 }

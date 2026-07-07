@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { DayActivityInputTimeOfDay } from './dayActivityInputTimeOfDay';
 import type { TransportMode } from './transportMode';
 
 export interface DayActivityInput {
@@ -13,6 +14,7 @@ export interface DayActivityInput {
   sortOrder?: number;
   startTime?: string;
   endTime?: string;
+  timeOfDay?: DayActivityInputTimeOfDay;
   notes?: string;
   companyContact?: string;
   addressOverride?: string;

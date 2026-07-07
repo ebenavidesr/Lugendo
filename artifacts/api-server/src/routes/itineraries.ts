@@ -26,9 +26,9 @@ function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount =
 function serializeDayHotel(r: {
   id: number; hotelId: number; hotelName: string; hotelCity: string | null;
   hotelAddress: string | null; hotelPhone: string | null; hotelWebsite: string | null;
-  segment: string | null; createdAt: Date;
+  segment: string | null; guaranteed: boolean; alternatives: string[]; reviewManually: boolean; createdAt: Date;
 }) {
-  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, hotelAddress: r.hotelAddress, hotelPhone: r.hotelPhone, hotelWebsite: r.hotelWebsite, segment: r.segment, createdAt: r.createdAt.toISOString() };
+  return { id: r.id, hotelId: r.hotelId, hotelName: r.hotelName, hotelCity: r.hotelCity, hotelAddress: r.hotelAddress, hotelPhone: r.hotelPhone, hotelWebsite: r.hotelWebsite, segment: r.segment, guaranteed: r.guaranteed, alternatives: r.alternatives, reviewManually: r.reviewManually, createdAt: r.createdAt.toISOString() };
 }
 
 async function getDayHotelMap(dayIds: number[]) {
@@ -44,6 +44,9 @@ async function getDayHotelMap(dayIds: number[]) {
       hotelPhone: hotelsTable.phone,
       hotelWebsite: hotelsTable.website,
       segment: itineraryDayHotelsTable.segment,
+      guaranteed: itineraryDayHotelsTable.guaranteed,
+      alternatives: itineraryDayHotelsTable.alternatives,
+      reviewManually: itineraryDayHotelsTable.reviewManually,
       createdAt: itineraryDayHotelsTable.createdAt,
     })
     .from(itineraryDayHotelsTable)
@@ -117,54 +120,145 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     return;
   }
 
-  const trimmedText = extractedText.slice(0, 12000);
+  const trimmedText = extractedText.slice(0, 24000);
 
-  const systemPrompt = `You are a travel itinerary structure extractor. Given a travel program document, extract the itinerary details and return ONLY valid JSON.
+  const systemPrompt = `Eres un extractor de itinerarios de documentos de agencias de viaje (fichas técnicas, dossiers, folletos en PDF/Word). Los documentos NO tienen un formato único: la misma información (hotel, actividad, comida) puede aparecer en tabla, en prosa, o repetida en dos sitios con matices distintos. Tu trabajo es RECONCILIAR, no solo localizar. Devuelve SOLO JSON válido.
 
-The JSON must match this structure exactly:
+## Detección de estructura
+Antes de extraer, identifica qué bloques existen:
+- Tabla resumen de itinerario (columnas tipo DÍA | ITINERARIO | ALOJAMIENTO | COMIDA, o variantes "HOTEL", "RÉGIMEN"; títulos "Itinerario previsto", "Programa día a día").
+- Desarrollo día a día en prosa (bloques "Día N", "DÍA N.-", "Dia N-" seguidos de localidad/ruta y párrafo). Puede incluir línea "Régimen de alimentación: ...".
+- Listado de hoteles por ciudad ("HOTELES SELECCIONADOS", "ALOJAMIENTOS PREVISTOS", formato "CIUDAD: Hotel A, Hotel B o similar"). No está indexado por día: crúzalo usando la ciudad/localidad como clave.
+- Bloques de logística/legal (visado, vacunas, moneda, clima, seguro, condiciones de reserva, contrato, protección de datos): NO van al itinerario; evalúa si van a notas/checklist.
+- Bloque de equipaje ("Equipo personal", "Qué llevar", "Equipaje recomendado") → checklist.
+- Puntos fuertes / highlights → recommendations, no actividades.
+Si un bloque no existe, no falles: extrae lo que haya y deja los campos vacíos. No inventes contenido.
+Reconciliación: la tabla/lista estructurada manda sobre la prosa para datos concretos (fechas, nombres de hotel); la prosa manda para contenido narrativo (descripciones, actividades). Nunca descartes un bloque de texto sin evaluar si es nota o ítem de checklist.
+
+## Estructura JSON exacta de salida
 {
-  "name": "string - descriptive trip name",
+  "name": "string - nombre descriptivo del viaje",
   "numDays": number,
-  "description": "string or null",
-  "countries": ["array of country names"],
-  "startDate": "YYYY-MM-DD or null - the trip start date if mentioned in the document",
-  "endDate": "YYYY-MM-DD or null - the trip end date if mentioned in the document",
+  "description": "string o null - descripción general del viaje",
+  "countries": ["países del viaje"],
+  "startDate": "YYYY-MM-DD o null",
+  "endDate": "YYYY-MM-DD o null",
+  "tripNotes": ["notas a nivel de viaje completo"],
+  "recommendations": ["recomendaciones y puntos fuertes"],
+  "checklist": [{"item": "string corto y accionable", "category": "Equipaje|Documentación|Salud|Dinero o el título de la sección original, o null"}],
   "days": [
     {
       "dayNumber": 1,
-      "cityFrom": "string or null - departure city",
-      "cityTo": "string or null - arrival/main city for the day",
-      "transport": "string or null - transport mode used to travel to this day's city. Use one of: plane, ship, ferry, train, self_drive, car_driver, bus, motorcycle, bicycle, walking. null if staying in same city.",
-      "description": "string or null - day description and programme",
-      "activities": ["array of ALL activity, excursion, tour and visit names mentioned for this day"],
-      "hotels": ["array of hotel or accommodation names mentioned for this day - include any hotel, resort, lodge, hostel or accommodation name. Empty array if none mentioned."]
+      "title": "string o null - título COMPLETO del día, sin truncar aunque tenga varias localidades separadas por guión",
+      "localities": ["cada localidad mencionada en el título del día"],
+      "cityFrom": "string o null - ciudad de salida",
+      "cityTo": "string o null - ciudad de llegada/principal del día",
+      "transport": "string o null - uno de: plane, ship, ferry, train, self_drive, car_driver, bus, motorcycle, bicycle, walking. null si no hay desplazamiento.",
+      "description": "string o null - descripción narrativa del día (usa la prosa, no solo la tabla)",
+      "meals": "string o null - régimen de comidas normalizado",
+      "hotel": {
+        "name": "string - hotel principal del día",
+        "guaranteed": boolean,
+        "alternatives": ["hoteles alternativos"],
+        "source": "tabla | listado_ciudad | tabla+listado_ciudad | prosa",
+        "reviewManually": boolean
+      } (o null si el día no tiene hotel, p. ej. día de vuelo),
+      "parsedActivities": [
+        {"title": "string corto", "description": "string o null - una o dos frases concisas del original", "type": "Visita|Traslado|Libre|Gastronomía|Vuelo|Actividad", "moment": "mañana|tarde|noche o null"}
+      ],
+      "dayNotes": ["notas que aplican solo a este día"]
     }
   ]
 }
 
-Rules:
-- dayNumber must start at 1 and be sequential
-- Extract ALL activities, excursions, tours, visits and experiences mentioned per day — do not skip any
-- Extract hotel/accommodation names exactly as written in the document; include one entry per hotel even if only one is mentioned for the day
-- For transport: map modes to the enum values (avión→plane, tren→train, ferry→ferry, barco→ship, autobús→bus, coche→self_drive, etc.)
-- If city doesn't change, cityFrom and cityTo can be the same city or null for cityFrom
-- Keep descriptions concise but informative
-- For startDate/endDate: look for explicit dates in the document header or first/last day entries. Format as YYYY-MM-DD (e.g. "4 de agosto, 2026" → "2026-08-04"). If not found, use null.
-- Return ONLY the JSON object, no markdown, no explanation`;
+## Días
+- Un día se identifica por fila de tabla con número, O encabezado tipo "Día N" (con/sin tilde, punto o guión). El número de día es la clave de unión entre tabla y prosa: fusiona ambos en el mismo día, nunca dupliques.
+- dayNumber empieza en 1 y es secuencial. numDays debe coincidir con la duración declarada del documento (ej. "17 DÍAS" en el título).
+- Días de vuelo/llegada sin actividades propias ("Día 1.- VUELOS ESPAÑA-COLOMBO"): crea el día igualmente, con parsedActivities vacío o una única actividad tipo "Vuelo". No los omitas ni fusiones.
+- title: guarda el título completo multilocalidad (ej. "GIRITALE-POLONNARUWA-SAFARI P.N.MINNERIYA-SIGIRIYA") y extrae cada localidad en localities.
+
+## Hoteles (orden de prioridad)
+1. Fuente primaria: columna de alojamiento de la tabla resumen — es el hotel oficial del día.
+2. Fuente secundaria: listado de hoteles por ciudad. Cruza por ciudad/localidad:
+   - Si el hotel de la tabla coincide con uno del listado → confírmalo como principal y añade el resto como alternatives. source: "tabla+listado_ciudad".
+   - Si el hotel de la tabla NO aparece en el listado → conserva el de la tabla como principal, añade el listado completo como alternatives y marca reviewManually: true.
+3. Si solo existe uno de los dos bloques, usa ese (source: "tabla" o "listado_ciudad" o "prosa").
+4. "o similar", "o de igual categoría" → guaranteed: false. Es información relevante, no ruido.
+5. Un hotel repetido en días consecutivos es normal (varias noches): vincúlalo a cada día.
+6. Menciones genéricas sin nombre propio ("Hotel", "Alojamiento en categoría turista") NO son hoteles: van a la descripción o notas del día.
+
+## Actividades
+- Descompón el párrafo narrativo de cada día en actividades discretas. Señales: verbos de acción ("Visitaremos...", "Recorreremos...", "Haremos un safari..."), nombres propios de lugares/monumentos/parques, conectores de secuencia ("por la mañana", "al atardecer") como pista de moment, no como actividad.
+- Agrupa frases que describen la misma visita en UNA actividad ("Visitaremos Polonnaruwa... los budas de Gal Vihara" = una sola actividad).
+- Traslados puros ("Traslado a Sigiriya", "Traslado al aeropuerto") → type "Traslado".
+- Día libre ("Día libre para disfrutar del mar...") → una única actividad type "Libre", no lo dejes vacío.
+- Comidas destacadas (cena especial, almuerzo típico) → type "Gastronomía".
+- moment solo si el texto lo indica; null si no. No inventes horarios.
+
+## Comidas (meals)
+Normaliza: "D" → "Desayuno"; "CE" o "C" → "Cena"; "D, CE" → "Desayuno y cena"; "Régimen de alimentación: Desayuno, (pic nic) y cena." → "Desayuno, pícnic y cena". Sin mención → null (no asumas nada). Si tabla y prosa difieren, prioriza la prosa (suele ser más completa).
+
+## Notas
+- Textos que empiezan con "NOTA:", "IMPORTANTE:", "MUY IMPORTANTE:", advertencias de variabilidad (orden de visitas, disponibilidad de hoteles/trenes, clima), restricciones operativas → notas.
+- dayNotes si aplica a un día concreto; tripNotes si aplica a todo el viaje.
+- Cláusulas puramente legales/contractuales (cancelación, protección de datos, responsabilidad civil) NO van a notas ni recomendaciones: descártalas.
+
+## Checklist
+- Secciones de equipaje, vacunas, documentación → una entrada por ítem. "Sombrero, gafas de sol, bañador, toalla y pañuelo" → 5 ítems, no 1.
+- item corto y accionable; category: Equipaje, Documentación, Salud, Dinero, o el título de la sección original.
+
+## Recomendaciones
+- "Puntos fuertes"/highlights, consejos prácticos (cambio de moneda, propinas, época de reserva), explicaciones temáticas ampliadas de una parada ya extraída como actividad.
+
+## Otros
+- transport: mapea avión→plane, tren→train, ferry→ferry, barco→ship, autobús→bus, coche→self_drive, etc.
+- startDate/endDate: fechas explícitas del documento ("4 de agosto, 2026" → "2026-08-04"); null si no hay.
+
+## Validación final (antes de responder, verifica)
+- ¿numDays coincide con la duración declarada y con days.length?
+- ¿Todos los días tienen hotel O una explicación (día de vuelo) en notas/actividades?
+- ¿Todos los días con desarrollo narrativo tienen al menos una actividad?
+- ¿Se cruzaron tabla resumen y listado de hoteles por ciudad (no solo copiar uno)?
+- ¿Hay checklist/notas capturadas, o el documento realmente no las tenía?
+- ¿Ninguna cláusula legal se coló en notas o recomendaciones?
+
+Devuelve SOLO el objeto JSON, sin markdown ni explicaciones.`;
 
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-5.1",
-      max_completion_tokens: 8192,
+      max_completion_tokens: 16384,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Extract the itinerary from this travel document:\n\n${trimmedText}` },
+        { role: "user", content: `Extrae el itinerario de este documento de viaje:\n\n${trimmedText}` },
       ],
     });
 
     const content = completion.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as {
+      days?: Array<{
+        activities?: string[];
+        hotels?: string[];
+        hotel?: { name?: string; alternatives?: string[] } | null;
+        parsedActivities?: Array<{ title?: string }>;
+      }>;
+    };
+
+    // Derive legacy string arrays (activities/hotels) from the structured fields
+    // so existing wizard consumers keep working without changes.
+    if (Array.isArray(parsed.days)) {
+      for (const day of parsed.days) {
+        if (!Array.isArray(day.activities) || day.activities.length === 0) {
+          day.activities = (day.parsedActivities ?? [])
+            .map(a => a?.title)
+            .filter((t): t is string => typeof t === "string" && t.length > 0);
+        }
+        if (!Array.isArray(day.hotels) || day.hotels.length === 0) {
+          day.hotels = day.hotel?.name ? [day.hotel.name] : [];
+        }
+      }
+    }
     res.json(parsed);
   } catch (err) {
     req.log.error({ err }, "OpenAI parse error");
@@ -173,12 +267,12 @@ Rules:
 });
 
 router.post("/itineraries", requireAuth, validate(ItineraryInputSchema), async (req, res): Promise<void> => {
-  const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags } = req.body;
+  const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags, tripNotes, recommendations, checklist } = req.body;
   const agencyId = req.session.agencyId ?? null;
   const createdBy = req.session.userId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
-    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [] })
+    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [], tripNotes: tripNotes ?? [], recommendations: recommendations ?? [], checklist: (checklist ?? []).map((c: { item: string; category?: string | null }) => ({ item: c.item, category: c.category ?? null })) })
     .returning();
   res.status(201).json(serializeItinerary(itinerary));
 });
@@ -244,23 +338,24 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
 
 router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDayInputSchema), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const { dayNumber, cityFrom, cityTo, country, transport, description } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description, meals } = req.body;
   const [day] = await db
     .insert(itineraryDaysTable)
-    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description })
+    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description, meals })
     .returning();
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
+  const { cityFrom, cityTo, country, transport, description, meals, isTransitNight } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
   if (country !== undefined) patch.country = country;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
+  if (meals !== undefined) patch.meals = meals;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
   const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();
   if (!day) { res.status(404).json({ error: "Not found" }); return; }
@@ -283,7 +378,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/hotels", requireAuth, async (r
 
 router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { hotelId, segment } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium" };
+  const { hotelId, segment, guaranteed, alternatives, reviewManually } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium"; guaranteed?: boolean; alternatives?: string[]; reviewManually?: boolean };
   if (!hotelId) { res.status(400).json({ error: "hotelId is required" }); return; }
 
   const [hotel] = await db.select().from(hotelsTable).where(eq(hotelsTable.id, hotelId));
@@ -291,10 +386,10 @@ router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin"
 
   const [assignment] = await db
     .insert(itineraryDayHotelsTable)
-    .values({ itineraryDayId: dayId, hotelId, segment })
+    .values({ itineraryDayId: dayId, hotelId, segment, guaranteed: guaranteed ?? true, alternatives: alternatives ?? [], reviewManually: reviewManually ?? false })
     .returning();
 
-  res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
+  res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, guaranteed: assignment.guaranteed, alternatives: assignment.alternatives, reviewManually: assignment.reviewManually, createdAt: assignment.createdAt }));
 });
 
 router.delete("/itineraries/:itineraryId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
@@ -308,7 +403,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const rows = await db.execute(sql`
     SELECT ida.id, ida.day_id, ida.activity_id, a.name as activity_name, a.category as activity_category,
-           ida.sort_order, ida.start_time, ida.notes, ida.created_at
+           ida.sort_order, ida.start_time, ida.time_of_day, ida.notes, ida.created_at
     FROM itinerary_day_activities ida
     JOIN activities a ON a.id = ida.activity_id
     WHERE ida.day_id = ${dayId}
@@ -323,6 +418,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
     sortOrder: r.sort_order,
     startTime: r.start_time ?? null,
     endTime: null,
+    timeOfDay: r.time_of_day ?? null,
     notes: r.notes ?? null,
     included: true,
     canEdit: true,
@@ -332,12 +428,12 @@ router.get("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, asyn
 
 router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, validate(ItineraryDayActivityInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { activityId, sortOrder = 0, notes, startTime } = req.body;
+  const { activityId, sortOrder = 0, notes, startTime, timeOfDay } = req.body;
 
   const insertResult = await db.execute(sql`
-    INSERT INTO itinerary_day_activities (day_id, activity_id, sort_order, notes, start_time)
-    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null}, ${startTime ?? null})
-    RETURNING id, day_id, activity_id, sort_order, notes, start_time, created_at
+    INSERT INTO itinerary_day_activities (day_id, activity_id, sort_order, notes, start_time, time_of_day)
+    VALUES (${dayId}, ${activityId}, ${sortOrder}, ${notes ?? null}, ${startTime ?? null}, ${timeOfDay ?? null})
+    RETURNING id, day_id, activity_id, sort_order, notes, start_time, time_of_day, created_at
   `);
   const link = insertResult.rows[0] as Record<string, unknown>;
   const [act] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, activityId));
@@ -349,6 +445,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, val
     activityCategory: act?.category ?? null,
     sortOrder: link.sort_order,
     startTime: link.start_time ?? null,
+    timeOfDay: link.time_of_day ?? null,
     notes: link.notes,
     createdAt: String(link.created_at),
   });

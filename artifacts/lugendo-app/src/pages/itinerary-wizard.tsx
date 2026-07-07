@@ -11,6 +11,7 @@ import {
   useCreateActivity,
   useCreateHotel,
   useAddDayActivity,
+  useAddItineraryDayHotel,
   useParseItineraryPdf,
   useSuggestDayDescription,
 } from "@workspace/api-client-react";
@@ -146,6 +147,7 @@ export default function ItineraryWizard() {
   const createHotel = useCreateHotel();
   const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
+  const addDayHotel = useAddItineraryDayHotel();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
@@ -323,6 +325,7 @@ export default function ItineraryWizard() {
       const recommendedMonths = data.recommendedMonths ? data.recommendedMonths.split(",").map(m => m.trim()).filter(Boolean) : [];
       const numDays = parseInt(data.numDays);
 
+      const pi = data.mode === "pdf" ? data.parsedItinerary : null;
       const itin = await createItinerary.mutateAsync({
         data: {
           name: data.name,
@@ -333,6 +336,9 @@ export default function ItineraryWizard() {
           ...(recommendedMonths.length ? { recommendedMonths } : {}),
           ...(data.priceRange && data.priceRange !== "none" ? { priceRange: data.priceRange } : {}),
           ...(tags.length ? { tags } : {}),
+          ...(pi?.tripNotes?.length ? { tripNotes: pi.tripNotes } : {}),
+          ...(pi?.recommendations?.length ? { recommendations: pi.recommendations } : {}),
+          ...(pi?.checklist?.length ? { checklist: pi.checklist } : {}),
         },
       });
 
@@ -348,6 +354,7 @@ export default function ItineraryWizard() {
       for (const day of sourceDays) {
         const hotelId = data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
         const wizardDesc = data.dayDescriptions[day.dayNumber];
+        const parsedDay = "meals" in day ? (day as ParsedDay) : null;
         const created = await createDay.mutateAsync({
           itineraryId: itin.id,
           data: {
@@ -356,10 +363,24 @@ export default function ItineraryWizard() {
             ...(day.cityTo ? { cityTo: day.cityTo } : {}),
             ...(day.transport ? { transport: day.transport } : {}),
             ...(wizardDesc ? { description: wizardDesc } : day.description ? { description: day.description } : {}),
-            ...(hotelId ? { hotelId } : {}),
+            ...(parsedDay?.meals ? { meals: parsedDay.meals } : {}),
           },
         });
         createdDayMap[day.dayNumber] = created.id;
+
+        if (hotelId) {
+          const ph = parsedDay?.hotel;
+          await addDayHotel.mutateAsync({
+            itineraryId: itin.id,
+            dayId: created.id,
+            data: {
+              hotelId,
+              ...(ph?.guaranteed !== undefined && ph?.guaranteed !== null ? { guaranteed: ph.guaranteed } : {}),
+              ...(ph?.alternatives?.length ? { alternatives: ph.alternatives } : {}),
+              ...(ph?.reviewManually ? { reviewManually: ph.reviewManually } : {}),
+            },
+          });
+        }
       }
 
       // Link activities
@@ -497,16 +518,63 @@ export default function ItineraryWizard() {
                       {data.parsedItinerary.countries?.length ? ` · ${data.parsedItinerary.countries.join(", ")}` : ""}
                     </div>
                     {data.parsedItinerary.days.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-[#B2D9C3] max-h-32 overflow-y-auto space-y-0.5">
+                      <div className="mt-2 pt-2 border-t border-[#B2D9C3] max-h-48 overflow-y-auto space-y-1">
                         {data.parsedItinerary.days.map(d => (
-                          <div key={d.dayNumber} className="flex items-baseline gap-2 text-[11px] min-w-0">
-                            <span className="shrink-0 font-medium w-10" style={{ color: "#2E7D5A" }}>Día {d.dayNumber}</span>
-                            <span className="text-muted-foreground truncate min-w-0">
-                              {[d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
-                              {d.description ? ` — ${d.description.slice(0, 60)}${d.description.length > 60 ? "…" : ""}` : ""}
-                            </span>
+                          <div key={d.dayNumber} className="text-[11px] min-w-0">
+                            <div className="flex items-baseline gap-2 min-w-0">
+                              <span className="shrink-0 font-medium w-10" style={{ color: "#2E7D5A" }}>Día {d.dayNumber}</span>
+                              <span className="text-muted-foreground truncate min-w-0">
+                                {d.title ?? [d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
+                                {d.meals ? ` · 🍽 ${d.meals}` : ""}
+                              </span>
+                            </div>
+                            {(d.hotel || (d.parsedActivities?.length ?? 0) > 0 || (d.dayNotes?.length ?? 0) > 0) && (
+                              <div className="pl-12 flex flex-wrap items-center gap-1 mt-0.5">
+                                {d.hotel && (
+                                  <span className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#FAEEE4", color: "#8B4420" }}>
+                                    🏨 {d.hotel.name}
+                                    {d.hotel.guaranteed === false ? " (o similar)" : ""}
+                                    {d.hotel.alternatives?.length ? ` +${d.hotel.alternatives.length} alt.` : ""}
+                                  </span>
+                                )}
+                                {d.hotel?.reviewManually && (
+                                  <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
+                                    ⚠ Revisar hotel
+                                  </span>
+                                )}
+                                {(d.parsedActivities?.length ?? 0) > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                                    ⚡ {d.parsedActivities!.length} actividad{d.parsedActivities!.length > 1 ? "es" : ""}
+                                  </span>
+                                )}
+                                {(d.dayNotes?.length ?? 0) > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#FFF3E0", color: "#8B4420" }}>
+                                    📌 {d.dayNotes!.length} nota{d.dayNotes!.length > 1 ? "s" : ""}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {((data.parsedItinerary.tripNotes?.length ?? 0) > 0 || (data.parsedItinerary.recommendations?.length ?? 0) > 0 || (data.parsedItinerary.checklist?.length ?? 0) > 0) && (
+                      <div className="mt-2 pt-2 border-t border-[#B2D9C3] flex flex-wrap gap-1.5 text-[10px]">
+                        {(data.parsedItinerary.tripNotes?.length ?? 0) > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-[5px]" style={{ background: "#FFF3E0", color: "#8B4420" }}>
+                            📌 {data.parsedItinerary.tripNotes!.length} nota{data.parsedItinerary.tripNotes!.length > 1 ? "s" : ""} del viaje
+                          </span>
+                        )}
+                        {(data.parsedItinerary.recommendations?.length ?? 0) > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-[5px]" style={{ background: "#E4F3EC", color: "#2E7D5A" }}>
+                            💡 {data.parsedItinerary.recommendations!.length} recomendacion{data.parsedItinerary.recommendations!.length > 1 ? "es" : ""}
+                          </span>
+                        )}
+                        {(data.parsedItinerary.checklist?.length ?? 0) > 0 && (
+                          <span className="px-1.5 py-0.5 rounded-[5px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                            ✓ {data.parsedItinerary.checklist!.length} ítem{data.parsedItinerary.checklist!.length > 1 ? "s" : ""} de checklist
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -650,7 +718,55 @@ export default function ItineraryWizard() {
                             <div className="text-[11px]" style={{ color: "#9C7A58" }}>{day.cityFrom} → {day.cityTo}</div>
                           )}
                         </div>
+                        {day.meals && (
+                          <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-[5px]" style={{ background: "#E4F3EC", color: "#2E7D5A" }}>
+                            🍽 {day.meals}
+                          </span>
+                        )}
                       </div>
+
+                      {/* Parsed extraction hints */}
+                      {(day.hotel || (day.parsedActivities?.length ?? 0) > 0 || (day.dayNotes?.length ?? 0) > 0) && (
+                        <div className="px-3 pb-2 space-y-1">
+                          {day.hotel && (
+                            <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                              <span className="px-1.5 py-0.5 rounded-[5px]" style={{ background: "#FAEEE4", color: "#8B4420" }}>
+                                🏨 Detectado: {day.hotel.name}{day.hotel.guaranteed === false ? " (o similar)" : ""}
+                              </span>
+                              {day.hotel.reviewManually && (
+                                <span className="px-1.5 py-0.5 rounded-[5px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
+                                  ⚠ Revisar manualmente
+                                </span>
+                              )}
+                              {(day.hotel.alternatives?.length ?? 0) > 0 && (
+                                <span className="text-[10px]" style={{ color: "#9C7A58" }}>
+                                  Alternativas: {day.hotel.alternatives!.join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {(day.parsedActivities?.length ?? 0) > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {day.parsedActivities!.map((pa, i) => (
+                                <span key={i} className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                                  {pa.title}
+                                  {pa.type ? ` · ${pa.type}` : ""}
+                                  {pa.moment ? ` · ${pa.moment}` : ""}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {(day.dayNotes?.length ?? 0) > 0 && (
+                            <div className="space-y-0.5">
+                              {day.dayNotes!.map((n, i) => (
+                                <div key={i} className="text-[10px] px-1.5 py-0.5 rounded-[5px]" style={{ background: "#FFF3E0", color: "#8B4420" }}>
+                                  📌 {n}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Hotel row */}
                       <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">

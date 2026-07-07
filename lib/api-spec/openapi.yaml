@@ -2620,6 +2620,18 @@ components:
           type: ["string", "null"]
         videoUrl:
           type: ["string", "null"]
+        tripNotes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
         tripCount:
@@ -2663,6 +2675,18 @@ components:
           type: array
           items:
             type: string
+        tripNotes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
         createdAt:
@@ -2703,6 +2727,18 @@ components:
           type: array
           items:
             type: string
+        tripNotes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistEntry"
 
     ItineraryUpdate:
       type: object
@@ -2734,6 +2770,18 @@ components:
           type: array
           items:
             type: string
+        tripNotes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
 
@@ -2756,6 +2804,8 @@ components:
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
+          type: ["string", "null"]
+        meals:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
@@ -2782,6 +2832,8 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: string
+        meals:
+          type: string
 
     ItineraryDayUpdate:
       type: object
@@ -2795,6 +2847,8 @@ components:
         transport:
           $ref: "#/components/schemas/TransportMode"
         description:
+          type: ["string", "null"]
+        meals:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
@@ -2904,6 +2958,14 @@ components:
           type: ["string", "null"]
         segment:
           $ref: "#/components/schemas/SegmentValue"
+        guaranteed:
+          type: boolean
+        alternatives:
+          type: array
+          items:
+            type: string
+        reviewManually:
+          type: boolean
         createdAt:
           type: string
 
@@ -2917,6 +2979,14 @@ components:
           type: string
           nullable: true
           enum: [basic, standard, premium, null]
+        guaranteed:
+          type: boolean
+        alternatives:
+          type: array
+          items:
+            type: string
+        reviewManually:
+          type: boolean
 
     # ─── ACTIVITY ─────────────────────────────────────────────────────────────
     ActivityCategory:
@@ -4040,10 +4110,64 @@ components:
         endDate:
           type: ["string", "null"]
           description: "ISO date string (YYYY-MM-DD) if the document specifies an end date"
+        tripNotes:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+        checklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChecklistEntry"
         days:
           type: array
           items:
             $ref: "#/components/schemas/ParsedDay"
+
+    ChecklistEntry:
+      type: object
+      required: [item]
+      properties:
+        item:
+          type: string
+        category:
+          type: ["string", "null"]
+
+    ParsedHotel:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        guaranteed:
+          type: boolean
+        alternatives:
+          type: array
+          items:
+            type: string
+        source:
+          type: ["string", "null"]
+          description: "Where the hotel was found: tabla, listado_ciudad, tabla+listado_ciudad, prosa"
+        reviewManually:
+          type: boolean
+
+    ParsedActivity:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        type:
+          type: ["string", "null"]
+          enum: [Visita, Traslado, Libre, Gastronomía, Vuelo, Actividad, null]
+        moment:
+          type: ["string", "null"]
+          enum: [mañana, tarde, noche, null]
 
     ParsedDay:
       type: object
@@ -4051,6 +4175,13 @@ components:
       properties:
         dayNumber:
           type: integer
+        title:
+          type: ["string", "null"]
+          description: "Full day title, possibly multi-locality (not truncated)"
+        localities:
+          type: array
+          items:
+            type: string
         cityFrom:
           type: ["string", "null"]
         cityTo:
@@ -4059,6 +4190,21 @@ components:
           $ref: "#/components/schemas/TransportMode"
         description:
           type: ["string", "null"]
+        meals:
+          type: ["string", "null"]
+          description: "Normalized meal plan for the day (e.g. 'Desayuno y cena')"
+        hotel:
+          oneOf:
+            - $ref: "#/components/schemas/ParsedHotel"
+            - type: "null"
+        parsedActivities:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParsedActivity"
+        dayNotes:
+          type: array
+          items:
+            type: string
         activities:
           type: array
           items:
@@ -4088,6 +4234,9 @@ components:
           type: ["string", "null"]
         endTime:
           type: ["string", "null"]
+        timeOfDay:
+          type: ["string", "null"]
+          enum: [mañana, tarde, noche, null]
         address:
           type: ["string", "null"]
         durationHours:
@@ -4120,6 +4269,9 @@ components:
           type: string
         endTime:
           type: string
+        timeOfDay:
+          type: string
+          enum: [mañana, tarde, noche]
         notes:
           type: string
         companyContact:

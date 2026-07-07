@@ -5,12 +5,15 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { DayHotelInputSegment } from './dayHotelInputSegment';
 
-export interface DayHotelInput {
-  hotelId: number;
-  segment?: DayHotelInputSegment;
+export interface ParsedHotel {
+  name: string;
   guaranteed?: boolean;
   alternatives?: string[];
+  /**
+     * Where the hotel was found: tabla, listado_ciudad, tabla+listado_ciudad, prosa
+     * @nullable
+     */
+  source?: string | null;
   reviewManually?: boolean;
 }

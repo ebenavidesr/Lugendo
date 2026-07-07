@@ -14,6 +14,7 @@ import {
   useCreateActivity,
   useCreateHotel,
   useAddDayActivity,
+  useAddItineraryDayHotel,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -167,6 +168,7 @@ export default function TripWizard() {
   const createHotel = useCreateHotel();
   const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
+  const addDayHotel = useAddItineraryDayHotel();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
@@ -233,36 +235,40 @@ export default function TripWizard() {
         const currentHotels = hotels ?? [];
         const newDayActivities: Record<number, number[]> = {};
         const newDayHotels: Record<number, string> = {};
+        const typeToCategory: Record<string, "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other"> = {
+          Visita: "excursion", Gastronomía: "gastronomic", Traslado: "other", Libre: "other", Vuelo: "other", Actividad: "other",
+        };
         for (const day of result.days) {
-          if (day.activities?.length) {
+          const parsedActs = day.parsedActivities?.length
+            ? day.parsedActivities.map(pa => ({ name: pa.title, category: pa.type ? typeToCategory[pa.type] : undefined }))
+            : (day.activities ?? []).map(name => ({ name, category: undefined as undefined | "other" }));
+          if (parsedActs.length) {
             const actIds: number[] = [];
-            for (const actName of day.activities) {
-              const trimmed = actName.trim();
+            for (const pa of parsedActs) {
+              const trimmed = pa.name?.trim();
               if (!trimmed) continue;
               const existing = currentActivities.find(a => a.name.toLowerCase() === trimmed.toLowerCase());
               if (existing) {
                 actIds.push(existing.id);
               } else {
                 try {
-                  const created = await createActivity.mutateAsync({ data: { name: trimmed } });
+                  const created = await createActivity.mutateAsync({ data: { name: trimmed, ...(pa.category ? { category: pa.category } : {}) } });
                   actIds.push(created.id);
                 } catch { /* skip */ }
               }
             }
             if (actIds.length) newDayActivities[day.dayNumber] = actIds;
           }
-          if (day.hotels?.length) {
-            const hotelName = day.hotels[0].trim();
-            if (hotelName) {
-              const existing = currentHotels.find(h => h.name.toLowerCase() === hotelName.toLowerCase());
-              if (existing) {
-                newDayHotels[day.dayNumber] = String(existing.id);
-              } else {
-                try {
-                  const created = await createHotel.mutateAsync({ data: { name: hotelName, city: "", country: "" } });
-                  newDayHotels[day.dayNumber] = String(created.id);
-                } catch { /* skip */ }
-              }
+          const hotelName = (day.hotel?.name ?? day.hotels?.[0])?.trim();
+          if (hotelName) {
+            const existing = currentHotels.find(h => h.name.toLowerCase() === hotelName.toLowerCase());
+            if (existing) {
+              newDayHotels[day.dayNumber] = String(existing.id);
+            } else {
+              try {
+                const created = await createHotel.mutateAsync({ data: { name: hotelName, city: day.cityTo ?? "", country: "" } });
+                newDayHotels[day.dayNumber] = String(created.id);
+              } catch { /* skip */ }
             }
           }
         }
@@ -409,6 +415,9 @@ export default function TripWizard() {
             ...(data.scratchDifficulty && data.scratchDifficulty !== "none" ? { difficulty: data.scratchDifficulty as "easy" | "moderate" | "demanding" } : {}),
             ...(data.scratchDescription ? { description: data.scratchDescription } : {}),
             ...(data.parsedItinerary?.description ? { description: data.parsedItinerary.description } : {}),
+            ...(data.parsedItinerary?.tripNotes?.length ? { tripNotes: data.parsedItinerary.tripNotes } : {}),
+            ...(data.parsedItinerary?.recommendations?.length ? { recommendations: data.parsedItinerary.recommendations } : {}),
+            ...(data.parsedItinerary?.checklist?.length ? { checklist: data.parsedItinerary.checklist } : {}),
           },
         });
         itineraryId = newItin.id;
@@ -425,10 +434,24 @@ export default function TripWizard() {
                 ...(day.cityTo ? { cityTo: day.cityTo } : {}),
                 ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
                 ...(day.description ? { description: day.description } : {}),
-                ...(hotelId ? { hotelId } : {}),
+                ...(day.meals ? { meals: day.meals } : {}),
               },
             });
             createdDayMap[day.dayNumber] = created.id;
+
+            if (hotelId) {
+              const ph = day.hotel;
+              await addDayHotel.mutateAsync({
+                itineraryId: newItin.id,
+                dayId: created.id,
+                data: {
+                  hotelId,
+                  ...(ph?.guaranteed !== undefined && ph?.guaranteed !== null ? { guaranteed: ph.guaranteed } : {}),
+                  ...(ph?.alternatives?.length ? { alternatives: ph.alternatives } : {}),
+                  ...(ph?.reviewManually ? { reviewManually: ph.reviewManually } : {}),
+                },
+              });
+            }
           }
           for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {
             const dayNum = parseInt(dayNumStr);
@@ -924,7 +947,44 @@ export default function TripWizard() {
                           </div>
                           {dateStr && <div className="text-[11px] capitalize" style={{ color: "#9C7A58" }}>{dateStr}</div>}
                         </div>
+                        {day.meals && (
+                          <span className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-[5px]" style={{ background: "#E4F3EC", color: "#2E7D5A" }}>
+                            🍽 {day.meals}
+                          </span>
+                        )}
                       </div>
+
+                      {/* Parsed extraction hints */}
+                      {(day.hotel || (day.dayNotes?.length ?? 0) > 0) && (
+                        <div className="px-3 pb-2 space-y-1">
+                          {day.hotel && (
+                            <div className="flex flex-wrap items-center gap-1 text-[11px]">
+                              <span className="px-1.5 py-0.5 rounded-[5px]" style={{ background: "#FAEEE4", color: "#8B4420" }}>
+                                🏨 Detectado: {day.hotel.name}{day.hotel.guaranteed === false ? " (o similar)" : ""}
+                              </span>
+                              {day.hotel.reviewManually && (
+                                <span className="px-1.5 py-0.5 rounded-[5px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
+                                  ⚠ Revisar manualmente
+                                </span>
+                              )}
+                              {(day.hotel.alternatives?.length ?? 0) > 0 && (
+                                <span className="text-[10px]" style={{ color: "#9C7A58" }}>
+                                  Alternativas: {day.hotel.alternatives!.join(", ")}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {(day.dayNotes?.length ?? 0) > 0 && (
+                            <div className="space-y-0.5">
+                              {day.dayNotes!.map((n, i) => (
+                                <div key={i} className="text-[10px] px-1.5 py-0.5 rounded-[5px]" style={{ background: "#FFF3E0", color: "#8B4420" }}>
+                                  📌 {n}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Hotel row */}
                       <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">

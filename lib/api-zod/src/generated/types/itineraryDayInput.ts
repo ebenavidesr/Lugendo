@@ -14,4 +14,5 @@ export interface ItineraryDayInput {
   country?: string;
   transport?: TransportMode | null;
   description?: string;
+  meals?: string;
 }

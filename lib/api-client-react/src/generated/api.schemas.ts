@@ -176,6 +176,12 @@ export const ItineraryDifficulty = {
   demanding: 'demanding',
 } as const;
 
+export interface ChecklistEntry {
+  item: string;
+  /** @nullable */
+  category?: string | null;
+}
+
 export interface Itinerary {
   id: number;
   agencyId: number;
@@ -190,6 +196,9 @@ export interface Itinerary {
   description?: string | null;
   /** @nullable */
   videoUrl?: string | null;
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
   active: boolean;
   tripCount?: number;
   /** @nullable */
@@ -235,6 +244,9 @@ export interface DayHotel {
   /** @nullable */
   hotelWebsite?: string | null;
   segment: SegmentValue | null;
+  guaranteed?: boolean;
+  alternatives?: string[];
+  reviewManually?: boolean;
   createdAt: string;
 }
 
@@ -251,6 +263,8 @@ export interface ItineraryDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  meals?: string | null;
   isTransitNight?: boolean;
   hotels?: DayHotel[];
   createdAt: string;
@@ -274,6 +288,9 @@ export interface ItineraryDetail {
   /** @nullable */
   priceRange?: string | null;
   tags?: string[];
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
   active: boolean;
   createdAt: string;
   days: ItineraryDay[];
@@ -299,6 +316,9 @@ export interface ItineraryInput {
   recommendedMonths?: string[];
   priceRange?: string;
   tags?: string[];
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
 }
 
 export type ItineraryUpdateDifficulty = typeof ItineraryUpdateDifficulty[keyof typeof ItineraryUpdateDifficulty];
@@ -321,6 +341,9 @@ export interface ItineraryUpdate {
   recommendedMonths?: string[];
   priceRange?: string;
   tags?: string[];
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
   active?: boolean;
 }
 
@@ -331,6 +354,7 @@ export interface ItineraryDayInput {
   country?: string;
   transport?: TransportMode | null;
   description?: string;
+  meals?: string;
 }
 
 export interface ItineraryDayUpdate {
@@ -343,6 +367,8 @@ export interface ItineraryDayUpdate {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  meals?: string | null;
   isTransitNight?: boolean;
 }
 
@@ -405,6 +431,9 @@ export const DayHotelInputSegment = {
 export interface DayHotelInput {
   hotelId: number;
   segment?: DayHotelInputSegment;
+  guaranteed?: boolean;
+  alternatives?: string[];
+  reviewManually?: boolean;
 }
 
 export type ActivityCategory = typeof ActivityCategory[keyof typeof ActivityCategory] | null;
@@ -1308,8 +1337,63 @@ export interface ParsePdfInput {
   fileName: string;
 }
 
+export interface ParsedHotel {
+  name: string;
+  guaranteed?: boolean;
+  alternatives?: string[];
+  /**
+     * Where the hotel was found: tabla, listado_ciudad, tabla+listado_ciudad, prosa
+     * @nullable
+     */
+  source?: string | null;
+  reviewManually?: boolean;
+}
+
+/**
+ * @nullable
+ */
+export type ParsedActivityType = typeof ParsedActivityType[keyof typeof ParsedActivityType] | null;
+
+
+export const ParsedActivityType = {
+  Visita: 'Visita',
+  Traslado: 'Traslado',
+  Libre: 'Libre',
+  Gastronomía: 'Gastronomía',
+  Vuelo: 'Vuelo',
+  Actividad: 'Actividad',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ParsedActivityMoment = typeof ParsedActivityMoment[keyof typeof ParsedActivityMoment] | null;
+
+
+export const ParsedActivityMoment = {
+  mañana: 'mañana',
+  tarde: 'tarde',
+  noche: 'noche',
+} as const;
+
+export interface ParsedActivity {
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  type?: ParsedActivityType;
+  /** @nullable */
+  moment?: ParsedActivityMoment;
+}
+
 export interface ParsedDay {
   dayNumber: number;
+  /**
+     * Full day title, possibly multi-locality (not truncated)
+     * @nullable
+     */
+  title?: string | null;
+  localities?: string[];
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
@@ -1317,6 +1401,14 @@ export interface ParsedDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /**
+     * Normalized meal plan for the day (e.g. 'Desayuno y cena')
+     * @nullable
+     */
+  meals?: string | null;
+  hotel?: ParsedHotel | null;
+  parsedActivities?: ParsedActivity[];
+  dayNotes?: string[];
   activities?: string[];
   hotels?: string[];
 }
@@ -1337,8 +1429,23 @@ export interface ParsedItinerary {
      * @nullable
      */
   endDate?: string | null;
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
   days: ParsedDay[];
 }
+
+/**
+ * @nullable
+ */
+export type DayActivityTimeOfDay = typeof DayActivityTimeOfDay[keyof typeof DayActivityTimeOfDay] | null;
+
+
+export const DayActivityTimeOfDay = {
+  mañana: 'mañana',
+  tarde: 'tarde',
+  noche: 'noche',
+} as const;
 
 export interface DayActivity {
   id: number;
@@ -1353,6 +1460,8 @@ export interface DayActivity {
   startTime?: string | null;
   /** @nullable */
   endTime?: string | null;
+  /** @nullable */
+  timeOfDay?: DayActivityTimeOfDay;
   /** @nullable */
   address?: string | null;
   /** @nullable */
@@ -1369,12 +1478,22 @@ export interface DayActivity {
   createdAt: string;
 }
 
+export type DayActivityInputTimeOfDay = typeof DayActivityInputTimeOfDay[keyof typeof DayActivityInputTimeOfDay];
+
+
+export const DayActivityInputTimeOfDay = {
+  mañana: 'mañana',
+  tarde: 'tarde',
+  noche: 'noche',
+} as const;
+
 export interface DayActivityInput {
   activityId?: number;
   activityTitle?: string;
   sortOrder?: number;
   startTime?: string;
   endTime?: string;
+  timeOfDay?: DayActivityInputTimeOfDay;
   notes?: string;
   companyContact?: string;
   addressOverride?: string;

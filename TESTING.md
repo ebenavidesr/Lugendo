@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #20 — Mejorar extracción de vuelos, hoteles y actividades del PDF
+- [ ] Al analizar un PDF/Word con tabla resumen + desarrollo en prosa, la extracción reconcilia ambos bloques: días completos con título multilocalidad, régimen de comidas normalizado ("D, CE" → "Desayuno y cena") y descripción narrativa
+- [ ] El hotel de cada día prioriza la tabla resumen, se cruza con el listado de hoteles por ciudad y muestra las alternativas ("+N alt."); "o similar" marca el hotel como no garantizado
+- [ ] Si el hotel de la tabla no aparece en el listado por ciudad, el día muestra el badge "⚠ Revisar hotel/manualmente"
+- [ ] Las actividades se descomponen del párrafo narrativo con tipo (Visita/Traslado/Libre/Gastronomía/Vuelo/Actividad) y momento (mañana/tarde/noche) cuando el texto lo indica; los días libres generan una actividad "Libre" y los días de vuelo no se omiten
+- [ ] Las notas ("NOTA:", "IMPORTANTE:") se capturan a nivel de día o de viaje; el equipaje se convierte en checklist (un ítem por elemento); los puntos fuertes van a recomendaciones; las cláusulas legales se descartan
+- [ ] En el wizard de itinerarios (paso 2), la vista previa de extracción muestra comidas, hotel con alternativas, nº de actividades, notas y contadores de notas/recomendaciones/checklist del viaje
+- [ ] Al crear el itinerario desde el wizard se persisten: tripNotes/recomendaciones/checklist, comidas por día, y el hotel vinculado con garantizado/alternativas/revisión manual (verificable vía API)
+- [ ] En el wizard de viajes, las actividades auto-creadas desde el PDF reciben categoría según su tipo (Visita→excursión, Gastronomía→gastronómica) y el hotel auto-creado hereda la ciudad del día
+- [ ] `pnpm run typecheck` pasa sin errores tras los cambios de schema, OpenAPI y frontend
+
 ### Diagnóstico — Healthcheck 500 / promote colgado en producción (Autoscale)
 - [ ] El endpoint `/api/healthz` sigue respondiendo `200 {"ok":true}` en desarrollo tras el cambio
 - [ ] Tras un nuevo despliegue, si vuelve a fallar el healthcheck, los logs de producción muestran ahora una línea `"Unhandled request error"` con el error real (no solo `500` sin contexto)

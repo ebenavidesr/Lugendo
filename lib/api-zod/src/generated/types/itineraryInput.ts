@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ChecklistEntry } from './checklistEntry';
 import type { ItineraryInputDifficulty } from './itineraryInputDifficulty';
 
 export interface ItineraryInput {
@@ -18,4 +19,7 @@ export interface ItineraryInput {
   recommendedMonths?: string[];
   priceRange?: string;
   tags?: string[];
+  tripNotes?: string[];
+  recommendations?: string[];
+  checklist?: ChecklistEntry[];
 }

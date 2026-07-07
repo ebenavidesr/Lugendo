@@ -15,7 +15,6 @@
 | #10 | Notificar al viajero por email cuando se cancela su viaje | 🟡 Media | Viajeros | Yo |
 | #11 | Ver y gestionar los viajes compartidos con otros (viajero) | 🟢 Baja | Viajeros | Yo |
 | #12 | Ventana de deshacer tras eliminar (reversión de borrados accidentales) | 🟡 Media | General | Yo |
-| #20 | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General | Tú |
 | #21 | Mostrar descripciones IA en fichas de hotel e itinerario | 🟡 Media | Hoteles · Itinerarios | Yo |
 | #22 | Mostrar descripción del viaje en la vista Passport del viajero | 🟡 Media | Viajeros | Yo |
 | #23 | Permitir regenerar descripción IA tras editar campos clave | 🟢 Baja | General | Yo |
@@ -119,6 +118,7 @@
 | #115 | Noche en transporte (toggle en panel de hotel) | 🟡 Media | Itinerarios · Viajes |
 | #118 | Toggle Incluida/Por libre al crear itinerario | | Itinerarios |
 | #116 | Verificar el toggle de noche en transporte con una cuenta de viajero real | 🟢 Baja | Viajeros |
+| #20 | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General |
 
 ---
 

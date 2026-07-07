@@ -72,13 +72,19 @@ export const HotelUpdateSchema = z.object({
 export const DayHotelInputSchema = z.object({
   hotelId: z.number().int().positive(),
   segment: SegmentOptionalSchema,
+  guaranteed: z.boolean().optional(),
+  alternatives: z.array(z.string()).optional(),
+  reviewManually: z.boolean().optional(),
 });
+
+const TimeOfDaySchema = z.enum(["mañana", "tarde", "noche"]);
 
 export const ItineraryDayActivityInputSchema = z.object({
   activityId: z.number().int().positive(),
   sortOrder: z.number().int().nonnegative().optional(),
   notes: z.string().optional(),
   startTime: z.string().optional(),
+  timeOfDay: TimeOfDaySchema.optional(),
 });
 
 // ─── Activity ─────────────────────────────────────────────────────────────────
@@ -119,6 +125,11 @@ export const ActivityUpdateSchema = z.object({
 
 const DifficultySchema = z.enum(["easy", "moderate", "demanding"]);
 
+const ChecklistEntrySchema = z.object({
+  item: z.string().min(1),
+  category: z.string().nullable().optional(),
+});
+
 export const ItineraryInputSchema = z.object({
   name: z.string().min(1),
   numDays: z.number().int().positive(),
@@ -130,6 +141,9 @@ export const ItineraryInputSchema = z.object({
   recommendedMonths: z.array(z.string()).optional(),
   priceRange: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  tripNotes: z.array(z.string()).optional(),
+  recommendations: z.array(z.string()).optional(),
+  checklist: z.array(ChecklistEntrySchema).optional(),
 });
 
 export const ItineraryUpdateSchema = z.object({
@@ -143,6 +157,9 @@ export const ItineraryUpdateSchema = z.object({
   recommendedMonths: z.array(z.string()).optional(),
   priceRange: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
+  tripNotes: z.array(z.string()).optional(),
+  recommendations: z.array(z.string()).optional(),
+  checklist: z.array(ChecklistEntrySchema).optional(),
   active: z.boolean().optional(),
 });
 
@@ -153,6 +170,7 @@ export const ItineraryDayInputSchema = z.object({
   country: z.string().optional(),
   transport: TransportModeSchema,
   description: z.string().optional(),
+  meals: z.string().optional(),
 });
 
 export const ItineraryDayUpdateSchema = z.object({
@@ -161,6 +179,7 @@ export const ItineraryDayUpdateSchema = z.object({
   country: z.string().nullable().optional(),
   transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
+  meals: z.string().nullable().optional(),
   isTransitNight: z.boolean().optional(),
 });
 

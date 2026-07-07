@@ -21,6 +21,8 @@ export interface ItineraryDay {
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  meals?: string | null;
   isTransitNight?: boolean;
   hotels?: DayHotel[];
   createdAt: string;

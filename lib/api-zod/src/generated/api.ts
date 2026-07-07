@@ -234,6 +234,12 @@ export const ListItinerariesResponseItem = zod.object({
   "difficulty": zod.union([zod.literal('easy'),zod.literal('moderate'),zod.literal('demanding'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional(),
   "active": zod.boolean(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
@@ -255,7 +261,13 @@ export const CreateItineraryBody = zod.object({
   "videoUrl": zod.string().optional(),
   "recommendedMonths": zod.array(zod.string()).optional(),
   "priceRange": zod.string().optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional()
 })
 
 
@@ -279,6 +291,12 @@ export const GetItineraryResponse = zod.object({
   "recommendedMonths": zod.array(zod.string()).optional(),
   "priceRange": zod.string().nullish(),
   "tags": zod.array(zod.string()).optional(),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional(),
   "active": zod.boolean(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
@@ -290,6 +308,7 @@ export const GetItineraryResponse = zod.object({
   "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
+  "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
@@ -300,6 +319,9 @@ export const GetItineraryResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "createdAt": zod.string()
@@ -325,6 +347,12 @@ export const UpdateItineraryBody = zod.object({
   "recommendedMonths": zod.array(zod.string()).optional(),
   "priceRange": zod.string().optional(),
   "tags": zod.array(zod.string()).optional(),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional(),
   "active": zod.boolean().optional()
 })
 
@@ -338,6 +366,12 @@ export const UpdateItineraryResponse = zod.object({
   "difficulty": zod.union([zod.literal('easy'),zod.literal('moderate'),zod.literal('demanding'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional(),
   "active": zod.boolean(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
@@ -373,6 +407,7 @@ export const ListItineraryDaysResponseItem = zod.object({
   "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
+  "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
@@ -383,6 +418,9 @@ export const ListItineraryDaysResponseItem = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "createdAt": zod.string()
@@ -403,7 +441,8 @@ export const CreateItineraryDayBody = zod.object({
   "cityTo": zod.string().optional(),
   "country": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "meals": zod.string().optional()
 })
 
 
@@ -421,6 +460,7 @@ export const UpdateItineraryDayBody = zod.object({
   "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
+  "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional()
 })
 
@@ -433,6 +473,7 @@ export const UpdateItineraryDayResponse = zod.object({
   "country": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
+  "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
@@ -443,6 +484,9 @@ export const UpdateItineraryDayResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "createdAt": zod.string()
@@ -832,6 +876,9 @@ export const GetTripResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "activities": zod.array(zod.object({
@@ -1040,6 +1087,9 @@ export const UpdateTripDayAdminResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "activities": zod.array(zod.object({
@@ -1079,6 +1129,7 @@ export const ListTripDayActivitiesResponseItem = zod.object({
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
+  "timeOfDay": zod.union([zod.literal('mañana'),zod.literal('tarde'),zod.literal('noche'),zod.literal(null)]).nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
@@ -1106,6 +1157,7 @@ export const AddTripDayActivityBody = zod.object({
   "sortOrder": zod.number().optional(),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
+  "timeOfDay": zod.enum(['mañana', 'tarde', 'noche']).optional(),
   "notes": zod.string().optional(),
   "companyContact": zod.string().optional(),
   "addressOverride": zod.string().optional(),
@@ -1143,6 +1195,7 @@ export const UpdateTripDayActivityResponse = zod.object({
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
+  "timeOfDay": zod.union([zod.literal('mañana'),zod.literal('tarde'),zod.literal('noche'),zod.literal(null)]).nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
@@ -1481,6 +1534,9 @@ export const GetMyTripResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "activities": zod.array(zod.object({
@@ -1610,6 +1666,9 @@ export const UpdateMyTripResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "activities": zod.array(zod.object({
@@ -1688,6 +1747,9 @@ export const UpdateTripDayResponse = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })).optional(),
   "activities": zod.array(zod.object({
@@ -2292,12 +2354,35 @@ export const ParseItineraryPdfResponse = zod.object({
   "countries": zod.array(zod.string()).optional(),
   "startDate": zod.string().nullish().describe('ISO date string (YYYY-MM-DD) if the document specifies a start date'),
   "endDate": zod.string().nullish().describe('ISO date string (YYYY-MM-DD) if the document specifies an end date'),
+  "tripNotes": zod.array(zod.string()).optional(),
+  "recommendations": zod.array(zod.string()).optional(),
+  "checklist": zod.array(zod.object({
+  "item": zod.string(),
+  "category": zod.string().nullish()
+})).optional(),
   "days": zod.array(zod.object({
   "dayNumber": zod.number(),
+  "title": zod.string().nullish().describe('Full day title, possibly multi-locality (not truncated)'),
+  "localities": zod.array(zod.string()).optional(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
+  "meals": zod.string().nullish().describe('Normalized meal plan for the day (e.g. \'Desayuno y cena\')'),
+  "hotel": zod.union([zod.object({
+  "name": zod.string(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "source": zod.string().nullish().describe('Where the hotel was found: tabla, listado_ciudad, tabla+listado_ciudad, prosa'),
+  "reviewManually": zod.boolean().optional()
+}),zod.null()]).optional(),
+  "parsedActivities": zod.array(zod.object({
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "type": zod.union([zod.literal('Visita'),zod.literal('Traslado'),zod.literal('Libre'),zod.literal('Gastronomía'),zod.literal('Vuelo'),zod.literal('Actividad'),zod.literal(null)]).nullish(),
+  "moment": zod.union([zod.literal('mañana'),zod.literal('tarde'),zod.literal('noche'),zod.literal(null)]).nullish()
+})).optional(),
+  "dayNotes": zod.array(zod.string()).optional(),
   "activities": zod.array(zod.string()).optional(),
   "hotels": zod.array(zod.string()).optional()
 }))
@@ -2321,6 +2406,7 @@ export const ListDayActivitiesResponseItem = zod.object({
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
+  "timeOfDay": zod.union([zod.literal('mañana'),zod.literal('tarde'),zod.literal('noche'),zod.literal(null)]).nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
@@ -2348,6 +2434,7 @@ export const AddDayActivityBody = zod.object({
   "sortOrder": zod.number().optional(),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
+  "timeOfDay": zod.enum(['mañana', 'tarde', 'noche']).optional(),
   "notes": zod.string().optional(),
   "companyContact": zod.string().optional(),
   "addressOverride": zod.string().optional(),
@@ -2379,6 +2466,7 @@ export const UpdateItineraryDayActivityResponse = zod.object({
   "sortOrder": zod.number(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
+  "timeOfDay": zod.union([zod.literal('mañana'),zod.literal('tarde'),zod.literal('noche'),zod.literal(null)]).nullish(),
   "address": zod.string().nullish(),
   "durationHours": zod.number().nullish(),
   "notes": zod.string().nullish(),
@@ -2418,6 +2506,9 @@ export const ListItineraryDayHotelsResponseItem = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 export const ListItineraryDayHotelsResponse = zod.array(ListItineraryDayHotelsResponseItem)
@@ -2433,7 +2524,10 @@ export const AddItineraryDayHotelParams = zod.object({
 
 export const AddItineraryDayHotelBody = zod.object({
   "hotelId": zod.number(),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional()
 })
 
 
@@ -2464,6 +2558,9 @@ export const ListTripDayHotelsResponseItem = zod.object({
   "hotelPhone": zod.string().nullish(),
   "hotelWebsite": zod.string().nullish(),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullable(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 export const ListTripDayHotelsResponse = zod.array(ListTripDayHotelsResponseItem)
@@ -2479,7 +2576,10 @@ export const AddTripDayHotelParams = zod.object({
 
 export const AddTripDayHotelBody = zod.object({
   "hotelId": zod.number(),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish()
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
+  "guaranteed": zod.boolean().optional(),
+  "alternatives": zod.array(zod.string()).optional(),
+  "reviewManually": zod.boolean().optional()
 })
 
 
