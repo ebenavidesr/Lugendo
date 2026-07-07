@@ -14,6 +14,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Si el despliegue vuelve a colgarse, los `heartbeat <timestamp>` (escritos cada segundo vía `fs.writeSync`, sin pasar por el logger) siguen apareciendo — si dejan de aparecer, confirma un cuelgue real del proceso; si nunca aparecen ni el primero, confirma que es un problema de captura de logs de la plataforma, no de la app
 - [ ] El despliegue completa el healthcheck de arranque y el servicio queda "Running" en Autoscale
 
+### #120 — Abrir el puerto antes de las migraciones (fix healthcheck de deploy)
+- [ ] En el arranque, los logs muestran `LISTENING port=8080` / `Server listening` ANTES de `Running database migrations` (el puerto se abre primero)
+- [ ] Las migraciones se ejecutan DESPUÉS de que el servidor ya está escuchando (dentro del callback de `listen`)
+- [ ] `GET /api/healthz` devuelve `200` en cuanto el proceso está escuchando, sin esperar a que terminen las migraciones, con cuerpo `{"ok":true,"ready":<bool>,"version":"..."}`
+- [ ] Mientras las migraciones no han terminado (`ready=false`), cualquier otra ruta `/api/*` responde `503 {"error":"Service starting up, please retry shortly"}`
+- [ ] Una vez completadas las migraciones, `healthz` muestra `ready:true` y el resto de rutas responden con normalidad
+- [ ] Si falla el bind del puerto (p. ej. `EADDRINUSE`), el proceso registra el error y sale con código `1` (no se queda colgado)
+- [ ] Si fallan las migraciones, el proceso registra el error y sale con código `1`
+- [ ] El bind sigue siendo explícito a `0.0.0.0` y se sigue leyendo `process.env.PORT` (sin cambios en ese punto)
+
 ### #119 — Rediseñar estado por defecto de vuelos
 - [x] Si el viaje no tiene ningún vuelo (ida ni vuelta), la sección "Vuelos" aparece expandida automáticamente mostrando "No has añadido tu vuelo todavía" y un botón CTA "Añadir vuelo" que abre el formulario
 - [x] Si ya hay al menos un vuelo, la sección muestra siempre el resumen del primer vuelo de ida (y de vuelta si existe) con origen → destino, fecha y horas de salida/llegada, visible sin necesidad de expandir el acordeón
