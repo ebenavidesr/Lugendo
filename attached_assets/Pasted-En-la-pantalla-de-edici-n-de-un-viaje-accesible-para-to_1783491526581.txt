@@ -1,0 +1,12 @@
+En la pantalla de edición de un viaje (accesible para todos los roles de usuario que tienen permiso de edición), dentro de la sección "HOTELES DEL DÍA" de cada día del itinerario, necesito añadir una alternativa a la selección de hotel.
+Actualmente el usuario solo puede buscar y seleccionar un hotel del catálogo, o crear uno nuevo. Quiero añadir una tercera opción: marcar ese día como "Noche en transporte", para los casos en que no se necesita hotel porque se duerme en avión, tren, barco, autobús nocturno, etc.
+Requisitos concretos:
+
+Interfaz: Junto al buscador de hoteles, añade una opción claramente visible (puede ser un toggle, un checkbox, o un botón tipo "🚌 Marcar como noche en transporte") que el usuario pueda seleccionar en lugar de buscar un hotel.
+Comportamiento excluyente: Si se marca "Noche en transporte", el buscador de hotel debe deshabilitarse u ocultarse (y viceversa: si se selecciona un hotel, esa marca debe desactivarse). Es decir, para un mismo día solo puede haber una de las dos opciones, no ambas.
+Persistencia en base de datos: Este dato debe guardarse en el modelo/tabla del día del itinerario (por ejemplo, un campo booleano es_noche_transporte o similar), no solo mostrarse visualmente. Debe guardarse y recuperarse correctamente al recargar la página.
+Visualización posterior: Cuando un día tenga marcada esta opción, en la vista de "HOTELES DEL DÍA" debe mostrarse claramente un texto o icono indicando "Noche en transporte" en lugar del bloque de búsqueda de hotel (aunque debe seguir siendo editable para poder cambiarlo después).
+Todos los roles: Esta funcionalidad debe estar disponible para cualquier rol de usuario que actualmente tenga permisos para editar el itinerario (no solo administrador).
+No debe romper la funcionalidad existente de búsqueda y creación de hoteles para los días en que sí se necesita alojamiento.
+
+Por favor, antes de implementar, confírmame en qué tabla/modelo de la base de datos se guarda la información de "hotel por día" para asegurarnos de que el nuevo campo se añade correctamente ahí.
