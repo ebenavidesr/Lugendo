@@ -171,6 +171,7 @@ export const ItineraryDayInputSchema = z.object({
   transport: TransportModeSchema,
   description: z.string().optional(),
   meals: z.string().optional(),
+  isTransitNight: z.boolean().optional(),
 });
 
 export const ItineraryDayUpdateSchema = z.object({

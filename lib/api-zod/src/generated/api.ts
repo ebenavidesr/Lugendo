@@ -442,7 +442,8 @@ export const CreateItineraryDayBody = zod.object({
   "country": zod.string().optional(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().optional(),
-  "meals": zod.string().optional()
+  "meals": zod.string().optional(),
+  "isTransitNight": zod.boolean().optional()
 })
 
 

@@ -355,6 +355,7 @@ export interface ItineraryDayInput {
   transport?: TransportMode | null;
   description?: string;
   meals?: string;
+  isTransitNight?: boolean;
 }
 
 export interface ItineraryDayUpdate {

@@ -2834,6 +2834,8 @@ components:
           type: string
         meals:
           type: string
+        isTransitNight:
+          type: boolean
 
     ItineraryDayUpdate:
       type: object

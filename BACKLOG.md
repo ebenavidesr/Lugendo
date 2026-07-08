@@ -119,6 +119,7 @@
 | #118 | Toggle Incluida/Por libre al crear itinerario | | Itinerarios |
 | #116 | Verificar el toggle de noche en transporte con una cuenta de viajero real | 🟢 Baja | Viajeros |
 | #20 | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General |
+| #119 | Noche en transporte en los wizards de creación (itinerario, viaje y viajero) | | Itinerarios · Viajes · Viajeros |
 
 ---
 

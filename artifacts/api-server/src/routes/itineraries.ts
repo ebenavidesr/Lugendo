@@ -338,10 +338,10 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
 
 router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDayInputSchema), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const { dayNumber, cityFrom, cityTo, country, transport, description, meals } = req.body;
+  const { dayNumber, cityFrom, cityTo, country, transport, description, meals, isTransitNight } = req.body;
   const [day] = await db
     .insert(itineraryDaysTable)
-    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description, meals })
+    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description, meals, ...(isTransitNight !== undefined ? { isTransitNight } : {}) })
     .returning();
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });

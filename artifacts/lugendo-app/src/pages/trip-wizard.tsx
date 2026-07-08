@@ -6,6 +6,7 @@ import {
   useListItineraryDays,
   useCreateItinerary,
   useCreateItineraryDay,
+  useUpdateItineraryDay,
   useCreateTrip,
   useSendInvitations,
   useListHotels,
@@ -15,6 +16,7 @@ import {
   useCreateHotel,
   useAddDayActivity,
   useAddItineraryDayHotel,
+  useRemoveItineraryDayHotel,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,6 +46,7 @@ interface WizardData {
   scratchDescription: string;
   parsedItinerary: ParsedItinerary | null;
   dayHotels: Record<number, string>;
+  dayTransitNights: Record<number, boolean>;
   dayActivities: Record<number, number[]>;
   startDate: string;
   endDate: string;
@@ -121,7 +124,7 @@ export default function TripWizard() {
     origin: null, selectedItineraryId: null,
     newMode: null,
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
-    parsedItinerary: null, dayHotels: {}, dayActivities: {},
+    parsedItinerary: null, dayHotels: {}, dayTransitNights: {}, dayActivities: {},
     startDate: "", endDate: "", maxCapacity: "",
     outboundLegs: [emptyLeg()],
     returnLegs: [emptyLeg()],
@@ -163,12 +166,14 @@ export default function TripWizard() {
   const parsePdf = useParseItineraryPdf();
   const createItinerary = useCreateItinerary();
   const createDay = useCreateItineraryDay();
+  const updateDay = useUpdateItineraryDay();
   const createTrip = useCreateTrip();
   const sendInvitations = useSendInvitations();
   const createHotel = useCreateHotel();
   const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
   const addDayHotel = useAddItineraryDayHotel();
+  const removeDayHotel = useRemoveItineraryDayHotel();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
@@ -425,7 +430,8 @@ export default function TripWizard() {
         if (data.parsedItinerary?.days.length) {
           const createdDayMap: Record<number, number> = {};
           for (const day of data.parsedItinerary.days) {
-            const hotelId = data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
+            const isTransit = !!data.dayTransitNights[day.dayNumber];
+            const hotelId = !isTransit && data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
             const created = await createDay.mutateAsync({
               itineraryId: newItin.id,
               data: {
@@ -435,6 +441,7 @@ export default function TripWizard() {
                 ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
                 ...(day.description ? { description: day.description } : {}),
                 ...(day.meals ? { meals: day.meals } : {}),
+                ...(isTransit ? { isTransitNight: true } : {}),
               },
             });
             createdDayMap[day.dayNumber] = created.id;
@@ -471,6 +478,17 @@ export default function TripWizard() {
             for (let i = 0; i < actIds.length; i++) {
               await addDayActivity.mutateAsync({ itineraryId, dayId: existingDay.id, data: { activityId: actIds[i] } });
             }
+          }
+          for (const [dayNumStr, transit] of Object.entries(data.dayTransitNights)) {
+            const dayNum = parseInt(dayNumStr);
+            const existingDay = existingDays?.find(d => d.dayNumber === dayNum);
+            if (!existingDay || !!existingDay.isTransitNight === transit) continue;
+            if (transit && existingDay.hotels?.length) {
+              for (const h of existingDay.hotels) {
+                await removeDayHotel.mutateAsync({ itineraryId, dayId: existingDay.id, assignmentId: h.id });
+              }
+            }
+            await updateDay.mutateAsync({ itineraryId, dayId: existingDay.id, data: { isTransitNight: transit } });
           }
         }
       }
@@ -553,7 +571,13 @@ export default function TripWizard() {
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {itineraries?.map(it => (
                   <button key={it.id}
-                    onClick={() => set({ selectedItineraryId: it.id, tripName: data.tripName || it.name })}
+                    onClick={() => set({
+                      selectedItineraryId: it.id,
+                      tripName: data.tripName || it.name,
+                      ...(data.selectedItineraryId !== it.id
+                        ? { dayTransitNights: {}, dayHotels: {}, dayActivities: {} }
+                        : {}),
+                    })}
                     className="w-full p-4 rounded-[12px] border-2 text-left transition-all"
                     style={{
                       borderColor: data.selectedItineraryId === it.id ? "#C4793A" : "#E5D4BF",
@@ -931,6 +955,10 @@ export default function TripWizard() {
                   const isHotelOpen = inlineHotelDay === day.dayNumber;
                   const isActOpen = inlineActivityDay === day.dayNumber;
                   const assignedHotel = data.dayHotels[day.dayNumber];
+                  const originalTransit = data.origin === "existing"
+                    ? !!existingDays?.find(d => d.dayNumber === day.dayNumber)?.isTransitNight
+                    : false;
+                  const isTransit = data.dayTransitNights[day.dayNumber] ?? originalTransit;
 
                   return (
                     <Fragment key={day.dayNumber}>
@@ -990,31 +1018,56 @@ export default function TripWizard() {
                       <div className="px-3 pb-2 flex items-center gap-2 border-t border-border/50 pt-2">
                         <Hotel className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "#9C7A58" }} />
                         <div className="flex-1 min-w-0">
-                          <Select
-                            value={assignedHotel || "none"}
-                            onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}>
-                            <SelectTrigger className="text-[12px] h-7 border-0 bg-transparent px-0 focus:ring-0 shadow-none w-full">
-                              <SelectValue placeholder="Sin hotel asignado" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Sin hotel</SelectItem>
-                              {hotels?.map(h => (
-                                <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {isTransit ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                              <Plane className="w-3 h-3" /> Noche en transporte
+                            </span>
+                          ) : (
+                            <Select
+                              value={assignedHotel || "none"}
+                              onValueChange={v => set({ dayHotels: { ...data.dayHotels, [day.dayNumber]: v === "none" ? "" : v } })}>
+                              <SelectTrigger className="text-[12px] h-7 border-0 bg-transparent px-0 focus:ring-0 shadow-none w-full">
+                                <SelectValue placeholder="Sin hotel asignado" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Sin hotel</SelectItem>
+                                {hotels?.map(h => (
+                                  <SelectItem key={h.id} value={String(h.id)}>{h.name} · {h.city}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
+                        {!isTransit && (
+                          <button
+                            className="flex-shrink-0 text-[11px] font-medium flex items-center gap-0.5 px-2 py-1 rounded-[6px] transition-colors"
+                            style={{ color: "#C4793A", background: isHotelOpen ? "#FAEEE4" : "transparent" }}
+                            onClick={() => {
+                              setInlineHotelDay(isHotelOpen ? null : day.dayNumber);
+                              setInlineActivityDay(null);
+                              setHotelSearchQ("");
+                              setHotelLookupResults([]);
+                              setNewHotelForm({ name: "", city: day.cityTo ?? day.cityFrom ?? "", country: "", address: "", phone: "", website: "" });
+                            }}>
+                            <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
+                          </button>
+                        )}
                         <button
-                          className="flex-shrink-0 text-[11px] font-medium flex items-center gap-0.5 px-2 py-1 rounded-[6px] transition-colors"
-                          style={{ color: "#C4793A", background: isHotelOpen ? "#FAEEE4" : "transparent" }}
+                          className="flex-shrink-0 text-[11px] font-medium flex items-center gap-1 px-2 py-1 rounded-[6px] transition-colors"
+                          style={isTransit
+                            ? { background: "#3D2F6B", color: "#FAF2EB" }
+                            : { background: "#F0EEF7", color: "#3D2F6B" }}
+                          title="Marcar este día como noche en transporte (tren nocturno, vuelo, ferry…)"
                           onClick={() => {
-                            setInlineHotelDay(isHotelOpen ? null : day.dayNumber);
-                            setInlineActivityDay(null);
-                            setHotelSearchQ("");
-                            setHotelLookupResults([]);
-                            setNewHotelForm({ name: "", city: day.cityTo ?? day.cityFrom ?? "", country: "", address: "", phone: "", website: "" });
+                            const next = !isTransit;
+                            set({
+                              dayTransitNights: { ...data.dayTransitNights, [day.dayNumber]: next },
+                              ...(next ? { dayHotels: { ...data.dayHotels, [day.dayNumber]: "" } } : {}),
+                            });
+                            if (next && isHotelOpen) setInlineHotelDay(null);
                           }}>
-                          <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
+                          <Plane className="w-3 h-3" />
+                          Noche en transporte
                         </button>
                       </div>
 

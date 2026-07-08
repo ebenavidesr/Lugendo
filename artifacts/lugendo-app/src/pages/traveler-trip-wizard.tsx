@@ -46,6 +46,7 @@ interface WizardData {
   scratchDescription: string;
   parsedItinerary: ParsedItinerary | null;
   dayHotels: Record<number, string>;
+  dayTransitNights: Record<number, boolean>;
   dayActivities: Record<number, number[]>;
   startDate: string;
   endDate: string;
@@ -118,7 +119,7 @@ export default function TravelerTripWizard() {
     inviteCode: "",
     newMode: null,
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
-    parsedItinerary: null, dayHotels: {}, dayActivities: {},
+    parsedItinerary: null, dayHotels: {}, dayTransitNights: {}, dayActivities: {},
     startDate: "", endDate: "",
     tripName: "",
   });
@@ -429,7 +430,8 @@ export default function TravelerTripWizard() {
 
         const createdDayMap: Record<number, number> = {};
         for (const day of data.parsedItinerary.days) {
-          const hotelId = data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
+          const isTransit = !!data.dayTransitNights[day.dayNumber];
+          const hotelId = !isTransit && data.dayHotels[day.dayNumber] ? parseInt(data.dayHotels[day.dayNumber]) : undefined;
           const created = await createDay.mutateAsync({
             itineraryId: newItin.id,
             data: {
@@ -439,6 +441,7 @@ export default function TravelerTripWizard() {
               ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
               ...(day.description ? { description: day.description } : {}),
               ...(hotelId ? { hotelId } : {}),
+              ...(isTransit ? { isTransitNight: true } : {}),
             },
           });
           createdDayMap[day.dayNumber] = created.id;
@@ -750,6 +753,7 @@ export default function TravelerTripWizard() {
                     const isHotelOpen = inlineHotelDay === day.dayNumber;
                     const isActOpen = inlineActivityDay === day.dayNumber;
                     const assignedHotel = data.dayHotels[day.dayNumber];
+                    const isTransit = !!data.dayTransitNights[day.dayNumber];
 
                     return (
                       <Fragment key={day.dayNumber}>
@@ -774,7 +778,18 @@ export default function TravelerTripWizard() {
 
                         {/* Activities & Hotel list */}
                         <div className="px-3 pb-3 flex flex-wrap gap-1.5">
-                          {assignedHotel ? (
+                          {isTransit ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: "#3D2F6B", color: "#FAF2EB" }}>
+                              <Plane className="w-3 h-3" />
+                              Noche en transporte
+                              <button
+                                onClick={() => set({ dayTransitNights: { ...data.dayTransitNights, [day.dayNumber]: false } })}
+                                className="opacity-70 hover:opacity-100"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          ) : assignedHotel ? (
                             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium" style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
                               <Hotel className="w-3 h-3" />
                               <span className="max-w-[100px] truncate">{hotels?.find(h => String(h.id) === assignedHotel)?.name}</span>
@@ -787,6 +802,22 @@ export default function TravelerTripWizard() {
                               style={{ borderColor: "#E5D4BF", color: "#9C7A58" }}
                             >
                               <Plus className="w-2.5 h-2.5" /> Hotel
+                            </button>
+                          )}
+                          {!isTransit && (
+                            <button
+                              onClick={() => {
+                                set({
+                                  dayTransitNights: { ...data.dayTransitNights, [day.dayNumber]: true },
+                                  dayHotels: { ...data.dayHotels, [day.dayNumber]: "" },
+                                });
+                                if (isHotelOpen) setInlineHotelDay(null);
+                              }}
+                              title="Marcar este día como noche en transporte (tren nocturno, vuelo, ferry…)"
+                              className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium border border-dashed transition-colors hover:bg-muted"
+                              style={{ borderColor: "#C6BEE3", color: "#3D2F6B" }}
+                            >
+                              <Plane className="w-2.5 h-2.5" /> Noche en transporte
                             </button>
                           )}
 

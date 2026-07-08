@@ -198,6 +198,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Ambos estados vacíos usan los tokens de marca (`--indigo` para el icono, `--arena` para el fondo) en vez de valores hex sueltos
 - [ ] El resto del comportamiento de las tabs (listados, subida, edición, borrado) sigue funcionando igual
 
+### #119 — Noche en transporte en los wizards de creación
+- [ ] Wizard de itinerario (back office): cada día del paso "Días" muestra un botón "Noche en transporte"; al activarlo, el selector de hotel y el botón "Nuevo" desaparecen y se muestra el badge índigo
+- [ ] Wizard de itinerario: al crear, los días marcados se guardan con noche en transporte (visible en el detalle del itinerario)
+- [ ] Wizard de viaje (modo nuevo itinerario/PDF): mismo toggle por día y se persiste al crear los días
+- [ ] Wizard de viaje (modo itinerario existente): activar el toggle en un día con hotel asignado elimina esa asignación y marca el día como noche en transporte
+- [ ] Wizard de viaje: al cambiar de itinerario seleccionado, los toggles/hoteles/actividades marcados se reinician (no se aplican al nuevo itinerario)
+- [ ] Wizard de viajero (importar PDF): pill "Noche en transporte" por día; al activarla se oculta el pill/botón de hotel y se persiste al crear
+- [ ] El viaje creado desde un itinerario copia la marca de noche en transporte a los días del viaje (visible en el pasaporte del viajero)
+
 ---
 
 ## Tasks mergeados recientemente
