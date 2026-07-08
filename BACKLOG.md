@@ -120,6 +120,7 @@
 | #116 | Verificar el toggle de noche en transporte con una cuenta de viajero real | 🟢 Baja | Viajeros |
 | #20 | Mejorar extracción de vuelos, hoteles y actividades del PDF | 🔴 Alta | General |
 | #119 | Noche en transporte en los wizards de creación (itinerario, viaje y viajero) | | Itinerarios · Viajes · Viajeros |
+| #120 | Noche en transporte al editar viajes e itinerarios ya creados (formulario Editar día + vista del viajero) | | Viajes · Viajeros |
 
 ---
 

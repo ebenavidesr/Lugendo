@@ -958,6 +958,20 @@ export interface PersonalTripDayInput {
   isTransitNight?: boolean;
 }
 
+export interface PersonalTripDayUpdateInput {
+  dayNumber?: number;
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  country?: string | null;
+  transport?: TransportMode | null;
+  /** @nullable */
+  description?: string | null;
+  isTransitNight?: boolean;
+}
+
 export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];
 
 

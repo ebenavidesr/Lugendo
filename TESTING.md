@@ -207,6 +207,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Wizard de viajero (importar PDF): pill "Noche en transporte" por día; al activarla se oculta el pill/botón de hotel y se persiste al crear
 - [ ] El viaje creado desde un itinerario copia la marca de noche en transporte a los días del viaje (visible en el pasaporte del viajero)
 
+### #120 — Noche en transporte al editar viajes e itinerarios ya creados
+- [ ] Detalle de viaje (back office): el formulario "Editar día" (icono lápiz) muestra ahora el panel de hoteles con el botón "Noche en transporte"
+- [ ] Activar el toggle desde ese formulario elimina los hoteles asignados (previa confirmación) y marca el día; desactivarlo lo revierte
+- [ ] Pasaporte del viajero: en un viaje propio (o compartido con permiso total), el día expandido muestra el botón "Noche en transporte" y funciona (guarda vía el endpoint del viajero)
+- [ ] Un viajero con acceso de solo lectura (viaje de agencia o compartido sin permiso total) sigue sin ver el toggle
+- [ ] Detalle de itinerario (back office): el toggle sigue disponible en el día expandido y en su formulario de edición
+- [ ] Seguridad: quitar un hotel de un día solo borra asignaciones que pertenecen a ese día
+
 ---
 
 ## Tasks mergeados recientemente

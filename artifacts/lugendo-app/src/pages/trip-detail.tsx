@@ -13,7 +13,7 @@ import {
   useListTripDayActivities, useGetTripTravelAdvisories,
   COUNTRIES,
 } from "@workspace/api-client-react";
-import type { TripDetailStatus, InvitationStatus, TransportMode } from "@workspace/api-client-react";
+import type { TripDetailStatus, InvitationStatus, TransportMode, DayHotel } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
@@ -100,12 +100,13 @@ function formatDayDate(startDate: string | null | undefined, dayNumber: number):
 }
 
 interface DayEditFormProps {
-  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null; description?: string | null; };
+  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null; description?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; };
   tripId: number;
+  allDays?: { id: number; dayNumber?: number | null; cityFrom?: string | null; cityTo?: string | null; country?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; }[];
   onDone: () => void;
 }
 
-function DayEditForm({ day, tripId, onDone }: DayEditFormProps) {
+function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const updateDay = useUpdateTripDayAdmin();
@@ -214,6 +215,16 @@ function DayEditForm({ day, tripId, onDone }: DayEditFormProps) {
           placeholder="Notas sobre este día…"
           value={description}
           onChange={e => setDescription(e.target.value)}
+        />
+      </div>
+      <div className="rounded-[8px] border border-border/60 bg-card px-3 py-2.5">
+        <DayHotelPanel
+          entityType="trip"
+          entityId={tripId}
+          day={day}
+          allDays={allDays}
+          invalidateKey={`/api/trips/${tripId}`}
+          compact
         />
       </div>
       <div className="flex items-center gap-2 pt-1">
@@ -724,6 +735,7 @@ export default function TripDetail() {
                             <DayEditForm
                               day={day}
                               tripId={tripId}
+                              allDays={trip.days}
                               onDone={() => setEditingDayId(null)}
                             />
                           </div>

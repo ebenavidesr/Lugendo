@@ -492,7 +492,7 @@ router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireAuth, as
   const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, req.session.role);
   if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
 
-  await db.delete(tripDayHotelsTable).where(eq(tripDayHotelsTable.id, assignmentId));
+  await db.delete(tripDayHotelsTable).where(and(eq(tripDayHotelsTable.id, assignmentId), eq(tripDayHotelsTable.tripDayId, dayId)));
   res.sendStatus(204);
 });
 

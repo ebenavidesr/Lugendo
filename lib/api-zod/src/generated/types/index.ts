@@ -74,6 +74,7 @@ export * from './parsedHotel';
 export * from './parsedItinerary';
 export * from './parsePdfInput';
 export * from './personalTripDayInput';
+export * from './personalTripDayUpdateInput';
 export * from './registerInput';
 export * from './segmentValue';
 export * from './sharedTripEntry';

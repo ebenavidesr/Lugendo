@@ -62,6 +62,7 @@ import type {
   ParsePdfInput,
   ParsedItinerary,
   PersonalTripDayInput,
+  PersonalTripDayUpdateInput,
   RegisterInput,
   ShareTripInput,
   SharedTripEntry,
@@ -4563,7 +4564,7 @@ export const getUpdateTripDayUrl = (tripId: number,
  */
 export const updateTripDay = async (tripId: number,
     dayId: number,
-    personalTripDayInput: PersonalTripDayInput, options?: RequestInit): Promise<TripDay> => {
+    personalTripDayUpdateInput: PersonalTripDayUpdateInput, options?: RequestInit): Promise<TripDay> => {
 
   return customFetch<TripDay>(getUpdateTripDayUrl(tripId,dayId),
   {
@@ -4571,7 +4572,7 @@ export const updateTripDay = async (tripId: number,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      personalTripDayInput,)
+      personalTripDayUpdateInput,)
   }
 );}
 
@@ -4579,8 +4580,8 @@ export const updateTripDay = async (tripId: number,
 
 
 export const getUpdateTripDayMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayInput>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayUpdateInput>}, TContext> => {
 
 const mutationKey = ['updateTripDay'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4592,7 +4593,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripDay>>, {tripId: number;dayId: number;data: BodyType<PersonalTripDayInput>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripDay>>, {tripId: number;dayId: number;data: BodyType<PersonalTripDayUpdateInput>}> = (props) => {
           const {tripId,dayId,data} = props ?? {};
 
           return  updateTripDay(tripId,dayId,data,requestOptions)
@@ -4606,18 +4607,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateTripDayMutationResult = NonNullable<Awaited<ReturnType<typeof updateTripDay>>>
-    export type UpdateTripDayMutationBody = BodyType<PersonalTripDayInput>
+    export type UpdateTripDayMutationBody = BodyType<PersonalTripDayUpdateInput>
     export type UpdateTripDayMutationError = ErrorType<void>
 
     /**
  * @summary Update a day in a personal trip's itinerary
  */
 export const useUpdateTripDay = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripDay>>, TError,{tripId: number;dayId: number;data: BodyType<PersonalTripDayUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateTripDay>>,
         TError,
-        {tripId: number;dayId: number;data: BodyType<PersonalTripDayInput>},
+        {tripId: number;dayId: number;data: BodyType<PersonalTripDayUpdateInput>},
         TContext
       > => {
       return useMutation(getUpdateTripDayMutationOptions(options));

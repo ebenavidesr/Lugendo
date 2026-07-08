@@ -1335,7 +1335,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PersonalTripDayInput"
+              $ref: "#/components/schemas/PersonalTripDayUpdateInput"
       responses:
         "200":
           description: Day updated
@@ -3610,6 +3610,24 @@ components:
     PersonalTripDayInput:
       type: object
       required: [dayNumber]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        country:
+          type: ["string", "null"]
+        transport:
+          $ref: "#/components/schemas/TransportMode"
+        description:
+          type: ["string", "null"]
+        isTransitNight:
+          type: boolean
+
+    PersonalTripDayUpdateInput:
+      type: object
       properties:
         dayNumber:
           type: integer

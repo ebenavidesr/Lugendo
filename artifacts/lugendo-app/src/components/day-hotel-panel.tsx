@@ -9,6 +9,7 @@ import {
   useRemoveTripDayHotel,
   useUpdateItineraryDay,
   useUpdateTripDayAdmin,
+  useUpdateTripDay,
 } from "@workspace/api-client-react";
 import type { DayHotel, SegmentValue } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
@@ -99,6 +100,7 @@ export function DayHotelPanel({
   invalidateKey,
   readOnly = false,
   transitReadOnly = false,
+  travelerTrip = false,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
@@ -107,8 +109,10 @@ export function DayHotelPanel({
   allDays?: GenericDay[];
   invalidateKey?: string;
   readOnly?: boolean;
-  /** Forces the "noche en transporte" toggle to read-only, independent of `readOnly` (which only gates hotel add/remove). Use for traveler-facing views, which must never let travelers toggle transit nights even if they can otherwise edit hotels. */
+  /** Forces the "noche en transporte" toggle to read-only, independent of `readOnly` (which only gates hotel add/remove). Use for traveler-facing views where the viewer has no edit rights on the trip (agency trips, shared trips without full permission). */
   transitReadOnly?: boolean;
+  /** Traveler context: day updates (e.g. the transit-night flag) go through PATCH /me/trips/:tripId/days/:dayId, which enforces traveler edit access and lazily migrates itinerary days. Back-office views leave this false to use the admin endpoint. */
+  travelerTrip?: boolean;
 }) {
   const { data: hotelCatalog } = useListHotels();
   const createHotel = useCreateHotel();
@@ -117,7 +121,8 @@ export function DayHotelPanel({
   const addTripHotel = useAddTripDayHotel();
   const removeTripHotel = useRemoveTripDayHotel();
   const updateItinDay = useUpdateItineraryDay();
-  const updateTripDay = useUpdateTripDayAdmin();
+  const updateTripDayAdmin = useUpdateTripDayAdmin();
+  const updateTripDayTraveler = useUpdateTripDay();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [togglingTransit, setTogglingTransit] = useState(false);
@@ -409,8 +414,10 @@ export function DayHotelPanel({
         const callbacks = { onSuccess: () => resolve(), onError: () => reject() };
         if (entityType === "itinerary") {
           updateItinDay.mutate({ itineraryId: entityId, dayId: day.id, data }, callbacks);
+        } else if (travelerTrip) {
+          updateTripDayTraveler.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
         } else {
-          updateTripDay.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
+          updateTripDayAdmin.mutate({ tripId: entityId, dayId: day.id, data }, callbacks);
         }
       });
       invalidate();

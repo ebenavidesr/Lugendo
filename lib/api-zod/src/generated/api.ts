@@ -1720,7 +1720,7 @@ export const UpdateTripDayParams = zod.object({
 })
 
 export const UpdateTripDayBody = zod.object({
-  "dayNumber": zod.number(),
+  "dayNumber": zod.number().optional(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "country": zod.string().nullish(),

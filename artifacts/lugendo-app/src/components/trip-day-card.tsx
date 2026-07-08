@@ -236,7 +236,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             allDays={allDays}
             compact={true}
             readOnly={!canEditHotels}
-            transitReadOnly
+            transitReadOnly={!canEditHotels}
+            travelerTrip
             invalidateKey={`/api/me/trips/${tripId}`}
           />
         </div>
