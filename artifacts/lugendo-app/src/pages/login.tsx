@@ -194,7 +194,8 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} data-testid="input-register-email" />
+                          {/* NO usar type="email": causa campos no editables en algunos navegadores (bug recurrente). inputMode="email" + autoComplete="email" mantiene teclado y autofill. */}
+                          <Input inputMode="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} data-testid="input-register-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -334,7 +335,8 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} data-testid="input-login-email" />
+                          {/* NO usar type="email": causa campos no editables en algunos navegadores (bug recurrente). inputMode="email" + autoComplete="email" mantiene teclado y autofill. */}
+                          <Input inputMode="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} data-testid="input-login-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
