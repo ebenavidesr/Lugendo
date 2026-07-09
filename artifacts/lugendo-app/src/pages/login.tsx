@@ -194,8 +194,24 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: los gestores de contraseñas (Safari/Chrome) bloquean este campo dentro del iframe de la vista previa cuando lo detectan como campo de email. NO usar type="email" ni autoComplete="email"; el name del DOM tampoco debe contener "email" (RHF usa ref, no el name del DOM). */}
-                          <Input inputMode="email" placeholder="nombre@email.com" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} name="reg-correo" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-testid="input-register-email" />
+                          {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin type="email", sin autoComplete="email", name sin "email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+                          <Input
+                            inputMode="text"
+                            placeholder="nombre@email.com"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            {...field}
+                            onBlur={(e) => {
+                              if (e.target.value !== field.value) field.onChange(e.target.value);
+                              field.onBlur();
+                            }}
+                            name="reg-correo"
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore="true"
+                            data-testid="input-register-email"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -335,8 +351,25 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: los gestores de contraseñas (Safari/Chrome) bloquean este campo dentro del iframe de la vista previa cuando lo detectan como campo de email. NO usar type="email" ni autoComplete="email"; el name del DOM tampoco debe contener "email" (RHF usa ref, no el name del DOM). */}
-                          <Input inputMode="email" placeholder="nombre@email.com" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} name="acceso-correo" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-testid="input-login-email" />
+                          {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin type="email", sin autoComplete="email", name sin "email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+                          <Input
+                            inputMode="text"
+                            placeholder="nombre@email.com"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            autoFocus
+                            {...field}
+                            onBlur={(e) => {
+                              if (e.target.value !== field.value) field.onChange(e.target.value);
+                              field.onBlur();
+                            }}
+                            name="acceso-correo"
+                            autoComplete="off"
+                            data-lpignore="true"
+                            data-1p-ignore="true"
+                            data-testid="input-login-email"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

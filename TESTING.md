@@ -6,11 +6,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
-### Fix — Campo de email deshabilitado en el registro (recurrente)
-- [ ] En `/register`, el campo Email acepta texto normalmente (no aparece deshabilitado)
-- [ ] En `/login`, el campo Email también acepta texto normalmente
-- [ ] El resto de campos del registro (Nombre, Apellidos, Contraseña, Confirmar contraseña, Código de invitación, Términos) están habilitados y editables
-- [ ] El autofill del navegador sigue funcionando en los campos de email (autoComplete="email" se mantiene)
+### Fix — Campo de email bloqueado por el autocompletado del navegador (recurrente)
+- [ ] En `/register`, el campo Email acepta texto, también tras salir del campo y volver a entrar
+- [ ] En `/login`, el campo Email acepta texto igualmente
+- [ ] El campo ya no dispara el wizard de autocompletado de email/dirección del navegador (o lo hace con mucha menos frecuencia — es una mitigación, no eliminable al 100%)
+- [ ] Si el navegador rellena el email directamente (autofill nativo), el valor se conserva al enviar el formulario (sincronización en onBlur)
+- [ ] El resto de campos del registro (Nombre, Apellidos, Contraseña, Confirmar, Código de invitación, Términos) siguen habilitados y editables
 - [ ] El registro y el login completan correctamente tras el cambio
 
 ### #20 — Mejorar extracción de vuelos, hoteles y actividades del PDF
