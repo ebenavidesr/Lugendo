@@ -13,5 +13,5 @@
 - [RHF reactive `values` resets form](rhf-reactive-values-reset.md) — inline object literal passed to useForm's `values` option resets the form on every render, wiping in-progress edits.
 - [Production deploy hang after boot](production-migration-hang.md) — Autoscale deploy stalls silently post-boot; likely IPv6 `::` bind invisible to `/proc/net/tcp` port-detection fallback; use `fs.writeSync` heartbeat/BUILD_ID to diagnose.
 - [Zod schema field sync](zod-schema-field-in-sync.md) — new field on a shared nested type must also be added to the hand-written Zod validation object in schemas.ts, or it's silently stripped on save.
-- [Email input type="email" uneditable](email-input-type-uneditable.md) — never use type="email" on email inputs here; it renders uneditable in the user's browser. Use inputMode="email".
+- [Email inputs uneditable in preview](email-input-type-uneditable.md) — password-manager autofill blocks auth email fields in the preview iframe; no type="email"/autoComplete="email", override DOM name.
 - [Transit night invariants](transit-night-invariants.md) — isTransitNight and hotel assignments are mutually exclusive (delete persisted hotels when setting the flag); reset per-day wizard maps when the base itinerary selection changes.

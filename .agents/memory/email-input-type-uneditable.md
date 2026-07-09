@@ -1,10 +1,10 @@
 ---
-name: Email input type="email" uneditable
-description: Recurring bug — type="email" on auth email inputs makes them uneditable/disabled-looking in the user's browser; use inputMode="email" instead.
+name: Email inputs uneditable in Replit preview (password-manager autofill)
+description: Recurring bug — login/register email fields reject typing in the user's Safari/Chrome inside the Replit preview iframe; caused by browser password-manager autofill targeting the field.
 ---
 
-**Rule:** Never use `type="email"` on the login/register email inputs (or other email fields) in this project. Use `inputMode="email"` + `autoComplete="email"` + autoCapitalize/autoCorrect off instead. Zod (`z.string().email()`) already enforces validation.
+**Rule:** The login/register email inputs must NOT look like autofill targets: no `type="email"`, no `autoComplete="email"` (use `autoComplete="off"`), DOM `name` must not contain "email" (override it after the RHF `{...field}` spread — RHF Controller is ref-based, DOM name is irrelevant), plus `data-lpignore` / `data-1p-ignore`. Keep `inputMode="email"` for the keyboard and Zod for validation.
 
-**Why:** Recurring bug reported multiple times by the user: with `type="email"` the field appears disabled / rejects typing in their browser (likely extension/password-manager interference). First fixed 2026-06-01 by removing `type="email"`; regressed 2026-06-10 when it was re-added "for autofill"; fixed again 2026-07-09. Autofill works fine with `autoComplete="email"` alone.
+**Why:** Recurring user-reported bug (fixed 2026-06-01, regressed 2026-06-10, again 2026-07-09). Only the email field is affected, in both Safari and Chrome, and only inside the Replit preview iframe — browsers block their password-manager autofill in cross-origin iframes and the interception leaves the field unable to accept keystrokes. Not reproducible in Playwright (no password manager): diagnostics showed keydown firing with defaultPrevented=false yet value never updating in one run, and 10/10 clean-context loads typing fine.
 
-**How to apply:** When adding or editing any email input, use `inputMode="email"`, never `type="email"`. Inline comments in `login.tsx` mark the two historical spots.
+**How to apply:** Any email/username field on auth pages must follow the rule above. Inline comments in `login.tsx` mark the two spots. If it recurs anyway, next suspects: placeholder text containing "@" feeding autofill heuristics, or having the user open the preview in a new tab (outside the iframe) to confirm the iframe theory.

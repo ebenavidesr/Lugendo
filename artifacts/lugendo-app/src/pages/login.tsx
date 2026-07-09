@@ -194,8 +194,8 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* NO usar type="email": causa campos no editables en algunos navegadores (bug recurrente). inputMode="email" + autoComplete="email" mantiene teclado y autofill. */}
-                          <Input inputMode="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} data-testid="input-register-email" />
+                          {/* Bug recurrente: los gestores de contraseñas (Safari/Chrome) bloquean este campo dentro del iframe de la vista previa cuando lo detectan como campo de email. NO usar type="email" ni autoComplete="email"; el name del DOM tampoco debe contener "email" (RHF usa ref, no el name del DOM). */}
+                          <Input inputMode="email" placeholder="nombre@email.com" autoCapitalize="off" autoCorrect="off" spellCheck={false} {...field} name="reg-correo" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-testid="input-register-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -335,8 +335,8 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* NO usar type="email": causa campos no editables en algunos navegadores (bug recurrente). inputMode="email" + autoComplete="email" mantiene teclado y autofill. */}
-                          <Input inputMode="email" placeholder="nombre@email.com" autoComplete="email" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} data-testid="input-login-email" />
+                          {/* Bug recurrente: los gestores de contraseñas (Safari/Chrome) bloquean este campo dentro del iframe de la vista previa cuando lo detectan como campo de email. NO usar type="email" ni autoComplete="email"; el name del DOM tampoco debe contener "email" (RHF usa ref, no el name del DOM). */}
+                          <Input inputMode="email" placeholder="nombre@email.com" autoCapitalize="off" autoCorrect="off" spellCheck={false} autoFocus {...field} name="acceso-correo" autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-testid="input-login-email" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
