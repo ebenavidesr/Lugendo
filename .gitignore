@@ -11,6 +11,11 @@ out-tsc
 # dependencies
 node_modules
 
+# environment variables
+.env
+.env.*
+!.env.example
+
 # IDEs and editors
 /.idea
 .project
@@ -33,6 +38,7 @@ node_modules
 /coverage
 /libpeerconnection.log
 npm-debug.log
+pnpm-debug.log*
 yarn-error.log
 testem.log
 /typings
