@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams } from "wouter";
-import { MapPin, Plus } from "lucide-react";
+import { MapPin, Plus, Map as MapIcon } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useUpdateTripDay, useCreateTripDay, useDeleteTripDay,
   useGetMyTripChecklist, useListTripDocuments,
 } from "@workspace/api-client-react";
 import type { TravelerTripDetailStatus, TransportMode } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { TripDetailHeader } from "@/components/trip-detail-header";
+import { TripDetailHeader, type Tab as ActiveTab } from "@/components/trip-detail-header";
 import { TripDayCard, type DayEditData } from "@/components/trip-day-card";
 import { TripTravelersTab } from "@/components/trip-travelers-tab";
 import { TripSafetyTab } from "@/components/trip-safety-tab";
@@ -22,8 +22,6 @@ import type { FlightLeg } from "@/components/flight-edit-panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-
-type ActiveTab = "itinerary" | "travelers" | "safety" | "documents" | "checklist" | "packing" | "notes";
 
 function computeDefaultExpanded(days: { dayNumber: number }[], startDate: string): Set<number> {
   const today = new Date();
@@ -382,6 +380,17 @@ export default function TravelerTrip() {
 
       {activeTab === "notes" && (
         <TripNotesTab tripId={tripId} trip={trip} />
+      )}
+
+      {/* Placeholder — Mapbox route implementation lands in a follow-up task (#125) */}
+      {activeTab === "map" && (
+        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
+          <MapIcon className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--terra)" }} />
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--noche)" }}>Próximamente</p>
+          <p className="text-sm text-muted-foreground">
+            Aquí podrás ver tu itinerario sobre un mapa con la ruta entre ciudades.
+          </p>
+        </div>
       )}
 
     </div>

@@ -1,4 +1,8 @@
-import { ArrowLeft, Users, Hotel, Share2, Pencil, X, Calendar } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowLeft, Users, Hotel, Share2, Pencil, X, Calendar,
+  MoreHorizontal, ShieldCheck, ListChecks, Luggage, StickyNote, Map as MapIcon, Check,
+} from "lucide-react";
 import { Link } from "wouter";
 import type { TravelerTripDetail, TravelerTripDetailStatus } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -7,17 +11,31 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 
-type Tab = "itinerary" | "travelers" | "safety" | "documents" | "checklist" | "packing" | "notes";
+export type Tab = "itinerary" | "travelers" | "safety" | "documents" | "checklist" | "packing" | "notes" | "map";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "itinerary",  label: "Itinerario" },
-  { id: "travelers",  label: "Viajeros" },
-  { id: "safety",     label: "Viaja Seguro" },
-  { id: "documents",  label: "Documentos" },
-  { id: "checklist",  label: "Checklist" },
-  { id: "packing",    label: "Equipaje" },
-  { id: "notes",      label: "Notas" },
+// Fixed tabs stay directly on the bar at every viewport; the rest live behind "Más" on mobile
+// (not enough width for 8 tabs there) but still render inline on desktop, where space isn't an issue.
+const FIXED_TABS: { id: Tab; label: string }[] = [
+  { id: "itinerary", label: "Itinerario" },
+  { id: "travelers", label: "Viajeros" },
+  { id: "documents", label: "Documentos" },
+];
+
+const MORE_TABS: { id: Tab; label: string; icon: typeof ShieldCheck }[] = [
+  { id: "safety",    label: "Viaja Seguro", icon: ShieldCheck },
+  { id: "checklist", label: "Checklist",    icon: ListChecks },
+  { id: "packing",   label: "Equipaje",     icon: Luggage },
+  { id: "notes",     label: "Notas",        icon: StickyNote },
+  { id: "map",       label: "Mapa",         icon: MapIcon },
+];
+
+const ALL_TABS: { id: Tab; label: string }[] = [
+  ...FIXED_TABS,
+  ...MORE_TABS.map(({ id, label }) => ({ id, label })),
 ];
 
 const statusBadge: Record<TravelerTripDetailStatus, { bg: string; color: string; label: string }> = {
@@ -271,12 +289,12 @@ export function TripDetailHeader({
         )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — desktop: all in a row (plenty of width, no need to group anything) */}
       <div
-        className="flex border-t"
+        className="hidden md:flex border-t"
         style={{ borderColor: "rgba(255,255,255,0.12)" }}
       >
-        {TABS.map(tab => (
+        {ALL_TABS.map(tab => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
@@ -296,6 +314,91 @@ export function TripDetailHeader({
           </button>
         ))}
       </div>
+
+      {/* Tabs — mobile: 3 fixed + "Más" (8 tabs don't fit a row on small screens) */}
+      <div
+        className="flex md:hidden border-t"
+        style={{ borderColor: "rgba(255,255,255,0.12)" }}
+      >
+        {FIXED_TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className="flex-1 py-3 text-[12px] font-medium transition-colors relative min-h-[44px]"
+            style={{
+              color: activeTab === tab.id ? "#FAF2EB" : "rgba(250,242,235,0.45)",
+              background: "transparent",
+            }}
+          >
+            {tab.label}
+            {activeTab === tab.id && (
+              <span
+                className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 rounded-full"
+                style={{ background: "var(--terra)" }}
+              />
+            )}
+          </button>
+        ))}
+        <MoreTabsButton activeTab={activeTab} onTabChange={onTabChange} />
+      </div>
     </div>
+  );
+}
+
+function MoreTabsButton({
+  activeTab, onTabChange,
+}: { activeTab: Tab; onTabChange: (tab: Tab) => void }) {
+  const [open, setOpen] = useState(false);
+  const isActiveInMore = MORE_TABS.some(t => t.id === activeTab);
+  const activeLabel = MORE_TABS.find(t => t.id === activeTab)?.label;
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <button
+        onClick={() => setOpen(true)}
+        className="flex-1 py-3 text-[12px] font-medium transition-colors relative flex items-center justify-center gap-1 min-h-[44px]"
+        style={{
+          color: isActiveInMore ? "#FAF2EB" : "rgba(250,242,235,0.45)",
+          background: "transparent",
+        }}
+      >
+        <MoreHorizontal className="w-3.5 h-3.5" />
+        {isActiveInMore ? activeLabel : "Más"}
+        {isActiveInMore && (
+          <span
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-10 h-0.5 rounded-full"
+            style={{ background: "var(--terra)" }}
+          />
+        )}
+      </button>
+      <SheetContent side="bottom" className="rounded-t-[20px] p-0 max-h-[70vh]">
+        <SheetHeader className="px-5 pt-5 pb-2 text-left">
+          <SheetTitle className="font-serif text-[16px]" style={{ color: "var(--noche)" }}>
+            Más secciones
+          </SheetTitle>
+        </SheetHeader>
+        <div className="pb-4">
+          {MORE_TABS.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { onTabChange(tab.id); setOpen(false); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-[14px] min-h-[44px] transition-colors"
+                style={{
+                  color: "var(--noche)",
+                  background: isActive ? "rgba(61,47,107,0.06)" : "transparent",
+                }}
+              >
+                <Icon className="w-4 h-4 shrink-0" style={{ color: "var(--indigo)" }} />
+                <span className="flex-1 text-left">{tab.label}</span>
+                {isActive && <Check className="w-4 h-4 shrink-0" style={{ color: "var(--terra)" }} />}
+              </button>
+            );
+          })}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

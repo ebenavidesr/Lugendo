@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #124 — Navegación móvil del viajero: pestañas fijas + menú "Más" e integración de Mapa (2026-07-12)
+- [x] Itinerario, Viajeros y Documentos se ven siempre como pestañas fijas en mobile — verificado en navegador a 375px de ancho
+- [x] El resto de secciones (Viaja Seguro, Checklist, Equipaje, Notas, Mapa) aparecen dentro del menú "Más" — verificado, se abre como bottom sheet con icono + nombre por sección
+- [x] El menú "Más" se abre y cierra correctamente en mobile — reutiliza el componente `Sheet` (`side="bottom"`) ya usado en la app (activity-detail-sheet.tsx), no se introdujo un patrón nuevo
+- [x] Los targets táctiles del menú tienen al menos 44px — `min-h-[44px]` explícito en cada fila y en los botones fijos/Más
+- [x] Si la sección activa está dentro de "Más", el botón "Más" lo refleja visualmente — verificado: al seleccionar "Mapa", el botón pasa a mostrar "Mapa" con el subrayado activo en vez de "Más"
+- [x] La sección "Mapa" aparece como entrada navegable (placeholder "Próximamente") — añadida, pendiente de implementación real en #125
+- [x] Comportamiento correcto también en desktop — verificado: las 8 pestañas caben en una fila sin solaparse ni saltar de línea al ancho real de producción (`max-w-3xl`, 768px)
+- [x] Se puede seguir añadiendo secciones futuras al menú "Más" sin rediseñar el patrón — `MORE_TABS` es un array simple, añadir una entrada no requiere tocar la lógica del componente
+- [ ] Probado con datos reales de un viaje (no solo datos de ejemplo) — pendiente, el backend no arranca en local sin base de datos
+
 ### #123 — Mejoras en las Notas: rango de fechas, texto enriquecido, editor más grande (2026-07-11)
 - [ ] Se puede crear una nota asociada a un solo día, como antes
 - [ ] Se puede crear una nota asociada a un rango de días (seleccionar día inicio y "hasta el día")
