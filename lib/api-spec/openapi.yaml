@@ -3986,6 +3986,8 @@ components:
           type: integer
         dayNumber:
           type: ["integer", "null"]
+        endDayNumber:
+          type: ["integer", "null"]
         content:
           type: string
         createdAt:
@@ -4000,7 +4002,9 @@ components:
         content:
           type: string
         dayNumber:
-          type: integer
+          type: ["integer", "null"]
+        endDayNumber:
+          type: ["integer", "null"]
 
     TripNoteUpdate:
       type: object
@@ -4008,6 +4012,10 @@ components:
       properties:
         content:
           type: string
+        dayNumber:
+          type: ["integer", "null"]
+        endDayNumber:
+          type: ["integer", "null"]
 
     # ─── TRIP SHARES ─────────────────────────────────────────────────────────
     TripShare:

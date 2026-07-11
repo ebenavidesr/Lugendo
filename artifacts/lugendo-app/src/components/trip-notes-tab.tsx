@@ -7,7 +7,7 @@ import type { TripNote, TravelerTripDetail } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { NoteRichTextEditor } from "@/components/note-rich-text-editor";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -15,6 +15,16 @@ import {
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
+
+// contentEditable innerHTML for an "empty" note is often "<br>" or similar, not "" -- strip tags
+// before checking for visible text so the save button doesn't stay enabled on a blank note.
+function isHtmlEmpty(html: string): boolean {
+  return !html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+// ~20 visible lines at this font size/line-height, per the task's request to make the editing
+// area much roomier than the previous 3-4 line textarea.
+const EDITOR_MIN_HEIGHT = "min-h-[420px]";
 
 interface TripNotesTabProps {
   tripId: number;
@@ -32,25 +42,34 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
   const [dayNumber, setDayNumber] = useState<string>("none");
+  const [endDayNumber, setEndDayNumber] = useState<string>("none");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/notes`] });
 
   const days = trip.days ?? [];
+  const startDayNum = dayNumber !== "none" ? parseInt(dayNumber, 10) : null;
+  const endDayOptions = startDayNum != null ? days.filter(d => d.dayNumber >= startDayNum) : [];
+
+  const resetForm = () => {
+    setContent("");
+    setDayNumber("none");
+    setEndDayNumber("none");
+    setShowForm(false);
+  };
 
   const handleCreate = () => {
-    if (!content.trim()) return;
+    if (isHtmlEmpty(content)) return;
     const dn = dayNumber !== "none" ? parseInt(dayNumber, 10) : undefined;
+    const edn = dn != null && endDayNumber !== "none" ? parseInt(endDayNumber, 10) : undefined;
     createNote.mutate(
-      { tripId, data: { content: content.trim(), dayNumber: dn } },
+      { tripId, data: { content, dayNumber: dn, endDayNumber: edn } },
       {
         onSuccess: () => {
           invalidate();
           toast({ title: "Nota añadida" });
-          setContent("");
-          setDayNumber("none");
-          setShowForm(false);
+          resetForm();
         },
         onError: () => toast({ variant: "destructive", title: "Error al crear la nota" }),
       }
@@ -63,9 +82,9 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   };
 
   const handleSaveEdit = (noteId: number) => {
-    if (!editContent.trim()) return;
+    if (isHtmlEmpty(editContent)) return;
     updateNote.mutate(
-      { tripId, noteId, data: { content: editContent.trim() } },
+      { tripId, noteId, data: { content: editContent } },
       {
         onSuccess: () => {
           invalidate();
@@ -110,46 +129,71 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
       {showForm && (
         <div className="bg-card border border-border rounded-[14px] p-4 space-y-3">
           <p className="text-[12px] font-medium" style={{ color: "var(--noche)" }}>Nueva nota</p>
-          <Textarea
-            placeholder="Escribe tu nota aquí…"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            rows={4}
+          <NoteRichTextEditor
+            initialHtml=""
+            onChange={setContent}
+            className={EDITOR_MIN_HEIGHT}
             autoFocus
           />
           {days.length > 0 && (
-            <div>
-              <label className="text-[12px] text-muted-foreground block mb-1.5">
-                Día (opcional)
-              </label>
-              <Select value={dayNumber} onValueChange={setDayNumber}>
-                <SelectTrigger className="h-8 text-[12px]">
-                  <SelectValue placeholder="Sin día específico" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin día específico</SelectItem>
-                  {days.map(d => (
-                    <SelectItem key={d.dayNumber} value={String(d.dayNumber)}>
-                      Día {d.dayNumber}
-                      {d.cityTo ? ` — ${d.cityTo}` : d.cityFrom ? ` — ${d.cityFrom}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[12px] text-muted-foreground block mb-1.5">
+                  Día (opcional)
+                </label>
+                <Select
+                  value={dayNumber}
+                  onValueChange={v => { setDayNumber(v); setEndDayNumber("none"); }}
+                >
+                  <SelectTrigger className="h-8 text-[12px]">
+                    <SelectValue placeholder="Sin día específico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin día específico</SelectItem>
+                    {days.map(d => (
+                      <SelectItem key={d.dayNumber} value={String(d.dayNumber)}>
+                        Día {d.dayNumber}
+                        {d.cityTo ? ` — ${d.cityTo}` : d.cityFrom ? ` — ${d.cityFrom}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {startDayNum != null && (
+                <div>
+                  <label className="text-[12px] text-muted-foreground block mb-1.5">
+                    Hasta el día (opcional)
+                  </label>
+                  <Select value={endDayNumber} onValueChange={setEndDayNumber}>
+                    <SelectTrigger className="h-8 text-[12px]">
+                      <SelectValue placeholder="Solo ese día" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Solo ese día</SelectItem>
+                      {endDayOptions.map(d => (
+                        <SelectItem key={d.dayNumber} value={String(d.dayNumber)}>
+                          Día {d.dayNumber}
+                          {d.cityTo ? ` — ${d.cityTo}` : d.cityFrom ? ` — ${d.cityFrom}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           )}
           <div className="flex gap-2 justify-end">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => { setShowForm(false); setContent(""); setDayNumber("none"); }}
+              onClick={resetForm}
             >
               Cancelar
             </Button>
             <Button
               size="sm"
               onClick={handleCreate}
-              disabled={!content.trim() || createNote.isPending}
+              disabled={isHtmlEmpty(content) || createNote.isPending}
               style={{ background: "var(--terra)", color: "#fff" }}
             >
               {createNote.isPending ? "Guardando…" : "Guardar nota"}
@@ -189,10 +233,10 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
             <div key={note.id} className="p-4 rounded-[14px] border border-border bg-card space-y-2">
               {editingId === note.id ? (
                 <>
-                  <Textarea
-                    value={editContent}
-                    onChange={e => setEditContent(e.target.value)}
-                    rows={3}
+                  <NoteRichTextEditor
+                    initialHtml={editContent}
+                    onChange={setEditContent}
+                    className={EDITOR_MIN_HEIGHT}
                     autoFocus
                   />
                   <div className="flex gap-2 justify-end">
@@ -204,7 +248,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
                     </button>
                     <button
                       onClick={() => handleSaveEdit(note.id)}
-                      disabled={!editContent.trim() || updateNote.isPending}
+                      disabled={isHtmlEmpty(editContent) || updateNote.isPending}
                       className="p-1.5 rounded-[8px] transition-colors"
                       style={{ color: "var(--terra)" }}
                     >
@@ -221,12 +265,17 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
                           className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full mb-1.5"
                           style={{ background: "rgba(61,47,107,0.08)", color: "var(--indigo)" }}
                         >
-                          Día {note.dayNumber}
+                          {note.endDayNumber != null && note.endDayNumber !== note.dayNumber
+                            ? `Días ${note.dayNumber}–${note.endDayNumber}`
+                            : `Día ${note.dayNumber}`}
                         </span>
                       )}
-                      <p className="text-[13px] whitespace-pre-wrap" style={{ color: "var(--noche)" }}>
-                        {note.content}
-                      </p>
+                      {/* content is sanitized server-side (sanitizeNoteHtml, allowlisted tags only) before storage */}
+                      <div
+                        className="text-[13px] leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:font-semibold [&_b]:font-semibold"
+                        style={{ color: "var(--noche)" }}
+                        dangerouslySetInnerHTML={{ __html: note.content }}
+                      />
                     </div>
                     <div className="flex items-center gap-1 shrink-0 mt-0.5">
                       <button

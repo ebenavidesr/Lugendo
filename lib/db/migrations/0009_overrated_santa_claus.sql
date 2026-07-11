@@ -1,0 +1,1 @@
+ALTER TABLE "trip_notes" ADD COLUMN "end_day_number" integer;

@@ -8,5 +8,8 @@
 
 export interface TripNoteInput {
   content: string;
-  dayNumber?: number;
+  /** @nullable */
+  dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
 }

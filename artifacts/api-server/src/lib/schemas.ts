@@ -382,11 +382,20 @@ export const PersonalTripDayUpdateSchema = z.object({
 export const TripNoteInputSchema = z.object({
   content: z.string().min(1),
   dayNumber: z.number().int().nonnegative().nullable().optional(),
-});
+  endDayNumber: z.number().int().nonnegative().nullable().optional(),
+}).refine(
+  d => d.endDayNumber == null || d.dayNumber == null || d.endDayNumber >= d.dayNumber,
+  { message: "endDayNumber debe ser mayor o igual que dayNumber", path: ["endDayNumber"] },
+);
 
 export const TripNoteUpdateSchema = z.object({
   content: z.string().min(1),
-});
+  dayNumber: z.number().int().nonnegative().nullable().optional(),
+  endDayNumber: z.number().int().nonnegative().nullable().optional(),
+}).refine(
+  d => d.endDayNumber == null || d.dayNumber == null || d.endDayNumber >= d.dayNumber,
+  { message: "endDayNumber debe ser mayor o igual que dayNumber", path: ["endDayNumber"] },
+);
 
 export const ShareTripInputSchema = z.object({
   email: z.string().email(),

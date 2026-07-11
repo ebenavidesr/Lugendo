@@ -8,4 +8,8 @@
 
 export interface TripNoteUpdate {
   content: string;
+  /** @nullable */
+  dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
 }

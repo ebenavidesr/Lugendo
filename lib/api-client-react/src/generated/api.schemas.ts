@@ -1228,6 +1228,8 @@ export interface TripNote {
   userId: number;
   /** @nullable */
   dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
   content: string;
   createdAt: string;
   updatedAt?: string;
@@ -1235,11 +1237,18 @@ export interface TripNote {
 
 export interface TripNoteInput {
   content: string;
-  dayNumber?: number;
+  /** @nullable */
+  dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
 }
 
 export interface TripNoteUpdate {
   content: string;
+  /** @nullable */
+  dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
 }
 
 export type TripSharePermission = typeof TripSharePermission[keyof typeof TripSharePermission];

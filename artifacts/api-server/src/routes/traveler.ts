@@ -26,6 +26,7 @@ import { ObjectStorageService } from "../lib/objectStorage";
 import { generatePackingList } from "../lib/packing-list-generator";
 import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
+import { sanitizeNoteHtml } from "../lib/sanitize";
 
 const objectStorage = new ObjectStorageService();
 
@@ -758,10 +759,10 @@ router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res)
 router.post("/me/trips/:tripId/notes", requireRoles("traveler"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const { content, dayNumber } = req.body;
+  const { content, dayNumber, endDayNumber } = req.body;
   const [note] = await db
     .insert(tripNotesTable)
-    .values({ tripId, userId, content, dayNumber })
+    .values({ tripId, userId, content: sanitizeNoteHtml(content), dayNumber, endDayNumber })
     .returning();
   res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString() });
 });
@@ -769,10 +770,15 @@ router.post("/me/trips/:tripId/notes", requireRoles("traveler"), validate(TripNo
 router.patch("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
-  const { content } = req.body;
+  const { content, dayNumber, endDayNumber } = req.body;
+
+  const patch: Record<string, unknown> = { content: sanitizeNoteHtml(content) };
+  if (dayNumber !== undefined) patch.dayNumber = dayNumber;
+  if (endDayNumber !== undefined) patch.endDayNumber = endDayNumber;
+
   const [note] = await db
     .update(tripNotesTable)
-    .set({ content })
+    .set(patch)
     .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.userId, userId)))
     .returning();
   if (!note) { res.status(404).json({ error: "Not found" }); return; }

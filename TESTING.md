@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #123 — Mejoras en las Notas: rango de fechas, texto enriquecido, editor más grande (2026-07-11)
+- [ ] Se puede crear una nota asociada a un solo día, como antes
+- [ ] Se puede crear una nota asociada a un rango de días (seleccionar día inicio y "hasta el día")
+- [ ] El selector de "hasta el día" solo permite elegir días iguales o posteriores al día de inicio
+- [ ] Una nota con rango se muestra como "Días X–Y"; una nota de un solo día sigue mostrando "Día X"
+- [ ] El editor de notas (crear y editar) tiene botones de negrita, cursiva y lista, y funcionan sobre texto seleccionado
+- [ ] El contenido con formato se guarda y se vuelve a mostrar correctamente al recargar la página
+- [ ] El área de edición es notablemente más grande que antes (~20 líneas) tanto al crear como al editar una nota
+- [ ] Una nota creada ANTES de este cambio (texto plano con saltos de línea) se sigue viendo correctamente tras publicar — sin HTML roto ni texto de más, con los saltos de línea conservados
+- [ ] La pestaña de Notas en el panel de agencia (fuera de alcance de esta tarea) quedó anotada en BACKLOG.md, no implementada
+
 ### #122 — Formato del texto del MAE en "Viaja Seguro" (2026-07-11)
 - [ ] En la pestaña "Viaja Seguro" de un viaje a un país con datos del MAE, el contenido se muestra dividido en secciones con título (Notas importantes, Documentación y visados, Seguridad, Sanidad, Divisas, Otros, Direcciones y teléfonos de interés) en vez de un bloque de texto único
 - [ ] Dentro de cada sección se ven párrafos separados, negritas y listas cuando el original las tiene (p. ej. "Documentación y visados" y "Sanidad" tienen listas de vacunas)

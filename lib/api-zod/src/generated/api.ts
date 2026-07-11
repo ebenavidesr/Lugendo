@@ -1794,6 +1794,7 @@ export const ListMyTripNotesResponseItem = zod.object({
   "tripId": zod.number(),
   "userId": zod.number(),
   "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish(),
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
@@ -1810,7 +1811,8 @@ export const CreateTripNoteParams = zod.object({
 
 export const CreateTripNoteBody = zod.object({
   "content": zod.string(),
-  "dayNumber": zod.number().optional()
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish()
 })
 
 
@@ -1823,7 +1825,9 @@ export const UpdateTripNoteParams = zod.object({
 })
 
 export const UpdateTripNoteBody = zod.object({
-  "content": zod.string()
+  "content": zod.string(),
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish()
 })
 
 export const UpdateTripNoteResponse = zod.object({
@@ -1831,6 +1835,7 @@ export const UpdateTripNoteResponse = zod.object({
   "tripId": zod.number(),
   "userId": zod.number(),
   "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish(),
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()

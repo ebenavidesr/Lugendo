@@ -12,6 +12,8 @@ export interface TripNote {
   userId: number;
   /** @nullable */
   dayNumber?: number | null;
+  /** @nullable */
+  endDayNumber?: number | null;
   content: string;
   createdAt: string;
   updatedAt?: string;
