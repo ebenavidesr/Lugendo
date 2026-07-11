@@ -7,7 +7,7 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 ## Sprint actual
 
 ### Fix — Campo de email bloqueado por el autocompletado del navegador (recurrente)
-- [ ] En `/register`, el campo Email acepta texto, también tras salir del campo y volver a entrar
+- [x] En `/register`, el campo Email acepta texto, también tras salir del campo y volver a entrar
 - [ ] En `/login`, el campo Email acepta texto igualmente
 - [ ] El campo ya no dispara el wizard de autocompletado de email/dirección del navegador (o lo hace con mucha menos frecuencia — es una mitigación, no eliminable al 100%)
 - [ ] Si el navegador rellena el email directamente (autofill nativo), el valor se conserva al enviar el formulario (sincronización en onBlur)
@@ -21,9 +21,9 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Crear usuario, editar usuario e invitar viajero completan correctamente tras el cambio, con el email introducido conservado
 
 ### Fix reforzado — Bloqueo total del campo Email en /register desde la primera tecla, en Safari/Chrome/móvil (2026-07-11)
-- [ ] En `/register`, hacer clic o tap en el campo Email y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
-- [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con emails guardados en el navegador
-- [ ] Igual en un navegador móvil (Chrome o Safari en el teléfono)
+- [x] En `/register`, hacer clic o tap en el campo Email y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
+- [x] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con emails guardados en el navegador
+- [x] Igual en un navegador móvil (Chrome o Safari en el teléfono)
 - [ ] En `/login`, el campo Email acepta texto a la primera tecla igualmente (ya no tiene `autoFocus`, así que requiere clic/tap primero)
 - [ ] El placeholder ya no muestra "nombre@email.com" sino "Introduce tu correo" (sin "@")
 - [ ] Registro y login completan correctamente de principio a fin tras el cambio, con el email introducido conservado
