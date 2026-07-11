@@ -6,6 +6,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #122 — Formato del texto del MAE en "Viaja Seguro" (2026-07-11)
+- [ ] En la pestaña "Viaja Seguro" de un viaje a un país con datos del MAE, el contenido se muestra dividido en secciones con título (Notas importantes, Documentación y visados, Seguridad, Sanidad, Divisas, Otros, Direcciones y teléfonos de interés) en vez de un bloque de texto único
+- [ ] Dentro de cada sección se ven párrafos separados, negritas y listas cuando el original las tiene (p. ej. "Documentación y visados" y "Sanidad" tienen listas de vacunas)
+- [ ] Los enlaces dentro del contenido (p. ej. "Tarjeta Sanitaria Europea", embajadas) funcionan y abren en pestaña nueva
+- [ ] La tipografía y espaciados son consistentes con el resto de la app
+- [ ] Un viaje cuyo país todavía tiene datos antiguos en caché (formato de texto plano previo al fix) se sigue viendo correctamente, sin errores, mientras se refresca
+- [ ] No hay ningún error de consola ni contenido roto/HTML sin escapar visible en pantalla
+
 ### #121 — Mostrar vuelos solo en la pestaña Itinerario (2026-07-11)
 - [ ] En el detalle de un viaje del viajero, el bloque de Vuelos (Ida/Vuelta) aparece en la pestaña Itinerario
 - [ ] El bloque de Vuelos NO aparece en Viajeros, Viaja Seguro, Documentos, Checklist, Equipaje ni Notas

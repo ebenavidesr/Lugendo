@@ -21,6 +21,58 @@ interface TripSafetyAdvisoriesProps {
   showMaucPromo?: boolean;
 }
 
+interface AdvisorySection {
+  heading: string;
+  html: string;
+}
+
+// contentText is either a JSON-encoded AdvisorySection[] (current scraper: one section per
+// Ministry accordion tab — Documentación y visados, Seguridad, Sanidad, etc.) or a legacy plain
+// text blob from before that format existed. Rows refresh on their own schedule (up to ~20h), so
+// both shapes can be in the DB at once — fall back to plain text when it isn't a valid section array.
+function parseAdvisorySections(contentText: string): AdvisorySection[] | null {
+  try {
+    const parsed: unknown = JSON.parse(contentText);
+    if (Array.isArray(parsed) && parsed.every(s => typeof s?.heading === "string" && typeof s?.html === "string")) {
+      return parsed as AdvisorySection[];
+    }
+  } catch {
+    // Not JSON — legacy plain-text row.
+  }
+  return null;
+}
+
+function AdvisoryContent({ contentText }: { contentText: string }) {
+  const sections = parseAdvisorySections(contentText);
+
+  if (!sections) {
+    return (
+      <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--noche)" }}>
+        {contentText}
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {sections.map(section => (
+        <div key={section.heading}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--indigo)" }}>
+            {section.heading}
+          </p>
+          {/* html comes pre-sanitized server-side (sanitize-html, allowlisted tags only) by the
+              Ministry scraper — this field is never written from user input, only from that job. */}
+          <div
+            className="text-[13px] leading-relaxed [&_p]:mb-2 [&_div]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-2 [&_li]:mb-1 [&_a]:underline [&_strong]:font-semibold last:[&>*]:mb-0"
+            style={{ color: "var(--noche)" }}
+            dangerouslySetInnerHTML={{ __html: section.html }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TripSafetyAdvisories({ data, isLoading, showMaucPromo = false }: TripSafetyAdvisoriesProps) {
   if (isLoading) {
     return (
@@ -73,9 +125,7 @@ export function TripSafetyAdvisories({ data, isLoading, showMaucPromo = false }:
           )}
 
           {advisory.contentText ? (
-            <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--noche)" }}>
-              {advisory.contentText}
-            </p>
+            <AdvisoryContent contentText={advisory.contentText} />
           ) : (
             <p className="text-[13px] text-muted-foreground">
               Todavía no se ha podido obtener el contenido oficial para este país.
