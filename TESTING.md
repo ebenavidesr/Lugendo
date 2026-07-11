@@ -6,6 +6,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #121 — Mostrar vuelos solo en la pestaña Itinerario (2026-07-11)
+- [ ] En el detalle de un viaje del viajero, el bloque de Vuelos (Ida/Vuelta) aparece en la pestaña Itinerario
+- [ ] El bloque de Vuelos NO aparece en Viajeros, Viaja Seguro, Documentos, Checklist, Equipaje ni Notas
+- [ ] Al cambiar de pestaña, el bloque desaparece del DOM (no solo oculto visualmente)
+- [ ] El botón Editar de vuelos y el guardado siguen funcionando igual desde Itinerario
+
 ### Fix — Faltaba Reino Unido en el listado de países (hoteles/actividades) (2026-07-11)
 - [ ] Al crear/editar un hotel, el desplegable de país incluye "Reino Unido"
 - [ ] Al crear/editar una actividad, el desplegable de país incluye "Reino Unido"
