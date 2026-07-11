@@ -63,7 +63,7 @@
 | #104 | Notificar al viajero cuando la agencia añade una plantilla de checklist | 🟢 Baja | Viajeros | Yo |
 | #105 | Ver progreso de checklist de cada viajero (vista agencia) | 🟡 Media | Agencia · Viajeros | Yo |
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
-| #124 | Pestaña de Notas en el panel de agencia (hoy solo existe en la vista del viajero, dato personal por usuario) | 🟢 Baja | Viajeros · Agencia | Yo |
+| #126 | Pestaña de Notas en el panel de agencia (hoy solo existe en la vista del viajero, dato personal por usuario) | 🟢 Baja | Viajeros · Agencia | Yo |
 
 ---
 
