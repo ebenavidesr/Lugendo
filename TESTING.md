@@ -28,6 +28,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] El placeholder ya no muestra "nombre@email.com" sino "Introduce tu correo" (sin "@")
 - [ ] Registro y login completan correctamente de principio a fin tras el cambio, con el email introducido conservado
 
+### Fix reforzado — Bloqueo total del campo Contraseña en /login desde la primera tecla, ni escribir ni pegar (2026-07-11)
+- [ ] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
+- [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con contraseñas guardadas
+- [ ] Igual en un navegador móvil (Chrome o Safari en el teléfono)
+- [ ] Pegar una contraseña copiada (Cmd/Ctrl+V) en el campo funciona correctamente
+- [ ] El botón de "Mostrar/Ocultar contraseña" (icono de ojo) sigue funcionando y no cuenta como foco del campo
+- [ ] En `/register`, los campos Contraseña y Repetir contraseña aceptan texto y pegado igual de bien (mismo fix aplicado preventivamente)
+- [ ] Login y registro completan correctamente de principio a fin, con la contraseña introducida conservada
+
 ### #20 — Mejorar extracción de vuelos, hoteles y actividades del PDF
 - [ ] Al analizar un PDF/Word con tabla resumen + desarrollo en prosa, la extracción reconcilia ambos bloques: días completos con título multilocalidad, régimen de comidas normalizado ("D, CE" → "Desayuno y cena") y descripción narrativa
 - [ ] El hotel de cada día prioriza la tabla resumen, se cruza con el listado de hoteles por ciudad y muestra las alternativas ("+N alt."); "o similar" marca el hotel como no garantizado

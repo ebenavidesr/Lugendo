@@ -83,6 +83,9 @@ export function Login() {
   // enganche el campo durante el render/hydration inicial (ver comentario junto a los inputs de email)
   const [regEmailLocked, setRegEmailLocked] = useState(true);
   const [loginEmailLocked, setLoginEmailLocked] = useState(true);
+  const [loginPasswordLocked, setLoginPasswordLocked] = useState(true);
+  const [regPasswordLocked, setRegPasswordLocked] = useState(true);
+  const [regConfirmLocked, setRegConfirmLocked] = useState(true);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -250,7 +253,16 @@ export function Login() {
                         </div>
                         <FormControl>
                           <div className="relative">
-                            <Input type={showRegPassword ? "text" : "password"} autoComplete="new-password" className="pr-10" {...field} data-testid="input-register-password" />
+                            {/* Mismo bug recurrente que el email (ver más abajo), pero en contraseña: el gestor de contraseñas nativo puede capturar el campo sin mostrar sugerencia visible, bloqueando teclear y pegar. Mitigación: readOnly hasta el primer foco. */}
+                            <Input
+                              type={showRegPassword ? "text" : "password"}
+                              autoComplete="new-password"
+                              className="pr-10"
+                              readOnly={regPasswordLocked}
+                              onFocus={() => setRegPasswordLocked(false)}
+                              {...field}
+                              data-testid="input-register-password"
+                            />
                             <button type="button" tabIndex={-1} onClick={() => setShowRegPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
                               {showRegPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -270,7 +282,15 @@ export function Login() {
                         <FormLabel>Confirmar contraseña</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Input type={showRegConfirm ? "text" : "password"} autoComplete="new-password" className="pr-10" {...field} data-testid="input-register-confirm-password" />
+                            <Input
+                              type={showRegConfirm ? "text" : "password"}
+                              autoComplete="new-password"
+                              className="pr-10"
+                              readOnly={regConfirmLocked}
+                              onFocus={() => setRegConfirmLocked(false)}
+                              {...field}
+                              data-testid="input-register-confirm-password"
+                            />
                             <button type="button" tabIndex={-1} onClick={() => setShowRegConfirm(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}>
                               {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
@@ -390,7 +410,16 @@ export function Login() {
                         <FormLabel>Contraseña</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Input type={showLoginPassword ? "text" : "password"} autoComplete="current-password" className="pr-10" {...field} data-testid="input-login-password" />
+                            {/* Mismo bug recurrente que el email (ver arriba), pero en el campo de contraseña: el gestor de contraseñas nativo del navegador (Chrome, Safari/Keychain, móvil) captura el campo — no muestra ninguna sugerencia visible pero bloquea tanto teclear como pegar. Mitigación: readOnly hasta el primer foco para que el motor no enganche el campo durante el hydration inicial. */}
+                            <Input
+                              type={showLoginPassword ? "text" : "password"}
+                              autoComplete="current-password"
+                              className="pr-10"
+                              readOnly={loginPasswordLocked}
+                              onFocus={() => setLoginPasswordLocked(false)}
+                              {...field}
+                              data-testid="input-login-password"
+                            />
                             <button type="button" tabIndex={-1} onClick={() => setShowLoginPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
                               {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
