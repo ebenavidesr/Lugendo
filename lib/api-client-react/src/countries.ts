@@ -144,6 +144,7 @@ export const COUNTRIES: { code: string; name: string }[] = [
   { code: "PE", name: "Perú" },
   { code: "PL", name: "Polonia" },
   { code: "PT", name: "Portugal" },
+  { code: "GB", name: "Reino Unido" },
   { code: "DO", name: "República Dominicana" },
   { code: "CF", name: "República Centroafricana" },
   { code: "CZ", name: "República Checa" },

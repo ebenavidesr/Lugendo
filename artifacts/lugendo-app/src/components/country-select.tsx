@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/popover";
 import { COUNTRIES } from "@workspace/api-client-react";
 
+// Alias de búsqueda para países con nombres coloquiales o naciones constituyentes
+// que no tienen código ISO propio en COUNTRIES (p. ej. Escocia/Inglaterra son
+// parte de Reino Unido, no países independientes con su propia entrada).
+const COUNTRY_SEARCH_ALIASES: Record<string, string[]> = {
+  GB: ["Inglaterra", "Escocia", "Gales", "Irlanda del Norte", "Gran Bretaña"],
+};
+
 interface CountrySelectProps {
   value?: string;
   onChange: (value: string) => void;
@@ -64,6 +71,7 @@ export function CountrySelect({
                 <CommandItem
                   key={country.code}
                   value={country.name}
+                  keywords={COUNTRY_SEARCH_ALIASES[country.code]}
                   onSelect={(currentValue) => {
                     onChange(currentValue === value ? "" : currentValue);
                     setOpen(false);
@@ -123,6 +131,7 @@ export function CountrySelectSmall({
                 <CommandItem
                   key={country.code}
                   value={country.name}
+                  keywords={COUNTRY_SEARCH_ALIASES[country.code]}
                   onSelect={(currentValue) => {
                     onChange(currentValue === value ? "" : currentValue);
                     setOpen(false);

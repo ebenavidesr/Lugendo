@@ -6,6 +6,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Faltaba Reino Unido en el listado de países (hoteles/actividades) (2026-07-11)
+- [ ] Al crear/editar un hotel, el desplegable de país incluye "Reino Unido"
+- [ ] Al crear/editar una actividad, el desplegable de país incluye "Reino Unido"
+- [ ] Buscar "Escocia" en el buscador del desplegable muestra "Reino Unido" como resultado
+- [ ] Buscar "Inglaterra" en el buscador del desplegable muestra "Reino Unido" como resultado
+- [ ] Buscar "Gran Bretaña" o "Gales" también encuentra "Reino Unido"
+- [ ] Seleccionar "Reino Unido" y guardar el hotel/actividad funciona correctamente
+
 ### Fix — Campo de email bloqueado por el autocompletado del navegador (recurrente)
 - [x] En `/register`, el campo Email acepta texto, también tras salir del campo y volver a entrar
 - [ ] En `/login`, el campo Email acepta texto igualmente
