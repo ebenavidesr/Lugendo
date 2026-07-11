@@ -63,6 +63,22 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 - At the start of a session, surface (1) completed tasks still pending review — items in `TESTING.md` with unchecked validation boxes — and (2) pending tasks from `BACKLOG.md`'s "En cola" section with priority and área.
 - Keep the "Product Roadmap" Notion database in sync: whenever a task is added to `BACKLOG.md` ("En cola"), moved to "Completadas", or moved to "Descartadas", create/update its Notion page in the same action. See `.agents/memory/notion-roadmap-sync.md` for the field mapping and page-content format.
 
+## Gestión de tareas (Notion)
+
+El proyecto usa un board Notion tipo kanban con los buckets: Backlog, Planned, In Progress, QA, Completed, History, y Cancelled (lateral).
+
+Roles y responsabilidades:
+
+- **Backlog**: las tarjetas las crea Claude (chat, en claude.ai) — no yo. Cada tarjeta incluye número de tarea, título, descripción breve y el prompt de ejecución.
+- **Backlog → Planned**: Quique decide cuándo, indicando "planifica la tarea #XX". En ese momento, yo defino subtareas y el definition of done, y dejo la tarjeta en Planned.
+- **Planned → In Progress**: Quique decide cuándo ejecutar. Al empezar, muevo la tarjeta a In Progress y creo un checklist de QA con todo lo que hay que revisar para confirmar que los cambios funcionan.
+- **Cambios de alcance durante In Progress**: si descubro que la tarea requiere un enfoque distinto al planificado, actualizo la misma tarjeta (subtareas y/o definition of done) sin moverla de bucket ni crear una nueva. Si el cambio es sustancial, se lo señalo explícitamente a Quique antes de continuar.
+- **In Progress → QA**: Quique la mueve cuando empieza a revisar y validar los cambios manualmente. Yo no toco la tarjeta en este estado.
+- **QA → Completed**: Quique la mueve cuando todo está validado. IMPORTANTE: aunque esté en Completed, no debo darla por cerrada ni tocar nada más — se queda pendiente de confirmación final, por si aparece algún error de desarrollo o de planteamiento que Quique detecte más tarde.
+- **Completed → History**: solo cuando Quique me avisa explícitamente de que sincronice (esto pasa en lote, no tarjeta a tarjeta). En ese momento, confirmo que puedo marcar la tarea como terminada y la archivo en History.
+- **Cancelled**: puedo mover cualquier tarjeta, de cualquier bucket, a Cancelled si detecto que ya no aplica (por ejemplo, un bug que investigo y descubro que ya está resuelto).
+- **Bugs**: se gestionan directamente entre Quique y yo, sin pasar por Notion en ningún momento.
+
 ## DB Migration Workflow
 
 The project uses **versioned migrations** (not `push`). Every schema change must go through:
