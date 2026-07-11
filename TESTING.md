@@ -13,6 +13,7 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Buscar "Inglaterra" en el buscador del desplegable muestra "Reino Unido" como resultado
 - [ ] Buscar "Gran Bretaña" o "Gales" también encuentra "Reino Unido"
 - [ ] Seleccionar "Reino Unido" y guardar el hotel/actividad funciona correctamente
+- [ ] El desplegable incluye "Palestina" (faltaba junto con Reino Unido; auditado el resto de la lista contra los 193 estados miembros de la ONU + Vaticano y Palestina como observadores, y no falta ningún otro)
 
 ### Fix — Campo de email bloqueado por el autocompletado del navegador (recurrente)
 - [x] En `/register`, el campo Email acepta texto, también tras salir del campo y volver a entrar
