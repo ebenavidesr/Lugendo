@@ -29,9 +29,9 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Registro y login completan correctamente de principio a fin tras el cambio, con el email introducido conservado
 
 ### Fix reforzado — Bloqueo total del campo Contraseña en /login desde la primera tecla, ni escribir ni pegar (2026-07-11)
-- [ ] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
+- [x] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
 - [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con contraseñas guardadas
-- [ ] Igual en un navegador móvil (Chrome o Safari en el teléfono)
+- [x] Igual en un navegador móvil (Chrome o Safari en el teléfono)
 - [ ] Pegar una contraseña copiada (Cmd/Ctrl+V) en el campo funciona correctamente
 - [ ] El botón de "Mostrar/Ocultar contraseña" (icono de ojo) sigue funcionando y no cuenta como foco del campo
 - [ ] En `/register`, los campos Contraseña y Repetir contraseña aceptan texto y pegado igual de bien (mismo fix aplicado preventivamente)
