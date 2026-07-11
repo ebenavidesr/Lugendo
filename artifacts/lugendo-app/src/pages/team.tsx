@@ -168,14 +168,19 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
+              {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin autoComplete="email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
               <Input
-                inputMode="email"
-                autoComplete="email"
+                inputMode="text"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 autoCapitalize="off"
                 autoCorrect="off"
+                spellCheck={false}
                 placeholder="ana@agencia.com"
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
+                onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
               />
               {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
             </div>
@@ -376,13 +381,18 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
+              {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin autoComplete="email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
               <Input
-                inputMode="email"
-                autoComplete="email"
+                inputMode="text"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
                 autoCapitalize="off"
                 autoCorrect="off"
+                spellCheck={false}
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
+                onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
               />
               {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
             </div>

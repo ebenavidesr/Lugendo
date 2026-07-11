@@ -14,6 +14,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] El resto de campos del registro (Nombre, Apellidos, Contraseña, Confirmar, Código de invitación, Términos) siguen habilitados y editables
 - [ ] El registro y el login completan correctamente tras el cambio
 
+### Fix — Mismo bloqueo de autocompletado en alta/edición de usuario (Equipo) e invitar viajero (2026-07-11)
+- [ ] En Equipo → "Crear usuario", el campo Email acepta texto, también tras salir y volver a entrar
+- [ ] En Equipo → editar usuario existente, el campo Email acepta texto igualmente
+- [ ] En la pestaña Viajeros de un viaje → "Invitar viajero", el campo Email acepta texto igualmente
+- [ ] Crear usuario, editar usuario e invitar viajero completan correctamente tras el cambio, con el email introducido conservado
+
 ### #20 — Mejorar extracción de vuelos, hoteles y actividades del PDF
 - [ ] Al analizar un PDF/Word con tabla resumen + desarrollo en prosa, la extracción reconcilia ambos bloques: días completos con título multilocalidad, régimen de comidas normalizado ("D, CE" → "Desayuno y cena") y descripción narrativa
 - [ ] El hotel de cada día prioriza la tabla resumen, se cruza con el listado de hoteles por ciudad y muestra las alternativas ("+N alt."); "o similar" marca el hotel como no garantizado
