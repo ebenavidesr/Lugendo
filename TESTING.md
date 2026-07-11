@@ -20,6 +20,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] En la pestaña Viajeros de un viaje → "Invitar viajero", el campo Email acepta texto igualmente
 - [ ] Crear usuario, editar usuario e invitar viajero completan correctamente tras el cambio, con el email introducido conservado
 
+### Fix reforzado — Bloqueo total del campo Email en /register desde la primera tecla, en Safari/Chrome/móvil (2026-07-11)
+- [ ] En `/register`, hacer clic o tap en el campo Email y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
+- [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con emails guardados en el navegador
+- [ ] Igual en un navegador móvil (Chrome o Safari en el teléfono)
+- [ ] En `/login`, el campo Email acepta texto a la primera tecla igualmente (ya no tiene `autoFocus`, así que requiere clic/tap primero)
+- [ ] El placeholder ya no muestra "nombre@email.com" sino "Introduce tu correo" (sin "@")
+- [ ] Registro y login completan correctamente de principio a fin tras el cambio, con el email introducido conservado
+
 ### #20 — Mejorar extracción de vuelos, hoteles y actividades del PDF
 - [ ] Al analizar un PDF/Word con tabla resumen + desarrollo en prosa, la extracción reconcilia ambos bloques: días completos con título multilocalidad, régimen de comidas normalizado ("D, CE" → "Desayuno y cena") y descripción narrativa
 - [ ] El hotel de cada día prioriza la tabla resumen, se cruza con el listado de hoteles por ciudad y muestra las alternativas ("+N alt."); "o similar" marca el hotel como no garantizado

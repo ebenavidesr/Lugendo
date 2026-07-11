@@ -79,6 +79,10 @@ export function Login() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirm, setShowRegConfirm] = useState(false);
+  // readOnly hasta el primer foco: evita que el motor de autocompletado del navegador
+  // enganche el campo durante el render/hydration inicial (ver comentario junto a los inputs de email)
+  const [regEmailLocked, setRegEmailLocked] = useState(true);
+  const [loginEmailLocked, setLoginEmailLocked] = useState(true);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -194,13 +198,15 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin type="email", sin autoComplete="email", name sin "email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (nombre+email+contraseña+confirmar) como un registro y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación reforzada (no eliminable al 100%): además de las señales ya quitadas, el campo empieza readOnly y solo se habilita al hacer foco (evita que el motor de autofill lo enganche durante el hydration inicial), y el placeholder ya no contiene "@" ni "email.com". */}
                           <Input
                             inputMode="text"
-                            placeholder="nombre@email.com"
+                            placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
+                            readOnly={regEmailLocked}
+                            onFocus={() => setRegEmailLocked(false)}
                             {...field}
                             onBlur={(e) => {
                               if (e.target.value !== field.value) field.onChange(e.target.value);
@@ -351,14 +357,15 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin type="email", sin autoComplete="email", name sin "email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (email+contraseña) como un login y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación reforzada (no eliminable al 100%): además de las señales ya quitadas, el campo empieza readOnly y solo se habilita al hacer foco (evita que el motor de autofill lo enganche durante el hydration inicial), y el placeholder ya no contiene "@" ni "email.com". autoFocus se quita porque forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo. */}
                           <Input
                             inputMode="text"
-                            placeholder="nombre@email.com"
+                            placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            autoFocus
+                            readOnly={loginEmailLocked}
+                            onFocus={() => setLoginEmailLocked(false)}
                             {...field}
                             onBlur={(e) => {
                               if (e.target.value !== field.value) field.onChange(e.target.value);

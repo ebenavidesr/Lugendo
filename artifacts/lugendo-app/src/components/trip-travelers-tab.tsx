@@ -36,6 +36,7 @@ function InviteDialog({
   const qc = useQueryClient();
   const shareTrip = useShareTrip();
   const [email, setEmail] = useState("");
+  const [emailLocked, setEmailLocked] = useState(true);
   const [permission, setPermission] = useState<"read" | "full">("read");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
@@ -73,7 +74,7 @@ function InviteDialog({
             <label className="text-[12px] font-medium block mb-1.5" style={{ color: "var(--noche)" }}>
               Email del viajero
             </label>
-            {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin autoComplete="email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+            {/* Bug recurrente: el autocompletado/sugerencias nativas de email del navegador reconocen el campo y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", placeholder sin "@", sin autoFocus (forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo) y readOnly hasta el primer foco manual del usuario. */}
             <Input
               inputMode="text"
               autoComplete="off"
@@ -82,11 +83,12 @@ function InviteDialog({
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              placeholder="viajero@email.com"
+              readOnly={emailLocked}
+              onFocus={() => setEmailLocked(false)}
+              placeholder="Correo del viajero"
               value={email}
               onChange={e => setEmail(e.target.value)}
               onBlur={e => { if (e.target.value !== email) setEmail(e.target.value); }}
-              autoFocus
               onKeyDown={e => e.key === "Enter" && handleShare()}
             />
           </div>

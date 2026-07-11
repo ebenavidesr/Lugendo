@@ -89,6 +89,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const empty = { firstName: "", lastName: "", email: "", role: "agent" as UserRole, password: "", confirm: "" };
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
+  const [emailLocked, setEmailLocked] = useState(true);
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
   const passwordStrong = isStrongPassword(form.password);
@@ -168,7 +169,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
-              {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin autoComplete="email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+              {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador reconocen el formulario completo (nombre+email+contraseña) como un registro y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", placeholder sin "@", y readOnly hasta el primer foco para que el motor de autofill no enganche el campo durante el render inicial. */}
               <Input
                 inputMode="text"
                 autoComplete="off"
@@ -177,7 +178,9 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder="ana@agencia.com"
+                readOnly={emailLocked}
+                onFocus={() => setEmailLocked(false)}
+                placeholder="Correo del usuario"
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
                 onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
@@ -293,6 +296,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     confirm:   "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+  const [emailLocked, setEmailLocked] = useState(true);
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
   const isSelf = me?.id === user.id;
@@ -381,7 +385,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
-              {/* Bug recurrente: el autocompletado nativo de email/dirección del navegador captura el foco y bloquea el teclado. Mitigación (no eliminable al 100%): sin autoComplete="email", inputMode="text" (señal fuerte en móvil) y re-sincronización del valor del DOM en onBlur por si el navegador rellena sin pasar por onChange de React. */}
+              {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador reconocen el formulario completo (nombre+email+contraseña) como un registro y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", y readOnly hasta el primer foco para que el motor de autofill no enganche el campo durante el render inicial. */}
               <Input
                 inputMode="text"
                 autoComplete="off"
@@ -390,6 +394,8 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
+                readOnly={emailLocked}
+                onFocus={() => setEmailLocked(false)}
                 value={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
                 onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
