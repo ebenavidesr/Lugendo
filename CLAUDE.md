@@ -122,3 +122,4 @@ No manual `migrate` step is needed after that — the server handles it on every
 - Google Fonts `@import url(...)` must be the FIRST line in `index.css` — before any other `@import` or `@plugin` rules.
 - Seed admin: `admin@lugendo.io` / `admin1234` (agencyId=1, role=admin)
 - `DATABASE_URL` cannot be reached from outside Replit — see [Local development](#local-development).
+- Mapa section (Mapbox GL JS, Notion #125): needs the **same public Mapbox token** in two places — `VITE_MAPBOX_TOKEN` in `artifacts/lugendo-app/.env` (frontend map rendering + Directions API route) and `MAPBOX_ACCESS_TOKEN` in `artifacts/api-server/.env` (backend geocoding, `artifacts/api-server/src/lib/geocoding.ts`). Currently using Mapbox's default `light-v11` style; a branded Mapbox Studio style is a planned follow-up — once created, its style URL replaces the hardcoded `mapbox://styles/mapbox/light-v11` in `artifacts/lugendo-app/src/components/trip-map-tab.tsx`.
