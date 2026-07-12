@@ -59,6 +59,14 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
 
   const waypoints = (data?.waypoints ?? []) as Waypoint[];
 
+  // onNavigateToDay is a fresh closure on every render of the parent (traveler-trip.tsx doesn't
+  // memoize it), so it can't be a dependency of the map-setup effect below without tearing the
+  // map down and rebuilding it (re-fetching the route, etc.) on every unrelated parent re-render.
+  // Route it through a ref instead -- the click handler reads the latest value without the effect
+  // needing to depend on it.
+  const onNavigateToDayRef = useRef(onNavigateToDay);
+  useEffect(() => { onNavigateToDayRef.current = onNavigateToDay; }, [onNavigateToDay]);
+
   // Map only ever initializes once this component is mounted, which only happens while the
   // traveler is actually on the Mapa tab (see traveler-trip.tsx's activeTab conditional) -- no
   // extra guard needed here to avoid spending map loads on tabs the traveler never opens.
@@ -91,7 +99,7 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
           "font-size:12px", "font-weight:600", "font-family:var(--font-sans, sans-serif)",
           "cursor:pointer", "border:2px solid #fff", "box-shadow:0 1px 4px rgba(0,0,0,0.35)",
         ].join(";");
-        el.addEventListener("click", () => onNavigateToDay?.(wp.dayNumbers[0]));
+        el.addEventListener("click", () => onNavigateToDayRef.current?.(wp.dayNumbers[0]));
 
         return new mapboxgl.Marker({ element: el })
           .setLngLat([wp.lng, wp.lat])
@@ -127,7 +135,8 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
       mapRef.current = null;
       setMapReady(false);
     };
-  }, [waypoints, onNavigateToDay]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onNavigateToDay is read via a ref (see above), deliberately excluded
+  }, [waypoints]);
 
   if (isLoading) {
     return <div className="h-[420px] bg-card border border-border rounded-[14px] animate-pulse" />;

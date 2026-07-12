@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "wouter";
 import { MapPin, Plus } from "lucide-react";
 import {
@@ -108,11 +108,11 @@ export default function TravelerTrip() {
     }
   }, [scrollToDayNumber, activeTab]);
 
-  const handleNavigateToDay = (dayNumber: number) => {
+  const handleNavigateToDay = useCallback((dayNumber: number) => {
     setExpandedDays(prev => new Set(prev).add(dayNumber));
     setActiveTab("itinerary");
     setScrollToDayNumber(dayNumber);
-  };
+  }, []);
 
   const toggleDay = (dayNumber: number) => {
     setExpandedDays(prev => {
