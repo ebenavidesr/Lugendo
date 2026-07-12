@@ -12,6 +12,19 @@ const app: Express = express();
 // secure cookies, breaking sessions in production.
 app.set("trust proxy", 1);
 
+// Registered before ANY other middleware (pinoHttp, cors, body parsers, session) so the
+// deploy platform's health check can never be affected by something going wrong further
+// down the chain -- e.g. connect-pg-simple's session store doing its own DB work on every
+// request, or a CORS/body-parser edge case. This is deliberately redundant with the
+// /api/healthz route registered via routes/health.ts further down; that one still exists
+// for anything else that depends on the same path, but this one always wins because it's
+// registered first. Also covers the bare /api path -- deploy logs report failures as
+// "healthcheck /api returned status 500", which may mean the platform probes /api itself
+// rather than /api/healthz.
+app.get(["/api", "/api/healthz"], (_req, res) => {
+  res.json({ ok: true });
+});
+
 app.use(
   pinoHttp({
     logger,
