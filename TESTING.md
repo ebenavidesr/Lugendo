@@ -7,7 +7,13 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 ## Sprint actual
 
 ### #125 — Sección "Mapa": ruta del itinerario con Mapbox (2026-07-12)
-- [ ] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente**
+- [x] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente** — hecho por Quique
+
+### Fix — Geocodificación de pueblos pequeños daba coordenadas de otro país (2026-07-12)
+- [x] Encontrado tras el primer intento real de Quique con el viaje "Sri Lanka Agosto 2026": `Girithale` (pueblo pequeño) resolvía a `Lankaran, Azerbaiyán` (relevancia 0.43) en vez de a Sri Lanka, porque el filtro `types=place` no cubre pueblos pequeños en el dataset de Mapbox
+- [x] Arreglado: tipos ampliados a `place,locality,neighborhood` + umbral mínimo de relevancia (0.5) como red de seguridad — verificado contra la API real de Mapbox con 8 ciudades de Sri Lanka (Kandy, Anuradhapura, Girithale, Sigiriya, Ella, Nuwara Eliya, Galle, Colombo), las 8 con relevancia 1.0 tras el cambio
+- [x] Migración de datos (`0012_reset_geocoded_coordinates.sql`) que limpia las coordenadas ya guardadas (posiblemente incorrectas) para forzar que se regeneren con la lógica corregida la próxima vez que se abra el mapa de cada viaje
+- [ ] Confirmar con el viaje real de Sri Lanka que el mapa ahora sí carga y todos los pines están en el país correcto
 - [ ] Al entrar en la pestaña Mapa de un viaje con ciudades conocidas, aparece un pin numerado por cada ciudad única del itinerario, en orden de visita
 - [ ] La ruta entre pines se dibuja en Terracota siguiendo carreteras reales (Directions API), no solo líneas rectas
 - [ ] El mapa se ajusta automáticamente para mostrar toda la ruta (fitBounds)
