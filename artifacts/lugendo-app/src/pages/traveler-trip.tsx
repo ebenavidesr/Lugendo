@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "wouter";
-import { MapPin, Plus, Map as MapIcon } from "lucide-react";
+import { MapPin, Plus } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useUpdateTripDay, useCreateTripDay, useDeleteTripDay,
   useGetMyTripChecklist, useListTripDocuments,
@@ -15,6 +15,7 @@ import { TripDocumentsTab } from "@/components/trip-documents-tab";
 import { TripChecklistTab } from "@/components/trip-checklist-tab";
 import { TripPackingListTab } from "@/components/trip-packing-list-tab";
 import { TripNotesTab } from "@/components/trip-notes-tab";
+import { TripMapTab } from "@/components/trip-map-tab";
 import { TripKpiRow } from "@/components/trip-kpi-row";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
@@ -94,6 +95,24 @@ export default function TravelerTrip() {
     if (!trip?.days || !trip.startDate) return;
     setExpandedDays(computeDefaultExpanded(trip.days, trip.startDate));
   }, [trip?.id, trip?.days?.length, trip?.startDate]);
+
+  // Deep link from a map pin: switch to Itinerario, expand the target day, then scroll to it
+  // once its DOM node exists (the itinerary tab content only mounts after the tab switch commits).
+  const [scrollToDayNumber, setScrollToDayNumber] = useState<number | null>(null);
+  useEffect(() => {
+    if (scrollToDayNumber == null || activeTab !== "itinerary") return;
+    const el = document.getElementById(`day-${scrollToDayNumber}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      setScrollToDayNumber(null);
+    }
+  }, [scrollToDayNumber, activeTab]);
+
+  const handleNavigateToDay = (dayNumber: number) => {
+    setExpandedDays(prev => new Set(prev).add(dayNumber));
+    setActiveTab("itinerary");
+    setScrollToDayNumber(dayNumber);
+  };
 
   const toggleDay = (dayNumber: number) => {
     setExpandedDays(prev => {
@@ -319,20 +338,21 @@ export default function TravelerTrip() {
                 </button>
               )}
               {trip.days.map((day, idx) => (
-                <TripDayCard
-                  key={day.id}
-                  day={day}
-                  dayIndex={idx}
-                  allDays={trip.days}
-                  expanded={expandedDays.has(day.dayNumber)}
-                  onToggle={() => toggleDay(day.dayNumber)}
-                  tripId={tripId}
-                  canEditDay={canEditPersonal && editMode}
-                  canEditHotels={canEdit}
-                  startDate={trip.startDate}
-                  onSaveDay={canEditPersonal && editMode ? (data) => handleSaveDay(day.id, day.dayNumber, data) : undefined}
-                  onDeleteDay={canEditPersonal && editMode ? () => void handleDeleteDay(day.id) : undefined}
-                />
+                <div key={day.id} id={`day-${day.dayNumber}`}>
+                  <TripDayCard
+                    day={day}
+                    dayIndex={idx}
+                    allDays={trip.days}
+                    expanded={expandedDays.has(day.dayNumber)}
+                    onToggle={() => toggleDay(day.dayNumber)}
+                    tripId={tripId}
+                    canEditDay={canEditPersonal && editMode}
+                    canEditHotels={canEdit}
+                    startDate={trip.startDate}
+                    onSaveDay={canEditPersonal && editMode ? (data) => handleSaveDay(day.id, day.dayNumber, data) : undefined}
+                    onDeleteDay={canEditPersonal && editMode ? () => void handleDeleteDay(day.id) : undefined}
+                  />
+                </div>
               ))}
             </div>
           ) : (
@@ -382,15 +402,8 @@ export default function TravelerTrip() {
         <TripNotesTab tripId={tripId} trip={trip} />
       )}
 
-      {/* Placeholder — Mapbox route implementation lands in a follow-up task (#125) */}
       {activeTab === "map" && (
-        <div className="bg-card border border-border rounded-[14px] p-8 text-center">
-          <MapIcon className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--terra)" }} />
-          <p className="text-sm font-medium mb-1" style={{ color: "var(--noche)" }}>Próximamente</p>
-          <p className="text-sm text-muted-foreground">
-            Aquí podrás ver tu itinerario sobre un mapa con la ruta entre ciudades.
-          </p>
-        </div>
+        <TripMapTab tripId={tripId} onNavigateToDay={handleNavigateToDay} />
       )}
 
     </div>

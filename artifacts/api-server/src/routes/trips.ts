@@ -18,6 +18,7 @@ import { ObjectStorageService } from "../lib/objectStorage";
 import { sendDocumentUploadedEmail } from "../lib/email";
 import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
+import { geocodeCity } from "../lib/geocoding";
 
 const objectStorage = new ObjectStorageService();
 
@@ -407,9 +408,19 @@ router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), va
   const [trip] = await db.select({ id: tripsTable.id }).from(tripsTable).where(eq(tripsTable.id, tripId));
   if (!trip) { res.status(404).json({ error: "Trip not found" }); return; }
 
+  // Geocode eagerly at creation time (per the map feature's design) rather than only lazily when
+  // the Mapa tab is opened -- best-effort, a failed lookup just leaves the coords null.
+  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, country), geocodeCity(cityTo, country)]);
+
   const [day] = await db
     .insert(tripDaysTable)
-    .values({ tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null, transport: transport ?? null, description: description ?? null, ...(isTransitNight !== undefined ? { isTransitNight } : {}) })
+    .values({
+      tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null,
+      transport: transport ?? null, description: description ?? null,
+      cityFromLat: fromGeo?.lat ?? null, cityFromLng: fromGeo?.lng ?? null,
+      cityToLat: toGeo?.lat ?? null, cityToLng: toGeo?.lng ?? null,
+      ...(isTransitNight !== undefined ? { isTransitNight } : {}),
+    })
     .returning();
 
   res.status(201).json({ ...day, hotels: [], activities: [], createdAt: day.createdAt.toISOString() });
@@ -442,6 +453,18 @@ router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSc
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
+
+  // Only re-geocode a side that's actually changing in this request.
+  if (cityFrom !== undefined) {
+    const geo = await geocodeCity(cityFrom, country);
+    patch.cityFromLat = geo?.lat ?? null;
+    patch.cityFromLng = geo?.lng ?? null;
+  }
+  if (cityTo !== undefined) {
+    const geo = await geocodeCity(cityTo, country);
+    patch.cityToLat = geo?.lat ?? null;
+    patch.cityToLng = geo?.lng ?? null;
+  }
 
   const [updated] = await db
     .update(tripDaysTable)

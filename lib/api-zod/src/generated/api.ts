@@ -1783,6 +1783,24 @@ export const DeleteTripDayParams = zod.object({
 
 
 /**
+ * @summary Get the ordered, deduplicated list of geocoded waypoints for a trip's itinerary
+ */
+export const GetMyTripMapParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetMyTripMapResponse = zod.object({
+  "waypoints": zod.array(zod.object({
+  "city": zod.string(),
+  "country": zod.string().nullable(),
+  "lat": zod.number(),
+  "lng": zod.number(),
+  "dayNumbers": zod.array(zod.number())
+}))
+})
+
+
+/**
  * @summary Get personal notes for a trip
  */
 export const ListMyTripNotesParams = zod.object({

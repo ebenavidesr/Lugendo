@@ -78,6 +78,13 @@
       "when": 1783803765277,
       "tag": "0010_escape_legacy_note_content",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783856275758,
+      "tag": "0011_fuzzy_krista_starr",
+      "breakpoints": true
     }
   ]
 }

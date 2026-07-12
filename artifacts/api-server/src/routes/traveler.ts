@@ -27,6 +27,7 @@ import { generatePackingList } from "../lib/packing-list-generator";
 import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { sanitizeNoteHtml } from "../lib/sanitize";
+import { geocodeCity } from "../lib/geocoding";
 
 const objectStorage = new ObjectStorageService();
 
@@ -744,6 +745,75 @@ router.patch("/me/trips/:tripId", requireRoles("traveler"), validate(PersonalTri
   });
 });
 
+// ─── Map ─────────────────────────────────────────────────────────────────────
+interface TripMapRawPoint {
+  city: string;
+  country: string | null;
+  lat: number | null;
+  lng: number | null;
+  dayNumber: number;
+  dayId: number;
+  field: "cityFrom" | "cityTo";
+}
+
+router.get("/me/trips/:tripId/map", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const days = await db
+    .select()
+    .from(tripDaysTable)
+    .where(eq(tripDaysTable.tripId, tripId))
+    .orderBy(tripDaysTable.dayNumber);
+
+  // Raw waypoint sequence: day 1's cityFrom (the true starting point) followed by every day's
+  // cityTo in order. Same-city days fall out naturally as consecutive duplicates, collapsed below.
+  const raw: TripMapRawPoint[] = [];
+  days.forEach((d, idx) => {
+    if (idx === 0 && d.cityFrom?.trim()) {
+      raw.push({ city: d.cityFrom.trim(), country: d.country, lat: d.cityFromLat, lng: d.cityFromLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityFrom" });
+    }
+    if (d.cityTo?.trim()) {
+      raw.push({ city: d.cityTo.trim(), country: d.country, lat: d.cityToLat, lng: d.cityToLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityTo" });
+    }
+  });
+
+  // Lazily geocode + persist anything still missing coordinates -- days created before this
+  // feature existed, or a geocode attempt that failed at save time (e.g. Mapbox hiccup).
+  for (const point of raw) {
+    if (point.lat == null || point.lng == null) {
+      const geo = await geocodeCity(point.city, point.country);
+      if (geo) {
+        point.lat = geo.lat;
+        point.lng = geo.lng;
+        await db
+          .update(tripDaysTable)
+          .set(point.field === "cityFrom"
+            ? { cityFromLat: geo.lat, cityFromLng: geo.lng }
+            : { cityToLat: geo.lat, cityToLng: geo.lng })
+          .where(eq(tripDaysTable.id, point.dayId));
+      }
+    }
+  }
+
+  // Collapse consecutive same-city points into one waypoint (case-insensitive), merging day numbers.
+  const waypoints: { city: string; country: string | null; lat: number; lng: number; dayNumbers: number[] }[] = [];
+  for (const point of raw) {
+    if (point.lat == null || point.lng == null) continue; // geocoding failed -- skip rather than break the map
+    const last = waypoints[waypoints.length - 1];
+    if (last && last.city.toLowerCase() === point.city.toLowerCase()) {
+      last.dayNumbers.push(point.dayNumber);
+    } else {
+      waypoints.push({ city: point.city, country: point.country, lat: point.lat, lng: point.lng, dayNumbers: [point.dayNumber] });
+    }
+  }
+
+  res.json({ waypoints });
+});
+
 // ─── Notes ───────────────────────────────────────────────────────────────────
 router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
@@ -1370,6 +1440,8 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
 
   const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
 
+  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, country), geocodeCity(cityTo, country)]);
+
   const [day] = await db
     .insert(tripDaysTable)
     .values({
@@ -1380,6 +1452,10 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
       country: country ?? null,
       transport: transport ?? null,
       description: description ?? null,
+      cityFromLat: fromGeo?.lat ?? null,
+      cityFromLng: fromGeo?.lng ?? null,
+      cityToLat: toGeo?.lat ?? null,
+      cityToLng: toGeo?.lng ?? null,
       ...(isTransitNight !== undefined ? { isTransitNight } : {}),
     })
     .returning();
@@ -1420,6 +1496,18 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   if (transport !== undefined) patch.transport = transport ?? null;
   if (description !== undefined) patch.description = description ?? null;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
+
+  // Only re-geocode a side that's actually changing in this request.
+  if (cityFrom !== undefined) {
+    const geo = await geocodeCity(cityFrom, country);
+    patch.cityFromLat = geo?.lat ?? null;
+    patch.cityFromLng = geo?.lng ?? null;
+  }
+  if (cityTo !== undefined) {
+    const geo = await geocodeCity(cityTo, country);
+    patch.cityToLat = geo?.lat ?? null;
+    patch.cityToLng = geo?.lng ?? null;
+  }
 
   const [updated] = await db
     .update(tripDaysTable)

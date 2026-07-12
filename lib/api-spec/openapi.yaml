@@ -1368,6 +1368,33 @@ paths:
         "403":
           description: Not your trip
 
+  /me/trips/{tripId}/map:
+    get:
+      operationId: getMyTripMap
+      tags: [traveler]
+      summary: Get the ordered, deduplicated list of geocoded waypoints for a trip's itinerary
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Route waypoints in visit order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [waypoints]
+                properties:
+                  waypoints:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TripMapWaypoint"
+        "403":
+          description: No access to this trip
+
   /me/trips/{tripId}/notes:
     get:
       operationId: listMyTripNotes
@@ -3973,6 +4000,23 @@ components:
           type: string
         objectPath:
           type: string
+
+    TripMapWaypoint:
+      type: object
+      required: [city, country, lat, lng, dayNumbers]
+      properties:
+        city:
+          type: string
+        country:
+          type: ["string", "null"]
+        lat:
+          type: number
+        lng:
+          type: number
+        dayNumbers:
+          type: array
+          items:
+            type: integer
 
     TripNote:
       type: object

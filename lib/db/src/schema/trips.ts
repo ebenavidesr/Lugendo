@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer, timestamp, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, jsonb, index, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
@@ -51,6 +51,12 @@ export const tripDaysTable = pgTable("trip_days", {
   dayNumber: integer("day_number").notNull(),
   cityFrom: text("city_from"),
   cityTo: text("city_to"),
+  // Geocoded lazily (see artifacts/api-server/src/lib/geocoding.ts) when the day is created/edited
+  // or the first time the trip's Mapa tab is opened -- null until then, or if geocoding failed.
+  cityFromLat: doublePrecision("city_from_lat"),
+  cityFromLng: doublePrecision("city_from_lng"),
+  cityToLat: doublePrecision("city_to_lat"),
+  cityToLng: doublePrecision("city_to_lng"),
   country: text("country"),
   transport: text("transport"),
   description: text("description"),

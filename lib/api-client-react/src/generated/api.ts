@@ -41,6 +41,7 @@ import type {
   DeleteTripResult,
   DestinationDescribeInput,
   DestinationDescribeResult,
+  GetMyTripMap200,
   GetTripDocumentDownloadUrl200,
   GetTripDocumentDownloadUrlAdmin200,
   HealthStatus,
@@ -4695,6 +4696,83 @@ export const useDeleteTripDay = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteTripDayMutationOptions(options));
     }
+
+export const getGetMyTripMapUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/map`
+}
+
+/**
+ * @summary Get the ordered, deduplicated list of geocoded waypoints for a trip's itinerary
+ */
+export const getMyTripMap = async (tripId: number, options?: RequestInit): Promise<GetMyTripMap200> => {
+
+  return customFetch<GetMyTripMap200>(getGetMyTripMapUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyTripMapQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/map`
+    ] as const;
+    }
+
+
+export const getGetMyTripMapQueryOptions = <TData = Awaited<ReturnType<typeof getMyTripMap>>, TError = ErrorType<void>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTripMapQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTripMap>>> = ({ signal }) => getMyTripMap(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTripMap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyTripMapQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTripMap>>>
+export type GetMyTripMapQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the ordered, deduplicated list of geocoded waypoints for a trip's itinerary
+ */
+
+export function useGetMyTripMap<TData = Awaited<ReturnType<typeof getMyTripMap>>, TError = ErrorType<void>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripMap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyTripMapQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListMyTripNotesUrl = (tripId: number,) => {
 

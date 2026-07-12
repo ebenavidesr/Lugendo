@@ -1222,6 +1222,15 @@ export interface UploadUrlResponse {
   objectPath: string;
 }
 
+export interface TripMapWaypoint {
+  city: string;
+  /** @nullable */
+  country: string | null;
+  lat: number;
+  lng: number;
+  dayNumbers: number[];
+}
+
 export interface TripNote {
   id: number;
   tripId: number;
@@ -1587,6 +1596,10 @@ export interface DestinationDescribeResult {
 export type GetTripDocumentDownloadUrlAdmin200 = {
   /** Short-lived pre-signed URL (15 minutes) */
   signedUrl: string;
+};
+
+export type GetMyTripMap200 = {
+  waypoints: TripMapWaypoint[];
 };
 
 export type GetTripDocumentDownloadUrl200 = {

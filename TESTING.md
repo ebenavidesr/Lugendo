@@ -6,6 +6,20 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #125 — Sección "Mapa": ruta del itinerario con Mapbox (2026-07-12)
+- [ ] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente**
+- [ ] Al entrar en la pestaña Mapa de un viaje con ciudades conocidas, aparece un pin numerado por cada ciudad única del itinerario, en orden de visita
+- [ ] La ruta entre pines se dibuja en Terracota siguiendo carreteras reales (Directions API), no solo líneas rectas
+- [ ] El mapa se ajusta automáticamente para mostrar toda la ruta (fitBounds)
+- [ ] Tocar un pin lleva a la pestaña Itinerario y hace scroll hasta el día correspondiente, expandiéndolo
+- [ ] Probado con un viaje multi-ciudad real (ej. Sri Lanka, ~11 ciudades)
+- [ ] Un viaje que abarca más de un país centra el mapa correctamente sobre toda la extensión geográfica
+- [ ] Días consecutivos en la misma ciudad no generan pines duplicados
+- [ ] Un viaje sin ciudades geocodificables muestra un mensaje, no un mapa roto
+- [ ] El mapa NO se carga (no hay llamada a Mapbox) hasta que el viajero entra realmente en la pestaña Mapa
+- [ ] Crear o editar un día con ciudad nueva geocodifica automáticamente esa ciudad (verificable indirectamente: el mapa la muestra sin retraso notable la primera vez que se abre)
+- [ ] Un día antiguo (creado antes de esta funcionalidad, sin coordenadas guardadas) se geocodifica solo la primera vez que se abre el mapa del viaje, sin romper nada
+
 ### #124 — Navegación móvil del viajero: pestañas fijas + menú "Más" e integración de Mapa (2026-07-12)
 - [x] Itinerario, Viajeros y Documentos se ven siempre como pestañas fijas en mobile — verificado en navegador a 375px de ancho
 - [x] El resto de secciones (Viaja Seguro, Checklist, Equipaje, Notas, Mapa) aparecen dentro del menú "Más" — verificado, se abre como bottom sheet con icono + nombre por sección
