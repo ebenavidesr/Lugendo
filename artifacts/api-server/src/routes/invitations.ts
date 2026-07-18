@@ -6,6 +6,7 @@ import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { InvitationInputSchema, InvitationUpdateSchema } from "../lib/schemas";
 import { sendInvitationEmail } from "../lib/email";
+import { PUBLIC_APP_URL } from "../lib/publicUrl";
 
 const router: IRouter = Router();
 
@@ -114,9 +115,7 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
       : [];
     const agencyName = agency?.name ?? "Lugendo";
     const tripName = trip?.name ?? "Tu viaje";
-    const baseUrl = process.env["REPLIT_DOMAINS"]?.split(",")[0]
-      ? `https://${process.env["REPLIT_DOMAINS"]!.split(",")[0]}`
-      : "https://lugendo.replit.app";
+    const baseUrl = PUBLIC_APP_URL;
     for (const inv of created) {
       sendInvitationEmail({
         to: inv.email,
