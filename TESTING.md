@@ -335,7 +335,8 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Frontend: la SPA carga y el proxy `/api/*` funciona a través del Worker de Cloudflare
 - [x] CI: GitHub Actions corre typecheck + build de `api-server` y `lugendo-app` en cada push/PR
 - [x] Cutover: `lugendo.io` apunta al nuevo stack (DNS verificado, login funcional en el dominio real con datos reales)
-- [ ] Probar login y funcionalidad completa como manager, agent y otros travelers en `lugendo.io` (solo se ha probado con la cuenta de Quique)
+- [x] Login y funcionalidad probados como admin y agent en `lugendo.io`, ambos correctos
+- [ ] Probar login como manager y traveler en `lugendo.io`
 - [ ] Replit archivado tras el periodo de gracia (recordatorio programado para el 2026-07-22)
 
 ---
