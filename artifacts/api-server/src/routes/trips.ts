@@ -288,7 +288,8 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), validate(TripIn
           dayNumber: d.dayNumber,
           cityFrom: d.cityFrom,
           cityTo: d.cityTo,
-          country: d.country,
+          cityFromCountry: d.cityFromCountry,
+          cityToCountry: d.cityToCountry,
           transport: d.transport,
           description: d.description,
           isTransitNight: d.isTransitNight,
@@ -404,19 +405,20 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 // ─── TRIP DAY CREATE (back-office) ───────────────────────────────────────────
 router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
 
   const [trip] = await db.select({ id: tripsTable.id }).from(tripsTable).where(eq(tripsTable.id, tripId));
   if (!trip) { res.status(404).json({ error: "Trip not found" }); return; }
 
   // Geocode eagerly at creation time (per the map feature's design) rather than only lazily when
   // the Mapa tab is opened -- best-effort, a failed lookup just leaves the coords null.
-  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, country), geocodeCity(cityTo, country)]);
+  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, cityFromCountry), geocodeCity(cityTo, cityToCountry)]);
 
   const [day] = await db
     .insert(tripDaysTable)
     .values({
-      tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null, country: country ?? null,
+      tripId, dayNumber, cityFrom: cityFrom ?? null, cityTo: cityTo ?? null,
+      cityFromCountry: cityFromCountry ?? null, cityToCountry: cityToCountry ?? null,
       transport: transport ?? null, description: description ?? null,
       cityFromLat: fromGeo?.lat ?? null, cityFromLng: fromGeo?.lng ?? null,
       cityToLat: toGeo?.lat ?? null, cityToLng: toGeo?.lng ?? null,
@@ -446,23 +448,24 @@ router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "ag
 router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
+  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
-  if (country !== undefined) patch.country = country;
+  if (cityFromCountry !== undefined) patch.cityFromCountry = cityFromCountry;
+  if (cityToCountry !== undefined) patch.cityToCountry = cityToCountry;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
 
   // Only re-geocode a side that's actually changing in this request.
   if (cityFrom !== undefined) {
-    const geo = await geocodeCity(cityFrom, country);
+    const geo = await geocodeCity(cityFrom, cityFromCountry);
     patch.cityFromLat = geo?.lat ?? null;
     patch.cityFromLng = geo?.lng ?? null;
   }
   if (cityTo !== undefined) {
-    const geo = await geocodeCity(cityTo, country);
+    const geo = await geocodeCity(cityTo, cityToCountry);
     patch.cityToLat = geo?.lat ?? null;
     patch.cityToLng = geo?.lng ?? null;
   }

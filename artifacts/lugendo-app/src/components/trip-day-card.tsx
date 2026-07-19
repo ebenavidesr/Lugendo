@@ -45,7 +45,8 @@ function formatDayDate(startDate: string | null | undefined, dayNumber: number):
 export interface DayEditData {
   cityFrom: string | null;
   cityTo: string | null;
-  country: string | null;
+  cityFromCountry: string | null;
+  cityToCountry: string | null;
   transport: string | null;
   description: string | null;
 }
@@ -79,7 +80,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const [dayEditOpen, setDayEditOpen] = useState(false);
   const [editCityFrom, setEditCityFrom] = useState(day.cityFrom ?? "");
   const [editCityTo, setEditCityTo] = useState(day.cityTo ?? "");
-  const [editCountry, setEditCountry] = useState(day.country ?? "");
+  const [editCityFromCountry, setEditCityFromCountry] = useState(day.cityFromCountry ?? "");
+  const [editCityToCountry, setEditCityToCountry] = useState(day.cityToCountry ?? "");
   const isValidTransport = (v: string | null | undefined) => TRANSPORT_OPTIONS.some(o => o.value === v);
   const [editTransport, setEditTransport] = useState(isValidTransport(day.transport) ? (day.transport ?? "") : "");
   const [editDescription, setEditDescription] = useState(day.description ?? "");
@@ -88,7 +90,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const openDayEdit = () => {
     setEditCityFrom(day.cityFrom ?? "");
     setEditCityTo(day.cityTo ?? "");
-    setEditCountry(day.country ?? "");
+    setEditCityFromCountry(day.cityFromCountry ?? "");
+    setEditCityToCountry(day.cityToCountry ?? "");
     setEditTransport(isValidTransport(day.transport) ? (day.transport ?? "") : "");
     setEditDescription(day.description ?? "");
     setDayEditOpen(true);
@@ -101,7 +104,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
       await onSaveDay({
         cityFrom: editCityFrom.trim() || null,
         cityTo: editCityTo.trim() || null,
-        country: editCountry || null,
+        cityFromCountry: editCityFromCountry || null,
+        cityToCountry: editCityToCountry || null,
         transport: editTransport || null,
         description: editDescription.trim() || null,
       });
@@ -423,11 +427,11 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">País</label>
+                <label className="text-[11px] text-muted-foreground">País origen</label>
                 <select
                   className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] bg-white"
-                  value={editCountry}
-                  onChange={e => setEditCountry(e.target.value)}
+                  value={editCityFromCountry}
+                  onChange={e => setEditCityFromCountry(e.target.value)}
                 >
                   <option value="">— País —</option>
                   {COUNTRIES.map(c => (
@@ -436,18 +440,31 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-[11px] text-muted-foreground">Transporte</label>
+                <label className="text-[11px] text-muted-foreground">País destino</label>
                 <select
                   className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] bg-white"
-                  value={editTransport}
-                  onChange={e => setEditTransport(e.target.value)}
+                  value={editCityToCountry}
+                  onChange={e => setEditCityToCountry(e.target.value)}
                 >
-                  <option value="">— Transporte —</option>
-                  {TRANSPORT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+                  <option value="">— País —</option>
+                  {COUNTRIES.map(c => (
+                    <option key={c.code} value={c.code}>{c.name}</option>
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[11px] text-muted-foreground">Transporte</label>
+              <select
+                className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[var(--indigo)] bg-white"
+                value={editTransport}
+                onChange={e => setEditTransport(e.target.value)}
+              >
+                <option value="">— Transporte —</option>
+                {TRANSPORT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+                ))}
+              </select>
             </div>
             <div className="space-y-1">
               <label className="text-[11px] text-muted-foreground">Descripción</label>

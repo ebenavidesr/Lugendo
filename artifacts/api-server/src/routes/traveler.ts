@@ -71,7 +71,8 @@ async function copyItineraryDaysToTrip(tripId: number, itineraryId: number, crea
       dayNumber: d.dayNumber,
       cityFrom: d.cityFrom ?? null,
       cityTo: d.cityTo ?? null,
-      country: d.country ?? null,
+      cityFromCountry: d.cityFromCountry ?? null,
+      cityToCountry: d.cityToCountry ?? null,
       transport: d.transport ?? null,
       description: d.description ?? null,
       isTransitNight: d.isTransitNight ?? false,
@@ -324,12 +325,15 @@ router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<vo
   const allCountries = new Set<string>();
 
   if (allTripIds.length > 0) {
-    // Countries from trip_days
+    // Countries from trip_days (either endpoint of a day's segment)
     const dayCountryRows = await db
-      .selectDistinct({ country: tripDaysTable.country })
+      .selectDistinct({ cityFromCountry: tripDaysTable.cityFromCountry, cityToCountry: tripDaysTable.cityToCountry })
       .from(tripDaysTable)
       .where(inArray(tripDaysTable.tripId, allTripIds));
-    for (const r of dayCountryRows) if (r.country) allCountries.add(r.country);
+    for (const r of dayCountryRows) {
+      if (r.cityFromCountry) allCountries.add(r.cityFromCountry);
+      if (r.cityToCountry) allCountries.add(r.cityToCountry);
+    }
 
     // Countries from itineraries linked to those trips
     const itinRows = await db
@@ -774,10 +778,10 @@ router.get("/me/trips/:tripId/map", requireRoles("traveler"), async (req, res): 
   const raw: TripMapRawPoint[] = [];
   days.forEach((d, idx) => {
     if (idx === 0 && d.cityFrom?.trim()) {
-      raw.push({ city: d.cityFrom.trim(), country: d.country, lat: d.cityFromLat, lng: d.cityFromLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityFrom" });
+      raw.push({ city: d.cityFrom.trim(), country: d.cityFromCountry, lat: d.cityFromLat, lng: d.cityFromLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityFrom" });
     }
     if (d.cityTo?.trim()) {
-      raw.push({ city: d.cityTo.trim(), country: d.country, lat: d.cityToLat, lng: d.cityToLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityTo" });
+      raw.push({ city: d.cityTo.trim(), country: d.cityToCountry, lat: d.cityToLat, lng: d.cityToLng, dayNumber: d.dayNumber, dayId: d.id, field: "cityTo" });
     }
   });
 
@@ -1438,9 +1442,9 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
   // before inserting, so new rows aren't split across two different day tables.
   if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
 
-  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, country), geocodeCity(cityTo, country)]);
+  const [fromGeo, toGeo] = await Promise.all([geocodeCity(cityFrom, cityFromCountry), geocodeCity(cityTo, cityToCountry)]);
 
   const [day] = await db
     .insert(tripDaysTable)
@@ -1449,7 +1453,8 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
       dayNumber,
       cityFrom: cityFrom ?? null,
       cityTo: cityTo ?? null,
-      country: country ?? null,
+      cityFromCountry: cityFromCountry ?? null,
+      cityToCountry: cityToCountry ?? null,
       transport: transport ?? null,
       description: description ?? null,
       cityFromLat: fromGeo?.lat ?? null,
@@ -1466,7 +1471,8 @@ router.post("/me/trips/:tripId/days", requireRoles("traveler"), validate(Persona
     dayNumber: day.dayNumber,
     cityFrom: day.cityFrom ?? null,
     cityTo: day.cityTo ?? null,
-    country: day.country ?? null,
+    cityFromCountry: day.cityFromCountry ?? null,
+    cityToCountry: day.cityToCountry ?? null,
     transport: day.transport ?? null,
     description: day.description ?? null,
     isTransitNight: day.isTransitNight,
@@ -1486,25 +1492,26 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   // GET /me/trips/:tripId and the rest of the traveler UI actually reads from.
   if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
-  const { dayNumber, cityFrom, cityTo, country, transport, description, isTransitNight } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
 
   const patch: Record<string, unknown> = {};
   if (dayNumber !== undefined) patch.dayNumber = dayNumber;
   if (cityFrom !== undefined) patch.cityFrom = cityFrom ?? null;
   if (cityTo !== undefined) patch.cityTo = cityTo ?? null;
-  if (country !== undefined) patch.country = country ?? null;
+  if (cityFromCountry !== undefined) patch.cityFromCountry = cityFromCountry ?? null;
+  if (cityToCountry !== undefined) patch.cityToCountry = cityToCountry ?? null;
   if (transport !== undefined) patch.transport = transport ?? null;
   if (description !== undefined) patch.description = description ?? null;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
 
   // Only re-geocode a side that's actually changing in this request.
   if (cityFrom !== undefined) {
-    const geo = await geocodeCity(cityFrom, country);
+    const geo = await geocodeCity(cityFrom, cityFromCountry);
     patch.cityFromLat = geo?.lat ?? null;
     patch.cityFromLng = geo?.lng ?? null;
   }
   if (cityTo !== undefined) {
-    const geo = await geocodeCity(cityTo, country);
+    const geo = await geocodeCity(cityTo, cityToCountry);
     patch.cityToLat = geo?.lat ?? null;
     patch.cityToLng = geo?.lng ?? null;
   }
@@ -1525,7 +1532,8 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
     dayNumber: updated.dayNumber,
     cityFrom: updated.cityFrom ?? null,
     cityTo: updated.cityTo ?? null,
-    country: updated.country ?? null,
+    cityFromCountry: updated.cityFromCountry ?? null,
+    cityToCountry: updated.cityToCountry ?? null,
     transport: updated.transport ?? null,
     description: updated.description ?? null,
     isTransitNight: updated.isTransitNight,

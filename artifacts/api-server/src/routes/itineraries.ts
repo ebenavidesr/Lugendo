@@ -338,21 +338,22 @@ router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Prom
 
 router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDayInputSchema), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const { dayNumber, cityFrom, cityTo, country, transport, description, meals, isTransitNight } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight } = req.body;
   const [day] = await db
     .insert(itineraryDaysTable)
-    .values({ itineraryId, dayNumber, cityFrom, cityTo, country, transport, description, meals, ...(isTransitNight !== undefined ? { isTransitNight } : {}) })
+    .values({ itineraryId, dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, ...(isTransitNight !== undefined ? { isTransitNight } : {}) })
     .returning();
   res.status(201).json({ ...day, createdAt: day.createdAt.toISOString(), hotels: [] });
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, country, transport, description, meals, isTransitNight } = req.body;
+  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
-  if (country !== undefined) patch.country = country;
+  if (cityFromCountry !== undefined) patch.cityFromCountry = cityFromCountry;
+  if (cityToCountry !== undefined) patch.cityToCountry = cityToCountry;
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
   if (meals !== undefined) patch.meals = meals;

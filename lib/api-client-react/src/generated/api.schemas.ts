@@ -259,7 +259,9 @@ export interface ItineraryDay {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -351,7 +353,8 @@ export interface ItineraryDayInput {
   dayNumber: number;
   cityFrom?: string;
   cityTo?: string;
-  country?: string;
+  cityFromCountry?: string;
+  cityToCountry?: string;
   transport?: TransportMode | null;
   description?: string;
   meals?: string;
@@ -364,7 +367,9 @@ export interface ItineraryDayUpdate {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -652,7 +657,9 @@ export interface TripDay {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -785,7 +792,9 @@ export interface TripDayUpdate {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -951,7 +960,9 @@ export interface PersonalTripDayInput {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;
@@ -965,7 +976,9 @@ export interface PersonalTripDayUpdateInput {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

@@ -92,6 +92,20 @@
       "when": 1783856275759,
       "tag": "0012_reset_geocoded_coordinates",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1784488334954,
+      "tag": "0013_tidy_talos",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1784488352218,
+      "tag": "0014_bright_white_tiger",
+      "breakpoints": true
     }
   ]
 }

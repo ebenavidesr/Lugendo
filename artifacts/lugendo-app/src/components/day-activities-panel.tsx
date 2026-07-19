@@ -26,7 +26,8 @@ export { categoryMeta } from "@/components/activity-meta";
 type LookupResult = { name: string; city: string; country: string; address: string; description: string };
 
 type DayContext = {
-  country?: string | null;
+  cityFromCountry?: string | null;
+  cityToCountry?: string | null;
   cityFrom?: string | null;
   cityTo?: string | null;
 };
@@ -97,7 +98,7 @@ export function DayActivitiesPanel({
 
   const openCreate = () => {
     setNewCity(day?.cityTo ?? day?.cityFrom ?? "");
-    setNewCountry(day?.country ?? "");
+    setNewCountry(day?.cityToCountry ?? day?.cityFromCountry ?? "");
     setMode("create");
   };
 

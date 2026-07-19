@@ -6,6 +6,19 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #128 — Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes (2026-07-19)
+- [x] Investigación previa: se detectó que `país` era un único campo por día, y que el viaje real de Sri Lanka tenía `country: null` en los 17 días — causa raíz de que "Matale" y "Galle" geocodificaran a Sudáfrica y Suiza (relevancia 1.0, no lo frena el umbral mínimo del fix anterior de Girithale)
+- [x] Cambio de alcance acordado con Quique: el país pasa de ser por día a ser **por ciudad** (origen y destino por separado), ya que un mismo día puede cruzar de un país a otro
+- [x] Migración de esquema: `trip_days` e `itinerary_days` ganan `cityFromCountry`/`cityToCountry`; la columna `country` se elimina tras un backfill que copia su valor a ambos campos nuevos (`0013_tidy_talos.sql` + `0014_bright_white_tiger.sql`)
+- [x] Backend: geocoding usa el país específico de cada ciudad (origen con `cityFromCountry`, destino con `cityToCountry`) en las 3 superficies (back office viaje, back office itinerario, viajero personal) y en el backfill perezoso del mapa
+- [x] `typecheck` y `build` de `api-server` limpios tras el cambio; `lugendo-app` typecheck limpio (el build con Vite falla localmente por un problema de entorno preexistente y no relacionado — falta el binario nativo `@rollup/rollup-darwin-arm64`, no reproducible en CI)
+- [ ] Verificado en `lugendo.io` tras deploy: back office de viaje (`/trips/:id`) — el formulario "Editar día" muestra "País origen" y "País destino" como selects independientes, y guardar persiste ambos valores y regeocodifica correctamente
+- [ ] Back office de itinerario (plantilla) — mismos dos campos, tanto en "Añadir día" como en "Editar día"
+- [ ] Vista del viajero (Pasaporte, viaje personal, modo edición) — mismos dos campos en el editor inline de día
+- [ ] Corregidos los días "Matale" (→ Sri Lanka, no Sudáfrica) y "Galle" (→ Sri Lanka, no Suiza) del viaje real, y el mapa de ese viaje ya no muestra pines fuera de Sri Lanka
+- [ ] La sección "Viaja Seguro" (que agrega países visitados desde `trip_days`) sigue mostrando los países correctos tras el cambio de columna
+- [ ] Migración `0013`/`0014` aplicada sin errores en el arranque del servidor de producción (Railway ejecuta migraciones pendientes al iniciar)
+
 ### #125 — Sección "Mapa": ruta del itinerario con Mapbox (2026-07-12)
 - [x] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente** — hecho por Quique
 

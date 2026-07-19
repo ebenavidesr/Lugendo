@@ -34,7 +34,8 @@ const daySchema = z.object({
   dayNumber: z.string().min(1),
   cityFrom: z.string().optional(),
   cityTo: z.string().optional(),
-  country: z.string().optional(),
+  cityFromCountry: z.string().optional(),
+  cityToCountry: z.string().optional(),
   transport: z.string().optional(),
   description: z.string().optional(),
 });
@@ -71,7 +72,8 @@ function EditDayDialog({
       dayNumber: String(day.dayNumber),
       cityFrom: day.cityFrom ?? "",
       cityTo: day.cityTo ?? "",
-      country: day.country ?? "",
+      cityFromCountry: day.cityFromCountry ?? "",
+      cityToCountry: day.cityToCountry ?? "",
       transport: day.transport ?? "",
       description: day.description ?? "",
     },
@@ -84,7 +86,8 @@ function EditDayDialog({
       data: {
         cityFrom: values.cityFrom?.trim() || null,
         cityTo: values.cityTo?.trim() || null,
-        country: values.country || null,
+        cityFromCountry: values.cityFromCountry || null,
+        cityToCountry: values.cityToCountry || null,
         transport: (values.transport || null) as import("@workspace/api-client-react").TransportMode | null,
         description: values.description?.trim() || null,
       },
@@ -129,15 +132,26 @@ function EditDayDialog({
                 </FormItem>
               )} />
             </div>
-            <FormField control={form.control} name="country" render={({ field }) => (
-              <FormItem>
-                <FormLabel>País</FormLabel>
-                <FormControl>
-                  <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país del día…" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <div className="grid grid-cols-2 gap-3">
+              <FormField control={form.control} name="cityFromCountry" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>País origen</FormLabel>
+                  <FormControl>
+                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="cityToCountry" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>País destino</FormLabel>
+                  <FormControl>
+                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
             <FormField control={form.control} name="transport" render={({ field }) => (
               <FormItem>
                 <FormLabel>Transporte</FormLabel>
@@ -386,7 +400,7 @@ export default function ItineraryDetail() {
     resolver: zodResolver(daySchema),
     defaultValues: {
       dayNumber: String((days?.length ?? 0) + 1),
-      cityFrom: "", cityTo: "", country: "", transport: "", description: "",
+      cityFrom: "", cityTo: "", cityFromCountry: "", cityToCountry: "", transport: "", description: "",
     },
   });
 
@@ -397,7 +411,8 @@ export default function ItineraryDetail() {
         dayNumber: parseInt(values.dayNumber),
         ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
         ...(values.cityTo ? { cityTo: values.cityTo } : {}),
-        ...(values.country ? { country: values.country } : {}),
+        ...(values.cityFromCountry ? { cityFromCountry: values.cityFromCountry } : {}),
+        ...(values.cityToCountry ? { cityToCountry: values.cityToCountry } : {}),
         ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
         ...(values.description ? { description: values.description } : {}),
       },
@@ -635,15 +650,26 @@ export default function ItineraryDetail() {
                   </FormItem>
                 )} />
               </div>
-              <FormField control={form.control} name="country" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>País (opcional)</FormLabel>
-                  <FormControl>
-                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <div className="grid grid-cols-2 gap-3">
+                <FormField control={form.control} name="cityFromCountry" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>País origen (opcional)</FormLabel>
+                    <FormControl>
+                      <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="cityToCountry" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>País destino (opcional)</FormLabel>
+                    <FormControl>
+                      <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
               <FormField control={form.control} name="transport" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporte (opcional)</FormLabel>

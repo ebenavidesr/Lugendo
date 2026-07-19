@@ -100,9 +100,9 @@ function formatDayDate(startDate: string | null | undefined, dayNumber: number):
 }
 
 interface DayEditFormProps {
-  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; country?: string | null; transport?: string | null; description?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; };
+  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; cityFromCountry?: string | null; cityToCountry?: string | null; transport?: string | null; description?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; };
   tripId: number;
-  allDays?: { id: number; dayNumber?: number | null; cityFrom?: string | null; cityTo?: string | null; country?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; }[];
+  allDays?: { id: number; dayNumber?: number | null; cityFrom?: string | null; cityTo?: string | null; cityFromCountry?: string | null; cityToCountry?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; }[];
   onDone: () => void;
 }
 
@@ -113,7 +113,8 @@ function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
   const deleteDay = useDeleteTripDayAdmin();
   const [cityFrom, setCityFrom] = useState(day.cityFrom ?? "");
   const [cityTo, setCityTo] = useState(day.cityTo ?? "");
-  const [country, setCountry] = useState(day.country ?? "");
+  const [cityFromCountry, setCityFromCountry] = useState(day.cityFromCountry ?? "");
+  const [cityToCountry, setCityToCountry] = useState(day.cityToCountry ?? "");
   const [transport, setTransport] = useState(day.transport ?? "");
   const [description, setDescription] = useState(day.description ?? "");
 
@@ -125,7 +126,8 @@ function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
         data: {
           cityFrom: cityFrom.trim() || null,
           cityTo: cityTo.trim() || null,
-          country: country || null,
+          cityFromCountry: cityFromCountry || null,
+          cityToCountry: cityToCountry || null,
           transport: (transport || null) as TransportMode | null,
           description: description.trim() || null,
         },
@@ -181,11 +183,11 @@ function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">País</label>
+          <label className="text-[11px] text-muted-foreground">País origen</label>
           <select
             className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] bg-white"
-            value={country}
-            onChange={e => setCountry(e.target.value)}
+            value={cityFromCountry}
+            onChange={e => setCityFromCountry(e.target.value)}
           >
             <option value="">— País —</option>
             {COUNTRIES.map(c => (
@@ -194,18 +196,31 @@ function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-[11px] text-muted-foreground">Transporte</label>
+          <label className="text-[11px] text-muted-foreground">País destino</label>
           <select
             className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] bg-white"
-            value={transport}
-            onChange={e => setTransport(e.target.value)}
+            value={cityToCountry}
+            onChange={e => setCityToCountry(e.target.value)}
           >
-            <option value="">— Transporte —</option>
-            {TRANSPORT_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+            <option value="">— País —</option>
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={c.code}>{c.name}</option>
             ))}
           </select>
         </div>
+      </div>
+      <div className="space-y-1">
+        <label className="text-[11px] text-muted-foreground">Transporte</label>
+        <select
+          className="w-full h-7 px-2 text-[12px] border border-border rounded-[6px] outline-none focus:ring-1 focus:ring-[#3D2F6B] bg-white"
+          value={transport}
+          onChange={e => setTransport(e.target.value)}
+        >
+          <option value="">— Transporte —</option>
+          {TRANSPORT_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>
+          ))}
+        </select>
       </div>
       <div className="space-y-1">
         <label className="text-[11px] text-muted-foreground">Descripción</label>
@@ -401,7 +416,7 @@ export default function TripDetail() {
     const days = trip?.days ?? [];
     const nextNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
     createTripDay.mutate(
-      { tripId, data: { dayNumber: nextNum, cityFrom: null, cityTo: null, country: null, transport: null, description: null } },
+      { tripId, data: { dayNumber: nextNum, cityFrom: null, cityTo: null, cityFromCountry: null, cityToCountry: null, transport: null, description: null } },
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });

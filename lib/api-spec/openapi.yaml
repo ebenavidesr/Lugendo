@@ -2826,7 +2826,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -2853,7 +2855,9 @@ components:
           type: string
         cityTo:
           type: string
-        country:
+        cityFromCountry:
+          type: string
+        cityToCountry:
           type: string
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -2871,7 +2875,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -3401,7 +3407,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -3424,7 +3432,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -3644,7 +3654,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"
@@ -3662,7 +3674,9 @@ components:
           type: ["string", "null"]
         cityTo:
           type: ["string", "null"]
-        country:
+        cityFromCountry:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"

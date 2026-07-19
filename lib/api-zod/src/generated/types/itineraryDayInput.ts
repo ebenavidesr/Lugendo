@@ -11,7 +11,8 @@ export interface ItineraryDayInput {
   dayNumber: number;
   cityFrom?: string;
   cityTo?: string;
-  country?: string;
+  cityFromCountry?: string;
+  cityToCountry?: string;
   transport?: TransportMode | null;
   description?: string;
   meals?: string;

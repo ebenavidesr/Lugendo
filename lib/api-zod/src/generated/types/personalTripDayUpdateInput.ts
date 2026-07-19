@@ -14,7 +14,9 @@ export interface PersonalTripDayUpdateInput {
   /** @nullable */
   cityTo?: string | null;
   /** @nullable */
-  country?: string | null;
+  cityFromCountry?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

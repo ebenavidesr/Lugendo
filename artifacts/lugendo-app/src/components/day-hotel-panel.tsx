@@ -41,7 +41,8 @@ export type GenericDay = {
   hotels?: DayHotel[] | null;
   cityFrom?: string | null;
   cityTo?: string | null;
-  country?: string | null;
+  cityFromCountry?: string | null;
+  cityToCountry?: string | null;
   isTransitNight?: boolean | null;
 };
 
@@ -576,7 +577,7 @@ export function DayHotelPanel({
             <p className="text-[11px] text-muted-foreground">Escribe para buscar en el catálogo de hoteles.</p>
           )}
           <button
-            onClick={() => { setMode("create"); setSearchQ(""); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "", country: day.country ?? "" })); }}
+            onClick={() => { setMode("create"); setSearchQ(""); setForm(f => ({ ...f, city: day.cityTo ?? day.cityFrom ?? "", country: day.cityToCountry ?? day.cityFromCountry ?? "" })); }}
             className="text-[11px] font-medium hover:underline"
             style={{ color: "#C4793A" }}>
             + Crear hotel nuevo

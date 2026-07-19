@@ -42,10 +42,13 @@ export async function getCountriesNeedingRefresh(): Promise<string[]> {
   const countries = new Set<string>();
 
   const dayCountryRows = await db
-    .selectDistinct({ country: tripDaysTable.country })
+    .selectDistinct({ cityFromCountry: tripDaysTable.cityFromCountry, cityToCountry: tripDaysTable.cityToCountry })
     .from(tripDaysTable)
     .where(inArray(tripDaysTable.tripId, tripIds));
-  for (const r of dayCountryRows) if (r.country) countries.add(r.country);
+  for (const r of dayCountryRows) {
+    if (r.cityFromCountry) countries.add(r.cityFromCountry);
+    if (r.cityToCountry) countries.add(r.cityToCountry);
+  }
 
   if (itineraryIds.length > 0) {
     const itinRows = await db
@@ -59,7 +62,7 @@ export async function getCountriesNeedingRefresh(): Promise<string[]> {
   return Array.from(countries).filter(Boolean).sort();
 }
 
-// Countries (excluding Spain) that appear on a single trip, combining trip_days.country
+// Countries (excluding Spain) that appear on a single trip, combining trip_days.cityFromCountry/cityToCountry
 // with the linked itinerary's countries list.
 export async function getTripCountries(tripId: number): Promise<string[]> {
   const [trip] = await db
@@ -70,10 +73,13 @@ export async function getTripCountries(tripId: number): Promise<string[]> {
   const countries = new Set<string>();
 
   const dayCountryRows = await db
-    .selectDistinct({ country: tripDaysTable.country })
+    .selectDistinct({ cityFromCountry: tripDaysTable.cityFromCountry, cityToCountry: tripDaysTable.cityToCountry })
     .from(tripDaysTable)
     .where(eq(tripDaysTable.tripId, tripId));
-  for (const r of dayCountryRows) if (r.country) countries.add(r.country);
+  for (const r of dayCountryRows) {
+    if (r.cityFromCountry) countries.add(r.cityFromCountry);
+    if (r.cityToCountry) countries.add(r.cityToCountry);
+  }
 
   if (trip?.itineraryId) {
     const [itin] = await db
