@@ -19,6 +19,7 @@ import { sendDocumentUploadedEmail } from "../lib/email";
 import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { geocodeCity } from "../lib/geocoding";
+import { PUBLIC_APP_URL } from "../lib/publicUrl";
 
 const objectStorage = new ObjectStorageService();
 
@@ -948,7 +949,7 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
           ),
         );
 
-      const tripUrl = `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : ""}/#/trips/${tripId}/documents`;
+      const tripUrl = `${PUBLIC_APP_URL}/#/trips/${tripId}/documents`;
 
       await Promise.allSettled(
         accepted.map(t =>

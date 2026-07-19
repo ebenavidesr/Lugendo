@@ -1,0 +1,17 @@
+// Cloudflare Workers Builds (dashboard) is the CI for this Worker. Its Build
+// command and Deploy command are set in the dashboard, not here:
+//   Build:  pnpm --filter @workspace/lugendo-app run build
+//   Deploy: cd artifacts/lugendo-app && node_modules/.bin/wrangler deploy
+// (not `npx wrangler deploy` or `pnpm exec` -- both failed to resolve the
+// locally installed wrangler binary in that build environment.)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lugendo",
+  "compatibility_date": "2026-07-18",
+  "main": "worker.js",
+  "assets": {
+    "directory": "./dist/public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}

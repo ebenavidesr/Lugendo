@@ -7,6 +7,8 @@ packages:
 allowBuilds:
   bcrypt: true
   esbuild: true
+  sharp: true
+  workerd: true
 
 autoInstallPeers: false
 

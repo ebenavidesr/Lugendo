@@ -64,6 +64,7 @@
 | #105 | Ver progreso de checklist de cada viajero (vista agencia) | 🟡 Media | Agencia · Viajeros | Yo |
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
 | #126 | Pestaña de Notas en el panel de agencia (hoy solo existe en la vista del viajero, dato personal por usuario) | 🟢 Baja | Viajeros · Agencia | Yo |
+| #127 | Crear cuenta OpenAI propia y configurar API key real (sustituye el proxy "Model Farm" de Replit, usado hoy con valor provisional tras la migración de hosting #117) | 🟡 Media | Infraestructura | Yo |
 
 ---
 
