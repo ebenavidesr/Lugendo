@@ -15,9 +15,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Verificado en `lugendo.io` tras deploy: back office de viaje (`/trips/:id`) — el formulario "Editar día" muestra "País origen" y "País destino" como selects independientes, y guardar persiste ambos valores y regeocodifica correctamente
 - [ ] Back office de itinerario (plantilla) — mismos dos campos, tanto en "Añadir día" como en "Editar día"
 - [ ] Vista del viajero (Pasaporte, viaje personal, modo edición) — mismos dos campos en el editor inline de día
-- [ ] Corregidos los días "Matale" (→ Sri Lanka, no Sudáfrica) y "Galle" (→ Sri Lanka, no Suiza) del viaje real, y el mapa de ese viaje ya no muestra pines fuera de Sri Lanka
+- [x] Corregidos los días "Matale" (→ Sri Lanka, 7.468663/80.622765) y "Galle" (→ Sri Lanka, 6.026162/80.21786) del viaje real — verificado en la respuesta real de `GET /api/me/trips/:id/map`, ya no hay pines en Sudáfrica/Suiza
 - [ ] La sección "Viaja Seguro" (que agrega países visitados desde `trip_days`) sigue mostrando los países correctos tras el cambio de columna
 - [ ] Migración `0013`/`0014` aplicada sin errores en el arranque del servidor de producción (Railway ejecuta migraciones pendientes al iniciar)
+
+### Fix — Mapa en blanco tras cambiar de pestaña (canvas de Mapbox desincronizado del contenedor) (2026-07-19)
+- [x] Diagnosticado en vivo con Quique: tras cambiar de pestaña dentro de la SPA, el canvas de Mapbox quedaba fijado en un tamaño interno menor (300px) que el contenedor real (420px) — el mapa cargaba tiles y creaba los 13 marcadores correctamente (confirmado por consola), pero con la transform interna desalineada no se pintaba nada visible
+- [x] Arreglado con un `ResizeObserver` sobre el contenedor que llama a `map.resize()` cada vez que cambia de tamaño
+- [ ] Verificado en `lugendo.io`: entrar en la pestaña Mapa del viaje de Sri Lanka (sin recargar la página, idealmente después de cambiar de pestaña un par de veces) muestra el mapa con los 13 pines, la ruta, y el control de zoom arriba a la derecha
 
 ### #125 — Sección "Mapa": ruta del itinerario con Mapbox (2026-07-12)
 - [x] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente** — hecho por Quique
