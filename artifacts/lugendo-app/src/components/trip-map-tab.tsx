@@ -83,6 +83,14 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
     mapRef.current = map;
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
 
+    // Mapbox GL sizes its canvas off the container's dimensions at construction time. Right
+    // after a tab switch the container can still be mid-layout (e.g. 300px instead of its
+    // final 420px), and the canvas never catches up on its own -- the map then renders with a
+    // stale internal size, leaving it visually blank/misaligned even though tiles loaded fine.
+    // Keep the canvas in sync with the container for as long as the map is mounted.
+    const resizeObserver = new ResizeObserver(() => map.resize());
+    resizeObserver.observe(containerRef.current);
+
     map.on("load", () => {
       setMapReady(true);
 
@@ -129,6 +137,7 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
     });
 
     return () => {
+      resizeObserver.disconnect();
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
       map.remove();
