@@ -327,15 +327,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] La subida del documento no se ralentiza aunque falle el email (fire-and-forget)
 
 ### #117 — Migrar hosting fuera de Replit (Cloudflare Workers + Railway + Neon)
-- [x] Base de datos: datos reales migrados de `helium` (Replit) a Neon, conteo de filas verificado idéntico en las 21 tablas
+- [x] Base de datos: datos **reales** de producción (no la base de development `helium`, ver incidente abajo) copiados a la cuenta propia de Neon; conteo de filas verificado idéntico en las 22 tablas
+- [x] Incidente detectado post-cutover: dos migraciones (`0009`, `0011`) estaban marcadas como aplicadas sin haberse ejecutado de verdad — columnas añadidas manualmente y verificadas contra el esquema completo, sin pérdida de datos
 - [x] Email: invitaciones, bienvenida, documento subido y actualización de viaje se envían vía Resend (dominio `lugendo.io` verificado) en vez del proxy de Replit
-- [x] Almacenamiento de archivos: subida, descarga y permisos (ACL owner/visibility) funcionan contra Cloudflare R2 en vez de GCS/Replit
-- [x] Backend: login y sesión persistente verificados en Railway (`admin@lugendo.io`); pendiente probar roles manager/agent/traveler
+- [x] Almacenamiento de archivos: mismo bucket entre development y production, sin necesidad de re-migrar; documento real de Sri Lanka confirmado accesible en R2
+- [x] Backend: login y sesión persistente verificados en Railway con cuenta real (Quique); notas del viaje de Sri Lanka confirmadas visibles tras el arreglo de esquema
 - [x] Frontend: la SPA carga y el proxy `/api/*` funciona a través del Worker de Cloudflare
 - [x] CI: GitHub Actions corre typecheck + build de `api-server` y `lugendo-app` en cada push/PR
-- [x] Cutover: `lugendo.io` apunta al nuevo stack (DNS verificado, login funcional en el dominio real)
-- [ ] Probar login y funcionalidad completa como manager, agent y traveler en `lugendo.io`
-- [ ] Confirmar que la subida de documentos (PDF) desde la app real funciona de punta a punta con R2
+- [x] Cutover: `lugendo.io` apunta al nuevo stack (DNS verificado, login funcional en el dominio real con datos reales)
+- [ ] Probar login y funcionalidad completa como manager, agent y otros travelers en `lugendo.io` (solo se ha probado con la cuenta de Quique)
 - [ ] Replit archivado tras el periodo de gracia (recordatorio programado para el 2026-07-22)
 
 ---
