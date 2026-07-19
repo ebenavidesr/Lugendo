@@ -22,4 +22,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm run build
+      - run: pnpm run typecheck
+
+      - run: pnpm --filter @workspace/api-server run build
+
+      - run: pnpm --filter @workspace/lugendo-app run build
