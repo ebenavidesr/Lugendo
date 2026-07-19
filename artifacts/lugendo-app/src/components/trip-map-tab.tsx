@@ -176,7 +176,7 @@ export function TripMapTab({ tripId, onNavigateToDay }: TripMapTabProps) {
     <div className="relative w-full h-[420px] rounded-[14px] overflow-hidden border border-border">
       <div
         ref={containerRef}
-        className="absolute inset-0"
+        className="w-full h-full"
         style={{ opacity: mapReady ? 1 : 0, transition: "opacity 0.2s" }}
       />
       {!mapReady && <div className="absolute inset-0 bg-card animate-pulse pointer-events-none" />}
