@@ -326,6 +326,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Si el viajero no tiene nombre registrado, el saludo es genérico
 - [ ] La subida del documento no se ralentiza aunque falle el email (fire-and-forget)
 
+### #117 — Migrar hosting fuera de Replit (Cloudflare Workers + Railway + Neon)
+- [x] Base de datos: datos reales migrados de `helium` (Replit) a Neon, conteo de filas verificado idéntico en las 21 tablas
+- [x] Email: invitaciones, bienvenida, documento subido y actualización de viaje se envían vía Resend (dominio `lugendo.io` verificado) en vez del proxy de Replit
+- [x] Almacenamiento de archivos: subida, descarga y permisos (ACL owner/visibility) funcionan contra Cloudflare R2 en vez de GCS/Replit
+- [x] Backend: login y sesión persistente verificados en Railway (`admin@lugendo.io`); pendiente probar roles manager/agent/traveler
+- [x] Frontend: la SPA carga y el proxy `/api/*` funciona a través del Worker de Cloudflare
+- [x] CI: GitHub Actions corre typecheck + build de `api-server` y `lugendo-app` en cada push/PR
+- [x] Cutover: `lugendo.io` apunta al nuevo stack (DNS verificado, login funcional en el dominio real)
+- [ ] Probar login y funcionalidad completa como manager, agent y traveler en `lugendo.io`
+- [ ] Confirmar que la subida de documentos (PDF) desde la app real funciona de punta a punta con R2
+- [ ] Replit archivado tras el periodo de gracia (recordatorio programado para el 2026-07-22)
+
 ---
 
 > Seed admin para pruebas: `admin@lugendo.io` / `admin1234`
