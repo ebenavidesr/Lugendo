@@ -19,7 +19,7 @@ function AgencyForm({
   isPending,
   onClose,
 }: {
-  initial: { name: string; slug: string; logoUrl: string; primaryColor: string };
+  initial: { name: string; slug: string; primaryColor: string };
   onSubmit: (data: typeof initial) => void;
   isPending: boolean;
   onClose: () => void;
@@ -36,10 +36,6 @@ function AgencyForm({
       <div>
         <label className="text-[12px] font-medium text-muted-foreground mb-1 block">Slug *</label>
         <Input value={form.slug} onChange={e => set({ slug: e.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder="mi-agencia" className="font-mono text-[13px]" />
-      </div>
-      <div>
-        <label className="text-[12px] font-medium text-muted-foreground mb-1 block">URL del logo</label>
-        <Input value={form.logoUrl} onChange={e => set({ logoUrl: e.target.value })} placeholder="https://..." />
       </div>
       <div>
         <label className="text-[12px] font-medium text-muted-foreground mb-1 block">Color principal</label>
@@ -81,12 +77,12 @@ function EditAgencyDialog({ agency, onClose }: { agency: Agency; onClose: () => 
           />
         </div>
         <AgencyForm
-          initial={{ name: agency.name, slug: agency.slug, logoUrl: agency.logoUrl ?? "", primaryColor: agency.primaryColor ?? "#C4793A" }}
+          initial={{ name: agency.name, slug: agency.slug, primaryColor: agency.primaryColor ?? "#C4793A" }}
           isPending={update.isPending}
           onClose={onClose}
           onSubmit={data => {
             update.mutate(
-              { agencyId: agency.id, data: { name: data.name, logoUrl: data.logoUrl || undefined, primaryColor: data.primaryColor || undefined } },
+              { agencyId: agency.id, data: { name: data.name, primaryColor: data.primaryColor || undefined } },
               {
                 onSuccess: () => {
                   qc.invalidateQueries({ queryKey: ["/api/agencies"] });
@@ -156,12 +152,12 @@ function CreateAgencyDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <AgencyForm
-          initial={{ name: "", slug: "", logoUrl: "", primaryColor: "#C4793A" }}
+          initial={{ name: "", slug: "", primaryColor: "#C4793A" }}
           isPending={create.isPending || uploadingLogo}
           onClose={onClose}
           onSubmit={data => {
             create.mutate(
-              { data: { name: data.name, slug: data.slug, logoUrl: data.logoUrl || undefined, primaryColor: data.primaryColor || undefined } },
+              { data: { name: data.name, slug: data.slug, primaryColor: data.primaryColor || undefined } },
               {
                 onSuccess: async newAgency => {
                   if (logoFile) {

@@ -28,7 +28,6 @@ export default function AgencySettings() {
 
   const [form, setForm] = useState({
     name: "",
-    logoUrl: "",
     primaryColor: "",
     writingTone: "friendly",
   });
@@ -37,7 +36,6 @@ export default function AgencySettings() {
     if (agency) {
       setForm({
         name: agency.name ?? "",
-        logoUrl: agency.logoUrl ?? "",
         primaryColor: agency.primaryColor ?? "",
         writingTone: agency.writingTone ?? "friendly",
       });
@@ -51,7 +49,6 @@ export default function AgencySettings() {
         agencyId,
         data: {
           name: form.name || undefined,
-          logoUrl: form.logoUrl || undefined,
           primaryColor: form.primaryColor || undefined,
           writingTone: form.writingTone as "informative" | "friendly" | "adventurous" | "luxury" | "professional",
         },
@@ -102,17 +99,6 @@ export default function AgencySettings() {
           {agencyId && (
             <AgencyLogoField agencyId={agencyId} logoFileUrl={agency?.logoFileUrl} logoUrl={agency?.logoUrl} />
           )}
-        </div>
-        <div>
-          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
-            URL del logo <span className="font-normal text-muted-foreground">(alternativa, solo si no subes un archivo)</span>
-          </label>
-          <Input
-            value={form.logoUrl}
-            onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
-            placeholder="https://cdn.tuagencia.com/logo.png"
-            disabled={!!agency?.logoFileUrl}
-          />
         </div>
         <div>
           <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Color principal</label>
