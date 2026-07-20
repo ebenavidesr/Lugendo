@@ -348,7 +348,7 @@ router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDay
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight } = req.body;
+  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight, photoUrl } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
@@ -358,6 +358,7 @@ router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(Itin
   if (description !== undefined) patch.description = description;
   if (meals !== undefined) patch.meals = meals;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
+  if (photoUrl !== undefined) patch.photoUrl = photoUrl;
   const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();
   if (!day) { res.status(404).json({ error: "Not found" }); return; }
   const hotelMap = await getDayHotelMap([day.id]);

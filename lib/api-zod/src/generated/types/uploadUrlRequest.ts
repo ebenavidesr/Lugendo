@@ -5,9 +5,12 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { UploadUrlRequestVisibility } from './uploadUrlRequestVisibility';
 
 export interface UploadUrlRequest {
   name: string;
   size: number;
   contentType: string;
+  /** public objects are served unauthenticated from /storage/public-objects/*; private objects (default) require auth + per-feature ACL */
+  visibility?: UploadUrlRequestVisibility;
 }

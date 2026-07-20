@@ -76,6 +76,7 @@ async function copyItineraryDaysToTrip(tripId: number, itineraryId: number, crea
       transport: d.transport ?? null,
       description: d.description ?? null,
       isTransitNight: d.isTransitNight ?? false,
+      photoUrl: d.photoUrl ?? null,
     })))
     .returning();
 
@@ -1492,7 +1493,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   // GET /me/trips/:tripId and the rest of the traveler UI actually reads from.
   if (itineraryId) await copyItineraryDaysToTrip(tripId, itineraryId, userId);
 
-  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight, photoUrl } = req.body;
 
   const patch: Record<string, unknown> = {};
   if (dayNumber !== undefined) patch.dayNumber = dayNumber;
@@ -1503,6 +1504,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   if (transport !== undefined) patch.transport = transport ?? null;
   if (description !== undefined) patch.description = description ?? null;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
+  if (photoUrl !== undefined) patch.photoUrl = photoUrl ?? null;
 
   // Only re-geocode a side that's actually changing in this request.
   if (cityFrom !== undefined) {
@@ -1537,6 +1539,7 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
     transport: updated.transport ?? null,
     description: updated.description ?? null,
     isTransitNight: updated.isTransitNight,
+    photoUrl: updated.photoUrl ?? null,
     hotels: hotelMap[updated.id] ?? [],
     createdAt: updated.createdAt.toISOString(),
   });

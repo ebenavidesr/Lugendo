@@ -184,6 +184,11 @@ export default function TravelerTrip() {
     toast({ title: "Día actualizado" });
   };
 
+  const handleSavePhoto = async (dayId: number, photoUrl: string | null) => {
+    await updateDay.mutateAsync({ tripId, dayId, data: { photoUrl } });
+    await invalidateTrip();
+  };
+
   const handleDeleteDay = async (dayId: number) => {
     if (!confirm("¿Eliminar este día del itinerario?")) return;
     await deleteDay.mutateAsync({ tripId, dayId });
@@ -352,6 +357,7 @@ export default function TravelerTrip() {
                     startDate={trip.startDate}
                     onSaveDay={canEditPersonal && editMode ? (data) => handleSaveDay(day.id, day.dayNumber, data) : undefined}
                     onDeleteDay={canEditPersonal && editMode ? () => void handleDeleteDay(day.id) : undefined}
+                    onSavePhoto={canEditPersonal && editMode ? (photoUrl) => handleSavePhoto(day.id, photoUrl) : undefined}
                   />
                 </div>
               ))}

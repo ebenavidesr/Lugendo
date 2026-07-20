@@ -268,6 +268,8 @@ export interface ItineraryDay {
   /** @nullable */
   meals?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
   hotels?: DayHotel[];
   createdAt: string;
 }
@@ -376,6 +378,8 @@ export interface ItineraryDayUpdate {
   /** @nullable */
   meals?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }
 
 export interface Hotel {
@@ -664,6 +668,8 @@ export interface TripDay {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
   hotels?: DayHotel[];
   activities?: TripDayActivityItem[];
   createdAt: string;
@@ -799,6 +805,8 @@ export interface TripDayUpdate {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }
 
 export type InvitationInputInviteesItem = {
@@ -983,6 +991,8 @@ export interface PersonalTripDayUpdateInput {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }
 
 export type UpdateMyTripInputStatus = typeof UpdateMyTripInputStatus[keyof typeof UpdateMyTripInputStatus];
@@ -1224,10 +1234,23 @@ export interface TripTravelAdvisoriesResponse {
   advisories: TripCountryAdvisory[];
 }
 
+/**
+ * public objects are served unauthenticated from /storage/public-objects/*; private objects (default) require auth + per-feature ACL
+ */
+export type UploadUrlRequestVisibility = typeof UploadUrlRequestVisibility[keyof typeof UploadUrlRequestVisibility];
+
+
+export const UploadUrlRequestVisibility = {
+  public: 'public',
+  private: 'private',
+} as const;
+
 export interface UploadUrlRequest {
   name: string;
   size: number;
   contentType: string;
+  /** public objects are served unauthenticated from /storage/public-objects/*; private objects (default) require auth + per-feature ACL */
+  visibility?: UploadUrlRequestVisibility;
 }
 
 export interface UploadUrlResponse {

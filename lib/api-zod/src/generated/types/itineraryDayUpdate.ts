@@ -22,4 +22,6 @@ export interface ItineraryDayUpdate {
   /** @nullable */
   meals?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }

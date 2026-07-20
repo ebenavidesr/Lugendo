@@ -26,6 +26,8 @@ export interface ItineraryDay {
   /** @nullable */
   meals?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
   hotels?: DayHotel[];
   createdAt: string;
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Camera, Hotel, ChevronRight, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
+import { Hotel, ChevronRight, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import type { TripDay, TripDayActivityItem, DayActivity } from "@workspace/api-client-react";
 import { useRemoveTripDayActivity, COUNTRIES } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { getTransportOption, TRANSPORT_OPTIONS } from "@/components/transport-se
 import { FreeActivitySheet } from "@/components/free-activity-sheet";
 import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
+import { DayPhotoZone } from "@/components/day-photo-editor";
 
 const categoryEmoji: Record<string, string> = {
   cultural:    "🏛️",
@@ -63,9 +64,10 @@ interface TripDayCardProps {
   startDate?: string | null;
   onSaveDay?: (data: DayEditData) => Promise<void>;
   onDeleteDay?: () => void;
+  onSavePhoto?: (photoUrl: string | null) => Promise<void>;
 }
 
-export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, startDate, onSaveDay, onDeleteDay }: TripDayCardProps) {
+export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId, canEditDay = false, canEditHotels = false, startDate, onSaveDay, onDeleteDay, onSavePhoto }: TripDayCardProps) {
   const hotel = day.hotels?.[0] ?? null;
   const activities: TripDayActivityItem[] = day.activities ?? [];
   const hotelNightLabel = getNightLabel(dayIndex, allDays);
@@ -184,13 +186,13 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   return (
     <div className="bg-card border border-border rounded-[18px] overflow-hidden">
       {/* Photo zone */}
-      <div
-        className="relative flex items-center justify-center cursor-pointer"
-        style={{ height: 134, background: "var(--duna)" }}
+      <DayPhotoZone
+        photoUrl={day.photoUrl}
+        editable={canEditDay && !!onSavePhoto}
+        onSave={photoUrl => onSavePhoto!(photoUrl)}
+        height={134}
         onClick={onToggle}
       >
-        <Camera className="w-8 h-8 opacity-30" style={{ color: "var(--noche)" }} />
-
         <div
           className="absolute top-3 left-3 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold shadow"
           style={{ background: "var(--indigo)", color: "#FAF2EB" }}
@@ -211,7 +213,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             <Pencil className="w-3.5 h-3.5" />
           </button>
         )}
-      </div>
+      </DayPhotoZone>
 
       {/* Day title + destination */}
       <div className="px-4 pt-3 pb-0">

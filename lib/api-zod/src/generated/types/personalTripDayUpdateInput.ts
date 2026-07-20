@@ -21,4 +21,6 @@ export interface PersonalTripDayUpdateInput {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }

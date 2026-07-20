@@ -184,6 +184,7 @@ export const ItineraryDayUpdateSchema = z.object({
   description: z.string().nullable().optional(),
   meals: z.string().nullable().optional(),
   isTransitNight: z.boolean().optional(),
+  photoUrl: z.string().nullable().optional(),
 });
 
 // ─── Trip ─────────────────────────────────────────────────────────────────────
@@ -251,6 +252,7 @@ export const TripDayUpdateSchema = z.object({
   transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   isTransitNight: z.boolean().optional(),
+  photoUrl: z.string().nullable().optional(),
 });
 
 // ─── Trip Day Activities ──────────────────────────────────────────────────────
@@ -382,6 +384,7 @@ export const PersonalTripDayUpdateSchema = z.object({
   transport: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   isTransitNight: z.boolean().optional(),
+  photoUrl: z.string().nullable().optional(),
 });
 
 export const TripNoteInputSchema = z.object({

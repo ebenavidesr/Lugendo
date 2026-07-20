@@ -25,6 +25,8 @@ export interface TripDay {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
   hotels?: DayHotel[];
   activities?: TripDayActivityItem[];
   createdAt: string;

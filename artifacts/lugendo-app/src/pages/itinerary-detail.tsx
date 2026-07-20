@@ -16,6 +16,7 @@ import {
 } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
+import { DayPhotoZone } from "@/components/day-photo-editor";
 import type { GenericDay } from "@/components/day-hotel-panel";
 import { TransportSelect, TransportLabel } from "@/components/transport-select";
 import { CountrySelect } from "@/components/country-select";
@@ -101,6 +102,11 @@ function EditDayDialog({
     });
   };
 
+  const handleSavePhoto = async (photoUrl: string | null) => {
+    await updateDay.mutateAsync({ itineraryId, dayId: day.id, data: { photoUrl } });
+    qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
+  };
+
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-md">
@@ -109,6 +115,16 @@ function EditDayDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="space-y-1">
+              <FormLabel>Foto de portada</FormLabel>
+              <DayPhotoZone
+                photoUrl={day.photoUrl}
+                editable
+                onSave={handleSavePhoto}
+                height={100}
+                className="rounded-[8px]"
+              />
+            </div>
             <FormField control={form.control} name="dayNumber" render={({ field }) => (
               <FormItem>
                 <FormLabel>Número de día</FormLabel>

@@ -135,6 +135,7 @@ export * from './updateMyTripInputStatus';
 export * from './updateShareInput';
 export * from './updateShareInputPermission';
 export * from './uploadUrlRequest';
+export * from './uploadUrlRequestVisibility';
 export * from './uploadUrlResponse';
 export * from './user';
 export * from './userInput';

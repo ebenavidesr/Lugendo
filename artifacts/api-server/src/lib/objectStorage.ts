@@ -142,9 +142,11 @@ export class ObjectStorageService {
     return new Response(webStream, { headers });
   }
 
-  async getObjectEntityUploadURL(): Promise<string> {
+  async getObjectEntityUploadURL(visibility: "public" | "private" = "private"): Promise<string> {
     const objectId = randomUUID();
-    const key = `${PRIVATE_PREFIX}/uploads/${objectId}`;
+    const key = visibility === "public"
+      ? `${PUBLIC_PREFIX}/day-photos/${objectId}`
+      : `${PRIVATE_PREFIX}/uploads/${objectId}`;
 
     return getSignedUrl(
       objectStorageClient,
@@ -170,7 +172,10 @@ export class ObjectStorageService {
     return handle;
   }
 
-  normalizeObjectEntityPath(rawPath: string): string {
+  // For private objects, returns "/objects/{entityId}" (consumed by the authenticated
+  // GET /storage/objects/*path route). For public objects, returns the bare "{entityId}"
+  // path segment expected after GET /storage/public-objects/ (no per-feature ACL there).
+  normalizeObjectEntityPath(rawPath: string, visibility: "public" | "private" = "private"): string {
     const r2Origin = `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
     if (!rawPath.startsWith(r2Origin)) {
       return rawPath;
@@ -182,6 +187,12 @@ export class ObjectStorageService {
       return url.pathname;
     }
     const key = url.pathname.slice(bucketPrefix.length);
+
+    if (visibility === "public") {
+      const publicPrefix = `${PUBLIC_PREFIX}/`;
+      if (!key.startsWith(publicPrefix)) return url.pathname;
+      return key.slice(publicPrefix.length);
+    }
 
     const privatePrefix = `${PRIVATE_PREFIX}/`;
     if (!key.startsWith(privatePrefix)) {

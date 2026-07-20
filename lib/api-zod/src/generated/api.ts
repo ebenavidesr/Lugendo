@@ -311,6 +311,7 @@ export const GetItineraryResponse = zod.object({
   "description": zod.string().nullish(),
   "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -411,6 +412,7 @@ export const ListItineraryDaysResponseItem = zod.object({
   "description": zod.string().nullish(),
   "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -466,7 +468,8 @@ export const UpdateItineraryDayBody = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "meals": zod.string().nullish(),
-  "isTransitNight": zod.boolean().optional()
+  "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish()
 })
 
 export const UpdateItineraryDayResponse = zod.object({
@@ -481,6 +484,7 @@ export const UpdateItineraryDayResponse = zod.object({
   "description": zod.string().nullish(),
   "meals": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -874,6 +878,7 @@ export const GetTripResponse = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -1074,7 +1079,8 @@ export const UpdateTripDayAdminBody = zod.object({
   "cityToCountry": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "isTransitNight": zod.boolean().optional()
+  "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish()
 })
 
 export const UpdateTripDayAdminResponse = zod.object({
@@ -1088,6 +1094,7 @@ export const UpdateTripDayAdminResponse = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -1536,6 +1543,7 @@ export const GetMyTripResponse = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -1669,6 +1677,7 @@ export const UpdateMyTripResponse = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -1739,7 +1748,8 @@ export const UpdateTripDayBody = zod.object({
   "cityToCountry": zod.string().nullish(),
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
-  "isTransitNight": zod.boolean().optional()
+  "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish()
 })
 
 export const UpdateTripDayResponse = zod.object({
@@ -1753,6 +1763,7 @@ export const UpdateTripDayResponse = zod.object({
   "transport": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
   "isTransitNight": zod.boolean().optional(),
+  "photoUrl": zod.string().nullish(),
   "hotels": zod.array(zod.object({
   "id": zod.number(),
   "hotelId": zod.number(),
@@ -2313,10 +2324,13 @@ export const GetTripDocumentDownloadUrlResponse = zod.object({
 /**
  * @summary Request a presigned URL for file upload
  */
+export const requestUploadUrlBodyVisibilityDefault = `private`;
+
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string(),
   "size": zod.number(),
-  "contentType": zod.string()
+  "contentType": zod.string(),
+  "visibility": zod.enum(['public', 'private']).default(requestUploadUrlBodyVisibilityDefault).describe('public objects are served unauthenticated from \/storage\/public-objects\/\*; private objects (default) require auth + per-feature ACL')
 })
 
 export const RequestUploadUrlResponse = zod.object({

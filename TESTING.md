@@ -6,6 +6,20 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Foto de portada del día (subir, recortar, hacer zoom y reposicionar) (2026-07-20)
+- [x] Backend: columna `photo_url` nullable añadida a `trip_days` e `itinerary_days` (migración `0015_thankful_terrax.sql`, sin backfill necesario)
+- [x] Backend: nuevo modo `visibility: "public"` en `POST /storage/uploads/request-url` — sube a un prefijo `public/day-photos/` en R2 servido sin autenticación por la ruta ya existente `GET /storage/public-objects/*`, para poder usar la foto directamente en un `<img src>` sin firmar URLs
+- [x] Backend: `photoUrl` añadido a los 3 endpoints de actualización de día (back office viaje, back office plantilla de itinerario, viajero) y a la migración perezosa itinerary_days → trip_days
+- [x] Frontend: nuevo componente `DayPhotoZone` (`day-photo-editor.tsx`) con selección de archivo, recorte/zoom/reposicionamiento vía `react-easy-crop` (nueva dependencia) y subida directa a R2
+- [x] Integrado en las 3 superficies: encabezado de la ficha del día en el Pasaporte del viajero (`trip-day-card.tsx`), formulario de edición de día en el back office de viaje (`trip-detail.tsx`) y en la plantilla de itinerario (`itinerary-detail.tsx`)
+- [x] `typecheck` limpio en todo el workspace (`api-server`, `lugendo-app`, libs)
+- [ ] **No se pudo verificar visualmente en local** — el dev server de `lugendo-app` falla por el problema preexistente de entorno (`@rollup/rollup-darwin-arm64` no encontrado, no reproducible en CI) documentado en la tarea #128
+- [ ] Verificado en `lugendo.io` tras deploy: subir una foto nueva en el Pasaporte (modo edición, viaje personal), recortarla/hacer zoom/reposicionarla, guardar, y confirmar que se ve correctamente en el encabezado del día
+- [ ] Verificado en `lugendo.io`: mismo flujo desde el back office de un viaje real (`/trips/:id`, editar día)
+- [ ] Verificado en `lugendo.io`: mismo flujo desde una plantilla de itinerario (`/itineraries/:id`, editar día)
+- [ ] Verificado: quitar una foto ya subida (botón de papelera) la elimina correctamente
+- [ ] Verificado: migración `0015` aplicada sin errores en el arranque del servidor de producción
+
 ### #128 — Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes (2026-07-19)
 - [x] Investigación previa: se detectó que `país` era un único campo por día, y que el viaje real de Sri Lanka tenía `country: null` en los 17 días — causa raíz de que "Matale" y "Galle" geocodificaran a Sudáfrica y Suiza (relevancia 1.0, no lo frena el umbral mínimo del fix anterior de Girithale)
 - [x] Cambio de alcance acordado con Quique: el país pasa de ser por día a ser **por ciudad** (origen y destino por separado), ya que un mismo día puede cruzar de un país a otro

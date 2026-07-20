@@ -2838,6 +2838,8 @@ components:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
         hotels:
           type: array
           items:
@@ -2887,6 +2889,8 @@ components:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
 
     # ─── HOTEL ────────────────────────────────────────────────────────────────
     Hotel:
@@ -3417,6 +3421,8 @@ components:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
 
     TripDay:
       type: object
@@ -3442,6 +3448,8 @@ components:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
         hotels:
           type: array
           items:
@@ -3684,6 +3692,8 @@ components:
           type: ["string", "null"]
         isTransitNight:
           type: boolean
+        photoUrl:
+          type: ["string", "null"]
 
     UpdateMyTripInput:
       type: object
@@ -4005,6 +4015,11 @@ components:
           type: integer
         contentType:
           type: string
+        visibility:
+          type: string
+          enum: [public, private]
+          default: private
+          description: "public objects are served unauthenticated from /storage/public-objects/*; private objects (default) require auth + per-feature ACL"
 
     UploadUrlResponse:
       type: object

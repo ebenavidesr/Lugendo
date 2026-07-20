@@ -16,6 +16,7 @@ import {
 import type { TripDetailStatus, InvitationStatus, TransportMode, DayHotel } from "@workspace/api-client-react";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
+import { DayPhotoZone } from "@/components/day-photo-editor";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
 import { TripSafetyAdvisories } from "@/components/trip-safety-advisories";
 import { InlineField } from "@/components/inline-field";
@@ -100,7 +101,7 @@ function formatDayDate(startDate: string | null | undefined, dayNumber: number):
 }
 
 interface DayEditFormProps {
-  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; cityFromCountry?: string | null; cityToCountry?: string | null; transport?: string | null; description?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; };
+  day: { id: number; dayNumber: number; cityFrom?: string | null; cityTo?: string | null; cityFromCountry?: string | null; cityToCountry?: string | null; transport?: string | null; description?: string | null; isTransitNight?: boolean | null; photoUrl?: string | null; hotels?: DayHotel[] | null; };
   tripId: number;
   allDays?: { id: number; dayNumber?: number | null; cityFrom?: string | null; cityTo?: string | null; cityFromCountry?: string | null; cityToCountry?: string | null; isTransitNight?: boolean | null; hotels?: DayHotel[] | null; }[];
   onDone: () => void;
@@ -158,9 +159,24 @@ function DayEditForm({ day, tripId, allDays, onDone }: DayEditFormProps) {
     );
   };
 
+  const handleSavePhoto = async (photoUrl: string | null) => {
+    await updateDay.mutateAsync({ tripId, dayId: day.id, data: { photoUrl } });
+    qc.invalidateQueries({ queryKey: [`/api/trips/${tripId}`] });
+  };
+
   return (
     <div className="border-t border-border/60 px-3 py-3 space-y-2.5" style={{ background: "#FAF8FC" }}>
       <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Editar día</p>
+      <div className="space-y-1">
+        <label className="text-[11px] text-muted-foreground">Foto de portada</label>
+        <DayPhotoZone
+          photoUrl={day.photoUrl}
+          editable
+          onSave={handleSavePhoto}
+          height={100}
+          className="rounded-[8px]"
+        />
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label className="text-[11px] text-muted-foreground">Ciudad origen</label>

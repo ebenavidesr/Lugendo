@@ -20,4 +20,6 @@ export interface TripDayUpdate {
   /** @nullable */
   description?: string | null;
   isTransitNight?: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
 }

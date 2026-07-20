@@ -293,6 +293,7 @@ router.post("/trips", requireRoles("admin", "manager", "agent"), validate(TripIn
           transport: d.transport,
           description: d.description,
           isTransitNight: d.isTransitNight,
+          photoUrl: d.photoUrl,
         }))
       ).returning();
 
@@ -448,7 +449,7 @@ router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "ag
 router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
+  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight, photoUrl } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
@@ -457,6 +458,7 @@ router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSc
   if (transport !== undefined) patch.transport = transport;
   if (description !== undefined) patch.description = description;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
+  if (photoUrl !== undefined) patch.photoUrl = photoUrl;
 
   // Only re-geocode a side that's actually changing in this request.
   if (cityFrom !== undefined) {
