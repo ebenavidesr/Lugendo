@@ -6,6 +6,23 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #129 — Subida de logo como archivo en la ficha de creación/edición de agencia (2026-07-20)
+- [x] Cambio de alcance decidido al empezar (documentado en la tarjeta de Notion #129): el logo se guarda en Cloudflare R2 (reutilizando el mismo patrón público de `/storage/public-objects/*` construido para las fotos de día) en vez de bytea/base64 en Postgres — la razón original para bytea (evitar una dependencia de storage antes de migrar de Replit) ya no aplica, la migración #117 está hecha. Esto también elimina la necesidad del endpoint dedicado `GET /api/agencies/:id/logo`: el frontend usa `logoFileUrl ?? logoUrl` directamente
+- [x] Backend: columna `logo_file_url` nullable en `agencies` (migración `0016_swift_baron_strucker.sql`); `logoUrl` se mantiene como fallback
+- [x] Backend: `POST /agencies/:agencyId/logo` (multer, memoria, límite 2MB, formatos PNG/JPG/SVG/WebP) y `DELETE /agencies/:agencyId/logo`
+- [x] Backend: sanitización de SVG (`sanitizeSvg` en `lib/sanitize.ts`) con allowlist estricta de tags/atributos — sin `<script>`, sin `on*`, sin `href`/`xlink:href` de ningún tipo, así que no hay URI `javascript:` que filtrar
+- [x] Backend: `agencyLogoUrl` en las superficies del viajero (`traveler.ts`) ahora usa `COALESCE(logo_file_url, logo_url)`
+- [x] Frontend: componente `AgencyLogoField` (subida inmediata + reemplazo + eliminar) integrado en Configuración de agencia y en editar agencia (superadmin); flujo de archivo diferido (sube tras crear) en el diálogo de nueva agencia
+- [x] `typecheck` y `build` de `api-server` limpios; `lugendo-app` typecheck limpio (el build con Vite sigue fallando localmente por el problema de entorno preexistente ya documentado, no relacionado)
+- [x] Detectado y reportado por separado (no corregido aquí, fuera de alcance de esta tarea): `PATCH /agencies/:agencyId` y los dos endpoints de logo nuevos no comprueban que el `agencyId` de la URL coincida con la agencia del usuario — cualquier admin/manager puede editar el logo de otra agencia. Tarea sugerida en cola de background.
+- [ ] **No se pudo verificar visualmente en local** — mismo problema preexistente de `@rollup/rollup-darwin-arm64`
+- [ ] Verificado en `lugendo.io`: crear una agencia nueva subiendo un logo PNG/JPG/SVG/WebP
+- [ ] Verificado: archivo >2MB o formato no soportado muestra error claro sin romper el formulario
+- [ ] Verificado: el logo se ve en la vista previa del formulario tras subir
+- [ ] Verificado: reemplazar y eliminar el logo desde Configuración de agencia y desde Editar agencia (superadmin)
+- [ ] Verificado: agencias existentes con `logoUrl` (sin archivo subido) siguen mostrando su logo sin acción manual
+- [ ] Verificado: migración `0016` aplicada sin errores en el arranque del servidor de producción
+
 ### Foto de portada del día (subir, recortar, hacer zoom y reposicionar) (2026-07-20)
 - [x] Backend: columna `photo_url` nullable añadida a `trip_days` e `itinerary_days` (migración `0015_thankful_terrax.sql`, sin backfill necesario)
 - [x] Backend: nuevo modo `visibility: "public"` en `POST /storage/uploads/request-url` — sube a un prefijo `public/day-photos/` en R2 servido sin autenticación por la ruta ya existente `GET /storage/public-objects/*`, para poder usar la foto directamente en un `<img src>` sin firmar URLs

@@ -849,6 +849,146 @@ export const useUpdateAgency = <TError = ErrorType<unknown>,
       return useMutation(getUpdateAgencyMutationOptions(options));
     }
 
+export const getUploadAgencyLogoUrl = (agencyId: number,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/logo`
+}
+
+/**
+ * @summary Upload a logo file for an agency (PNG/JPG/SVG/WebP, max 2MB). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const uploadAgencyLogo = async (agencyId: number, options?: RequestInit): Promise<Agency> => {
+
+  return customFetch<Agency>(getUploadAgencyLogoUrl(agencyId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUploadAgencyLogoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyLogo>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyLogo>>, TError,{agencyId: number}, TContext> => {
+
+const mutationKey = ['uploadAgencyLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAgencyLogo>>, {agencyId: number}> = (props) => {
+          const {agencyId} = props ?? {};
+
+          return  uploadAgencyLogo(agencyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadAgencyLogoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAgencyLogo>>>
+
+    export type UploadAgencyLogoMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a logo file for an agency (PNG/JPG/SVG/WebP, max 2MB). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const useUploadAgencyLogo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyLogo>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadAgencyLogo>>,
+        TError,
+        {agencyId: number},
+        TContext
+      > => {
+      return useMutation(getUploadAgencyLogoMutationOptions(options));
+    }
+
+export const getDeleteAgencyLogoUrl = (agencyId: number,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/logo`
+}
+
+/**
+ * @summary Remove an agency's uploaded logo file (falls back to logoUrl if set)
+ */
+export const deleteAgencyLogo = async (agencyId: number, options?: RequestInit): Promise<Agency> => {
+
+  return customFetch<Agency>(getDeleteAgencyLogoUrl(agencyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAgencyLogoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyLogo>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyLogo>>, TError,{agencyId: number}, TContext> => {
+
+const mutationKey = ['deleteAgencyLogo'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAgencyLogo>>, {agencyId: number}> = (props) => {
+          const {agencyId} = props ?? {};
+
+          return  deleteAgencyLogo(agencyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAgencyLogoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAgencyLogo>>>
+
+    export type DeleteAgencyLogoMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove an agency's uploaded logo file (falls back to logoUrl if set)
+ */
+export const useDeleteAgencyLogo = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyLogo>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAgencyLogo>>,
+        TError,
+        {agencyId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAgencyLogoMutationOptions(options));
+    }
+
 export const getListUsersUrl = () => {
 
 

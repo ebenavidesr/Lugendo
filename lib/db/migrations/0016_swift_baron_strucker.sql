@@ -1,0 +1,1 @@
+ALTER TABLE "agencies" ADD COLUMN "logo_file_url" text;

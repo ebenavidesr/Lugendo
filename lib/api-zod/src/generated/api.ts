@@ -84,6 +84,7 @@ export const ListAgenciesResponseItem = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),
@@ -116,6 +117,7 @@ export const GetAgencyResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),
@@ -143,6 +145,47 @@ export const UpdateAgencyResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
+  "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "active": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Upload a logo file for an agency (PNG/JPG/SVG/WebP, max 2MB). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const UploadAgencyLogoParams = zod.object({
+  "agencyId": zod.coerce.number()
+})
+
+export const UploadAgencyLogoResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
+  "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "active": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Remove an agency's uploaded logo file (falls back to logoUrl if set)
+ */
+export const DeleteAgencyLogoParams = zod.object({
+  "agencyId": zod.coerce.number()
+})
+
+export const DeleteAgencyLogoResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "active": zod.boolean(),

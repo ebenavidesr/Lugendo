@@ -214,6 +214,52 @@ paths:
               schema:
                 $ref: "#/components/schemas/Agency"
 
+  /agencies/{agencyId}/logo:
+    post:
+      operationId: uploadAgencyLogo
+      tags: [agencies]
+      summary: Upload a logo file for an agency (PNG/JPG/SVG/WebP, max 2MB). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      # No requestBody schema: uploaded via raw fetch()/FormData on the client (same convention
+      # as every other file transfer in this API), not through the generated hook's body. A
+      # `format: binary` field here would make orval emit a File/Blob-typed zod schema, which
+      # fails to compile in lib/api-zod (no DOM lib).
+      responses:
+        "200":
+          description: Agency updated with the new logo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+        "400":
+          description: Invalid file (format not allowed or over 2MB)
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAgencyLogo
+      tags: [agencies]
+      summary: Remove an agency's uploaded logo file (falls back to logoUrl if set)
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Agency updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+        "404":
+          description: Not found
+
   # ─── USERS ──────────────────────────────────────────────────────────────────
   /users:
     get:
@@ -2528,6 +2574,9 @@ components:
           type: string
         logoUrl:
           type: ["string", "null"]
+        logoFileUrl:
+          type: ["string", "null"]
+          description: Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.
         primaryColor:
           type: ["string", "null"]
         writingTone:

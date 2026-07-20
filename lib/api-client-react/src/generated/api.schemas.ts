@@ -61,6 +61,11 @@ export interface Agency {
   slug: string;
   /** @nullable */
   logoUrl?: string | null;
+  /**
+     * Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.
+     * @nullable
+     */
+  logoFileUrl?: string | null;
   /** @nullable */
   primaryColor?: string | null;
   writingTone: AgencyWritingTone;

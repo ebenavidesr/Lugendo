@@ -155,6 +155,19 @@ export class ObjectStorageService {
     );
   }
 
+  // Direct server-side upload of an already-validated buffer (as opposed to the presigned-URL
+  // flow above, which uploads straight from the client). Used when the backend needs to inspect
+  // or sanitize the content before it lands in storage. Returns the path segment expected after
+  // GET /storage/public-objects/ -- build the display URL as `/api/storage/public-objects/${result}`.
+  async uploadPublicBuffer(buffer: Buffer, folder: string, extension: string, contentType: string): Promise<string> {
+    const objectId = randomUUID();
+    const key = `${PUBLIC_PREFIX}/${folder}/${objectId}${extension}`;
+    await objectStorageClient.send(
+      new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: buffer, ContentType: contentType })
+    );
+    return `${folder}/${objectId}${extension}`;
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<ObjectHandle> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

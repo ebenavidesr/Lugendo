@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
+import { AgencyLogoField } from "@/components/agency-logo-field";
 import { Settings, Palette, Mic2, Save, Loader2 } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
@@ -97,23 +98,21 @@ export default function AgencySettings() {
           />
         </div>
         <div>
-          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>URL del logo</label>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Logo</label>
+          {agencyId && (
+            <AgencyLogoField agencyId={agencyId} logoFileUrl={agency?.logoFileUrl} logoUrl={agency?.logoUrl} />
+          )}
+        </div>
+        <div>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
+            URL del logo <span className="font-normal text-muted-foreground">(alternativa, solo si no subes un archivo)</span>
+          </label>
           <Input
             value={form.logoUrl}
             onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))}
             placeholder="https://cdn.tuagencia.com/logo.png"
+            disabled={!!agency?.logoFileUrl}
           />
-          {form.logoUrl && (
-            <div className="mt-2 flex items-center gap-2">
-              <img
-                src={form.logoUrl}
-                alt="Logo preview"
-                className="w-10 h-10 rounded-[8px] object-contain border border-border"
-                onError={e => (e.currentTarget.style.display = "none")}
-              />
-              <span className="text-[11px] text-muted-foreground">Vista previa del logo</span>
-            </div>
-          )}
         </div>
         <div>
           <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Color principal</label>

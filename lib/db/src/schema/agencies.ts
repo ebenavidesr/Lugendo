@@ -7,6 +7,10 @@ export const agenciesTable = pgTable("agencies", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   logoUrl: text("logo_url"),
+  // Uploaded logo file (PNG/JPG/SVG/WebP), stored as a ready-to-render public URL served from
+  // R2 via GET /storage/public-objects/*. Takes priority over logoUrl when present; logoUrl
+  // stays as the fallback for agencies that only ever set an external URL.
+  logoFileUrl: text("logo_file_url"),
   primaryColor: text("primary_color"),
   writingTone: text("writing_tone", {
     enum: ["informative", "friendly", "adventurous", "luxury", "professional"],

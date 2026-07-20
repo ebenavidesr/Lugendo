@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Building2, Pencil, Plus, Globe, PowerOff, Power } from "lucide-react";
 import {
   useListAgencies, useUpdateAgency, useCreateAgency,
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { AgencyLogoField } from "@/components/agency-logo-field";
+import { validateLogoFile, uploadAgencyLogoFile } from "@/lib/agency-logo";
 
 function AgencyForm({
   initial,
@@ -69,6 +71,15 @@ function EditAgencyDialog({ agency, onClose }: { agency: Agency; onClose: () => 
         <DialogHeader>
           <DialogTitle>Editar agencia</DialogTitle>
         </DialogHeader>
+        <div className="pb-1">
+          <label className="text-[12px] font-medium text-muted-foreground mb-1.5 block">Logo</label>
+          <AgencyLogoField
+            agencyId={agency.id}
+            logoFileUrl={agency.logoFileUrl}
+            logoUrl={agency.logoUrl}
+            onChanged={() => qc.invalidateQueries({ queryKey: ["/api/agencies"] })}
+          />
+        </div>
         <AgencyForm
           initial={{ name: agency.name, slug: agency.slug, logoUrl: agency.logoUrl ?? "", primaryColor: agency.primaryColor ?? "#C4793A" }}
           isPending={update.isPending}
@@ -96,6 +107,24 @@ function CreateAgencyDialog({ onClose }: { onClose: () => void }) {
   const create = useCreateAgency();
   const qc = useQueryClient();
   const { toast } = useToast();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const error = validateLogoFile(file);
+    if (error) {
+      toast({ variant: "destructive", title: error });
+      return;
+    }
+    if (logoPreview) URL.revokeObjectURL(logoPreview);
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
 
   return (
     <Dialog open onOpenChange={open => !open && onClose()}>
@@ -103,15 +132,48 @@ function CreateAgencyDialog({ onClose }: { onClose: () => void }) {
         <DialogHeader>
           <DialogTitle>Nueva agencia</DialogTitle>
         </DialogHeader>
+        <div className="pb-1">
+          <label className="text-[12px] font-medium text-muted-foreground mb-1.5 block">Logo</label>
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-[10px] border border-border flex items-center justify-center overflow-hidden shrink-0" style={{ background: "#FAF2EB" }}>
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <Building2 className="w-5 h-5 opacity-30" />
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-[12px] font-medium border border-border hover:bg-muted/40 transition-colors w-fit"
+              >
+                {logoFile ? "Cambiar archivo" : "Subir logo"}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleFileChange} />
+              <span className="text-[11px] text-muted-foreground">PNG, JPG, SVG o WebP, máx. 2 MB. Se sube al guardar.</span>
+            </div>
+          </div>
+        </div>
         <AgencyForm
           initial={{ name: "", slug: "", logoUrl: "", primaryColor: "#C4793A" }}
-          isPending={create.isPending}
+          isPending={create.isPending || uploadingLogo}
           onClose={onClose}
           onSubmit={data => {
             create.mutate(
               { data: { name: data.name, slug: data.slug, logoUrl: data.logoUrl || undefined, primaryColor: data.primaryColor || undefined } },
               {
-                onSuccess: () => {
+                onSuccess: async newAgency => {
+                  if (logoFile) {
+                    setUploadingLogo(true);
+                    try {
+                      await uploadAgencyLogoFile(newAgency.id, logoFile);
+                    } catch {
+                      toast({ variant: "destructive", title: "Agencia creada, pero el logo no se pudo subir" });
+                    } finally {
+                      setUploadingLogo(false);
+                    }
+                  }
                   qc.invalidateQueries({ queryKey: ["/api/agencies"] });
                   toast({ title: "Agencia creada" });
                   onClose();
@@ -204,8 +266,8 @@ export default function Agencies() {
                 <tr key={agency.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      {agency.logoUrl ? (
-                        <img src={agency.logoUrl} alt={agency.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      {(agency.logoFileUrl ?? agency.logoUrl) ? (
+                        <img src={agency.logoFileUrl ?? agency.logoUrl ?? undefined} alt={agency.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
                         <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
                           style={{ background: agency.primaryColor ?? "#C4793A" }}>

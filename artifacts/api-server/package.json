@@ -39,6 +39,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/express-session": "^1.19.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "catalog:",
     "@types/sanitize-html": "^2.16.1",
     "esbuild": "0.27.3",
