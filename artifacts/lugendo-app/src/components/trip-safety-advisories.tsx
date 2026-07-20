@@ -47,7 +47,7 @@ function AdvisoryContent({ contentText }: { contentText: string }) {
 
   if (!sections) {
     return (
-      <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--noche)" }}>
+      <p className="text-[13px] leading-relaxed whitespace-pre-wrap break-words" style={{ color: "var(--noche)" }}>
         {contentText}
       </p>
     );

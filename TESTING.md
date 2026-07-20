@@ -14,15 +14,24 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `typecheck` y `build` de `api-server` limpios tras el cambio; `lugendo-app` typecheck limpio (el build con Vite falla localmente por un problema de entorno preexistente y no relacionado — falta el binario nativo `@rollup/rollup-darwin-arm64`, no reproducible en CI)
 - [ ] Verificado en `lugendo.io` tras deploy: back office de viaje (`/trips/:id`) — el formulario "Editar día" muestra "País origen" y "País destino" como selects independientes, y guardar persiste ambos valores y regeocodifica correctamente
 - [ ] Back office de itinerario (plantilla) — mismos dos campos, tanto en "Añadir día" como en "Editar día"
-- [ ] Vista del viajero (Pasaporte, viaje personal, modo edición) — mismos dos campos en el editor inline de día
+- [x] Vista del viajero (Pasaporte, viaje personal, modo edición) — mismos dos campos en el editor inline de día, verificado en vivo con Quique (usados para corregir Matale, Galle y el país origen del día 1)
 - [x] Corregidos los días "Matale" (→ Sri Lanka, 7.468663/80.622765) y "Galle" (→ Sri Lanka, 6.026162/80.21786) del viaje real — verificado en la respuesta real de `GET /api/me/trips/:id/map`, ya no hay pines en Sudáfrica/Suiza
 - [ ] La sección "Viaja Seguro" (que agrega países visitados desde `trip_days`) sigue mostrando los países correctos tras el cambio de columna
-- [ ] Migración `0013`/`0014` aplicada sin errores en el arranque del servidor de producción (Railway ejecuta migraciones pendientes al iniciar)
+- [x] Migración `0013`/`0014` aplicada sin errores en el arranque del servidor de producción — confirmado indirectamente (los datos ya devuelven `cityFromCountry`/`cityToCountry` correctamente en producción)
 
-### Fix — Mapa en blanco tras cambiar de pestaña (canvas de Mapbox desincronizado del contenedor) (2026-07-19)
-- [x] Diagnosticado en vivo con Quique: tras cambiar de pestaña dentro de la SPA, el canvas de Mapbox quedaba fijado en un tamaño interno menor (300px) que el contenedor real (420px) — el mapa cargaba tiles y creaba los 13 marcadores correctamente (confirmado por consola), pero con la transform interna desalineada no se pintaba nada visible
-- [x] Arreglado con un `ResizeObserver` sobre el contenedor que llama a `map.resize()` cada vez que cambia de tamaño
-- [ ] Verificado en `lugendo.io`: entrar en la pestaña Mapa del viaje de Sri Lanka (sin recargar la página, idealmente después de cambiar de pestaña un par de veces) muestra el mapa con los 13 pines, la ruta, y el control de zoom arriba a la derecha
+### Fix — "Viaja Seguro" mostraba JS crudo sin formato (2026-07-20)
+- [x] Causa raíz: cuando el scraper de `exteriores.gob.es` no encuentra el accordion de secciones (pasó con Sri Lanka), cae a un fallback de texto plano vía `cheerio` `.text()` sobre `<body>`, que incluye el contenido de `<script>`/`<style>` como si fuera texto — eso es lo que se veía renderizado (código JS de la web del Ministerio) desbordando el cajón
+- [x] Arreglado eliminando `<script>`/`<style>`/`<noscript>` antes de extraer el texto de fallback (`travel-advisory-scraper.ts`)
+- [x] Defensa adicional en el frontend: `break-words` en el párrafo de fallback para que contenido sin espacios no rompa el layout aunque vuelva a colarse basura (`trip-safety-advisories.tsx`)
+- [x] `typecheck` limpio en `api-server` y `lugendo-app`
+- [ ] Verificado en `lugendo.io`: la fila de Sri Lanka en `country_advisories` se auto-refresca (caché de 20h) y la pestaña "Viaja Seguro" del viaje real muestra el contenido oficial correctamente formateado, sin código JS visible
+
+### Fix — Mapa en blanco (2026-07-19)
+- [x] Primer intento (`ResizeObserver` sobre el contenedor) no fue la causa real — descartado con el DOM en vivo
+- [x] Causa raíz encontrada en vivo con Quique: el contenedor del mapa usaba clases Tailwind `absolute inset-0` para ocupar los 420px del padre, pero Mapbox GL le añade su propia clase `mapboxgl-map` que fuerza `position: relative` en ese mismo elemento — con `position: relative`, `inset-0` deja de tener efecto de tamaño, y el contenedor colapsaba a 0px justo cuando Mapbox leía sus dimensiones (de ahí el canvas con altura de reserva de 300px en vez de 420px)
+- [x] Arreglado cambiando el contenedor a `w-full h-full`, que sí funciona sin importar qué `position` le imponga Mapbox después
+- [x] Verificado en `lugendo.io` con Quique: el mapa carga correctamente con los 13 pines y la ruta
+- [x] Detectado y corregido un dato incorrecto durante la verificación: el día 1 (origen Madrid) tenía el país origen puesto en Sri Lanka en vez de España, lo que geocodificaba "Madrid, Sri Lanka" a Yakarta, Indonesia — corregido manualmente a España desde el editor del viajero
 
 ### #125 — Sección "Mapa": ruta del itinerario con Mapbox (2026-07-12)
 - [x] **Requiere publicar con los secrets `VITE_MAPBOX_TOKEN` y `MAPBOX_ACCESS_TOKEN` configurados en Replit (mismo token público de Mapbox en ambos) antes de poder probar nada de lo siguiente** — hecho por Quique

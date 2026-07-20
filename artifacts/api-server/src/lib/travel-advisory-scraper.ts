@@ -131,6 +131,9 @@ export async function scrapeCountryAdvisory(countryName: string): Promise<Scrape
   }
 
   const $ = cheerio.load(html);
+  // cheerio's .text() includes <script>/<style> contents as text nodes -- strip them so the
+  // fallback path below (and the body-wide LAST_UPDATED_PATTERN scan) never leaks raw JS/CSS.
+  $("script, style, noscript").remove();
   const bodyText = cleanText($("body").text());
 
   const sections = extractSections($);
