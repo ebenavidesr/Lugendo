@@ -28,9 +28,13 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
 
 router.post("/users", requireRoles("admin", "manager"), validate(UserInputSchema), async (req, res): Promise<void> => {
   const { email, name, role, agencyId, password } = req.body;
+  const targetAgencyId = req.session.role === "admin" ? (agencyId ?? req.session.agencyId) : req.session.agencyId;
+  if (role !== "traveler" && !targetAgencyId) {
+    res.status(400).json({ error: "agencyId es obligatorio para roles de agencia" });
+    return;
+  }
   const rawPassword = password || Math.random().toString(36).slice(-10);
   const passwordHash = await bcrypt.hash(rawPassword, 12);
-  const targetAgencyId = req.session.role === "admin" ? (agencyId ?? req.session.agencyId) : req.session.agencyId;
   const [user] = await db
     .insert(usersTable)
     .values({ email: email.toLowerCase().trim(), passwordHash, name, role, agencyId: targetAgencyId })

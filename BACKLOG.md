@@ -67,6 +67,7 @@
 | #127 | Crear cuenta OpenAI propia y configurar API key real (sustituye el proxy "Model Farm" de Replit, usado hoy con valor provisional tras la migración de hosting #117) | 🟡 Media | Infraestructura | Yo |
 | #128 | Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes — en curso, pendiente de validar en producción | 🟡 Media | Itinerarios · Viajes | Tú |
 | #129 | Subida de logo como archivo en la ficha de creación/edición de agencia — en QA, pendiente de validar en producción | 🟡 Media | Agencia | Tú |
+| #131 | Vincular usuarios de agencia a su agencia (asignación, ficha de agencia y ficha de Equipos) — en curso | 🟡 Media | Agencia · Roles | Tú |
 
 ---
 

@@ -25,6 +25,7 @@ import TravelerTripWizard from "@/pages/traveler-trip-wizard";
 import TravelerTripEdit from "@/pages/traveler-trip-edit";
 import TravelerProfile from "@/pages/traveler-profile";
 import Agencies from "@/pages/agencies";
+import AgencyDetail from "@/pages/agency-detail";
 import AgencySettings from "@/pages/agency-settings";
 
 const queryClient = new QueryClient({
@@ -94,6 +95,11 @@ function Router() {
       </Route>
       <Route path="/team">
         <ProtectedBackOffice><Team /></ProtectedBackOffice>
+      </Route>
+      <Route path="/agencies/:id">
+        {() => (
+          <ProtectedBackOffice><AgencyDetail /></ProtectedBackOffice>
+        )}
       </Route>
       <Route path="/agencies">
         <ProtectedBackOffice><Agencies /></ProtectedBackOffice>

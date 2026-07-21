@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Plus, Mail, Pencil, UserPlus, KeyRound, Search, Check, X, HelpCircle } from "lucide-react";
 import {
   useListUsers, useCreateUser, useUpdateUser,
-  useSendInvitations, useListTrips,
+  useSendInvitations, useListTrips, useListAgencies, getListAgenciesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { User, UserRole } from "@workspace/api-client-react";
@@ -67,7 +67,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "traveler", label: "Viajero" },
 ];
 
-function RoleBadge({ role }: { role: UserRole }) {
+export function RoleBadge({ role }: { role: UserRole }) {
   const s = roleBadge[role] ?? roleBadge.agent;
   return (
     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
@@ -79,19 +79,39 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+export function ActiveBadge({ active }: { active: boolean }) {
+  return (
+    <span
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+      style={{ background: active ? "#E4F3EC" : "#ECD5B8", color: active ? "#2E7D5A" : "#7A5C3A" }}
+    >
+      {active ? "Activo" : "Inactivo"}
+    </span>
+  );
+}
+
+export function AgencyBadge({ name }: { name: string | null | undefined }) {
+  if (!name) {
+    return <span className="text-[11px] text-muted-foreground italic">Sin agencia</span>;
+  }
+  return <span className="text-[13px]" style={{ color: "#2D1F0E" }}>{name}</span>;
+}
+
 // ── Create User Dialog ────────────────────────────────────────────────────────
 
 function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const createUser = useCreateUser();
+  const { data: agencies } = useListAgencies();
 
-  const empty = { firstName: "", lastName: "", email: "", role: "agent" as UserRole, password: "", confirm: "" };
+  const empty = { firstName: "", lastName: "", email: "", role: "agent" as UserRole, agencyId: null as number | null, password: "", confirm: "" };
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
   const [emailLocked, setEmailLocked] = useState(true);
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
+  const needsAgency = form.role !== "traveler";
   const passwordStrong = isStrongPassword(form.password);
   const passwordsMatch = form.password === form.confirm;
 
@@ -100,6 +120,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     (form.lastName ?? "").trim() &&
     (form.email ?? "").trim() &&
     form.role &&
+    (!needsAgency || form.agencyId) &&
     passwordStrong &&
     passwordsMatch &&
     !createUser.isPending;
@@ -109,6 +130,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     if (!(form.firstName ?? "").trim()) errs.firstName = "El nombre es obligatorio";
     if (!(form.lastName ?? "").trim()) errs.lastName = "Los apellidos son obligatorios";
     if (!(form.email ?? "").trim()) errs.email = "El email es obligatorio";
+    if (needsAgency && !form.agencyId) errs.agencyId = "La agencia es obligatoria para este rol";
     if (!passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (!passwordsMatch) errs.confirm = "Las contraseñas no coinciden";
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -116,7 +138,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
     const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     createUser.mutate(
-      { data: { name: fullName, email: form.email.trim(), role: form.role, password: form.password } },
+      { data: { name: fullName, email: form.email.trim(), role: form.role, agencyId: needsAgency ? form.agencyId : undefined, password: form.password } },
       {
         onSuccess: (u) => {
           qc.invalidateQueries({ queryKey: ["/api/users"] });
@@ -189,7 +211,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
             </div>
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Rol *</label>
-              <Select value={form.role} onValueChange={v => set({ role: v as UserRole })}>
+              <Select value={form.role} onValueChange={v => { set({ role: v as UserRole }); setErrors(er => ({ ...er, agencyId: undefined })); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ROLE_OPTIONS.map(o => (
@@ -199,6 +221,22 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
               </Select>
             </div>
           </div>
+
+          {/* Agencia */}
+          {needsAgency && (
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Agencia *</label>
+              <Select value={form.agencyId ? String(form.agencyId) : ""} onValueChange={v => { set({ agencyId: Number(v) }); setErrors(er => ({ ...er, agencyId: undefined })); }}>
+                <SelectTrigger><SelectValue placeholder="Selecciona una agencia" /></SelectTrigger>
+                <SelectContent>
+                  {agencies?.map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.agencyId && <p className="text-[11px] text-destructive mt-1">{errors.agencyId}</p>}
+            </div>
+          )}
 
           {/* Password */}
           <div>
@@ -590,9 +628,9 @@ function InviteDialog({ open, onClose }: { open: boolean; onClose: () => void })
 // ── User Row ──────────────────────────────────────────────────────────────────
 
 function UserRow({
-  user, isAdmin, onEdit, avatarColor,
+  user, isAdmin, onEdit, avatarColor, agencyName, showAgency,
 }: {
-  user: User; isAdmin: boolean; onEdit: (u: User) => void; avatarColor: string;
+  user: User; isAdmin: boolean; onEdit: (u: User) => void; avatarColor: string; agencyName?: string; showAgency?: boolean;
 }) {
   return (
     <tr className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
@@ -609,14 +647,8 @@ function UserRow({
       </td>
       <td className="px-5 py-3 text-muted-foreground">{user.email}</td>
       <td className="px-5 py-3"><RoleBadge role={user.role} /></td>
-      <td className="px-5 py-3">
-        <span
-          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-          style={{ background: user.active ? "#E4F3EC" : "#ECD5B8", color: user.active ? "#2E7D5A" : "#7A5C3A" }}
-        >
-          {user.active ? "Activo" : "Inactivo"}
-        </span>
-      </td>
+      {showAgency && <td className="px-5 py-3"><AgencyBadge name={agencyName} /></td>}
+      <td className="px-5 py-3"><ActiveBadge active={user.active} /></td>
       <td className="px-5 py-3 text-muted-foreground">{fmt(user.createdAt)}</td>
       {isAdmin && (
         <td className="px-5 py-3">
@@ -639,6 +671,12 @@ export default function Team() {
   const { data: users, isLoading } = useListUsers();
   const { user: me } = useAuth();
   const isAdmin = me?.role === "admin";
+  const { data: agencies } = useListAgencies({ query: { queryKey: getListAgenciesQueryKey(), enabled: isAdmin } });
+  const agencyNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    agencies?.forEach(a => map.set(a.id, a.name));
+    return map;
+  }, [agencies]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -657,9 +695,9 @@ export default function Team() {
   const staff     = filtered.filter(u => u.role !== "traveler");
   const travelers = filtered.filter(u => u.role === "traveler");
 
-  const colHeaders = isAdmin
-    ? ["Nombre", "Email", "Rol", "Estado", "Alta", ""]
-    : ["Nombre", "Email", "Rol", "Estado", "Alta"];
+  const baseHeaders = ["Nombre", "Email", "Rol"];
+  const staffColHeaders = [...baseHeaders, ...(isAdmin ? ["Agencia"] : []), "Estado", "Alta", ...(isAdmin ? [""] : [])];
+  const travelerColHeaders = [...baseHeaders, "Estado", "Alta", ...(isAdmin ? [""] : [])];
 
   return (
     <div className="p-6 max-w-5xl space-y-5">
@@ -734,9 +772,9 @@ export default function Team() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {colHeaders.map(h => (
+                {staffColHeaders.map((h, i) => (
                   <th
-                    key={h}
+                    key={`${h}-${i}`}
                     className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}
                   >{h}</th>
@@ -745,7 +783,10 @@ export default function Team() {
             </thead>
             <tbody>
               {staff.map(u => (
-                <UserRow key={u.id} user={u} isAdmin={isAdmin} onEdit={setEditingUser} avatarColor="#3D2F6B" />
+                <UserRow
+                  key={u.id} user={u} isAdmin={isAdmin} onEdit={setEditingUser} avatarColor="#3D2F6B"
+                  showAgency={isAdmin} agencyName={u.agencyId ? agencyNameById.get(u.agencyId) : undefined}
+                />
               ))}
             </tbody>
           </table>
@@ -772,9 +813,9 @@ export default function Team() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {colHeaders.map(h => (
+                {travelerColHeaders.map((h, i) => (
                   <th
-                    key={h}
+                    key={`${h}-${i}`}
                     className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}
                   >{h}</th>

@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #131 — Vincular usuarios de agencia a su agencia (2026-07-20)
+- [ ] Decisión de alcance (documentada en la tarjeta de Notion #131): el rol "Guía local" mencionado en la descripción original no existe todavía en el código (es la tarea #91, sin empezar); la agencia obligatoria se implementa de forma genérica para "cualquier rol que no sea traveler", así que #91 quedará cubierto automáticamente en el futuro sin cambios adicionales aquí
+- [ ] Backend: `POST /users` responde 400 si el rol no es `traveler` y no hay `agencyId` resuelto (ni enviado por un admin ni heredado de la sesión de un manager/agente)
+- [ ] Frontend: al crear un usuario con rol admin/manager/agente, el selector de agencia es obligatorio y bloquea el envío si no se elige una
+- [ ] Frontend: al crear un usuario con rol viajero, no se muestra el selector de agencia
+- [ ] Frontend: nueva ficha de agencia (`/agencies/:id`), accesible desde el listado de `/agencies`, muestra los usuarios vinculados (nombre, rol, email, estado)
+- [ ] Frontend: Equipos (vista admin) muestra la columna "Agencia" en la tabla de personal, con badge "Sin agencia" para usuarios preexistentes sin agencyId
+- [ ] Usuarios ya existentes sin agencia no se ven afectados (sin migración forzada)
+- [ ] Reasignar la agencia de un usuario ya creado sigue sin ser posible (fuera de alcance, confirmado en la tarjeta)
+- [ ] `pnpm run typecheck` limpio
+
 ### #129 — Subida de logo como archivo en la ficha de creación/edición de agencia (2026-07-20)
 - [x] Cambio de alcance decidido al empezar (documentado en la tarjeta de Notion #129): el logo se guarda en Cloudflare R2 (reutilizando el mismo patrón público de `/storage/public-objects/*` construido para las fotos de día) en vez de bytea/base64 en Postgres — la razón original para bytea (evitar una dependencia de storage antes de migrar de Replit) ya no aplica, la migración #117 está hecha. Esto también elimina la necesidad del endpoint dedicado `GET /api/agencies/:id/logo`: el frontend usa `logoFileUrl ?? logoUrl` directamente
 - [x] Backend: columna `logo_file_url` nullable en `agencies` (migración `0016_swift_baron_strucker.sql`); `logoUrl` se mantiene como fallback

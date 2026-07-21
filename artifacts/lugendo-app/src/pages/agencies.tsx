@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "wouter";
 import { Building2, Pencil, Plus, Globe, PowerOff, Power } from "lucide-react";
 import {
   useListAgencies, useUpdateAgency, useCreateAgency,
@@ -261,7 +262,7 @@ export default function Agencies() {
               {agencies.map(agency => (
                 <tr key={agency.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
+                    <Link href={`/agencies/${agency.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                       {(agency.logoFileUrl ?? agency.logoUrl) ? (
                         <img src={agency.logoFileUrl ?? agency.logoUrl ?? undefined} alt={agency.name} className="w-7 h-7 rounded-full object-cover shrink-0" />
                       ) : (
@@ -271,7 +272,7 @@ export default function Agencies() {
                         </div>
                       )}
                       <span className="font-medium" style={{ color: "#2D1F0E" }}>{agency.name}</span>
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-5 py-3">
                     <span className="font-mono text-[12px] text-muted-foreground">{agency.slug}</span>
