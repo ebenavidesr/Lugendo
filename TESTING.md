@@ -14,7 +14,9 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Frontend: nueva ficha de agencia (`/agencies/:id`), accesible desde el listado de `/agencies`, muestra los usuarios vinculados (nombre, rol, email, estado)
 - [ ] Frontend: Equipos (vista admin) muestra la columna "Agencia" en la tabla de personal, con badge "Sin agencia" para usuarios preexistentes sin agencyId
 - [ ] Usuarios ya existentes sin agencia no se ven afectados (sin migración forzada)
-- [ ] Reasignar la agencia de un usuario ya creado sigue sin ser posible (fuera de alcance, confirmado en la tarjeta)
+- [ ] **Cambio de alcance (2026-07-21, pedido directamente por Quique):** reasignar la agencia de un usuario ya creado, inicialmente marcada como fuera de alcance, se añadió al detectar que los usuarios de agencia existentes ya tenían `agencyId=1` (Lugendo Demo) desde antes de esta tarea — no era un dato afectado por este cambio, sino el estado previo de la BD, y no había forma de corregirlo desde la UI
+- [ ] Backend: `PATCH /users/:userId` acepta `agencyId` (incluido `null` para desasignar); solo se aplica si quien edita es admin
+- [ ] Frontend: el formulario "Editar usuario" tiene un selector de Agencia (con opción "Sin agencia") para roles que no son viajero, precargado con la agencia actual del usuario
 - [ ] `pnpm run typecheck` limpio
 
 ### #129 — Subida de logo como archivo en la ficha de creación/edición de agencia (2026-07-20)

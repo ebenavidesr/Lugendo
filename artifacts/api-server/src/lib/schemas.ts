@@ -323,6 +323,7 @@ export const UserUpdateSchema = z.object({
   email: z.string().email().optional(),
   name: z.string().min(1).optional(),
   role: UserRoleSchema.optional(),
+  agencyId: z.number().int().positive().nullable().optional(),
   active: z.boolean().optional(),
   password: z.string().min(8).optional(),
 });

@@ -54,12 +54,13 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
 router.patch("/users/:userId", requireRoles("admin", "manager"), validate(UserUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId, 10);
-  const { name, email, role, active, password } = req.body;
+  const { name, email, role, agencyId, active, password } = req.body;
 
   const updateFields: Partial<typeof usersTable.$inferInsert> = {};
   if (name) updateFields.name = name;
   if (email) updateFields.email = email.toLowerCase().trim();
   if (role) updateFields.role = role;
+  if (agencyId !== undefined && req.session.role === "admin") updateFields.agencyId = agencyId;
   if (active !== undefined) updateFields.active = active;
   if (password) updateFields.passwordHash = await bcrypt.hash(password, 12);
 

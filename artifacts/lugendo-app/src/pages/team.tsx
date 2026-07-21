@@ -319,6 +319,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
   const qc = useQueryClient();
   const updateUser = useUpdateUser();
   const { user: me } = useAuth();
+  const { data: agencies } = useListAgencies();
 
   // Split existing full name into first / last
   const [firstInit, ...restInit] = user.name.split(" ");
@@ -329,6 +330,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     lastName:  lastInit  ?? "",
     email:     user.email,
     role:      user.role,
+    agencyId:  user.agencyId ?? null as number | null,
     active:    user.active,
     password:  "",
     confirm:   "",
@@ -366,8 +368,9 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     const patch: Record<string, unknown> = {};
     if (fullName    !== user.name)   patch.name   = fullName;
     if (form.email  !== user.email)  patch.email  = form.email.trim();
-    if (form.role   !== user.role)   patch.role   = form.role;
-    if (form.active !== user.active) patch.active = form.active;
+    if (form.role     !== user.role)          patch.role     = form.role;
+    if (form.agencyId !== (user.agencyId ?? null)) patch.agencyId = form.agencyId;
+    if (form.active   !== user.active)        patch.active   = form.active;
     if (changingPwd)                 patch.password = form.password;
 
     if (Object.keys(patch).length === 0) { onClose(); return; }
@@ -453,6 +456,22 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
               {isSelf && <p className="text-[11px] text-muted-foreground mt-1">No puedes cambiar tu propio rol</p>}
             </div>
           </div>
+
+          {/* Agencia */}
+          {form.role !== "traveler" && (
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Agencia</label>
+              <Select value={form.agencyId ? String(form.agencyId) : "none"} onValueChange={v => set({ agencyId: v === "none" ? null : Number(v) })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin agencia</SelectItem>
+                  {agencies?.map(a => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Estado */}
           <div>

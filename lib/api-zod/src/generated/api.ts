@@ -249,6 +249,7 @@ export const UpdateUserBody = zod.object({
   "email": zod.string().optional(),
   "name": zod.string().optional(),
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']).optional(),
+  "agencyId": zod.number().nullish(),
   "active": zod.boolean().optional(),
   "password": zod.string().optional()
 })

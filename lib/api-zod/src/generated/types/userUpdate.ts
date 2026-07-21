@@ -11,6 +11,8 @@ export interface UserUpdate {
   email?: string;
   name?: string;
   role?: UserUpdateRole;
+  /** @nullable */
+  agencyId?: number | null;
   active?: boolean;
   password?: string;
 }

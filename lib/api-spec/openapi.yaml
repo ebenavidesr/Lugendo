@@ -2665,6 +2665,8 @@ components:
         role:
           type: string
           enum: [admin, manager, agent, traveler]
+        agencyId:
+          type: ["integer", "null"]
         active:
           type: boolean
         password:
