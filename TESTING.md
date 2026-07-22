@@ -6,6 +6,13 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #133 — Reestructurar Dockerfile para aprovechar cache de capas de Docker (2026-07-22)
+- [ ] `Dockerfile`: copia primero `package.json` raíz, `pnpm-lock.yaml`, `pnpm-workspace.yaml` y el `package.json` de cada uno de los 11 paquetes del monorepo, ejecuta `pnpm install --frozen-lockfile`, y solo después copia el resto del código (`COPY . .`) y compila
+- [ ] **No se pudo probar localmente** — Docker no está disponible en este checkout; falta verificar el build real en Railway
+- [ ] Deploy en Railway arranca correctamente (build + start sin errores) con el Dockerfile reestructurado
+- [ ] Un deploy que solo cambia código de la app (sin tocar `package.json`/lockfiles) es notablemente más rápido que antes (reutiliza la capa de `pnpm install` cacheada)
+- [ ] Un deploy que sí cambia un `package.json` o el lockfile reinstala dependencias correctamente (no sirve una cache stale)
+
 ### #134 — Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA (2026-07-22)
 - [ ] Utilidad compartida `lib/pdf-day-autofill.ts` (`matchOrCreateActivityIds`/`matchOrCreateHotelId`) usada por los 4 puntos de subida de PDF
 - [ ] `itinerary-wizard.tsx`: tras analizar el PDF, el hotel y las actividades detectados por IA quedan pre-asignados al día (Select de hotel y pills de actividad), sin repetir el trabajo a mano
