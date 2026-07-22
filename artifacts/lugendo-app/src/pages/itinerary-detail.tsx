@@ -28,6 +28,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getApiErrorMessage } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
@@ -246,8 +247,8 @@ function PdfFillDialog({
         const result = await parsePdf.mutateAsync({ data: { fileBase64: base64, fileName: file.name } });
         setParsed(result);
         toast({ title: `Extraídos ${result.numDays} días del archivo` });
-      } catch {
-        toast({ variant: "destructive", title: "No se pudo analizar el archivo. Prueba con un PDF de texto o .txt" });
+      } catch (err) {
+        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Prueba con un PDF de texto o .txt") });
       } finally {
         setIsParsing(false);
       }

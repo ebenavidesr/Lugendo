@@ -99,7 +99,8 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     try {
       const parsed = await pdfParse(buffer);
       extractedText = parsed.text;
-    } catch {
+    } catch (err) {
+      req.log.error({ err }, "PDF parse error");
       res.status(422).json({ error: "Could not parse PDF. Try uploading a text file instead." });
       return;
     }
@@ -107,7 +108,8 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     try {
       const result = await mammoth.extractRawText({ buffer });
       extractedText = result.value;
-    } catch {
+    } catch (err) {
+      req.log.error({ err }, "DOCX parse error");
       res.status(422).json({ error: "Could not parse the Word document. Try uploading a PDF instead." });
       return;
     }

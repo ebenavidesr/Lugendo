@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAutoDescription } from "@/hooks/use-auto-description";
+import { getApiErrorMessage } from "@/lib/utils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -214,8 +215,8 @@ export default function ItineraryWizard() {
           description: result.description ?? "",
         });
         toast({ title: `Itinerario extraído: ${result.numDays} días detectados` });
-      } catch {
-        toast({ variant: "destructive", title: "No se pudo analizar el archivo. Intenta con un PDF de texto o .txt" });
+      } catch (err) {
+        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un PDF de texto o .txt") });
       } finally {
         setIsParsing(false);
       }

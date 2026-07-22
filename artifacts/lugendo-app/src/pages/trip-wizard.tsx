@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TransportSelect } from "@/components/transport-select";
 import { useAutoDescription } from "@/hooks/use-auto-description";
 import { CountrySelectSmall } from "@/components/country-select";
+import { getApiErrorMessage } from "@/lib/utils";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -301,8 +302,8 @@ export default function TripWizard() {
           ...(Object.keys(newDayHotels).length ? { dayHotels: newDayHotels } : {}),
         });
         toast({ title: `Itinerario extraído: ${result.numDays} días${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
-      } catch {
-        toast({ variant: "destructive", title: "No se pudo analizar el archivo. Intenta con un .txt o PDF de texto." });
+      } catch (err) {
+        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un .txt o PDF de texto.") });
       } finally {
         setIsParsing(false);
       }
