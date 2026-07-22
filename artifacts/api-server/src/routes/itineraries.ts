@@ -286,7 +286,8 @@ Devuelve SOLO el objeto JSON, sin markdown ni explicaciones.`;
     res.json(parsed);
   } catch (err) {
     req.log.error({ err }, "OpenAI parse error");
-    res.status(500).json({ error: "AI extraction failed. Please try again." });
+    const message = err instanceof Error ? err.message : "AI extraction failed. Please try again.";
+    res.status(500).json({ error: message });
   }
 });
 
