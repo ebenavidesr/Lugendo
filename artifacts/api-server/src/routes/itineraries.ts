@@ -240,7 +240,7 @@ Devuelve SOLO el objeto JSON, sin markdown ni explicaciones.`;
           {
             role: "user",
             content: [
-              { type: "input_text", text: "Extrae el itinerario de este documento de viaje." },
+              { type: "input_text", text: "Extrae el itinerario de este documento de viaje y devuelve el resultado en JSON." },
               { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${fileBase64}` },
             ],
           },
