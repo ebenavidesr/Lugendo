@@ -6,6 +6,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #132 — Analizar PDF de itinerario con input nativo en vez de texto plano (2026-07-22)
+- [ ] Cambio de alcance: solo afecta a archivos `.pdf`; `.docx`/`.doc`/`.txt` siguen extrayendo texto plano (mammoth / lectura directa) exactamente como antes
+- [ ] Backend: `POST /itineraries/parse-pdf` con un PDF manda el archivo directamente al modelo (`responses.create` con `input_file`) en vez de extraerlo primero con `pdf-parse`
+- [ ] `pnpm run typecheck` limpio (`api-server`)
+- [ ] **No se pudo probar de extremo a extremo en local** — `DATABASE_URL` no está configurada en este checkout (ver nota de hosting en memoria), y la llamada real a OpenAI tiene coste; falta validar contra un documento real
+- [ ] Verificado en Railway/staging: subir un dossier real de agencia (PDF, ~15 páginas) produce un JSON de itinerario igual o más preciso que antes, especialmente en la reconciliación tabla vs. prosa (hoteles, comidas)
+- [ ] Verificado: un PDF mayor a 14MB devuelve el error claro ("PDF too large") en vez de un 413 genérico de Express
+- [ ] Verificado: los 4 puntos de subida (itinerary-wizard, trip-wizard, traveler-trip-wizard, itinerary-detail) siguen funcionando igual para todos los roles
+- [ ] Comparar tiempo de respuesta real contra el enfoque anterior (riesgo conocido: el input nativo de PDF puede tardar más que el texto plano)
+
 ### #131 — Vincular usuarios de agencia a su agencia (2026-07-20)
 - [ ] Decisión de alcance (documentada en la tarjeta de Notion #131): el rol "Guía local" mencionado en la descripción original no existe todavía en el código (es la tarea #91, sin empezar); la agencia obligatoria se implementa de forma genérica para "cualquier rol que no sea traveler", así que #91 quedará cubierto automáticamente en el futuro sin cambios adicionales aquí
 - [ ] Backend: `POST /users` responde 400 si el rol no es `traveler` y no hay `agencyId` resuelto (ni enviado por un admin ni heredado de la sesión de un manager/agente)

@@ -13,7 +13,6 @@ import {
   DayHotelInputSchema, ItineraryDayActivityInputSchema, ItineraryDayActivityUpdateSchema,
 } from "../lib/schemas";
 import { sql } from "drizzle-orm";
-import pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
@@ -91,17 +90,20 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     return;
   }
 
-  let extractedText = "";
   const buffer = Buffer.from(fileBase64, "base64");
   const lowerName = fileName.toLowerCase();
+  const isPdf = lowerName.endsWith(".pdf");
 
-  if (lowerName.endsWith(".pdf")) {
-    try {
-      const parsed = await pdfParse(buffer);
-      extractedText = parsed.text;
-    } catch (err) {
-      req.log.error({ err }, "PDF parse error");
-      res.status(422).json({ error: "Could not parse PDF. Try uploading a text file instead." });
+  let extractedText = "";
+  if (isPdf) {
+    // PDF goes straight to the model as a native file input (see below) instead of
+    // being flattened to text first, so table layout (día/alojamiento/comida columns)
+    // survives instead of being reconstructed by prompt heuristics.
+    // Cap below express.json's 20mb body limit (app.ts) minus base64 inflation (~4/3),
+    // so this returns a clear error instead of express's generic 413.
+    const MAX_PDF_BYTES = 14 * 1024 * 1024;
+    if (buffer.byteLength > MAX_PDF_BYTES) {
+      res.status(422).json({ error: "PDF too large (max 14MB)." });
       return;
     }
   } else if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
@@ -117,7 +119,7 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     extractedText = buffer.toString("utf-8");
   }
 
-  if (!extractedText.trim()) {
+  if (!isPdf && !extractedText.trim()) {
     res.status(422).json({ error: "No text content found in file." });
     return;
   }
@@ -227,17 +229,37 @@ Normaliza: "D" → "Desayuno"; "CE" o "C" → "Cena"; "D, CE" → "Desayuno y ce
 Devuelve SOLO el objeto JSON, sin markdown ni explicaciones.`;
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5.1",
-      max_completion_tokens: 16384,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Extrae el itinerario de este documento de viaje:\n\n${trimmedText}` },
-      ],
-    });
+    let content: string;
+    if (isPdf) {
+      const response = await openai.responses.create({
+        model: "gpt-5.1",
+        max_output_tokens: 16384,
+        text: { format: { type: "json_object" } },
+        instructions: systemPrompt,
+        input: [
+          {
+            role: "user",
+            content: [
+              { type: "input_text", text: "Extrae el itinerario de este documento de viaje." },
+              { type: "input_file", filename: fileName, file_data: `data:application/pdf;base64,${fileBase64}` },
+            ],
+          },
+        ],
+      });
+      content = response.output_text || "{}";
+    } else {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-5.1",
+        max_completion_tokens: 16384,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Extrae el itinerario de este documento de viaje:\n\n${trimmedText}` },
+        ],
+      });
+      content = completion.choices[0]?.message?.content ?? "{}";
+    }
 
-    const content = completion.choices[0]?.message?.content ?? "{}";
     const parsed = JSON.parse(content) as {
       days?: Array<{
         activities?: string[];
