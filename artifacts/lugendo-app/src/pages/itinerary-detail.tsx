@@ -11,9 +11,15 @@ import {
   useDeleteItineraryDay,
   useUpdateItineraryDay,
   useListHotels,
+  useListActivities,
+  useCreateHotel,
+  useCreateActivity,
+  useAddDayActivity,
+  useAddItineraryDayHotel,
   useParseItineraryPdf,
   useUpdateItinerary,
 } from "@workspace/api-client-react";
+import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import { DayPhotoZone } from "@/components/day-photo-editor";
@@ -225,6 +231,12 @@ function PdfFillDialog({
   const parsePdf = useParseItineraryPdf();
   const createDay = useCreateItineraryDay();
   const updateItinerary = useUpdateItinerary();
+  const { data: hotels } = useListHotels();
+  const { data: activities } = useListActivities();
+  const createHotel = useCreateHotel();
+  const createActivity = useCreateActivity();
+  const addDayActivity = useAddDayActivity();
+  const addDayHotel = useAddItineraryDayHotel();
 
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedItinerary | null>(null);
@@ -271,8 +283,13 @@ function PdfFillDialog({
           },
         });
       }
+      const currentActivities = activities ?? [];
+      const currentHotels = hotels ?? [];
+      const singleCountry = parsed.countries?.length === 1 ? parsed.countries[0] : undefined;
+      let actCount = 0;
+      let hotelCount = 0;
       for (const day of parsed.days) {
-        await createDay.mutateAsync({
+        const created = await createDay.mutateAsync({
           itineraryId,
           data: {
             dayNumber: day.dayNumber,
@@ -282,11 +299,40 @@ function PdfFillDialog({
             ...(day.description ? { description: day.description } : {}),
           },
         });
+
+        const actIds = await matchOrCreateActivityIds(day, currentActivities, args => createActivity.mutateAsync(args));
+        for (const activityId of actIds) {
+          await addDayActivity.mutateAsync({ itineraryId, dayId: created.id, data: { activityId } });
+        }
+        actCount += actIds.length;
+
+        const hotelId = await matchOrCreateHotelId(day, currentHotels, args => createHotel.mutateAsync(args), singleCountry);
+        if (hotelId) {
+          const ph = day.hotel;
+          await addDayHotel.mutateAsync({
+            itineraryId,
+            dayId: created.id,
+            data: {
+              hotelId: parseInt(hotelId),
+              ...(ph?.guaranteed !== undefined && ph?.guaranteed !== null ? { guaranteed: ph.guaranteed } : {}),
+              ...(ph?.alternatives?.length ? { alternatives: ph.alternatives } : {}),
+              ...(ph?.reviewManually ? { reviewManually: ph.reviewManually } : {}),
+            },
+          });
+          hotelCount++;
+        }
+      }
+      if (actCount || hotelCount) {
+        qc.invalidateQueries({ queryKey: ["/api/activities"] });
+        qc.invalidateQueries({ queryKey: ["/api/hotels"] });
       }
       qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
       qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}`] });
       qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
-      toast({ title: `${parsed.days.length} días añadidos al itinerario` });
+      const extras: string[] = [];
+      if (actCount) extras.push(`${actCount} actividad${actCount !== 1 ? "es" : ""}`);
+      if (hotelCount) extras.push(`${hotelCount} hotel${hotelCount !== 1 ? "es" : ""}`);
+      toast({ title: `${parsed.days.length} días añadidos al itinerario${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
       onClose();
     } catch {
       toast({ variant: "destructive", title: "Error al importar los días" });
@@ -360,15 +406,39 @@ function PdfFillDialog({
                 )}
                 <div className="mt-2 max-h-48 overflow-y-auto space-y-1 border-t border-border pt-2">
                   {parsed.days.map(d => (
-                    <div key={d.dayNumber} className="flex items-baseline gap-2 text-[12px]">
-                      <span className="shrink-0 font-medium w-10">Día {d.dayNumber}</span>
-                      <span className="text-muted-foreground truncate">
-                        {[d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
-                        {d.description ? ` — ${d.description.slice(0, 60)}${d.description.length > 60 ? "…" : ""}` : ""}
-                      </span>
+                    <div key={d.dayNumber} className="text-[12px]">
+                      <div className="flex items-baseline gap-2">
+                        <span className="shrink-0 font-medium w-10">Día {d.dayNumber}</span>
+                        <span className="text-muted-foreground truncate">
+                          {[d.cityFrom, d.cityTo].filter(Boolean).join(" → ")}
+                          {d.description ? ` — ${d.description.slice(0, 60)}${d.description.length > 60 ? "…" : ""}` : ""}
+                        </span>
+                      </div>
+                      {(d.hotel || (d.parsedActivities?.length ?? 0) > 0) && (
+                        <div className="pl-12 flex flex-wrap items-center gap-1 mt-0.5">
+                          {d.hotel && (
+                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#FAEEE4", color: "#8B4420" }}>
+                              🏨 {d.hotel.name}{d.hotel.guaranteed === false ? " (o similar)" : ""}
+                            </span>
+                          )}
+                          {d.hotel?.reviewManually && (
+                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
+                              ⚠ Revisar hotel
+                            </span>
+                          )}
+                          {(d.parsedActivities?.length ?? 0) > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-[5px] text-[10px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
+                              ⚡ {d.parsedActivities!.length} actividad{d.parsedActivities!.length > 1 ? "es" : ""}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+                <p className="text-[11px] text-muted-foreground pt-1">
+                  El hotel y las actividades detectados se buscarán o crearán automáticamente en el catálogo y quedarán asignados al día. Los marcados "Revisar hotel" no se asignan solos.
+                </p>
               </div>
             </div>
           )}

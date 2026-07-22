@@ -6,6 +6,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #134 — Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA (2026-07-22)
+- [ ] Utilidad compartida `lib/pdf-day-autofill.ts` (`matchOrCreateActivityIds`/`matchOrCreateHotelId`) usada por los 4 puntos de subida de PDF
+- [ ] `itinerary-wizard.tsx`: tras analizar el PDF, el hotel y las actividades detectados por IA quedan pre-asignados al día (Select de hotel y pills de actividad), sin repetir el trabajo a mano
+- [ ] `trip-wizard.tsx`: mismo comportamiento (ya tenía una versión propia del auto-fill; ahora usa la utilidad compartida)
+- [ ] `traveler-trip-wizard.tsx`: migrado de los campos legacy (`day.hotels`/`day.activities`) a los estructurados (`day.hotel`/`day.parsedActivities`); corregido bug existente por el que el hotel asignado nunca se persistía al crear el viaje (faltaba `useAddItineraryDayHotel`)
+- [ ] `itinerary-detail.tsx` → "Rellenar desde PDF": ahora muestra badges de hotel/actividad detectados (antes no existían) y los aplica automáticamente a los días importados
+- [ ] Si la IA marcó el hotel con `reviewManually` (incertidumbre entre tabla y listado de ciudad), NO se auto-asigna en ninguno de los 4 puntos — queda como sugerencia informativa ("⚠ Revisar hotel") a resolver a mano
+- [ ] Bug corregido: la creación automática de hotel fallaba siempre en silencio por enviar `country: ""` (el backend exige país no vacío); ahora se deriva del único país detectado en el itinerario, o se omite la auto-creación (deja la sugerencia informativa) si hay más de un país o ninguno
+- [ ] El flujo manual de búsqueda/creación de hotel y actividad (ya existente) sigue funcionando igual en los 4 puntos
+- [ ] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar de extremo a extremo en local** — `DATABASE_URL` no accesible fuera de Railway/producción; falta validar contra un PDF real con hoteles/actividades ya existentes en catálogo y con hoteles/actividades nuevos
+
 ### #132 — Analizar PDF de itinerario con input nativo en vez de texto plano (2026-07-22)
 - [ ] Cambio de alcance: solo afecta a archivos `.pdf`; `.docx`/`.doc`/`.txt` siguen extrayendo texto plano (mammoth / lectura directa) exactamente como antes
 - [ ] Backend: `POST /itineraries/parse-pdf` con un PDF manda el archivo directamente al modelo (`responses.create` con `input_file`) en vez de extraerlo primero con `pdf-parse`

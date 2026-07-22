@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAutoDescription } from "@/hooks/use-auto-description";
 import { getApiErrorMessage } from "@/lib/utils";
+import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -207,14 +208,40 @@ export default function ItineraryWizard() {
       const base64 = (e.target?.result as string).split(",")[1];
       try {
         const result = await parsePdf.mutateAsync({ data: { fileBase64: base64, fileName: pdfFile.name } });
+
+        const currentActivities = activities ?? [];
+        const currentHotels = hotels ?? [];
+        const singleCountry = result.countries?.length === 1 ? result.countries[0] : undefined;
+        const newDayActivities: Record<number, DayActivityEntry[]> = {};
+        const newDayHotels: Record<number, string> = {};
+        for (const day of result.days) {
+          const actIds = await matchOrCreateActivityIds(day, currentActivities, args => createActivity.mutateAsync(args));
+          if (actIds.length) newDayActivities[day.dayNumber] = actIds.map(activityId => ({ activityId, included: true }));
+
+          const hotelId = await matchOrCreateHotelId(day, currentHotels, args => createHotel.mutateAsync(args), singleCountry);
+          if (hotelId) newDayHotels[day.dayNumber] = hotelId;
+        }
+        if (Object.keys(newDayActivities).length || Object.keys(newDayHotels).length) {
+          qc.invalidateQueries({ queryKey: ["/api/activities"] });
+          qc.invalidateQueries({ queryKey: ["/api/hotels"] });
+        }
+
         set({
           parsedItinerary: result,
           name: result.name,
           numDays: String(result.numDays),
           countries: result.countries?.join(", ") ?? "",
           description: result.description ?? "",
+          ...(Object.keys(newDayActivities).length ? { dayActivities: newDayActivities } : {}),
+          ...(Object.keys(newDayHotels).length ? { dayHotels: newDayHotels } : {}),
         });
-        toast({ title: `Itinerario extraído: ${result.numDays} días detectados` });
+
+        const actCount = Object.values(newDayActivities).reduce((s, entries) => s + entries.length, 0);
+        const hotelCount = Object.keys(newDayHotels).length;
+        const extras: string[] = [];
+        if (actCount) extras.push(`${actCount} actividad${actCount !== 1 ? "es" : ""}`);
+        if (hotelCount) extras.push(`${hotelCount} hotel${hotelCount !== 1 ? "es" : ""}`);
+        toast({ title: `Itinerario extraído: ${result.numDays} días detectados${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
       } catch (err) {
         toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un PDF de texto o .txt") });
       } finally {

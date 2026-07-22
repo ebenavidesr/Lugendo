@@ -15,6 +15,7 @@ import {
   useCreateActivity,
   useCreateHotel,
   useAddDayActivity,
+  useAddItineraryDayHotel,
   useAcceptTripShare,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
@@ -29,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TransportSelect } from "@/components/transport-select";
 import { CountrySelectSmall } from "@/components/country-select";
 import { getApiErrorMessage } from "@/lib/utils";
+import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,6 +165,7 @@ export default function TravelerTripWizard() {
   const createHotel = useCreateHotel();
   const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
+  const addDayHotel = useAddItineraryDayHotel();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
@@ -205,40 +208,15 @@ export default function TravelerTripWizard() {
         // Auto-match or create activities and hotels from parsed names
         const currentActivities = activities ?? [];
         const currentHotels = hotels ?? [];
+        const singleCountry = result.countries?.length === 1 ? result.countries[0] : undefined;
         const newDayActivities: Record<number, number[]> = {};
         const newDayHotels: Record<number, string> = {};
         for (const day of result.days) {
-          if (day.activities?.length) {
-            const actIds: number[] = [];
-            for (const actName of day.activities) {
-              const trimmed = actName.trim();
-              if (!trimmed) continue;
-              const existing = currentActivities.find(a => a.name.toLowerCase() === trimmed.toLowerCase());
-              if (existing) {
-                actIds.push(existing.id);
-              } else {
-                try {
-                  const created = await createActivity.mutateAsync({ data: { name: trimmed } });
-                  actIds.push(created.id);
-                } catch { /* skip */ }
-              }
-            }
-            if (actIds.length) newDayActivities[day.dayNumber] = actIds;
-          }
-          if (day.hotels?.length) {
-            const hotelName = day.hotels[0].trim();
-            if (hotelName) {
-              const existing = currentHotels.find(h => h.name.toLowerCase() === hotelName.toLowerCase());
-              if (existing) {
-                newDayHotels[day.dayNumber] = String(existing.id);
-              } else {
-                try {
-                  const created = await createHotel.mutateAsync({ data: { name: hotelName, city: "", country: "" } });
-                  newDayHotels[day.dayNumber] = String(created.id);
-                } catch { /* skip */ }
-              }
-            }
-          }
+          const actIds = await matchOrCreateActivityIds(day, currentActivities, args => createActivity.mutateAsync(args));
+          if (actIds.length) newDayActivities[day.dayNumber] = actIds;
+
+          const hotelId = await matchOrCreateHotelId(day, currentHotels, args => createHotel.mutateAsync(args), singleCountry);
+          if (hotelId) newDayHotels[day.dayNumber] = hotelId;
         }
         if (Object.keys(newDayActivities).length || Object.keys(newDayHotels).length) {
           qc.invalidateQueries({ queryKey: ["/api/activities"] });
@@ -441,11 +419,24 @@ export default function TravelerTripWizard() {
               ...(day.cityTo ? { cityTo: day.cityTo } : {}),
               ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
               ...(day.description ? { description: day.description } : {}),
-              ...(hotelId ? { hotelId } : {}),
               ...(isTransit ? { isTransitNight: true } : {}),
             },
           });
           createdDayMap[day.dayNumber] = created.id;
+
+          if (hotelId) {
+            const ph = day.hotel;
+            await addDayHotel.mutateAsync({
+              itineraryId: newItin.id,
+              dayId: created.id,
+              data: {
+                hotelId,
+                ...(ph?.guaranteed !== undefined && ph?.guaranteed !== null ? { guaranteed: ph.guaranteed } : {}),
+                ...(ph?.alternatives?.length ? { alternatives: ph.alternatives } : {}),
+                ...(ph?.reviewManually ? { reviewManually: ph.reviewManually } : {}),
+              },
+            });
+          }
         }
 
         for (const [dayNumStr, actIds] of Object.entries(data.dayActivities)) {

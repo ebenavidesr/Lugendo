@@ -29,6 +29,7 @@ import { TransportSelect } from "@/components/transport-select";
 import { useAutoDescription } from "@/hooks/use-auto-description";
 import { CountrySelectSmall } from "@/components/country-select";
 import { getApiErrorMessage } from "@/lib/utils";
+import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -239,44 +240,15 @@ export default function TripWizard() {
         // Auto-match or create activities and hotels from parsed names
         const currentActivities = activities ?? [];
         const currentHotels = hotels ?? [];
+        const singleCountry = result.countries?.length === 1 ? result.countries[0] : undefined;
         const newDayActivities: Record<number, number[]> = {};
         const newDayHotels: Record<number, string> = {};
-        const typeToCategory: Record<string, "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other"> = {
-          Visita: "excursion", Gastronomía: "gastronomic", Traslado: "other", Libre: "other", Vuelo: "other", Actividad: "other",
-        };
         for (const day of result.days) {
-          const parsedActs = day.parsedActivities?.length
-            ? day.parsedActivities.map(pa => ({ name: pa.title, category: pa.type ? typeToCategory[pa.type] : undefined }))
-            : (day.activities ?? []).map(name => ({ name, category: undefined as undefined | "other" }));
-          if (parsedActs.length) {
-            const actIds: number[] = [];
-            for (const pa of parsedActs) {
-              const trimmed = pa.name?.trim();
-              if (!trimmed) continue;
-              const existing = currentActivities.find(a => a.name.toLowerCase() === trimmed.toLowerCase());
-              if (existing) {
-                actIds.push(existing.id);
-              } else {
-                try {
-                  const created = await createActivity.mutateAsync({ data: { name: trimmed, ...(pa.category ? { category: pa.category } : {}) } });
-                  actIds.push(created.id);
-                } catch { /* skip */ }
-              }
-            }
-            if (actIds.length) newDayActivities[day.dayNumber] = actIds;
-          }
-          const hotelName = (day.hotel?.name ?? day.hotels?.[0])?.trim();
-          if (hotelName) {
-            const existing = currentHotels.find(h => h.name.toLowerCase() === hotelName.toLowerCase());
-            if (existing) {
-              newDayHotels[day.dayNumber] = String(existing.id);
-            } else {
-              try {
-                const created = await createHotel.mutateAsync({ data: { name: hotelName, city: day.cityTo ?? "", country: "" } });
-                newDayHotels[day.dayNumber] = String(created.id);
-              } catch { /* skip */ }
-            }
-          }
+          const actIds = await matchOrCreateActivityIds(day, currentActivities, args => createActivity.mutateAsync(args));
+          if (actIds.length) newDayActivities[day.dayNumber] = actIds;
+
+          const hotelId = await matchOrCreateHotelId(day, currentHotels, args => createHotel.mutateAsync(args), singleCountry);
+          if (hotelId) newDayHotels[day.dayNumber] = hotelId;
         }
         if (Object.keys(newDayActivities).length || Object.keys(newDayHotels).length) {
           qc.invalidateQueries({ queryKey: ["/api/activities"] });
