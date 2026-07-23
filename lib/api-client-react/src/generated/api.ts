@@ -37,7 +37,7 @@ import type {
   DayActivityInput,
   DayHotel,
   DayHotelInput,
-  DeleteItineraryResult,
+  DeleteItineraryConflict,
   DeleteTripResult,
   DestinationDescribeInput,
   DestinationDescribeResult,
@@ -1592,11 +1592,11 @@ export const getDeleteItineraryUrl = (itineraryId: number,) => {
 }
 
 /**
- * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
+ * @summary Delete itinerary (Admin/Manager/Agent) — rejected if trips are linked; use PATCH active=false to deactivate instead
  */
-export const deleteItinerary = async (itineraryId: number, options?: RequestInit): Promise<DeleteItineraryResult> => {
+export const deleteItinerary = async (itineraryId: number, options?: RequestInit): Promise<void> => {
 
-  return customFetch<DeleteItineraryResult>(getDeleteItineraryUrl(itineraryId),
+  return customFetch<void>(getDeleteItineraryUrl(itineraryId),
   {
     ...options,
     method: 'DELETE'
@@ -1608,7 +1608,7 @@ export const deleteItinerary = async (itineraryId: number, options?: RequestInit
 
 
 
-export const getDeleteItineraryMutationOptions = <TError = ErrorType<unknown>,
+export const getDeleteItineraryMutationOptions = <TError = ErrorType<DeleteItineraryConflict>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItinerary>>, TError,{itineraryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof deleteItinerary>>, TError,{itineraryId: number}, TContext> => {
 
@@ -1637,12 +1637,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type DeleteItineraryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteItinerary>>>
 
-    export type DeleteItineraryMutationError = ErrorType<unknown>
+    export type DeleteItineraryMutationError = ErrorType<DeleteItineraryConflict>
 
     /**
- * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
+ * @summary Delete itinerary (Admin/Manager/Agent) — rejected if trips are linked; use PATCH active=false to deactivate instead
  */
-export const useDeleteItinerary = <TError = ErrorType<unknown>,
+export const useDeleteItinerary = <TError = ErrorType<DeleteItineraryConflict>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteItinerary>>, TError,{itineraryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteItinerary>>,

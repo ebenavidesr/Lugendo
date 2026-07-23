@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { getApiErrorMessage } from "@/lib/utils";
 
 const diffBadge: Record<NonNullable<ItineraryDifficulty>, { bg: string; color: string; label: string }> = {
   easy:      { bg: "#E4F3EC", color: "#2E7D5A", label: "Fácil" },
@@ -150,13 +150,16 @@ export default function Itineraries() {
   const [, navigate] = useLocation();
   const [editItinerary, setEditItinerary] = useState<Itinerary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
   const { data: itineraries, isLoading } = useListItineraries();
   const update = useUpdateItinerary();
   const deleteIt = useDeleteItinerary();
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const canDelete = user?.role === "admin" || user?.role === "manager";
+  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent";
+
+  const visibleItineraries = itineraries?.filter(it => showInactive || it.active !== false);
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -166,19 +169,17 @@ export default function Itineraries() {
         toast({ title: "Itinerario eliminado" });
         setDeleteTarget(null);
       },
-      onError: () => toast({ variant: "destructive", title: "Error al eliminar" }),
+      onError: (err) => toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al eliminar el itinerario") }),
     });
   };
 
-  const handleDeactivate = () => {
-    if (!deleteTarget) return;
-    deleteIt.mutate({ itineraryId: deleteTarget.id }, {
+  const handleToggleActive = (it: Itinerary) => {
+    update.mutate({ itineraryId: it.id, data: { active: !it.active } }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
-        toast({ title: "Itinerario eliminado (viajes desvinculados)" });
-        setDeleteTarget(null);
+        toast({ title: it.active ? "Itinerario marcado como inactivo" : "Itinerario marcado como activo" });
       },
-      onError: () => toast({ variant: "destructive", title: "Error al eliminar el itinerario" }),
+      onError: () => toast({ variant: "destructive", title: "Error al cambiar el estado" }),
     });
   };
 
@@ -215,14 +216,21 @@ export default function Itineraries() {
           <h1 className="text-xl font-medium" style={{ color: "#2D1F0E" }}>Itinerarios</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Plantillas de ruta reutilizables en múltiples viajes</p>
         </div>
-        <button
-          onClick={() => navigate("/itineraries/new")}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
-          style={{ background: "#C4793A", color: "#FAF2EB" }}
-          onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
-          onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
-          <Plus className="w-4 h-4" /> Nuevo itinerario
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
+              className="w-3.5 h-3.5" />
+            Mostrar inactivos
+          </label>
+          <button
+            onClick={() => navigate("/itineraries/new")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium transition-colors"
+            style={{ background: "#C4793A", color: "#FAF2EB" }}
+            onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
+            onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
+            <Plus className="w-4 h-4" /> Nuevo itinerario
+          </button>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
@@ -235,18 +243,24 @@ export default function Itineraries() {
               Crea el primer itinerario →
             </button>
           </div>
+        ) : !visibleItineraries?.length ? (
+          <div className="p-12 text-center">
+            <p className="text-sm text-muted-foreground">Todos los itinerarios están inactivos — activa "Mostrar inactivos" para verlos</p>
+          </div>
         ) : (
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Nombre", "Creado por", "Países", "Días", "Dificultad", "Viajes", ""].map(h => (
+                {["Nombre", "Creado por", "Países", "Días", "Dificultad", "Viajes", "Estado", ""].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {itineraries.map((it: Itinerary) => (
+              {visibleItineraries.map((it: Itinerary) => {
+                const canDeleteThis = (it.tripCount ?? 0) === 0;
+                return (
                 <tr key={it.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
                     <span className="font-medium" style={{ color: "#2D1F0E" }}>{it.name}</span>
@@ -260,15 +274,35 @@ export default function Itineraries() {
                   <td className="px-5 py-3"><DiffBadge diff={it.difficulty ?? null} /></td>
                   <td className="px-5 py-3 text-muted-foreground">{it.tripCount ?? 0}</td>
                   <td className="px-5 py-3">
+                    {canManage ? (
+                      <button
+                        onClick={() => handleToggleActive(it)}
+                        title={it.active === false ? "Haz clic para activar" : "Haz clic para desactivar"}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
+                        style={{ background: it.active === false ? "#ECD5B8" : "#E4F3EC", color: it.active === false ? "#7A5C3A" : "#2E7D5A" }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: it.active === false ? "#7A5C3A" : "#2E7D5A" }} />
+                        {it.active === false ? "Inactivo" : "Activo"}
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                        style={{ background: it.active === false ? "#ECD5B8" : "#E4F3EC", color: it.active === false ? "#7A5C3A" : "#2E7D5A" }}>
+                        {it.active === false ? "Inactivo" : "Activo"}
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setEditItinerary(it)}
                           className="p-1 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
-                        {canDelete && (
-                          <button onClick={() => setDeleteTarget({ id: it.id, name: it.name })}
-                            className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                        {canManage && (
+                          <button
+                            onClick={() => canDeleteThis && setDeleteTarget({ id: it.id, name: it.name })}
+                            disabled={!canDeleteThis}
+                            title={canDeleteThis ? undefined : `No se puede borrar: tiene ${it.tripCount} viaje(s) vinculado(s)`}
+                            className="p-1 rounded-[6px] text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground disabled:cursor-not-allowed">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         )}
@@ -280,7 +314,8 @@ export default function Itineraries() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -304,16 +339,29 @@ export default function Itineraries() {
       )}
 
       {deleteTarget && (
-        <DeleteConfirmDialog
-          entityType="itinerary"
-          entityId={deleteTarget.id}
-          entityName={deleteTarget.name}
-          onClose={() => setDeleteTarget(null)}
-          onDelete={handleDelete}
-          onDeactivate={handleDeactivate}
-          isPendingDelete={deleteIt.isPending}
-          isPendingDeactivate={update.isPending}
-        />
+        <Dialog open onOpenChange={v => !v && setDeleteTarget(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base">Borrar itinerario</DialogTitle>
+            </DialogHeader>
+            <p className="text-[13px] text-muted-foreground">
+              ¿Seguro que quieres borrar{" "}
+              <strong className="font-medium" style={{ color: "#2D1F0E" }}>"{deleteTarget.name}"</strong>?{" "}
+              Esta acción no se puede deshacer.
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => setDeleteTarget(null)}
+                disabled={deleteIt.isPending}>
+                Cancelar
+              </Button>
+              <Button type="button" size="sm" disabled={deleteIt.isPending}
+                onClick={handleDelete} className="gap-1.5" style={{ background: "#C0392B", color: "white" }}>
+                <Trash2 className="w-3.5 h-3.5" />
+                {deleteIt.isPending ? "Eliminando…" : "Borrar itinerario"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

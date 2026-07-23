@@ -307,16 +307,19 @@ router.get("/itineraries/:itineraryId", requireAuth, async (req, res): Promise<v
   const [itinerary] = await db.select().from(itinerariesTable).where(eq(itinerariesTable.id, id));
   if (!itinerary) { res.status(404).json({ error: "Not found" }); return; }
 
-  const days = await db
-    .select()
-    .from(itineraryDaysTable)
-    .where(eq(itineraryDaysTable.itineraryId, id))
-    .orderBy(itineraryDaysTable.dayNumber);
+  const [days, [{ count: tripCount }]] = await Promise.all([
+    db
+      .select()
+      .from(itineraryDaysTable)
+      .where(eq(itineraryDaysTable.itineraryId, id))
+      .orderBy(itineraryDaysTable.dayNumber),
+    db.select({ count: sql<number>`count(*)::int` }).from(tripsTable).where(eq(tripsTable.itineraryId, id)),
+  ]);
 
   const hotelMap = await getDayHotelMap(days.map(d => d.id));
 
   res.json({
-    ...serializeItinerary(itinerary),
+    ...serializeItinerary(itinerary, tripCount),
     days: days.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), hotels: hotelMap[d.id] ?? [] })),
   });
 });
@@ -338,15 +341,18 @@ router.get("/itineraries/:itineraryId/usage", requireAuth, async (req, res): Pro
   res.json({ trips });
 });
 
-router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const unlinked = await db
-    .update(tripsTable)
-    .set({ itineraryId: null })
-    .where(eq(tripsTable.itineraryId, id))
-    .returning({ id: tripsTable.id });
+  const [{ count: linkedTrips }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(tripsTable)
+    .where(eq(tripsTable.itineraryId, id));
+  if (linkedTrips > 0) {
+    res.status(409).json({ error: `No se puede borrar: tiene ${linkedTrips} viaje(s) vinculado(s)`, linkedTrips });
+    return;
+  }
   await db.delete(itinerariesTable).where(eq(itinerariesTable.id, id));
-  res.json({ unlinkedTrips: unlinked.length });
+  res.sendStatus(204);
 });
 
 router.get("/itineraries/:itineraryId/days", requireAuth, async (req, res): Promise<void> => {

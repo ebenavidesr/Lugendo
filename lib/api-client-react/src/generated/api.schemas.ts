@@ -303,6 +303,7 @@ export interface ItineraryDetail {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active: boolean;
+  tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];
 }
@@ -829,9 +830,10 @@ export interface InvitationUpdateInput {
   segment?: SegmentValue | null;
 }
 
-export interface DeleteItineraryResult {
-  /** Number of trips that were unlinked from this itinerary before deletion */
-  unlinkedTrips: number;
+export interface DeleteItineraryConflict {
+  error: string;
+  /** Number of trips currently linked to this itinerary, preventing deletion */
+  linkedTrips: number;
 }
 
 export interface DeleteTripResult {

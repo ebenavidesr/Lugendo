@@ -6,6 +6,28 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #135 — Borrar itinerario (sin viajes vinculados) y marcar como inactivo (con viajes vinculados) (2026-07-23)
+- [x] El campo `active: boolean` ya existía en el schema de itinerarios (`lib/db/src/schema/itineraries.ts`) — no hizo falta migración
+- [x] Backend: `DELETE /itineraries/:itineraryId` ahora rechaza con 409 (`{error, linkedTrips}`) si hay viajes vinculados, en vez de desvincularlos y borrar; si no hay viajes, hace borrado real (`204`). Roles ampliados a admin/manager/agent (antes solo admin/manager)
+- [x] Backend: `GET /itineraries/:itineraryId` ahora incluye `tripCount` (antes solo lo tenía el listado)
+- [x] Backend: `PATCH /itineraries/:itineraryId` ya aceptaba `active` — sin cambios, reutilizado para marcar/desmarcar inactivo
+- [x] `lib/api-spec/openapi.yaml`: DELETE ahora documenta 204/409 (`DeleteItineraryConflict` sustituye a `DeleteItineraryResult`); `ItineraryDetail` incluye `tripCount`; clientes regenerados con Orval
+- [x] Frontend: ficha de itinerario (`itinerary-detail.tsx`) — nuevos botones "Marcar como inactivo/activo" (siempre visible) y "Borrar itinerario" (deshabilitado con tooltip si `tripCount > 0`), diálogo de confirmación explícita, badge "Inactivo" junto al título
+- [x] Frontend: listado de itinerarios (`itineraries.tsx`) — corregido bug donde "Desactivar" llamaba al mismo DELETE que "Eliminar" (nunca desactivaba de verdad); badge Activo/Inactivo clicable por fila; botón de borrar deshabilitado con tooltip cuando hay viajes vinculados; filtro "Mostrar inactivos" (oculto por defecto)
+- [x] Frontend: `trip-wizard.tsx` excluye itinerarios inactivos de la selección de catálogo al crear un viaje nuevo
+- [x] Permisos: acciones de borrar/desactivar visibles y permitidas solo para admin, manager y agent (frontend y backend)
+- [x] `pnpm run typecheck` limpio en todos los paquetes
+- [ ] **No se pudo probar de extremo a extremo en local** — `DATABASE_URL` no está configurada en este checkout, no se puede levantar el backend
+- [ ] Itinerario sin viajes vinculados: botón "Borrar" habilitado, borrado funciona tras confirmación
+- [ ] Itinerario con al menos un viaje vinculado: botón "Borrar" deshabilitado con tooltip correcto (ficha y listado)
+- [ ] Intentar borrar por API un itinerario con viajes vinculados (manipulando la petición) → rechazado por el backend con 409
+- [ ] Marcar un itinerario con viajes vinculados como inactivo → aparece con badge "Inactivo" en el listado y en la ficha
+- [ ] Filtro "Mostrar inactivos" en el listado oculta/muestra correctamente los itinerarios inactivos
+- [ ] Un itinerario inactivo no aparece como opción al crear un viaje nuevo desde catálogo (trip-wizard)
+- [ ] Un viaje ya creado a partir de un itinerario ahora inactivo sigue funcionando con normalidad
+- [ ] Reactivar un itinerario inactivo funciona y vuelve a aparecer en la creación de viajes
+- [ ] Rol Guía local: no existe todavía en el código (tarea #91 sin empezar) — no aplica, cubierto automáticamente cuando se implemente
+
 ### #133 — Reestructurar Dockerfile para aprovechar cache de capas de Docker (2026-07-22)
 - [ ] `Dockerfile`: copia primero `package.json` raíz, `pnpm-lock.yaml`, `pnpm-workspace.yaml` y el `package.json` de cada uno de los 11 paquetes del monorepo, ejecuta `pnpm install --frozen-lockfile`, y solo después copia el resto del código (`COPY . .`) y compila
 - [ ] **No se pudo probar localmente** — Docker no está disponible en este checkout; falta verificar el build real en Railway
@@ -14,16 +36,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Un deploy que sí cambia un `package.json` o el lockfile reinstala dependencias correctamente (no sirve una cache stale)
 
 ### #134 — Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA (2026-07-22)
-- [ ] Utilidad compartida `lib/pdf-day-autofill.ts` (`matchOrCreateActivityIds`/`matchOrCreateHotelId`) usada por los 4 puntos de subida de PDF
-- [ ] `itinerary-wizard.tsx`: tras analizar el PDF, el hotel y las actividades detectados por IA quedan pre-asignados al día (Select de hotel y pills de actividad), sin repetir el trabajo a mano
-- [ ] `trip-wizard.tsx`: mismo comportamiento (ya tenía una versión propia del auto-fill; ahora usa la utilidad compartida)
-- [ ] `traveler-trip-wizard.tsx`: migrado de los campos legacy (`day.hotels`/`day.activities`) a los estructurados (`day.hotel`/`day.parsedActivities`); corregido bug existente por el que el hotel asignado nunca se persistía al crear el viaje (faltaba `useAddItineraryDayHotel`)
-- [ ] `itinerary-detail.tsx` → "Rellenar desde PDF": ahora muestra badges de hotel/actividad detectados (antes no existían) y los aplica automáticamente a los días importados
-- [ ] Si la IA marcó el hotel con `reviewManually` (incertidumbre entre tabla y listado de ciudad), NO se auto-asigna en ninguno de los 4 puntos — queda como sugerencia informativa ("⚠ Revisar hotel") a resolver a mano
-- [ ] Bug corregido: la creación automática de hotel fallaba siempre en silencio por enviar `country: ""` (el backend exige país no vacío); ahora se deriva del único país detectado en el itinerario, o se omite la auto-creación (deja la sugerencia informativa) si hay más de un país o ninguno
-- [ ] El flujo manual de búsqueda/creación de hotel y actividad (ya existente) sigue funcionando igual en los 4 puntos
-- [ ] `pnpm run typecheck` limpio
-- [ ] **No se pudo probar de extremo a extremo en local** — `DATABASE_URL` no accesible fuera de Railway/producción; falta validar contra un PDF real con hoteles/actividades ya existentes en catálogo y con hoteles/actividades nuevos
+- [x] Utilidad compartida `lib/pdf-day-autofill.ts` (`matchOrCreateActivityIds`/`matchOrCreateHotelId`) usada por los 4 puntos de subida de PDF
+- [x] `itinerary-wizard.tsx`: tras analizar el PDF, el hotel y las actividades detectados por IA quedan pre-asignados al día (Select de hotel y pills de actividad), sin repetir el trabajo a mano — **validado en producción por Quique**
+- [x] Bug corregido: la creación automática de hotel fallaba siempre en silencio por enviar `country: ""` (el backend exige país no vacío); ahora se deriva del único país detectado en el itinerario — **validado en producción**: un hotel que no existía en el catálogo se creó automáticamente y quedó asignado
+- [ ] `trip-wizard.tsx`: mismo comportamiento (ya tenía una versión propia del auto-fill; ahora usa la utilidad compartida) — pendiente de validar
+- [ ] `traveler-trip-wizard.tsx`: migrado de los campos legacy (`day.hotels`/`day.activities`) a los estructurados (`day.hotel`/`day.parsedActivities`); corregido bug existente por el que el hotel asignado nunca se persistía al crear el viaje (faltaba `useAddItineraryDayHotel`) — pendiente de validar
+- [ ] `itinerary-detail.tsx` → "Rellenar desde PDF": ahora muestra badges de hotel/actividad detectados (antes no existían) y los aplica automáticamente a los días importados — pendiente de validar
+- [ ] Si la IA marcó el hotel con `reviewManually` (incertidumbre entre tabla y listado de ciudad), NO se auto-asigna en ninguno de los 4 puntos — queda como sugerencia informativa ("⚠ Revisar hotel") a resolver a mano — pendiente de validar
+- [ ] El flujo manual de búsqueda/creación de hotel y actividad (ya existente) sigue funcionando igual en los 4 puntos — pendiente de validar
+- [x] `pnpm run typecheck` limpio
 
 ### #132 — Analizar PDF de itinerario con input nativo en vez de texto plano (2026-07-22)
 - [ ] Cambio de alcance: solo afecta a archivos `.pdf`; `.docx`/`.doc`/`.txt` siguen extrayendo texto plano (mammoth / lectura directa) exactamente como antes

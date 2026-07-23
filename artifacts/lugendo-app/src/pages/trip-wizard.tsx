@@ -542,7 +542,7 @@ export default function TripWizard() {
                 <p className="text-[13px] text-muted-foreground">Elige el itinerario base para este viaje.</p>
               </div>
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {itineraries?.map(it => (
+                {itineraries?.filter(it => it.active !== false).map(it => (
                   <button key={it.id}
                     onClick={() => set({
                       selectedItineraryId: it.id,
@@ -571,7 +571,7 @@ export default function TripWizard() {
                     </div>
                   </button>
                 ))}
-                {!itineraries?.length && (
+                {!itineraries?.filter(it => it.active !== false).length && (
                   <div className="p-6 text-center text-[13px] text-muted-foreground">
                     No hay itinerarios. <button onClick={() => { set({ origin: "new" }); }} className="font-medium" style={{ color: "#C4793A" }}>Crea uno nuevo</button>
                   </div>

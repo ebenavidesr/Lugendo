@@ -37,7 +37,7 @@ export * from './dayActivityTimeOfDay';
 export * from './dayHotel';
 export * from './dayHotelInput';
 export * from './dayHotelInputSegment';
-export * from './deleteItineraryResult';
+export * from './deleteItineraryConflict';
 export * from './deleteTripResult';
 export * from './destinationDescribeInput';
 export * from './destinationDescribeInputType';

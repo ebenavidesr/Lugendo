@@ -30,6 +30,7 @@ export interface ItineraryDetail {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active: boolean;
+  tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];
 }

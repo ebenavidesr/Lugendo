@@ -70,7 +70,8 @@
 | #131 | Vincular usuarios de agencia a su agencia (asignación, ficha de agencia y ficha de Equipos) — en curso | 🟡 Media | Agencia · Roles | Tú |
 | #132 | Analizar PDF de itinerario con input nativo (vision/file) en vez de texto plano extraído — en curso, pendiente de validar contra documentos reales | 🟡 Media | Itinerarios · IA | Yo |
 | #133 | Reestructurar `Dockerfile` para copiar `package.json`/lockfiles antes de `pnpm install` (aprovechar cache de capas de Docker, deploys más rápidos) — en curso, pendiente de validar en Railway | 🟢 Baja | Infraestructura | Yo |
-| #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día, en vez de solo mostrarlo como sugerencia informativa que hay que repetir a mano — en curso, pendiente de validar contra un PDF real | 🟡 Media | Itinerarios · IA | Tú |
+| #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día, en vez de solo mostrarlo como sugerencia informativa que hay que repetir a mano — en curso, validado en producción para itinerary-wizard; pendiente trip-wizard, traveler-trip-wizard, itinerary-detail y el caso reviewManually | 🟡 Media | Itinerarios · IA | Tú |
+| #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
 
 ---
 

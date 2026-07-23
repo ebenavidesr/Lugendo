@@ -342,6 +342,7 @@ export const GetItineraryResponse = zod.object({
   "category": zod.string().nullish()
 })).optional(),
   "active": zod.boolean(),
+  "tripCount": zod.number().optional(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -426,14 +427,10 @@ export const UpdateItineraryResponse = zod.object({
 
 
 /**
- * @summary Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
+ * @summary Delete itinerary (Admin/Manager/Agent) — rejected if trips are linked; use PATCH active=false to deactivate instead
  */
 export const DeleteItineraryParams = zod.object({
   "itineraryId": zod.coerce.number()
-})
-
-export const DeleteItineraryResponse = zod.object({
-  "unlinkedTrips": zod.number().describe('Number of trips that were unlinked from this itinerary before deletion')
 })
 
 

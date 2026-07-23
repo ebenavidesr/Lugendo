@@ -1,4 +1,4 @@
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -18,6 +18,7 @@ import {
   useAddItineraryDayHotel,
   useParseItineraryPdf,
   useUpdateItinerary,
+  useDeleteItinerary,
 } from "@workspace/api-client-react";
 import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
@@ -37,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getApiErrorMessage } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 const daySchema = z.object({
   dayNumber: z.string().min(1),
@@ -464,12 +466,45 @@ function PdfFillDialog({
 export default function ItineraryDetail() {
   const params = useParams<{ id: string }>();
   const itineraryId = parseInt(params.id ?? "0");
+  const [, navigate] = useLocation();
   const [addDayOpen, setAddDayOpen] = useState(false);
   const [pdfFillOpen, setPdfFillOpen] = useState(false);
   const [editDay, setEditDay] = useState<ItineraryDay | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { data: itinerary, isLoading } = useGetItinerary(itineraryId);
   const { data: days, isLoading: daysLoading } = useListItineraryDays(itineraryId);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent";
+  const updateItinerary = useUpdateItinerary();
+  const deleteItinerary = useDeleteItinerary();
+  const qc = useQueryClient();
+  const tripCount = itinerary?.tripCount ?? 0;
+  const canDelete = tripCount === 0;
+
+  const handleToggleActive = () => {
+    if (!itinerary) return;
+    updateItinerary.mutate({ itineraryId, data: { active: !itinerary.active } }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}`] });
+        qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+        toast({ title: itinerary.active ? "Itinerario marcado como inactivo" : "Itinerario marcado como activo" });
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al cambiar el estado" }),
+    });
+  };
+
+  const handleDelete = () => {
+    deleteItinerary.mutate({ itineraryId }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/itineraries"] });
+        toast({ title: "Itinerario eliminado" });
+        navigate("/itineraries");
+      },
+      onError: (err) => toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al eliminar el itinerario") }),
+    });
+  };
 
   useEffect(() => {
     if (days && days.length > 0) {
@@ -480,8 +515,6 @@ export default function ItineraryDetail() {
   const { data: hotels } = useListHotels();
   const createDay = useCreateItineraryDay();
   const deleteDay = useDeleteItineraryDay();
-  const qc = useQueryClient();
-  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof daySchema>>({
     resolver: zodResolver(daySchema),
@@ -561,7 +594,16 @@ export default function ItineraryDetail() {
             className="inline-flex items-center gap-1 text-[12px] text-muted-foreground mb-2 hover:text-foreground">
             <ArrowLeft className="w-3.5 h-3.5" /> Todos los itinerarios
           </Link>
-          <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{itinerary.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>{itinerary.name}</h1>
+            {itinerary.active === false && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
+                style={{ background: "#ECD5B8", color: "#7A5C3A" }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#7A5C3A" }} />
+                Inactivo
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             {itinerary.countries?.length ? (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -578,6 +620,29 @@ export default function ItineraryDetail() {
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {canManage && (
+            <>
+              <button
+                onClick={handleToggleActive}
+                disabled={updateItinerary.isPending}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors disabled:opacity-60"
+                style={{ borderColor: "#E5D4BF", color: "#7A5C3A", background: "white" }}
+                onMouseOver={e => (e.currentTarget.style.background = "#FAF2EB")}
+                onMouseOut={e => (e.currentTarget.style.background = "white")}>
+                {itinerary.active === false ? "Marcar como activo" : "Marcar como inactivo"}
+              </button>
+              <button
+                onClick={() => canDelete && setDeleteConfirmOpen(true)}
+                disabled={!canDelete}
+                title={canDelete ? undefined : `No se puede borrar: tiene ${tripCount} viaje(s) vinculado(s)`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ borderColor: "#F3D2CC", color: canDelete ? "#C0392B" : "#7A5C3A", background: "white" }}
+                onMouseOver={e => { if (canDelete) e.currentTarget.style.background = "#FDECEA"; }}
+                onMouseOut={e => (e.currentTarget.style.background = "white")}>
+                <Trash2 className="w-4 h-4" /> Borrar itinerario
+              </button>
+            </>
+          )}
           <button
             onClick={() => setPdfFillOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors"
@@ -803,6 +868,32 @@ export default function ItineraryDetail() {
           existingDaysCount={days?.length ?? 0}
           onClose={() => setPdfFillOpen(false)}
         />
+      )}
+
+      {deleteConfirmOpen && (
+        <Dialog open onOpenChange={v => !v && setDeleteConfirmOpen(false)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base">Borrar itinerario</DialogTitle>
+            </DialogHeader>
+            <p className="text-[13px] text-muted-foreground">
+              ¿Seguro que quieres borrar{" "}
+              <strong className="font-medium" style={{ color: "#2D1F0E" }}>"{itinerary.name}"</strong>?{" "}
+              Esta acción no se puede deshacer.
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => setDeleteConfirmOpen(false)}
+                disabled={deleteItinerary.isPending}>
+                Cancelar
+              </Button>
+              <Button type="button" size="sm" disabled={deleteItinerary.isPending}
+                onClick={handleDelete} className="gap-1.5" style={{ background: "#C0392B", color: "white" }}>
+                <Trash2 className="w-3.5 h-3.5" />
+                {deleteItinerary.isPending ? "Eliminando…" : "Borrar itinerario"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

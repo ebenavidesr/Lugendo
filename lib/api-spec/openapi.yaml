@@ -416,7 +416,7 @@ paths:
     delete:
       operationId: deleteItinerary
       tags: [itineraries]
-      summary: Delete itinerary (Admin/Manager) — unlinks linked trips then deletes
+      summary: Delete itinerary (Admin/Manager/Agent) — rejected if trips are linked; use PATCH active=false to deactivate instead
       parameters:
         - name: itineraryId
           in: path
@@ -424,12 +424,14 @@ paths:
           schema:
             type: integer
       responses:
-        "200":
-          description: Deleted (with count of unlinked trips)
+        "204":
+          description: Deleted
+        "409":
+          description: Cannot delete — itinerary has linked trips; deactivate it instead
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeleteItineraryResult"
+                $ref: "#/components/schemas/DeleteItineraryConflict"
 
   /itineraries/{itineraryId}/days:
     get:
@@ -2767,6 +2769,8 @@ components:
             $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
+        tripCount:
+          type: integer
         createdAt:
           type: string
         days:
@@ -3561,13 +3565,15 @@ components:
           $ref: "#/components/schemas/SegmentValue"
 
     # ─── TRAVELER FRONT DESK ─────────────────────────────────────────────────
-    DeleteItineraryResult:
+    DeleteItineraryConflict:
       type: object
-      required: [unlinkedTrips]
+      required: [error, linkedTrips]
       properties:
-        unlinkedTrips:
+        error:
+          type: string
+        linkedTrips:
           type: integer
-          description: Number of trips that were unlinked from this itinerary before deletion
+          description: Number of trips currently linked to this itinerary, preventing deletion
 
     DeleteTripResult:
       type: object
