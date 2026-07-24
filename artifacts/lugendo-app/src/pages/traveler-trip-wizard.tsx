@@ -465,8 +465,9 @@ export default function TravelerTripWizard() {
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
       toast({ title: "¡Viaje creado correctamente!" });
       navigate(`/traveler/trips/${trip.id}`);
-    } catch {
-      toast({ variant: "destructive", title: "Error al crear el viaje" });
+    } catch (err) {
+      console.error("Error creating trip", err);
+      toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al crear el viaje") });
     } finally {
       setIsCreating(false);
     }

@@ -491,7 +491,8 @@ export default function TripWizard() {
       toast({ title: "Viaje creado correctamente" });
       navigate(`/trips/${trip.id}`);
     } catch (err) {
-      toast({ variant: "destructive", title: "Error al crear el viaje" });
+      console.error("Error creating trip", err);
+      toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al crear el viaje") });
     } finally {
       setIsCreating(false);
     }
