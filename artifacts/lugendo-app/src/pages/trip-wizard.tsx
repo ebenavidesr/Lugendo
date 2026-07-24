@@ -275,6 +275,7 @@ export default function TripWizard() {
         });
         toast({ title: `Itinerario extraído: ${result.numDays} días${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
       } catch (err) {
+        console.error("Error parsing itinerary file", err);
         toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un .txt o PDF de texto.") });
       } finally {
         setIsParsing(false);

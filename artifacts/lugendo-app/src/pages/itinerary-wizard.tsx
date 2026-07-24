@@ -243,6 +243,7 @@ export default function ItineraryWizard() {
         if (hotelCount) extras.push(`${hotelCount} hotel${hotelCount !== 1 ? "es" : ""}`);
         toast({ title: `Itinerario extraído: ${result.numDays} días detectados${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
       } catch (err) {
+        console.error("Error parsing itinerary file", err);
         toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un PDF de texto o .txt") });
       } finally {
         setIsParsing(false);

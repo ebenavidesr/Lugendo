@@ -262,6 +262,7 @@ function PdfFillDialog({
         setParsed(result);
         toast({ title: `Extraídos ${result.numDays} días del archivo` });
       } catch (err) {
+        console.error("Error parsing itinerary file", err);
         toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Prueba con un PDF de texto o .txt") });
       } finally {
         setIsParsing(false);
