@@ -117,6 +117,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Verificado: quitar una foto ya subida (botón de papelera) la elimina correctamente
 - [ ] Verificado: migración `0015` aplicada sin errores en el arranque del servidor de producción
 
+### Foto de portada del día — arreglos de edición y subida (2026-07-24)
+- [x] Bug: el modal de edición se cerraba solo al arrastrar/hacer zoom en la foto — causa raíz: el `Dialog` (Radix, portal a `document.body`) se renderizaba dentro del mismo `div` con `onClick={onToggle}` que colapsa la tarjeta del día; React burbujea por el árbol de componentes (no el DOM), así que soltar el drag o tocar el slider de zoom disparaba `onToggle`. Fix: `stopPropagation` en el `DialogContent` (`day-photo-editor.tsx`)
+- [x] Bug: subida lenta — la foto original (p. ej. 10-20MB de cámara de móvil) se decodificaba y dibujaba dos veces a tamaño completo (preview interactivo del recorte + generación del blob final), todo síncrono en el hilo principal. Fix: nueva función `downscaleForEditing` que reduce la imagen a un máximo de 2400px de lado nada más seleccionarla, antes de pasarla al editor; el blob final subido nunca fue el problema (ya se comprimía a 1200px de ancho)
+- [x] Bug: el recorte mostrado en el editor no coincidía con el resultado tras subir — causa raíz: `DayPhotoZone` mostraba la foto en una caja de altura fija (134px, 100px) con ancho fluido, dando ratios distintos según pantalla (2.5 en móvil hasta 8+ en desktop), mientras el editor siempre recorta a un ratio fijo (2.5); `object-cover` volvía a recortar la imagen ya recortada para encajarla, cortando lo que el usuario había enmarcado. Fix: la caja ahora usa `aspect-ratio: 2.5` (CSS) igual que el recorte, con `height` como tope máximo en vez de altura fija
+- [ ] **No se pudo verificar visualmente en local** — la base de datos de development no es accesible fuera de Replit/producción, así que no se puede levantar el backend para probar el flujo completo (ver [Local development](CLAUDE.md#local-development))
+- [ ] Verificado en `lugendo.io`: al recortar/hacer zoom en el editor, el modal ya no se cierra solo
+- [ ] Verificado en `lugendo.io`: subir una foto de móvil (varios MB) se siente notablemente más rápido que antes
+- [ ] Verificado en `lugendo.io`: la zona enmarcada en el editor coincide con lo que se ve tras guardar, en las 3 superficies (Pasaporte, back office de viaje, plantilla de itinerario) y en distintos anchos de pantalla (móvil y desktop)
+
 ### #128 — Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes (2026-07-19)
 - [x] Investigación previa: se detectó que `país` era un único campo por día, y que el viaje real de Sri Lanka tenía `country: null` en los 17 días — causa raíz de que "Matale" y "Galle" geocodificaran a Sudáfrica y Suiza (relevancia 1.0, no lo frena el umbral mínimo del fix anterior de Girithale)
 - [x] Cambio de alcance acordado con Quique: el país pasa de ser por día a ser **por ciudad** (origen y destino por separado), ya que un mismo día puede cruzar de un país a otro

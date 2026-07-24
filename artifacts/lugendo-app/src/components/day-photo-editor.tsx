@@ -7,11 +7,14 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Fixed output aspect for every day cover photo. object-cover at render time handles any
-// container width/height mismatch, so this only needs to be a reasonable "banner" shape --
-// it doesn't have to exactly match every surface's box.
+// Fixed output aspect for every day cover photo. Every DayPhotoZone display box uses this
+// same CSS aspect-ratio (see DayPhotoZone below) so what the user frames here is exactly
+// what's shown everywhere -- object-cover never re-crops beyond it.
 const CROP_ASPECT = 2.5;
 const OUTPUT_WIDTH = 1200;
+// Cap the working copy well above OUTPUT_WIDTH so zoomed crops stay sharp, but far below
+// typical phone-camera originals (4000-8000px) so decoding/drawing during pan & zoom stays fast.
+const MAX_WORKING_DIMENSION = 2400;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -20,6 +23,30 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.addEventListener("error", () => reject(new Error("No se pudo cargar la imagen")));
     img.src = src;
   });
+}
+
+async function downscaleForEditing(file: File): Promise<string> {
+  const originalSrc = URL.createObjectURL(file);
+  const image = await loadImage(originalSrc);
+  const scale = Math.min(1, MAX_WORKING_DIMENSION / Math.max(image.width, image.height));
+  if (scale === 1) return originalSrc;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(image.width * scale);
+  canvas.height = Math.round(image.height * scale);
+  const ctx = canvas.getContext("2d");
+  URL.revokeObjectURL(originalSrc);
+  if (!ctx) return URL.createObjectURL(file);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      b => (b ? resolve(b) : reject(new Error("No se pudo procesar la imagen"))),
+      "image/jpeg",
+      0.92,
+    );
+  });
+  return URL.createObjectURL(blob);
 }
 
 async function getCroppedImageBlob(imageSrc: string, cropPixels: Area): Promise<Blob> {
@@ -78,6 +105,7 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingImage, setLoadingImage] = useState(false);
 
   const reset = () => {
     setImageSrc(current => {
@@ -96,13 +124,20 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setImageSrc(URL.createObjectURL(file));
-    setCrop({ x: 0, y: 0 });
-    setZoom(1);
+    setLoadingImage(true);
+    try {
+      setImageSrc(await downscaleForEditing(file));
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } catch (err) {
+      toast({ variant: "destructive", title: (err as Error).message ?? "No se pudo cargar la imagen" });
+    } finally {
+      setLoadingImage(false);
+    }
   };
 
   const handleCropComplete = useCallback((_area: Area, pixels: Area) => {
@@ -128,7 +163,7 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onClick={e => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Foto de portada del día</DialogTitle>
         </DialogHeader>
@@ -137,10 +172,17 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
           <div className="py-6 flex flex-col items-center gap-3">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full h-32 rounded-[12px] border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-muted/40 transition-colors"
+              disabled={loadingImage}
+              className="w-full h-32 rounded-[12px] border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 hover:bg-muted/40 transition-colors disabled:opacity-50"
             >
-              <ImagePlus className="w-6 h-6 opacity-50" />
-              <span className="text-[13px] text-muted-foreground">Seleccionar una foto</span>
+              {loadingImage ? (
+                <Loader2 className="w-6 h-6 opacity-50 animate-spin" />
+              ) : (
+                <ImagePlus className="w-6 h-6 opacity-50" />
+              )}
+              <span className="text-[13px] text-muted-foreground">
+                {loadingImage ? "Cargando…" : "Seleccionar una foto"}
+              </span>
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
           </div>
@@ -193,6 +235,8 @@ interface DayPhotoZoneProps {
   photoUrl: string | null | undefined;
   editable: boolean;
   onSave: (photoUrl: string | null) => Promise<void>;
+  /** Caps the banner height on very wide layouts. The box always keeps CROP_ASPECT so it
+   * never gets re-cropped by object-cover beyond what the user already framed while editing. */
   height?: number;
   onClick?: () => void;
   children?: React.ReactNode;
@@ -220,7 +264,7 @@ export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, onClick
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden ${className ?? ""}`}
-      style={{ height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
+      style={{ aspectRatio: CROP_ASPECT, maxHeight: height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
       onClick={onClick}
     >
       {photoUrl ? (
