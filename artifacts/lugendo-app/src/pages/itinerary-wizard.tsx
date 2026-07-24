@@ -478,7 +478,7 @@ export default function ItineraryWizard() {
                   <Upload className="w-5 h-5" style={{ color: "#C4793A" }} />
                 </div>
                 <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Desde archivo</div>
-                <div className="text-[12px] text-muted-foreground">PDF, Word o texto — la IA extrae automáticamente nombre, días y ciudades.</div>
+                <div className="text-[12px] text-muted-foreground">PDF, Word, Excel o texto — la IA extrae automáticamente nombre, días y ciudades.</div>
               </button>
             </div>
           </div>
@@ -502,7 +502,7 @@ export default function ItineraryWizard() {
             {/* PDF upload block */}
             {data.mode === "pdf" && (
               <div className="space-y-3">
-                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md" className="hidden" onChange={handleFileChange} />
+                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md,.xlsx" className="hidden" onChange={handleFileChange} />
                 {!pdfFile ? (
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -510,7 +510,7 @@ export default function ItineraryWizard() {
                     style={{ borderColor: "#E5D4BF" }}>
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
-                    <div className="text-[11px] text-muted-foreground">PDF, TXT, DOC — máx. 10 MB</div>
+                    <div className="text-[11px] text-muted-foreground">PDF, Word, Excel o texto — máx. 10 MB</div>
                   </button>
                 ) : (
                   <div className="p-4 rounded-[12px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>

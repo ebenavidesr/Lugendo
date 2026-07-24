@@ -72,6 +72,7 @@
 | #133 | Reestructurar `Dockerfile` para copiar `package.json`/lockfiles antes de `pnpm install` (aprovechar cache de capas de Docker, deploys más rápidos) — en curso, pendiente de validar en Railway | 🟢 Baja | Infraestructura | Yo |
 | #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día, en vez de solo mostrarlo como sugerencia informativa que hay que repetir a mano — en curso, validado en producción para itinerary-wizard; pendiente trip-wizard, traveler-trip-wizard, itinerary-detail y el caso reviewManually | 🟡 Media | Itinerarios · IA | Tú |
 | #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
+| #138 | Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas — en curso | 🟡 Media | Itinerarios · IA | Yo |
 
 ---
 

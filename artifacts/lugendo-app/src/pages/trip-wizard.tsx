@@ -598,7 +598,7 @@ export default function TripWizard() {
                     {mode === "scratch" ? "Desde cero" : "Subir archivo"}
                   </div>
                   <div className="text-[11px] text-muted-foreground">
-                    {mode === "scratch" ? "Rellena los campos manualmente" : "PDF, Word o texto — la IA extrae la estructura"}
+                    {mode === "scratch" ? "Rellena los campos manualmente" : "PDF, Word, Excel o texto — la IA extrae la estructura"}
                   </div>
                 </button>
               ))}
@@ -643,14 +643,14 @@ export default function TripWizard() {
 
             {data.newMode === "pdf" && (
               <div className="space-y-3 pt-2 border-t border-border">
-                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md" className="hidden" onChange={handleFileChange} />
+                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md,.xlsx" className="hidden" onChange={handleFileChange} />
                 {!pdfFile ? (
                   <button onClick={() => fileInputRef.current?.click()}
                     className="w-full p-8 rounded-[12px] border-2 border-dashed text-center transition-all hover:bg-[#FAF2EB]"
                     style={{ borderColor: "#E5D4BF" }}>
                     <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                     <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
-                    <div className="text-[11px] text-muted-foreground">PDF, TXT, DOC — máx. 10 MB</div>
+                    <div className="text-[11px] text-muted-foreground">PDF, Word, Excel o texto — máx. 10 MB</div>
                   </button>
                 ) : (
                   <div className="p-4 rounded-[12px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>

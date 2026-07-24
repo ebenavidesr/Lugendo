@@ -14,9 +14,46 @@ import {
 } from "../lib/schemas";
 import { sql } from "drizzle-orm";
 import mammoth from "mammoth";
+import ExcelJS from "exceljs";
 import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router: IRouter = Router();
+
+function cellToText(value: ExcelJS.CellValue): string {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (typeof value === "object") {
+    if ("richText" in value) return value.richText.map(rt => rt.text).join("");
+    if ("text" in value) return String(value.text ?? "");
+    if ("result" in value) return value.result != null ? String(value.result) : "";
+    if ("error" in value) return "";
+    return "";
+  }
+  return String(value);
+}
+
+// Converts a worksheet to a Markdown table (first row as header) so an LLM
+// text prompt can consume it the same way it consumes docx/txt content.
+function worksheetToMarkdownTable(worksheet: ExcelJS.Worksheet): string {
+  const rows: string[][] = [];
+  worksheet.eachRow({ includeEmpty: false }, row => {
+    const cells: string[] = [];
+    row.eachCell({ includeEmpty: true }, cell => {
+      cells.push(cellToText(cell.value).replace(/\|/g, "\\|").replace(/\s*\n\s*/g, " ").trim());
+    });
+    if (cells.some(c => c.length > 0)) rows.push(cells);
+  });
+  if (rows.length === 0) return "";
+
+  const colCount = Math.max(...rows.map(r => r.length));
+  const pad = (r: string[]) => { while (r.length < colCount) r.push(""); return r; };
+  const [header, ...body] = rows.map(pad);
+  return [
+    `| ${header.join(" | ")} |`,
+    `| ${header.map(() => "---").join(" | ")} |`,
+    ...body.map(r => `| ${r.join(" | ")} |`),
+  ].join("\n");
+}
 
 function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount = 0, createdByName: string | null = null) {
   return { ...i, createdAt: i.createdAt.toISOString(), tripCount, createdByName };
@@ -93,6 +130,7 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
   const buffer = Buffer.from(fileBase64, "base64");
   const lowerName = fileName.toLowerCase();
   const isPdf = lowerName.endsWith(".pdf");
+  const isXlsx = lowerName.endsWith(".xlsx");
 
   let extractedText = "";
   if (isPdf) {
@@ -104,6 +142,31 @@ router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", 
     const MAX_PDF_BYTES = 14 * 1024 * 1024;
     if (buffer.byteLength > MAX_PDF_BYTES) {
       res.status(422).json({ error: "PDF too large (max 14MB)." });
+      return;
+    }
+  } else if (lowerName.endsWith(".xls")) {
+    res.status(422).json({ error: "Formato .xls no soportado, usa .xlsx." });
+    return;
+  } else if (isXlsx) {
+    // Same cap as PDF; Excel isn't sent as a vision/file input (it's tabular
+    // data, not a visual document), it's flattened to text like docx/txt below.
+    const MAX_XLSX_BYTES = 14 * 1024 * 1024;
+    if (buffer.byteLength > MAX_XLSX_BYTES) {
+      res.status(422).json({ error: "Excel too large (max 14MB)." });
+      return;
+    }
+    try {
+      const workbook = new ExcelJS.Workbook();
+      // exceljs's Buffer type predates @types/node's generic Buffer<ArrayBufferLike>.
+      await workbook.xlsx.load(buffer as any);
+      extractedText = workbook.worksheets
+        .map(sheet => ({ name: sheet.name, table: worksheetToMarkdownTable(sheet) }))
+        .filter(s => s.table.length > 0)
+        .map(s => `### Pestaña: ${s.name}\n\n${s.table}`)
+        .join("\n\n");
+    } catch (err) {
+      req.log.error({ err }, "XLSX parse error");
+      res.status(422).json({ error: "Could not parse the Excel file. Make sure it's a valid .xlsx." });
       return;
     }
   } else if (lowerName.endsWith(".docx") || lowerName.endsWith(".doc")) {
@@ -138,6 +201,9 @@ Antes de extraer, identifica qué bloques existen:
 - Puntos fuertes / highlights → recommendations, no actividades.
 Si un bloque no existe, no falles: extrae lo que haya y deja los campos vacíos. No inventes contenido.
 Reconciliación: la tabla/lista estructurada manda sobre la prosa para datos concretos (fechas, nombres de hotel); la prosa manda para contenido narrativo (descripciones, actividades). Nunca descartes un bloque de texto sin evaluar si es nota o ítem de checklist.
+
+## Entrada desde Excel (varias pestañas)
+Si el texto recibido contiene bloques con cabecera "### Pestaña: <nombre>", el original era un libro Excel con varias pestañas convertidas a tabla. Los nombres de pestaña son arbitrarios (no asumas "Itinerario", "Hoteles", "Vuelos"): busca activamente datos de hoteles, vuelos, actividades y costes en TODAS las pestañas, no solo en la que parezca ser la principal. La información de un mismo día puede estar repartida entre pestañas distintas (ej. el vuelo de la pestaña "Vuelos" y el hotel de la pestaña "Hoteles" pertenecen al mismo día que la pestaña "Itinerario"); reconcíialas usando el número de día, fecha o ciudad como clave de unión, igual que harías entre tabla y prosa en un PDF.
 
 ## Estructura JSON exacta de salida
 {

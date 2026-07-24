@@ -357,7 +357,7 @@ function PdfFillDialog({
             )}
           </p>
 
-          <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md" className="hidden" onChange={handleFile} />
+          <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md,.xlsx" className="hidden" onChange={handleFile} />
 
           {!file ? (
             <button onClick={() => fileInputRef.current?.click()}
@@ -365,7 +365,7 @@ function PdfFillDialog({
               style={{ borderColor: "#E5D4BF" }}>
               <FileUp className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
-              <div className="text-[11px] text-muted-foreground">PDF, TXT, DOC — máx. 10 MB</div>
+              <div className="text-[11px] text-muted-foreground">PDF, Word, Excel o texto — máx. 10 MB</div>
             </button>
           ) : (
             <div className="p-3 rounded-[10px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>

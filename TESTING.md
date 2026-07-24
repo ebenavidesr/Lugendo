@@ -6,6 +6,22 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #138 — Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas (2026-07-24)
+- [x] Backend: `POST /itineraries/parse-pdf` acepta `.xlsx` (librería `exceljs`); cada pestaña se convierte a tabla Markdown (filas/columnas preservadas) prefijada con `### Pestaña: <nombre>`, todas las pestañas se concatenan y se mandan en una sola llamada al modelo reutilizando el flujo de texto existente (mismo que `.docx`/`.txt`), no el flujo "vision" de PDF
+- [x] Pestañas vacías se excluyen automáticamente del texto enviado al modelo
+- [x] `.xls` (formato binario antiguo, no soportado por `exceljs`) se rechaza explícitamente con 422 y mensaje claro, en vez de fallar de forma confusa
+- [x] Límite de tamaño: mismo límite que PDF (14MB), con error 422 claro en vez de un 413 genérico de Express
+- [x] Prompt de sistema actualizado: cuando detecta bloques `### Pestaña: <nombre>`, busca activamente hoteles/vuelos/actividades en todas las pestañas (nombres arbitrarios, no asume "Itinerario"/"Hoteles" fijos) y las reconcilia por número de día/fecha/ciudad
+- [x] Frontend: los 4 puntos de subida (`itinerary-wizard`, `trip-wizard`, `traveler-trip-wizard`, `itinerary-detail`) aceptan `.xlsx` (`accept` del input) y el texto de ayuda menciona Excel
+- [x] Prueba unitaria de la conversión pestaña→Markdown con un libro sintético de 3 pestañas con datos + 1 vacía (fechas, celdas con `|`, pestaña vacía excluida) — resultado correcto
+- [x] `pnpm run typecheck` limpio en todos los paquetes
+- [ ] **No se pudo probar contra el único ejemplo real disponible en esta sesión** — no se aportó el fichero; falta subirlo y comparar el JSON resultante contra el itinerario real
+- [ ] Probar con un Excel de una sola pestaña (caso simple) — confirmar que no se rompe
+- [ ] Probar los mismos 4 puntos de subida en el entorno real (no solo compilación)
+- [ ] Confirmar que un Excel que supera el límite de tamaño devuelve el error claro, no un 413 genérico
+- [ ] Confirmar que PDF/DOCX/TXT siguen funcionando exactamente igual (sin regresión)
+- [ ] Anotado: por la variabilidad total esperada entre agencias, hace falta validar con más ejemplos reales antes de dar el feature por maduro (solo hay un ejemplo conocido hoy)
+
 ### #135 — Borrar itinerario (sin viajes vinculados) y marcar como inactivo (con viajes vinculados) (2026-07-23)
 - [x] El campo `active: boolean` ya existía en el schema de itinerarios (`lib/db/src/schema/itineraries.ts`) — no hizo falta migración
 - [x] Backend: `DELETE /itineraries/:itineraryId` ahora rechaza con 409 (`{error, linkedTrips}`) si hay viajes vinculados, en vez de desvincularlos y borrar; si no hay viajes, hace borrado real (`204`). Roles ampliados a admin/manager/agent (antes solo admin/manager)
