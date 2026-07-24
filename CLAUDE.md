@@ -54,6 +54,7 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 
 ## Working conventions
 
+- When a development task is finished (code changes done, checks passing), commit and push automatically without asking for confirmation each time — this is a standing authorization, not a one-off. Skip this only if the user says otherwise for that task, if there are unrelated uncommitted changes in the working tree that shouldn't be swept in, or if something in the task is genuinely ambiguous enough to need a check-in first.
 - Brand: DM Sans (body), DM Serif Display (headings/serif). Colors: Arena #FAF2EB bg, Duna #ECD5B8 cards, Terracota #C4793A CTA, Ocre #8B4420 hover, Índigo #3D2F6B accent, Noche #2D1F0E sidebar/text.
 - Use the brand CSS variables (`--terra`, `--indigo`, `--noche`, etc.) directly in components rather than hardcoding hex values.
 - Any feature or change must work for **all user roles** (admin, manager, agent, traveler) unless explicitly stated otherwise. Both API permissions and frontend UI should be role-inclusive by default.
