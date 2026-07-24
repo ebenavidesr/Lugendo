@@ -17,10 +17,10 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `pnpm run typecheck` limpio en todos los paquetes
 - [x] Validado en producción contra el ejemplo real disponible (China, 17 días, varias pestañas): la extracción reconcilia bien datos de vuelos/hoteles/itinerario repartidos entre pestañas — **validado por Quique**
 - [x] Bug corregido tras la prueba real: `POST` y `DELETE /itineraries/:itineraryId/days/:dayId/hotels` exigían rol admin/manager/agent, así que un `traveler` creando su propio itinerario (con hoteles auto-asignados desde el Excel) recibía 403 Forbidden al crear el viaje — se amplió a `traveler` en ambos endpoints, igual que ya estaba abierto para días y actividades
+- [x] Re-probado el flujo completo de creación de viaje del viajero (traveler-trip-wizard) tras el fix de permisos de hoteles — confirmado, ya no da 403 — **validado por Quique**
 - [ ] Probar con un Excel de una sola pestaña (caso simple) — confirmar que no se rompe
 - [ ] Confirmar que un Excel que supera el límite de tamaño devuelve el error claro, no un 413 genérico
 - [ ] Confirmar que PDF/DOCX/TXT siguen funcionando exactamente igual (sin regresión)
-- [ ] Re-probar el flujo completo de creación de viaje del viajero (traveler-trip-wizard) tras el fix de permisos de hoteles — confirmar que ya no da 403
 - [ ] Anotado: por la variabilidad total esperada entre agencias, hace falta validar con más ejemplos reales antes de dar el feature por maduro (solo hay un ejemplo conocido hoy)
 
 ### #135 — Borrar itinerario (sin viajes vinculados) y marcar como inactivo (con viajes vinculados) (2026-07-23)
