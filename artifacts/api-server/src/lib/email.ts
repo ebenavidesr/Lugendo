@@ -123,6 +123,47 @@ export async function sendDocumentUploadedEmail(opts: {
   );
 }
 
+export async function sendApprovalRequestEmail(opts: {
+  to: string;
+  name: string;
+  email: string;
+  role: string;
+  registeredAt: Date;
+  approveUrl: string;
+  rejectUrl: string;
+}): Promise<void> {
+  const { to, name, email, role, registeredAt, approveUrl, rejectUrl } = opts;
+  const formattedDate = registeredAt.toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" });
+  await sendEmail(
+    to,
+    `Nuevo registro pendiente de aprobación: ${name}`,
+    `
+    <div style="font-family:'DM Sans',Arial,sans-serif;max-width:560px;margin:0 auto;color:#2D1F0E">
+      <div style="background:#FAF2EB;padding:32px;border-radius:16px">
+        <h1 style="margin:0 0 16px;font-size:20px">Nuevo registro en Lugendo</h1>
+        <div style="background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:24px;font-size:14px;color:#2D1F0E">
+          <p style="margin:0 0 6px"><strong>Nombre:</strong> ${name}</p>
+          <p style="margin:0 0 6px"><strong>Email:</strong> ${email}</p>
+          <p style="margin:0 0 6px"><strong>Rol:</strong> ${role}</p>
+          <p style="margin:0"><strong>Fecha:</strong> ${formattedDate}</p>
+        </div>
+        <div style="display:flex;gap:12px">
+          <a href="${approveUrl}" style="flex:1;display:block;background:#3D2F6B;color:#FAF2EB;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600">
+            Aprobar
+          </a>
+          <a href="${rejectUrl}" style="flex:1;display:block;background:#C4793A;color:#FAF2EB;text-align:center;padding:14px 20px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:600">
+            Rechazar
+          </a>
+        </div>
+        <p style="margin:16px 0 0;font-size:12px;color:#9C7A58;text-align:center">
+          El enlace es de un solo uso.
+        </p>
+      </div>
+    </div>
+    `,
+  );
+}
+
 export async function sendTripUpdatedEmail(opts: {
   to: string;
   name: string;

@@ -6,6 +6,28 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #126 — Sistema de aprobación manual de nuevos registros (registro restringido a beta) (2026-07-25)
+- [x] Schema: nuevas columnas en `users` — `status` (`pending`/`approved`/`rejected`, default `approved` para no invalidar filas existentes), `terms_accepted_at`, `approval_token` (único, nulo tras usarse). Migración generada (`0017_aberrant_mantis.sql`), pendiente de aplicar en Railway al desplegar
+- [x] Registro (`POST /auth/register`) crea el usuario con `status: pending`, guarda `termsAcceptedAt` (el checkbox de T&Cs ya existía en el formulario — no hizo falta crear placeholder de T&Cs, solo persistir la fecha de aceptación) y genera un `approvalToken` de un solo uso
+- [x] Decisión de alcance confirmada con Quique: los viajeros que se registran con código de invitación también quedan en `pending` (no se auto-aprueban)
+- [x] Email de notificación a `ebenavidesr@gmail.com` (configurable vía `ADMIN_NOTIFICATION_EMAIL`) con nombre/email/rol/fecha y enlaces Aprobar/Rechazar — reutiliza la infraestructura de email ya existente (Resend), no SMTP de Outlook como se planteaba originalmente en Notion
+- [x] `GET /auth/approve?token=...&action=approved|rejected` (sin login) actualiza el estado, invalida el token y muestra una página HTML simple de confirmación; un segundo clic sobre el mismo enlace muestra "enlace ya utilizado"
+- [x] `requireAuth`/`requireRoles` devuelven 403 (`AccountPending`) si la sesión tiene `status: pending` o `rejected`; las sesiones ya existentes sin ese campo (creadas antes de este cambio) no se bloquean, evitando desloguear a todo el mundo tras el deploy
+- [x] `/auth/me` y `/auth/logout` siguen accesibles para usuarios `pending`/`rejected` (middleware `requireSession` separado) para que el frontend pueda leer el estado y cerrar sesión
+- [x] Usuarios creados por un admin desde Equipo (`POST /users`) quedan `approved` automáticamente (no pasan por el registro público, ya están vetados)
+- [x] Frontend: nueva pantalla `/pending` (mensaje distinto para pending vs rejected, botón de cerrar sesión); `use-auth.tsx` redirige ahí automáticamente si `user.status !== approved`; `ProtectedBackOffice`/`ProtectedTraveler` no renderizan contenido para usuarios no aprobados
+- [x] `pnpm run typecheck` limpio en todos los paquetes (api-server, lugendo-app, libs)
+- [x] `pnpm --filter @workspace/api-server run build` (esbuild) limpio
+- [ ] **No se pudo probar visualmente en local**: el build/dev server de Vite falló por un problema de entorno preexistente y no relacionado (binarios nativos de rollup/lightningcss ausentes); se reinstaló `node_modules` por completo pero el problema persiste — parece venir del propio `pnpm-lock.yaml`, no de este cambio. Quedó anotado como tarea aparte para investigar
+- [ ] Registrar un usuario nuevo sin invitación → queda en `pending`, ve la pantalla de espera, llega el email a Quique con los dos botones
+- [ ] Registrar un usuario con código de invitación válido → también queda `pending` (según la decisión de alcance)
+- [ ] Pulsar "Aprobar" en el email → el usuario pasa a `approved` y en su próxima carga entra normal a la app
+- [ ] Pulsar "Rechazar" en el email → el usuario ve la pantalla de "acceso no aprobado"
+- [ ] Reutilizar el mismo enlace de aprobar/rechazar una segunda vez → muestra "enlace ya utilizado", no vuelve a cambiar el estado
+- [ ] Un usuario `pending` no puede llamar a rutas protegidas de la API (403) pero sí a `/auth/me` y `/auth/logout`
+- [ ] Los usuarios que ya tenían sesión iniciada antes de desplegar este cambio no se ven desconectados ni bloqueados
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+
 ### Fix — Teclado no aparecía en Safari iOS (iPhone/iPad) en los campos de email/contraseña de login y registro (2026-07-25)
 - [x] Causa raíz identificada: el fix reforzado anti-autofill del 2026-07-11 dejaba los campos de email/contraseña en `readOnly` hasta el primer `onFocus`; en iOS Safari un input `readOnly` no abre el teclado virtual, y el cambio de estado (React re-render) llega después de que Safari ya decidió no mostrarlo — de ahí que fuera inconsistente por dispositivo/versión de iOS
 - [x] Eliminado el mecanismo `readOnly`/`onFocus` de los 5 campos afectados (`login.tsx`: email y contraseña de login; nombre/apellidos no lo tenían; email, contraseña y confirmar contraseña de registro), manteniendo el resto de mitigaciones anti-autofill (`autoComplete="off"`/`new-password`/`current-password`, `data-lpignore`, `data-1p-ignore`, nombres de campo no estándar, placeholder sin "@")

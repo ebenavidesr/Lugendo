@@ -9,6 +9,7 @@ import { TravelerLayout } from "@/components/layout/traveler-layout";
 // Pages
 import NotFound from "@/pages/not-found";
 import { Login } from "@/pages/login";
+import PendingApproval from "@/pages/pending-approval";
 import Dashboard from "@/pages/dashboard";
 import Trips from "@/pages/trips";
 import TripDetail from "@/pages/trip-detail";
@@ -44,14 +45,14 @@ const queryClient = new QueryClient({
 function ProtectedBackOffice({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
-  if (!user || user.role === "traveler") return null;
+  if (!user || user.status !== "approved" || user.role === "traveler") return null;
   return <BackOfficeLayout>{children}</BackOfficeLayout>;
 }
 
 function ProtectedTraveler({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
   if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading…</div>;
-  if (!user || user.role !== "traveler") return null;
+  if (!user || user.status !== "approved" || user.role !== "traveler") return null;
   return <TravelerLayout>{children}</TravelerLayout>;
 }
 
@@ -60,6 +61,7 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />
+      <Route path="/pending" component={PendingApproval} />
 
       {/* Back Office */}
       <Route path="/dashboard">

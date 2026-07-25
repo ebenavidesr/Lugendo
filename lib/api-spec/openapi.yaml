@@ -2524,7 +2524,7 @@ components:
     # ─── AUTH ─────────────────────────────────────────────────────────────────
     AuthUser:
       type: object
-      required: [id, email, name, role]
+      required: [id, email, name, role, status]
       properties:
         id:
           type: integer
@@ -2539,6 +2539,9 @@ components:
           type: ["integer", "null"]
         agencyName:
           type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, approved, rejected]
 
     LoginInput:
       type: object
@@ -2551,7 +2554,7 @@ components:
 
     RegisterInput:
       type: object
-      required: [email, password, name]
+      required: [email, password, name, acceptTerms]
       properties:
         email:
           type: string
@@ -2562,6 +2565,8 @@ components:
           type: string
         inviteCode:
           type: string
+        acceptTerms:
+          type: boolean
 
     # ─── AGENCY ───────────────────────────────────────────────────────────────
     Agency:

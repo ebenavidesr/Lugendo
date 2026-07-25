@@ -1,15 +1,19 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { usersTable, agenciesTable, invitationsTable } from "@workspace/db";
-import { requireAuth } from "../middlewares/auth";
+import { requireSession } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { LoginInputSchema, RegisterInputSchema } from "../lib/schemas";
+import { sendApprovalRequestEmail } from "../lib/email";
+import { PUBLIC_APP_URL } from "../lib/publicUrl";
 
 const router: IRouter = Router();
+const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "ebenavidesr@gmail.com";
 
-router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
+router.get("/auth/me", requireSession, async (req, res): Promise<void> => {
   const [user] = await db
     .select({
       id: usersTable.id,
@@ -17,6 +21,7 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
       name: usersTable.name,
       role: usersTable.role,
       agencyId: usersTable.agencyId,
+      status: usersTable.status,
       agencyName: agenciesTable.name,
     })
     .from(usersTable)
@@ -44,6 +49,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
       agencyId: usersTable.agencyId,
       passwordHash: usersTable.passwordHash,
       active: usersTable.active,
+      status: usersTable.status,
       agencyName: agenciesTable.name,
     })
     .from(usersTable)
@@ -66,6 +72,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
   req.session.agencyId = user.agencyId;
   req.session.email = user.email;
   req.session.name = user.name;
+  req.session.status = user.status;
 
   // Auto-accept any pending invitations for this email
   await db
@@ -83,6 +90,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
     role: user.role,
     agencyId: user.agencyId,
     agencyName: user.agencyName,
+    status: user.status,
   });
 });
 
@@ -100,6 +108,7 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const approvalToken = crypto.randomBytes(32).toString("hex");
   const [user] = await db
     .insert(usersTable)
     .values({
@@ -107,6 +116,9 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
       passwordHash,
       name,
       role: "traveler",
+      status: "pending",
+      termsAcceptedAt: new Date(),
+      approvalToken,
     })
     .returning();
 
@@ -129,6 +141,17 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
   req.session.agencyId = user.agencyId ?? null;
   req.session.email = user.email;
   req.session.name = user.name;
+  req.session.status = user.status;
+
+  sendApprovalRequestEmail({
+    to: ADMIN_NOTIFICATION_EMAIL,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    registeredAt: user.createdAt,
+    approveUrl: `${PUBLIC_APP_URL}/api/auth/approve?token=${approvalToken}&action=approved`,
+    rejectUrl: `${PUBLIC_APP_URL}/api/auth/approve?token=${approvalToken}&action=rejected`,
+  }).catch((err) => console.error("Failed to send approval request email", err));
 
   res.status(201).json({
     id: user.id,
@@ -137,7 +160,52 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
     role: user.role,
     agencyId: user.agencyId,
     agencyName: null,
+    status: user.status,
   });
+});
+
+router.get("/auth/approve", async (req, res): Promise<void> => {
+  const token = typeof req.query.token === "string" ? req.query.token : "";
+  const action = req.query.action === "approved" || req.query.action === "rejected" ? req.query.action : null;
+
+  const renderPage = (title: string, message: string) => `
+    <!DOCTYPE html>
+    <html lang="es">
+      <head><meta charset="utf-8"><title>${title}</title></head>
+      <body style="font-family:'DM Sans',Arial,sans-serif;background:#FAF2EB;color:#2D1F0E;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+        <div style="background:#fff;padding:32px 40px;border-radius:16px;text-align:center;max-width:420px">
+          <h1 style="margin:0 0 12px;font-size:20px">${title}</h1>
+          <p style="margin:0;color:#6B5744;font-size:15px">${message}</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  if (!token || !action) {
+    res.status(400).send(renderPage("Enlace inválido", "El enlace de aprobación no es válido."));
+    return;
+  }
+
+  const [user] = await db
+    .select({ id: usersTable.id, name: usersTable.name })
+    .from(usersTable)
+    .where(eq(usersTable.approvalToken, token));
+
+  if (!user) {
+    res.status(400).send(renderPage("Enlace ya utilizado", "Este enlace ya fue usado o no es válido."));
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ status: action, approvalToken: null })
+    .where(eq(usersTable.id, user.id));
+
+  res.send(
+    action === "approved"
+      ? renderPage("Usuario aprobado", `${user.name} ya puede acceder a Lugendo.`)
+      : renderPage("Usuario rechazado", `Se ha rechazado el acceso de ${user.name}.`),
+  );
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {

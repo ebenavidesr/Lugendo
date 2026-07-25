@@ -39,7 +39,8 @@ export const GetMeResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
-  "agencyName": zod.string().nullish()
+  "agencyName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected'])
 })
 
 
@@ -57,7 +58,8 @@ export const LoginResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
-  "agencyName": zod.string().nullish()
+  "agencyName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected'])
 })
 
 
@@ -72,7 +74,8 @@ export const RegisterBody = zod.object({
   "email": zod.string(),
   "password": zod.string().min(registerBodyPasswordMin),
   "name": zod.string(),
-  "inviteCode": zod.string().optional()
+  "inviteCode": zod.string().optional(),
+  "acceptTerms": zod.boolean()
 })
 
 

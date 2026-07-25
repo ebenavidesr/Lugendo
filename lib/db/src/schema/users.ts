@@ -11,6 +11,9 @@ export const usersTable = pgTable("users", {
   role: text("role", { enum: ["admin", "manager", "agent", "traveler"] }).notNull().default("traveler"),
   agencyId: integer("agency_id").references(() => agenciesTable.id),
   active: boolean("active").notNull().default(true),
+  status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("approved"),
+  termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+  approvalToken: text("approval_token").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

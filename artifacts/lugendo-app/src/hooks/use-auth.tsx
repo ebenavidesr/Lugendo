@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, ReactNode } from "react";
 import { useLocation } from "wouter";
-import { useGetMe, AuthUser, AuthUserRole } from "@workspace/api-client-react";
+import { useGetMe, AuthUser, AuthUserRole, AuthUserStatus } from "@workspace/api-client-react";
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -18,9 +18,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
+      const isPendingRoute = location === "/pending";
       if (!user && !isAuthRoute) {
         setLocation("/login");
-      } else if (user && isAuthRoute) {
+      } else if (user && user.status !== AuthUserStatus.approved) {
+        if (!isPendingRoute) setLocation("/pending");
+      } else if (user && (isAuthRoute || isPendingRoute)) {
         if (user.role === AuthUserRole.traveler) {
           setLocation("/traveler");
         } else {

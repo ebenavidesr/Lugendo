@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AuthUserRole } from './authUserRole';
+import type { AuthUserStatus } from './authUserStatus';
 
 export interface AuthUser {
   id: number;
@@ -16,4 +17,5 @@ export interface AuthUser {
   agencyId?: number | null;
   /** @nullable */
   agencyName?: string | null;
+  status: AuthUserStatus;
 }

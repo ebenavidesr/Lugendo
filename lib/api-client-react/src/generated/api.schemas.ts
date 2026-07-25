@@ -20,6 +20,15 @@ export const AuthUserRole = {
   traveler: 'traveler',
 } as const;
 
+export type AuthUserStatus = typeof AuthUserStatus[keyof typeof AuthUserStatus];
+
+
+export const AuthUserStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export interface AuthUser {
   id: number;
   email: string;
@@ -29,6 +38,7 @@ export interface AuthUser {
   agencyId?: number | null;
   /** @nullable */
   agencyName?: string | null;
+  status: AuthUserStatus;
 }
 
 export interface LoginInput {
@@ -42,6 +52,7 @@ export interface RegisterInput {
   password: string;
   name: string;
   inviteCode?: string;
+  acceptTerms: boolean;
 }
 
 export type AgencyWritingTone = typeof AgencyWritingTone[keyof typeof AgencyWritingTone];

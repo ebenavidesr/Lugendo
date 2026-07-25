@@ -12,4 +12,5 @@ export interface RegisterInput {
   password: string;
   name: string;
   inviteCode?: string;
+  acceptTerms: boolean;
 }

@@ -120,6 +120,13 @@
       "when": 1784577914938,
       "tag": "0016_swift_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1784963430096,
+      "tag": "0017_aberrant_mantis",
+      "breakpoints": true
     }
   ]
 }

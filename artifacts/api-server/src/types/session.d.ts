@@ -7,5 +7,6 @@ declare module "express-session" {
     agencyId: number | null;
     email: string;
     name: string;
+    status: string;
   }
 }

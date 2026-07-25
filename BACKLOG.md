@@ -63,7 +63,8 @@
 | #104 | Notificar al viajero cuando la agencia añade una plantilla de checklist | 🟢 Baja | Viajeros | Yo |
 | #105 | Ver progreso de checklist de cada viajero (vista agencia) | 🟡 Media | Agencia · Viajeros | Yo |
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
-| #126 | Pestaña de Notas en el panel de agencia (hoy solo existe en la vista del viajero, dato personal por usuario) | 🟢 Baja | Viajeros · Agencia | Yo |
+| #126 (dup, ver nota) | Pestaña de Notas en el panel de agencia (hoy solo existe en la vista del viajero, dato personal por usuario) — sin tarjeta en Notion, número duplicado con la fila de abajo, pendiente de renumerar | 🟢 Baja | Viajeros · Agencia | Yo |
+| #126 | Sistema de aprobación manual de nuevos registros (registro restringido a beta) — en curso | 🔴 Alta | Registro | Tú |
 | #127 | Crear cuenta OpenAI propia y configurar API key real (sustituye el proxy "Model Farm" de Replit, usado hoy con valor provisional tras la migración de hosting #117) | 🟡 Media | Infraestructura | Yo |
 | #128 | Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes — en curso, pendiente de validar en producción | 🟡 Media | Itinerarios · Viajes | Tú |
 | #129 | Subida de logo como archivo en la ficha de creación/edición de agencia — en QA, pendiente de validar en producción | 🟡 Media | Agencia | Tú |

@@ -20,6 +20,7 @@ export * from './agencyUpdateWritingTone';
 export * from './agencyWritingTone';
 export * from './authUser';
 export * from './authUserRole';
+export * from './authUserStatus';
 export * from './checklistEntry';
 export * from './checklistTemplate';
 export * from './checklistTemplateInput';
