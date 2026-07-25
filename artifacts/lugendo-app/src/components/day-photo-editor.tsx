@@ -264,7 +264,7 @@ export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, onClick
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden ${className ?? ""}`}
-      style={{ aspectRatio: CROP_ASPECT, maxHeight: height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
+      style={{ width: "100%", aspectRatio: CROP_ASPECT, maxHeight: height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
       onClick={onClick}
     >
       {photoUrl ? (
