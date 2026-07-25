@@ -70,7 +70,6 @@
 | #131 | Vincular usuarios de agencia a su agencia (asignación, ficha de agencia y ficha de Equipos) — en curso | 🟡 Media | Agencia · Roles | Tú |
 | #132 | Analizar PDF de itinerario con input nativo (vision/file) en vez de texto plano extraído — en curso, pendiente de validar contra documentos reales | 🟡 Media | Itinerarios · IA | Yo |
 | #133 | Reestructurar `Dockerfile` para copiar `package.json`/lockfiles antes de `pnpm install` (aprovechar cache de capas de Docker, deploys más rápidos) — en curso, pendiente de validar en Railway | 🟢 Baja | Infraestructura | Yo |
-| #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día, en vez de solo mostrarlo como sugerencia informativa que hay que repetir a mano — en curso, validado en producción para itinerary-wizard; pendiente trip-wizard, traveler-trip-wizard, itinerary-detail y el caso reviewManually | 🟡 Media | Itinerarios · IA | Tú |
 | #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
 
 ---
@@ -131,6 +130,7 @@
 | #119 | Noche en transporte en los wizards de creación (itinerario, viaje y viajero) | | Itinerarios · Viajes · Viajeros |
 | #120 | Noche en transporte al editar viajes e itinerarios ya creados (formulario Editar día + vista del viajero) | | Viajes · Viajeros |
 | #138 | Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas | 🟡 Media | Itinerarios · IA |
+| #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día | 🟡 Media | Itinerarios · IA |
 
 ---
 

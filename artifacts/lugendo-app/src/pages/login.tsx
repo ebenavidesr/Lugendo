@@ -79,13 +79,6 @@ export function Login() {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirm, setShowRegConfirm] = useState(false);
-  // readOnly hasta el primer foco: evita que el motor de autocompletado del navegador
-  // enganche el campo durante el render/hydration inicial (ver comentario junto a los inputs de email)
-  const [regEmailLocked, setRegEmailLocked] = useState(true);
-  const [loginEmailLocked, setLoginEmailLocked] = useState(true);
-  const [loginPasswordLocked, setLoginPasswordLocked] = useState(true);
-  const [regPasswordLocked, setRegPasswordLocked] = useState(true);
-  const [regConfirmLocked, setRegConfirmLocked] = useState(true);
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -201,15 +194,13 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (nombre+email+contraseña+confirmar) como un registro y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación reforzada (no eliminable al 100%): además de las señales ya quitadas, el campo empieza readOnly y solo se habilita al hacer foco (evita que el motor de autofill lo enganche durante el hydration inicial), y el placeholder ya no contiene "@" ni "email.com". */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (nombre+email+contraseña+confirmar) como un registro y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". */}
                           <Input
                             inputMode="text"
                             placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            readOnly={regEmailLocked}
-                            onFocus={() => setRegEmailLocked(false)}
                             {...field}
                             onBlur={(e) => {
                               if (e.target.value !== field.value) field.onChange(e.target.value);
@@ -253,13 +244,10 @@ export function Login() {
                         </div>
                         <FormControl>
                           <div className="relative">
-                            {/* Mismo bug recurrente que el email (ver más abajo), pero en contraseña: el gestor de contraseñas nativo puede capturar el campo sin mostrar sugerencia visible, bloqueando teclear y pegar. Mitigación: readOnly hasta el primer foco. */}
                             <Input
                               type={showRegPassword ? "text" : "password"}
                               autoComplete="new-password"
                               className="pr-10"
-                              readOnly={regPasswordLocked}
-                              onFocus={() => setRegPasswordLocked(false)}
                               {...field}
                               data-testid="input-register-password"
                             />
@@ -286,8 +274,6 @@ export function Login() {
                               type={showRegConfirm ? "text" : "password"}
                               autoComplete="new-password"
                               className="pr-10"
-                              readOnly={regConfirmLocked}
-                              onFocus={() => setRegConfirmLocked(false)}
                               {...field}
                               data-testid="input-register-confirm-password"
                             />
@@ -377,15 +363,13 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (email+contraseña) como un login y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación reforzada (no eliminable al 100%): además de las señales ya quitadas, el campo empieza readOnly y solo se habilita al hacer foco (evita que el motor de autofill lo enganche durante el hydration inicial), y el placeholder ya no contiene "@" ni "email.com". autoFocus se quita porque forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo. */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (email+contraseña) como un login y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". Tampoco se usa autoFocus: forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo. */}
                           <Input
                             inputMode="text"
                             placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            readOnly={loginEmailLocked}
-                            onFocus={() => setLoginEmailLocked(false)}
                             {...field}
                             onBlur={(e) => {
                               if (e.target.value !== field.value) field.onChange(e.target.value);
@@ -410,13 +394,10 @@ export function Login() {
                         <FormLabel>Contraseña</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            {/* Mismo bug recurrente que el email (ver arriba), pero en el campo de contraseña: el gestor de contraseñas nativo del navegador (Chrome, Safari/Keychain, móvil) captura el campo — no muestra ninguna sugerencia visible pero bloquea tanto teclear como pegar. Mitigación: readOnly hasta el primer foco para que el motor no enganche el campo durante el hydration inicial. */}
                             <Input
                               type={showLoginPassword ? "text" : "password"}
                               autoComplete="current-password"
                               className="pr-10"
-                              readOnly={loginPasswordLocked}
-                              onFocus={() => setLoginPasswordLocked(false)}
                               {...field}
                               data-testid="input-login-password"
                             />

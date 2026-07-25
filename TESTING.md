@@ -6,6 +6,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Teclado no aparecía en Safari iOS (iPhone/iPad) en los campos de email/contraseña de login y registro (2026-07-25)
+- [x] Causa raíz identificada: el fix reforzado anti-autofill del 2026-07-11 dejaba los campos de email/contraseña en `readOnly` hasta el primer `onFocus`; en iOS Safari un input `readOnly` no abre el teclado virtual, y el cambio de estado (React re-render) llega después de que Safari ya decidió no mostrarlo — de ahí que fuera inconsistente por dispositivo/versión de iOS
+- [x] Eliminado el mecanismo `readOnly`/`onFocus` de los 5 campos afectados (`login.tsx`: email y contraseña de login; nombre/apellidos no lo tenían; email, contraseña y confirmar contraseña de registro), manteniendo el resto de mitigaciones anti-autofill (`autoComplete="off"`/`new-password`/`current-password`, `data-lpignore`, `data-1p-ignore`, nombres de campo no estándar, placeholder sin "@")
+- [x] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar visualmente en local** — el dev server falla en este checkout por un problema de entorno preexistente y no relacionado (`Cannot find module @rollup/rollup-darwin-arm64`)
+- [ ] En Safari de iPhone, tocar el campo Email en `/login` abre el teclado a la primera y se puede escribir
+- [ ] En Safari de iPhone, tocar el campo Contraseña en `/login` abre el teclado a la primera y se puede escribir/pegar
+- [ ] Igual en Safari de iPad
+- [ ] En Safari de iPhone/iPad, los campos de `/register` (nombre, apellidos, email, contraseña, confirmar contraseña) abren el teclado correctamente
+- [ ] Confirmar que el autocompletado nativo del navegador (Llavero/Keychain) sigue sin secuestrar el formulario en Safari/Chrome tras quitar el `readOnly` (regresión del fix del 2026-07-11)
+- [ ] Login y registro completan correctamente de principio a fin en Safari iOS
+
 ### #138 — Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas (2026-07-24)
 - [x] Backend: `POST /itineraries/parse-pdf` acepta `.xlsx` (librería `exceljs`); cada pestaña se convierte a tabla Markdown (filas/columnas preservadas) prefijada con `### Pestaña: <nombre>`, todas las pestañas se concatenan y se mandan en una sola llamada al modelo reutilizando el flujo de texto existente (mismo que `.docx`/`.txt`), no el flujo "vision" de PDF
 - [x] Pestañas vacías se excluyen automáticamente del texto enviado al modelo
@@ -56,11 +68,11 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Utilidad compartida `lib/pdf-day-autofill.ts` (`matchOrCreateActivityIds`/`matchOrCreateHotelId`) usada por los 4 puntos de subida de PDF
 - [x] `itinerary-wizard.tsx`: tras analizar el PDF, el hotel y las actividades detectados por IA quedan pre-asignados al día (Select de hotel y pills de actividad), sin repetir el trabajo a mano — **validado en producción por Quique**
 - [x] Bug corregido: la creación automática de hotel fallaba siempre en silencio por enviar `country: ""` (el backend exige país no vacío); ahora se deriva del único país detectado en el itinerario — **validado en producción**: un hotel que no existía en el catálogo se creó automáticamente y quedó asignado
-- [ ] `trip-wizard.tsx`: mismo comportamiento (ya tenía una versión propia del auto-fill; ahora usa la utilidad compartida) — pendiente de validar
-- [ ] `traveler-trip-wizard.tsx`: migrado de los campos legacy (`day.hotels`/`day.activities`) a los estructurados (`day.hotel`/`day.parsedActivities`); corregido bug existente por el que el hotel asignado nunca se persistía al crear el viaje (faltaba `useAddItineraryDayHotel`) — pendiente de validar
-- [ ] `itinerary-detail.tsx` → "Rellenar desde PDF": ahora muestra badges de hotel/actividad detectados (antes no existían) y los aplica automáticamente a los días importados — pendiente de validar
-- [ ] Si la IA marcó el hotel con `reviewManually` (incertidumbre entre tabla y listado de ciudad), NO se auto-asigna en ninguno de los 4 puntos — queda como sugerencia informativa ("⚠ Revisar hotel") a resolver a mano — pendiente de validar
-- [ ] El flujo manual de búsqueda/creación de hotel y actividad (ya existente) sigue funcionando igual en los 4 puntos — pendiente de validar
+- [x] `trip-wizard.tsx`: mismo comportamiento (ya tenía una versión propia del auto-fill; ahora usa la utilidad compartida)
+- [x] `traveler-trip-wizard.tsx`: migrado de los campos legacy (`day.hotels`/`day.activities`) a los estructurados (`day.hotel`/`day.parsedActivities`); corregido bug existente por el que el hotel asignado nunca se persistía al crear el viaje (faltaba `useAddItineraryDayHotel`)
+- [x] `itinerary-detail.tsx` → "Rellenar desde PDF": ahora muestra badges de hotel/actividad detectados (antes no existían) y los aplica automáticamente a los días importados
+- [x] Si la IA marcó el hotel con `reviewManually` (incertidumbre entre tabla y listado de ciudad), NO se auto-asigna en ninguno de los 4 puntos — queda como sugerencia informativa ("⚠ Revisar hotel") a resolver a mano
+- [x] El flujo manual de búsqueda/creación de hotel y actividad (ya existente) sigue funcionando igual en los 4 puntos
 - [x] `pnpm run typecheck` limpio
 
 ### #132 — Analizar PDF de itinerario con input nativo en vez de texto plano (2026-07-22)
