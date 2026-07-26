@@ -72,6 +72,7 @@
 | #132 | Analizar PDF de itinerario con input nativo (vision/file) en vez de texto plano extraído — en curso, pendiente de validar contra documentos reales | 🟡 Media | Itinerarios · IA | Yo |
 | #133 | Reestructurar `Dockerfile` para copiar `package.json`/lockfiles antes de `pnpm install` (aprovechar cache de capas de Docker, deploys más rápidos) — en curso, pendiente de validar en Railway | 🟢 Baja | Infraestructura | Yo |
 | #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
+| — | Reconciliar la numeración de tareas entre `BACKLOG.md` y el board de Notion — han divergido (ej. la fila #127 de este archivo es la cuenta OpenAI, pero en Notion #127 es "Botón expandir/colapsar todos los días") | 🟢 Baja | General | Yo |
 
 ---
 
@@ -132,6 +133,7 @@
 | #120 | Noche en transporte al editar viajes e itinerarios ya creados (formulario Editar día + vista del viajero) | | Viajes · Viajeros |
 | #138 | Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas | 🟡 Media | Itinerarios · IA |
 | #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día | 🟡 Media | Itinerarios · IA |
+| #127 (Notion) | Botón "Expandir/Colapsar todos" en el acordeón de días — aplicado a detalle de viaje, detalle de itinerario y pasaporte del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros |
 
 ---
 
