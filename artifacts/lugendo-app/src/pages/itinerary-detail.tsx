@@ -675,11 +675,12 @@ export default function ItineraryDetail() {
           {days && days.length > 0 && (
             <button
               onClick={() => {
-                if (expandedDays.size > 0) setExpandedDays(new Set());
+                const allExpanded = days.every(d => expandedDays.has(d.id));
+                if (allExpanded) setExpandedDays(new Set());
                 else setExpandedDays(new Set(days.map(d => d.id)));
               }}
               className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-              {expandedDays.size > 0 ? "Colapsar todos" : "Expandir todos"}
+              {days.every(d => expandedDays.has(d.id)) ? "Colapsar todos" : "Expandir todos"}
             </button>
           )}
         </div>

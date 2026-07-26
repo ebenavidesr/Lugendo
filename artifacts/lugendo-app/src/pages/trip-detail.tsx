@@ -639,11 +639,12 @@ export default function TripDetail() {
                   </button>
                   <button
                     onClick={() => {
-                      if (expandedDays.size > 0) setExpandedDays(new Set());
+                      const allExpanded = trip.days!.every(d => expandedDays.has(d.id));
+                      if (allExpanded) setExpandedDays(new Set());
                       else setExpandedDays(new Set(trip.days!.map(d => d.id)));
                     }}
                     className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-                    {expandedDays.size > 0 ? "Colapsar todos" : "Expandir todos"}
+                    {trip.days!.every(d => expandedDays.has(d.id)) ? "Colapsar todos" : "Expandir todos"}
                   </button>
                 </>
               )}

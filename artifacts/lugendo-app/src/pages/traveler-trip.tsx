@@ -333,6 +333,18 @@ export default function TravelerTrip() {
 
           {trip.days && trip.days.length > 0 ? (
             <div className="space-y-3">
+              <div className="flex items-center justify-end">
+                <button
+                  onClick={() => {
+                    const allExpanded = trip.days!.every(d => expandedDays.has(d.dayNumber));
+                    if (allExpanded) setExpandedDays(new Set());
+                    else setExpandedDays(new Set(trip.days!.map(d => d.dayNumber)));
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {trip.days.every(d => expandedDays.has(d.dayNumber)) ? "Colapsar todos" : "Expandir todos"}
+                </button>
+              </div>
               {canEditPersonal && editMode && (
                 <button
                   onClick={handleAddDay}
