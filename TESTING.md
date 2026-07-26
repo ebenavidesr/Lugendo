@@ -11,9 +11,9 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Pasaporte del viajero (`traveler-trip.tsx`, pestaña Itinerario): añadido el botón "Expandir todos" / "Colapsar todos", que antes no existía en esta vista
 - [x] En el pasaporte del viajero se mantiene el comportamiento de expandir automáticamente "hoy" y "mañana" al entrar; el botón nuevo actúa por encima de ese estado inicial
 - [x] `pnpm run typecheck` limpio
-- [ ] Verificar visualmente en producción tras el deploy: agencia/admin en detalle de viaje e itinerario, y viajero en su pasaporte
-- [ ] Con un día expandido manualmente y el resto colapsados, el botón debe decir "Expandir todos" (no "Colapsar todos") en las tres vistas
-- [ ] Pulsar el botón en el pasaporte del viajero expande/colapsa todos los días sin romper el auto-expandido de hoy/mañana en la carga inicial
+- [x] Verificado en producción tras el deploy: agencia/admin en detalle de viaje e itinerario (probado por Claude vía navegador), y viajero en su pasaporte (probado por Quique)
+- [x] Con un día expandido manualmente y el resto colapsados, el botón dice "Expandir todos" (no "Colapsar todos") en detalle de viaje e itinerario
+- [x] Pulsar el botón en el pasaporte del viajero expande/colapsa todos los días sin romper el auto-expandido de hoy/mañana en la carga inicial
 
 ### #126 — Sistema de aprobación manual de nuevos registros (registro restringido a beta) (2026-07-25)
 - [x] Schema: nuevas columnas en `users` — `status` (`pending`/`approved`/`rejected`, default `approved` para no invalidar filas existentes), `terms_accepted_at`, `approval_token` (único, nulo tras usarse). Migración generada (`0017_aberrant_mantis.sql`), pendiente de aplicar en Railway al desplegar
