@@ -33,12 +33,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Eliminado el mecanismo `readOnly`/`onFocus` de los 5 campos afectados (`login.tsx`: email y contraseña de login; nombre/apellidos no lo tenían; email, contraseña y confirmar contraseña de registro), manteniendo el resto de mitigaciones anti-autofill (`autoComplete="off"`/`new-password`/`current-password`, `data-lpignore`, `data-1p-ignore`, nombres de campo no estándar, placeholder sin "@")
 - [x] `pnpm run typecheck` limpio
 - [ ] **No se pudo probar visualmente en local** — el dev server falla en este checkout por un problema de entorno preexistente y no relacionado (`Cannot find module @rollup/rollup-darwin-arm64`)
-- [ ] En Safari de iPhone, tocar el campo Email en `/login` abre el teclado a la primera y se puede escribir
-- [ ] En Safari de iPhone, tocar el campo Contraseña en `/login` abre el teclado a la primera y se puede escribir/pegar
-- [ ] Igual en Safari de iPad
+- [x] En Safari de iPhone, tocar el campo Email en `/login` abre el teclado a la primera y se puede escribir — **validado por Quique**
+- [x] En Safari de iPhone, tocar el campo Contraseña en `/login` abre el teclado a la primera y se puede escribir/pegar — **validado por Quique**
+- [x] Igual en Safari de iPad — **validado por Quique**
 - [ ] En Safari de iPhone/iPad, los campos de `/register` (nombre, apellidos, email, contraseña, confirmar contraseña) abren el teclado correctamente
 - [ ] Confirmar que el autocompletado nativo del navegador (Llavero/Keychain) sigue sin secuestrar el formulario en Safari/Chrome tras quitar el `readOnly` (regresión del fix del 2026-07-11)
-- [ ] Login y registro completan correctamente de principio a fin en Safari iOS
+- [x] Login completa correctamente de principio a fin en Safari iOS — **validado por Quique**
 
 ### #138 — Lector de itinerarios: soportar Excel (.xlsx) con datos repartidos en varias pestañas (2026-07-24)
 - [x] Backend: `POST /itineraries/parse-pdf` acepta `.xlsx` (librería `exceljs`); cada pestaña se convierte a tabla Markdown (filas/columnas preservadas) prefijada con `### Pestaña: <nombre>`, todas las pestañas se concatenan y se mandan en una sola llamada al modelo reutilizando el flujo de texto existente (mismo que `.docx`/`.txt`), no el flujo "vision" de PDF
