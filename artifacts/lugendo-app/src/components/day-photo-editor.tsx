@@ -188,7 +188,7 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="relative w-full rounded-[12px] overflow-hidden bg-muted" style={{ height: 260 }}>
+            <div className="relative w-full rounded-[12px] overflow-hidden bg-muted" style={{ aspectRatio: CROP_ASPECT }}>
               <Cropper
                 image={imageSrc}
                 crop={crop}
