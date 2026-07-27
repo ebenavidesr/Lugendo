@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { COUNTRY_NAME_BY_CODE } from "@workspace/db/countries";
 
 const TransportModeSchema = z.enum([
   "plane", "ship", "ferry", "train", "self_drive",
@@ -467,4 +468,17 @@ export const TripPackingItemInputSchema = z.object({
 
 export const TripPackingItemUpdateSchema = z.object({
   packed: z.boolean(),
+});
+
+// ─── User countries (visitados / objetivo) ─────────────────────────────────
+
+export const UserCountryStatusSchema = z.enum(["visitado", "objetivo"]);
+
+export const UserCountryInputSchema = z.object({
+  countryCode: z.string().refine(code => code in COUNTRY_NAME_BY_CODE, "País no reconocido"),
+  status: UserCountryStatusSchema,
+});
+
+export const UserCountryStatusUpdateSchema = z.object({
+  status: UserCountryStatusSchema,
 });

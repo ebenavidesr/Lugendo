@@ -9,7 +9,9 @@ import {
   tripDayActivitiesTable, itineraryDayActivitiesTable,
   tripSharesTable, usersTable, activitiesTable,
   tripChecklistItemsTable, checklistTemplatesTable,
+  userCountriesTable,
 } from "@workspace/db";
+import { COUNTRY_NAME_BY_CODE, COUNTRY_CODE_BY_NAME } from "@workspace/db/countries";
 import { requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import {
@@ -20,6 +22,7 @@ import {
   TripDocumentInputSchema,
   CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
   TripPackingItemInputSchema, TripPackingItemUpdateSchema,
+  UserCountryInputSchema, UserCountryStatusUpdateSchema,
 } from "../lib/schemas";
 import { tripDocumentsTable, tripPackingItemsTable, countryAdvisoriesTable, tripAdvisoryViewsTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -323,31 +326,86 @@ router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<vo
   const allTripIds = [...new Set([...ownedTripIds, ...invitedTripIds, ...sharedTripIds])];
   const tripCount = allTripIds.length;
 
-  const allCountries = new Set<string>();
-
-  if (allTripIds.length > 0) {
-    // Countries from trip_days (either endpoint of a day's segment)
-    const dayCountryRows = await db
-      .selectDistinct({ cityFromCountry: tripDaysTable.cityFromCountry, cityToCountry: tripDaysTable.cityToCountry })
-      .from(tripDaysTable)
-      .where(inArray(tripDaysTable.tripId, allTripIds));
-    for (const r of dayCountryRows) {
-      if (r.cityFromCountry) allCountries.add(r.cityFromCountry);
-      if (r.cityToCountry) allCountries.add(r.cityToCountry);
-    }
-
-    // Countries from itineraries linked to those trips
-    const itinRows = await db
-      .select({ countries: itinerariesTable.countries })
-      .from(tripsTable)
-      .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
-      .where(inArray(tripsTable.id, allTripIds));
-    for (const r of itinRows) if (r.countries) for (const c of r.countries) allCountries.add(c);
-  }
-
-  const countriesVisited = Array.from(allCountries).filter(Boolean).sort();
+  // "Países visitados" is a manual list (userCountriesTable), not auto-derived from trips —
+  // having a trip to a country doesn't imply it was visited (see task #139).
+  const visitedRows = await db
+    .select({ countryCode: userCountriesTable.countryCode })
+    .from(userCountriesTable)
+    .where(and(eq(userCountriesTable.userId, userId), eq(userCountriesTable.status, "visitado")));
+  const countriesVisited = visitedRows
+    .map(r => COUNTRY_NAME_BY_CODE[r.countryCode])
+    .filter((n): n is string => !!n)
+    .sort();
 
   res.json({ id: me.id, name: me.name, email: me.email, createdAt: me.createdAt, tripCount, countriesVisited });
+});
+
+// ─── Mis países (visitados / objetivo) ─────────────────────────────────────
+
+router.get("/me/countries", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const rows = await db
+    .select({ countryCode: userCountriesTable.countryCode, status: userCountriesTable.status })
+    .from(userCountriesTable)
+    .where(eq(userCountriesTable.userId, userId));
+
+  res.json(rows.map(r => ({
+    countryCode: r.countryCode,
+    countryName: COUNTRY_NAME_BY_CODE[r.countryCode] ?? r.countryCode,
+    status: r.status,
+  })));
+});
+
+router.post("/me/countries", requireRoles("traveler"), validate(UserCountryInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const { countryCode, status } = req.body as { countryCode: string; status: "visitado" | "objetivo" };
+
+  const [existing] = await db
+    .select({ status: userCountriesTable.status })
+    .from(userCountriesTable)
+    .where(and(eq(userCountriesTable.userId, userId), eq(userCountriesTable.countryCode, countryCode)));
+
+  if (existing) {
+    res.status(409).json({ error: "AlreadyClassified", status: existing.status });
+    return;
+  }
+
+  const [row] = await db
+    .insert(userCountriesTable)
+    .values({ userId, countryCode, status })
+    .returning();
+
+  res.status(201).json({ countryCode: row.countryCode, countryName: COUNTRY_NAME_BY_CODE[row.countryCode] ?? row.countryCode, status: row.status });
+});
+
+router.patch("/me/countries/:countryCode", requireRoles("traveler"), validate(UserCountryStatusUpdateSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const countryCode = (Array.isArray(req.params.countryCode) ? req.params.countryCode[0] : req.params.countryCode).toUpperCase();
+  const { status } = req.body as { status: "visitado" | "objetivo" };
+
+  const [row] = await db
+    .update(userCountriesTable)
+    .set({ status })
+    .where(and(eq(userCountriesTable.userId, userId), eq(userCountriesTable.countryCode, countryCode)))
+    .returning();
+
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+
+  res.json({ countryCode: row.countryCode, countryName: COUNTRY_NAME_BY_CODE[row.countryCode] ?? row.countryCode, status: row.status });
+});
+
+router.delete("/me/countries/:countryCode", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const countryCode = (Array.isArray(req.params.countryCode) ? req.params.countryCode[0] : req.params.countryCode).toUpperCase();
+
+  const [row] = await db
+    .delete(userCountriesTable)
+    .where(and(eq(userCountriesTable.userId, userId), eq(userCountriesTable.countryCode, countryCode)))
+    .returning();
+
+  if (!row) { res.status(404).json({ error: "Not found" }); return; }
+
+  res.status(204).send();
 });
 
 router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
@@ -1211,6 +1269,55 @@ router.get("/me/trips/:tripId/travel-advisories", requireRoles("traveler"), asyn
   }
 
   res.json({ international: true, advisories });
+});
+
+// ─── Países del viaje aún sin clasificar (para el modal al crear/unirse) ────
+router.get("/me/trips/:tripId/countries", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await getTripChecklistAccess(tripId, userId);
+  if (access === false) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  const [trip] = await db
+    .select({ itineraryId: tripsTable.itineraryId })
+    .from(tripsTable)
+    .where(eq(tripsTable.id, tripId));
+
+  const countryNames = new Set<string>();
+
+  const dayCountryRows = await db
+    .selectDistinct({ cityFromCountry: tripDaysTable.cityFromCountry, cityToCountry: tripDaysTable.cityToCountry })
+    .from(tripDaysTable)
+    .where(eq(tripDaysTable.tripId, tripId));
+  for (const r of dayCountryRows) {
+    if (r.cityFromCountry) countryNames.add(r.cityFromCountry);
+    if (r.cityToCountry) countryNames.add(r.cityToCountry);
+  }
+
+  if (trip?.itineraryId) {
+    const [itin] = await db
+      .select({ countries: itinerariesTable.countries })
+      .from(itinerariesTable)
+      .where(eq(itinerariesTable.id, trip.itineraryId));
+    if (itin?.countries) for (const c of itin.countries) countryNames.add(c);
+  }
+
+  const alreadyClassified = new Set(
+    (await db
+      .select({ countryCode: userCountriesTable.countryCode })
+      .from(userCountriesTable)
+      .where(eq(userCountriesTable.userId, userId))
+    ).map(r => r.countryCode),
+  );
+
+  const countries = Array.from(countryNames)
+    .filter(Boolean)
+    .map(name => ({ countryCode: COUNTRY_CODE_BY_NAME[name], countryName: name }))
+    .filter((c): c is { countryCode: string; countryName: string } => !!c.countryCode && !alreadyClassified.has(c.countryCode))
+    .sort((a, b) => a.countryName.localeCompare(b.countryName, "es"));
+
+  res.json(countries);
 });
 
 // ─── Helper: verify the requesting user is the trip owner OR has full permission ─

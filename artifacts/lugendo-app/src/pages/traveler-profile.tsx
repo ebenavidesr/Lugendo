@@ -1,6 +1,8 @@
 import { Link } from "wouter";
 import { useGetMyProfile } from "@workspace/api-client-react";
-import { MapPin, Globe, Luggage, Calendar, ArrowLeft, User } from "lucide-react";
+import { Globe, Luggage, Calendar, ArrowLeft, User } from "lucide-react";
+import { MyCountriesSection } from "@/components/my-countries-section";
+import { MyCountriesMap } from "@/components/my-countries-map";
 
 function avatarColor(name: string): string {
   const colors = [
@@ -96,42 +98,13 @@ export default function TravelerProfile() {
         />
       </div>
 
-      {/* Countries visited */}
-      <div className="bg-card border border-border rounded-[14px] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <MapPin className="w-4 h-4" style={{ color: "#C4793A" }} />
-          <h2 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>
-            Países visitados
-          </h2>
-        </div>
+      {/* Mis países */}
+      <MyCountriesSection />
 
-        {profile.countriesVisited.length === 0 ? (
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-              style={{ background: "#FAEEE4" }}>
-              <Globe className="w-5 h-5" style={{ color: "#C4793A" }} />
-            </div>
-            <p className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>
-              Todavía sin destinos
-            </p>
-            <p className="text-[12px] text-muted-foreground max-w-xs">
-              Los países de tus viajes aparecerán aquí cuando tengas viajes con destinos asignados.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {profile.countriesVisited.map(country => (
-              <span
-                key={country}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium"
-                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
-              >
-                <MapPin className="w-3 h-3" />
-                {country}
-              </span>
-            ))}
-          </div>
-        )}
+      {/* Mapa de mis países */}
+      <div className="space-y-2">
+        <h2 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Mapa de mis países</h2>
+        <MyCountriesMap />
       </div>
     </div>
   );

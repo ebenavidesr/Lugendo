@@ -6,6 +6,25 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #139 — Países visitados y países objetivo del viajero: listas editables + mapa de POIs (2026-07-27)
+- [x] Backend: tabla `user_countries` (Drizzle) con FK a `users`, `country_code` (ISO-2), `status` (`visitado`/`objetivo`), constraint único `(user_id, country_code)`; migración `0018_flawless_reavers.sql` generada y aplicada en Neon
+- [x] Dataset de países reubicado de `lib/api-client-react` a `lib/db/src/countries.ts` (accesible también desde el backend vía subpath `@workspace/db/countries`), con mapas `COUNTRY_CODE_BY_NAME`/`COUNTRY_NAME_BY_CODE`; `api-client-react` re-exporta para no romper el combobox de país existente
+- [x] Endpoints `GET/POST/PATCH/DELETE /me/countries` y `GET /me/trips/{tripId}/countries` (países del viaje aún sin clasificar, para el modal), documentados en OpenAPI y regenerados con Orval
+- [x] `GET /me/profile`: `countriesVisited` deja de auto-derivarse de los viajes del usuario y ahora refleja solo los países marcados manualmente como "visitado" (tener un viaje a un país ya no implica marcarlo como visitado)
+- [x] Frontend: sección "Mis países" en `/traveler/profile` (chips con bandera + nombre + quitar, selector de país reutilizando `CountrySelect`, "Marcar como visitado" en la lista Objetivo, aviso de mover si el país ya está en la otra lista)
+- [x] Modal no bloqueante tras crear un viaje propio o unirse (invitación o compartido) que pregunta, país por país, "Ya lo he visitado / Quiero visitarlo / No añadir" — se puede cerrar sin guardar nada
+- [x] Mapa de coropleta "Mapa de mis países" (Mapbox GL, GeoJSON estático de fronteras — Natural Earth 110m, sin tileset de pago), colorea el país completo en Terracota (visitado) / Índigo (objetivo), popup con acción rápida
+- [x] `pnpm run typecheck` limpio (api-server, lugendo-app, libs)
+- [ ] **No se pudo probar visualmente en local** — mismo problema de entorno preexistente y no relacionado que en tareas anteriores (rollup/dev server), y además el `.env` local no se carga automáticamente (nada en el código hace `dotenv`) ni el dev server de Vite tiene proxy a `/api`; anotado como posible tarea aparte
+- [ ] Añadir un país a "Visitados" y a "Quiero visitar" desde el perfil, y confirmar que aparece/desaparece sin recargar
+- [ ] Intentar añadir un país que ya está en la otra lista → ofrece moverlo, no duplica
+- [ ] "Marcar como visitado" sobre un país de la lista Objetivo lo mueve correctamente
+- [ ] Crear un viaje nuevo → aparece el modal con los países correctos del itinerario, sin los ya clasificados
+- [ ] Aceptar una invitación de agencia y un código de viaje compartido → el modal también aparece en ambos casos
+- [ ] Cerrar el modal sin elegir nada, y elegir "No añadir" en algún país → no se guarda nada
+- [ ] El mapa pinta el país completo (no un pin) con el color correcto, y el popup permite "Marcar como visitado"
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+
 ### #127 — Botón "Expandir/Colapsar todos" en el acordeón de días (2026-07-26)
 - [x] Back office (viajes, `trip-detail.tsx`) y back office (itinerarios, `itinerary-detail.tsx`) ya tenían el botón implementado desde antes; se corrigió su lógica para que solo muestre "Colapsar todos" cuando **todos** los días están expandidos (antes bastaba con que hubiera uno solo expandido)
 - [x] Pasaporte del viajero (`traveler-trip.tsx`, pestaña Itinerario): añadido el botón "Expandir todos" / "Colapsar todos", que antes no existía en esta vista

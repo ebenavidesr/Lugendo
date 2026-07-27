@@ -2300,6 +2300,66 @@ export const GetTripTravelAdvisoriesResponse = zod.object({
 
 
 /**
+ * @summary List the logged-in traveler's manually classified countries (visitados / objetivo)
+ */
+export const ListMyCountriesResponseItem = zod.object({
+  "countryCode": zod.string(),
+  "countryName": zod.string(),
+  "status": zod.enum(['visitado', 'objetivo'])
+})
+export const ListMyCountriesResponse = zod.array(ListMyCountriesResponseItem)
+
+
+/**
+ * @summary Add a country to one of the traveler's lists
+ */
+export const AddMyCountryBody = zod.object({
+  "countryCode": zod.string(),
+  "status": zod.enum(['visitado', 'objetivo'])
+})
+
+
+/**
+ * @summary Change the status of a classified country (e.g. objetivo -> visitado, or move between lists)
+ */
+export const UpdateMyCountryStatusParams = zod.object({
+  "countryCode": zod.coerce.string()
+})
+
+export const UpdateMyCountryStatusBody = zod.object({
+  "status": zod.enum(['visitado', 'objetivo'])
+})
+
+export const UpdateMyCountryStatusResponse = zod.object({
+  "countryCode": zod.string(),
+  "countryName": zod.string(),
+  "status": zod.enum(['visitado', 'objetivo'])
+})
+
+
+/**
+ * @summary Remove a country from the traveler's lists
+ */
+export const RemoveMyCountryParams = zod.object({
+  "countryCode": zod.coerce.string()
+})
+
+
+/**
+ * @summary Countries derived from a trip's itinerary that the traveler hasn't classified yet (for the post-create/join modal)
+ */
+export const GetMyTripCountriesParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const GetMyTripCountriesResponseItem = zod.object({
+  "countryCode": zod.string(),
+  "countryName": zod.string()
+})
+export const GetMyTripCountriesResponse = zod.array(GetMyTripCountriesResponseItem)
+
+
+/**
  * @summary List the agency's checklist templates
  */
 export const ListChecklistTemplatesResponseItem = zod.object({

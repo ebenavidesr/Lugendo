@@ -1254,6 +1254,67 @@ export interface TripTravelAdvisoriesResponse {
   advisories: TripCountryAdvisory[];
 }
 
+export type UserCountryStatus = typeof UserCountryStatus[keyof typeof UserCountryStatus];
+
+
+export const UserCountryStatus = {
+  visitado: 'visitado',
+  objetivo: 'objetivo',
+} as const;
+
+export interface UserCountry {
+  countryCode: string;
+  countryName: string;
+  status: UserCountryStatus;
+}
+
+export type UserCountryInputStatus = typeof UserCountryInputStatus[keyof typeof UserCountryInputStatus];
+
+
+export const UserCountryInputStatus = {
+  visitado: 'visitado',
+  objetivo: 'objetivo',
+} as const;
+
+export interface UserCountryInput {
+  countryCode: string;
+  status: UserCountryInputStatus;
+}
+
+export type UserCountryStatusUpdateStatus = typeof UserCountryStatusUpdateStatus[keyof typeof UserCountryStatusUpdateStatus];
+
+
+export const UserCountryStatusUpdateStatus = {
+  visitado: 'visitado',
+  objetivo: 'objetivo',
+} as const;
+
+export interface UserCountryStatusUpdate {
+  status: UserCountryStatusUpdateStatus;
+}
+
+/**
+ * The status the country is already classified under
+ */
+export type UserCountryConflictStatus = typeof UserCountryConflictStatus[keyof typeof UserCountryConflictStatus];
+
+
+export const UserCountryConflictStatus = {
+  visitado: 'visitado',
+  objetivo: 'objetivo',
+} as const;
+
+export interface UserCountryConflict {
+  error: string;
+  /** The status the country is already classified under */
+  status: UserCountryConflictStatus;
+}
+
+export interface TripCountryCandidate {
+  countryCode: string;
+  countryName: string;
+}
+
 /**
  * public objects are served unauthenticated from /storage/public-objects/*; private objects (default) require auth + per-feature ACL
  */

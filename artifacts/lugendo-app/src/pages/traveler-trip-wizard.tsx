@@ -31,6 +31,7 @@ import { TransportSelect } from "@/components/transport-select";
 import { CountrySelectSmall } from "@/components/country-select";
 import { getApiErrorMessage } from "@/lib/utils";
 import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
+import { TripCountryClaimModal } from "@/components/trip-country-claim-modal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -116,6 +117,7 @@ export default function TravelerTripWizard() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [pendingClaim, setPendingClaim] = useState<{ tripId: number; navigateTo: string } | null>(null);
   const [step, setStep] = useState<Step>(1);
   const [data, setData] = useState<WizardData>({
     origin: null,
@@ -349,20 +351,20 @@ export default function TravelerTripWizard() {
     setIsJoining(true);
     try {
       // Try agency invitation first
-      await acceptInvitation.mutateAsync({ code });
+      const invitation = await acceptInvitation.mutateAsync({ code });
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
       toast({ title: "¡Te has unido al viaje correctamente!" });
-      navigate("/traveler");
+      setPendingClaim({ tripId: invitation.tripId, navigateTo: "/traveler" });
       return;
     } catch {
       // If not found as agency invitation, try personal trip share
     }
     try {
-      await acceptShare.mutateAsync({ shareCode: code });
+      const share = await acceptShare.mutateAsync({ shareCode: code });
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
       qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
       toast({ title: "¡Viaje compartido añadido correctamente!" });
-      navigate("/traveler");
+      setPendingClaim({ tripId: share.tripId, navigateTo: "/traveler" });
     } catch {
       toast({ variant: "destructive", title: "Código no válido o ya utilizado" });
     } finally {
@@ -465,7 +467,7 @@ export default function TravelerTripWizard() {
 
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
       toast({ title: "¡Viaje creado correctamente!" });
-      navigate(`/traveler/trips/${trip.id}`);
+      setPendingClaim({ tripId: trip.id, navigateTo: `/traveler/trips/${trip.id}` });
     } catch (err) {
       console.error("Error creating trip", err);
       toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al crear el viaje") });
@@ -1095,6 +1097,13 @@ export default function TravelerTripWizard() {
 
   return (
     <div className="p-6 max-w-2xl">
+      {pendingClaim && (
+        <TripCountryClaimModal
+          tripId={pendingClaim.tripId}
+          onDone={() => { const to = pendingClaim.navigateTo; setPendingClaim(null); navigate(to); }}
+        />
+      )}
+
       <div className="flex items-center gap-2 mb-5">
         <button onClick={() => navigate("/traveler")} className="text-[12px] text-muted-foreground hover:text-foreground">
           ← Volver a mis viajes

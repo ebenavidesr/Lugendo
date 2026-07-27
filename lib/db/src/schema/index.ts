@@ -11,3 +11,4 @@ export * from "./trip_documents";
 export * from "./checklists";
 export * from "./packing-lists";
 export * from "./travel-advisories";
+export * from "./user-countries";

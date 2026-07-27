@@ -2003,6 +2003,113 @@ paths:
               schema:
                 $ref: "#/components/schemas/TripTravelAdvisoriesResponse"
 
+  /me/countries:
+    get:
+      operationId: listMyCountries
+      tags: [traveler]
+      summary: List the logged-in traveler's manually classified countries (visitados / objetivo)
+      responses:
+        "200":
+          description: List of classified countries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserCountry"
+    post:
+      operationId: addMyCountry
+      tags: [traveler]
+      summary: Add a country to one of the traveler's lists
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCountryInput"
+      responses:
+        "201":
+          description: Country added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCountry"
+        "400":
+          description: Validation error
+        "409":
+          description: Country already classified in one of the traveler's lists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCountryConflict"
+
+  /me/countries/{countryCode}:
+    patch:
+      operationId: updateMyCountryStatus
+      tags: [traveler]
+      summary: Change the status of a classified country (e.g. objetivo -> visitado, or move between lists)
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCountryStatusUpdate"
+      responses:
+        "200":
+          description: Updated country
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCountry"
+        "400":
+          description: Validation error
+        "404":
+          description: Country not classified for this traveler
+    delete:
+      operationId: removeMyCountry
+      tags: [traveler]
+      summary: Remove a country from the traveler's lists
+      parameters:
+        - name: countryCode
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Country removed
+        "404":
+          description: Country not classified for this traveler
+
+  /me/trips/{tripId}/countries:
+    get:
+      operationId: getMyTripCountries
+      tags: [traveler]
+      summary: Countries derived from a trip's itinerary that the traveler hasn't classified yet (for the post-create/join modal)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unclassified countries for this trip
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripCountryCandidate"
+        "403":
+          description: Not authorized to view this trip
+
   /checklist-templates:
     get:
       operationId: listChecklistTemplates
@@ -4066,6 +4173,56 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TripCountryAdvisory"
+
+    UserCountry:
+      type: object
+      required: [countryCode, countryName, status]
+      properties:
+        countryCode:
+          type: string
+        countryName:
+          type: string
+        status:
+          type: string
+          enum: [visitado, objetivo]
+
+    UserCountryInput:
+      type: object
+      required: [countryCode, status]
+      properties:
+        countryCode:
+          type: string
+        status:
+          type: string
+          enum: [visitado, objetivo]
+
+    UserCountryStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [visitado, objetivo]
+
+    UserCountryConflict:
+      type: object
+      required: [error, status]
+      properties:
+        error:
+          type: string
+        status:
+          type: string
+          enum: [visitado, objetivo]
+          description: The status the country is already classified under
+
+    TripCountryCandidate:
+      type: object
+      required: [countryCode, countryName]
+      properties:
+        countryCode:
+          type: string
+        countryName:
+          type: string
 
     UploadUrlRequest:
       type: object

@@ -77,6 +77,7 @@ import type {
   TripChecklistItemInput,
   TripChecklistItemUpdate,
   TripChecklistSuggestions,
+  TripCountryCandidate,
   TripDay,
   TripDayActivityUpdate,
   TripDayUpdate,
@@ -99,6 +100,10 @@ import type {
   UploadUrlRequest,
   UploadUrlResponse,
   User,
+  UserCountry,
+  UserCountryConflict,
+  UserCountryInput,
+  UserCountryStatusUpdate,
   UserInput,
   UserUpdate
 } from './api.schemas';
@@ -6753,6 +6758,373 @@ export function useGetTripTravelAdvisories<TData = Awaited<ReturnType<typeof get
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetTripTravelAdvisoriesQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyCountriesUrl = () => {
+
+
+
+
+  return `/api/me/countries`
+}
+
+/**
+ * @summary List the logged-in traveler's manually classified countries (visitados / objetivo)
+ */
+export const listMyCountries = async ( options?: RequestInit): Promise<UserCountry[]> => {
+
+  return customFetch<UserCountry[]>(getListMyCountriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyCountriesQueryKey = () => {
+    return [
+    `/api/me/countries`
+    ] as const;
+    }
+
+
+export const getListMyCountriesQueryOptions = <TData = Awaited<ReturnType<typeof listMyCountries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyCountriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyCountries>>> = ({ signal }) => listMyCountries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyCountries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyCountriesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyCountries>>>
+export type ListMyCountriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the logged-in traveler's manually classified countries (visitados / objetivo)
+ */
+
+export function useListMyCountries<TData = Awaited<ReturnType<typeof listMyCountries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyCountriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddMyCountryUrl = () => {
+
+
+
+
+  return `/api/me/countries`
+}
+
+/**
+ * @summary Add a country to one of the traveler's lists
+ */
+export const addMyCountry = async (userCountryInput: UserCountryInput, options?: RequestInit): Promise<UserCountry> => {
+
+  return customFetch<UserCountry>(getAddMyCountryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userCountryInput,)
+  }
+);}
+
+
+
+
+export const getAddMyCountryMutationOptions = <TError = ErrorType<void | UserCountryConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyCountry>>, TError,{data: BodyType<UserCountryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addMyCountry>>, TError,{data: BodyType<UserCountryInput>}, TContext> => {
+
+const mutationKey = ['addMyCountry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addMyCountry>>, {data: BodyType<UserCountryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addMyCountry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddMyCountryMutationResult = NonNullable<Awaited<ReturnType<typeof addMyCountry>>>
+    export type AddMyCountryMutationBody = BodyType<UserCountryInput>
+    export type AddMyCountryMutationError = ErrorType<void | UserCountryConflict>
+
+    /**
+ * @summary Add a country to one of the traveler's lists
+ */
+export const useAddMyCountry = <TError = ErrorType<void | UserCountryConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyCountry>>, TError,{data: BodyType<UserCountryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addMyCountry>>,
+        TError,
+        {data: BodyType<UserCountryInput>},
+        TContext
+      > => {
+      return useMutation(getAddMyCountryMutationOptions(options));
+    }
+
+export const getUpdateMyCountryStatusUrl = (countryCode: string,) => {
+
+
+
+
+  return `/api/me/countries/${countryCode}`
+}
+
+/**
+ * @summary Change the status of a classified country (e.g. objetivo -> visitado, or move between lists)
+ */
+export const updateMyCountryStatus = async (countryCode: string,
+    userCountryStatusUpdate: UserCountryStatusUpdate, options?: RequestInit): Promise<UserCountry> => {
+
+  return customFetch<UserCountry>(getUpdateMyCountryStatusUrl(countryCode),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userCountryStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMyCountryStatusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCountryStatus>>, TError,{countryCode: string;data: BodyType<UserCountryStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyCountryStatus>>, TError,{countryCode: string;data: BodyType<UserCountryStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateMyCountryStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyCountryStatus>>, {countryCode: string;data: BodyType<UserCountryStatusUpdate>}> = (props) => {
+          const {countryCode,data} = props ?? {};
+
+          return  updateMyCountryStatus(countryCode,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyCountryStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyCountryStatus>>>
+    export type UpdateMyCountryStatusMutationBody = BodyType<UserCountryStatusUpdate>
+    export type UpdateMyCountryStatusMutationError = ErrorType<void>
+
+    /**
+ * @summary Change the status of a classified country (e.g. objetivo -> visitado, or move between lists)
+ */
+export const useUpdateMyCountryStatus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyCountryStatus>>, TError,{countryCode: string;data: BodyType<UserCountryStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyCountryStatus>>,
+        TError,
+        {countryCode: string;data: BodyType<UserCountryStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyCountryStatusMutationOptions(options));
+    }
+
+export const getRemoveMyCountryUrl = (countryCode: string,) => {
+
+
+
+
+  return `/api/me/countries/${countryCode}`
+}
+
+/**
+ * @summary Remove a country from the traveler's lists
+ */
+export const removeMyCountry = async (countryCode: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveMyCountryUrl(countryCode),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveMyCountryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyCountry>>, TError,{countryCode: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeMyCountry>>, TError,{countryCode: string}, TContext> => {
+
+const mutationKey = ['removeMyCountry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeMyCountry>>, {countryCode: string}> = (props) => {
+          const {countryCode} = props ?? {};
+
+          return  removeMyCountry(countryCode,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveMyCountryMutationResult = NonNullable<Awaited<ReturnType<typeof removeMyCountry>>>
+
+    export type RemoveMyCountryMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a country from the traveler's lists
+ */
+export const useRemoveMyCountry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyCountry>>, TError,{countryCode: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeMyCountry>>,
+        TError,
+        {countryCode: string},
+        TContext
+      > => {
+      return useMutation(getRemoveMyCountryMutationOptions(options));
+    }
+
+export const getGetMyTripCountriesUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/countries`
+}
+
+/**
+ * @summary Countries derived from a trip's itinerary that the traveler hasn't classified yet (for the post-create/join modal)
+ */
+export const getMyTripCountries = async (tripId: number, options?: RequestInit): Promise<TripCountryCandidate[]> => {
+
+  return customFetch<TripCountryCandidate[]>(getGetMyTripCountriesUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyTripCountriesQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/countries`
+    ] as const;
+    }
+
+
+export const getGetMyTripCountriesQueryOptions = <TData = Awaited<ReturnType<typeof getMyTripCountries>>, TError = ErrorType<void>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTripCountriesQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTripCountries>>> = ({ signal }) => getMyTripCountries(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTripCountries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyTripCountriesQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTripCountries>>>
+export type GetMyTripCountriesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Countries derived from a trip's itinerary that the traveler hasn't classified yet (for the post-create/join modal)
+ */
+
+export function useGetMyTripCountries<TData = Awaited<ReturnType<typeof getMyTripCountries>>, TError = ErrorType<void>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTripCountries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyTripCountriesQueryOptions(tripId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

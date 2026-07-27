@@ -127,6 +127,13 @@
       "when": 1784963430096,
       "tag": "0017_aberrant_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1785099674814,
+      "tag": "0018_flawless_reavers",
+      "breakpoints": true
     }
   ]
 }
