@@ -72,7 +72,8 @@
 | #132 | Analizar PDF de itinerario con input nativo (vision/file) en vez de texto plano extraído — en curso, pendiente de validar contra documentos reales | 🟡 Media | Itinerarios · IA | Yo |
 | #133 | Reestructurar `Dockerfile` para copiar `package.json`/lockfiles antes de `pnpm install` (aprovechar cache de capas de Docker, deploys más rápidos) — en curso, pendiente de validar en Railway | 🟢 Baja | Infraestructura | Yo |
 | #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
-| — | Reconciliar la numeración de tareas entre `BACKLOG.md` y el board de Notion — han divergido (ej. la fila #127 de este archivo es la cuenta OpenAI, pero en Notion #127 es "Botón expandir/colapsar todos los días") | 🟢 Baja | General | Yo |
+| #140 | Arreglar entorno de desarrollo local: el build de Vite falla por falta del binario nativo `@rollup/rollup-darwin-arm64`, ningún paquete carga `.env` automáticamente (falta `dotenv`/`--env-file`), y el dev server de Vite no tiene proxy a `/api` — bloquea probar cambios en el navegador local (visto en #126, fix teclado iOS y #139) | 🟡 Media | Infraestructura | Tú |
+| — | Reconciliar la numeración de tareas entre `BACKLOG.md` y el board de Notion — han divergido (ej. la fila #127 de este archivo es la cuenta OpenAI, pero en Notion #127 es "Botón expandir/colapsar todos los días"); #140 usa la siguiente numeración libre en `BACKLOG.md` ya que #139 quedó ocupado en Notion por la tarea de países del viajero | 🟢 Baja | General | Yo |
 
 ---
 
