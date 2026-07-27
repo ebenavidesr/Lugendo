@@ -19,6 +19,11 @@ const OBJETIVO_COLOR = "#3D2F6B"; // Índigo
 const UNSET_COLOR = "rgba(0,0,0,0)";
 
 function buildFillColorExpr(countries: UserCountry[]) {
+  // A "match" expression needs at least one label/output pair before the fallback --
+  // with zero classified countries (e.g. on first load, before /me/countries resolves)
+  // an empty match is invalid and map.addLayer/setPaintProperty throws, which silently
+  // kills the whole fill layer (no country ever renders, not even uncolored borders).
+  if (countries.length === 0) return UNSET_COLOR;
   const stops: string[] = [];
   for (const c of countries) {
     stops.push(c.countryCode, c.status === "visitado" ? VISITADO_COLOR : OBJETIVO_COLOR);

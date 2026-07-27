@@ -128,6 +128,12 @@ function CountryList({ status, countries }: { status: "visitado" | "objetivo"; c
         <div className="flex items-center gap-2">
           <Icon className="w-4 h-4" style={{ color: meta.fg }} />
           <h2 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>{meta.label}</h2>
+          <span
+            className="text-[11px] font-semibold rounded-full px-2 py-0.5"
+            style={{ background: meta.bg, color: meta.fg }}
+          >
+            {countries.length}
+          </span>
         </div>
         <AddCountryButton status={status} existingCodes={existingCodes} />
       </div>
@@ -176,8 +182,9 @@ export function MyCountriesSection() {
   }
 
   const all = countries ?? [];
-  const visited = all.filter(c => c.status === "visitado");
-  const target = all.filter(c => c.status === "objetivo");
+  const byName = (a: UserCountry, b: UserCountry) => a.countryName.localeCompare(b.countryName, "es");
+  const visited = all.filter(c => c.status === "visitado").sort(byName);
+  const target = all.filter(c => c.status === "objetivo").sort(byName);
 
   return (
     <div className="space-y-3">

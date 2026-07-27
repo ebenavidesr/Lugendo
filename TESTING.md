@@ -25,6 +25,13 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] El mapa pinta el país completo (no un pin) con el color correcto, y el popup permite "Marcar como visitado"
 - [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
 
+**Feedback de QA (2026-07-27): 2 mejoras + 1 bug**
+- [x] Bug — "los países no aparecen en el mapa": causa raíz identificada — `buildFillColorExpr` generaba una expresión `match` de Mapbox inválida (sin ningún par valor→color) cuando la lista de países del usuario está vacía en el momento en que se crea la capa (carrera de carga: el GeoJSON local suele resolver antes que `/me/countries`), lo que hacía fallar `map.addLayer` y ningún país llegaba a pintarse, ni siquiera el contorno sin colorear. Corregido: si no hay países clasificados, usa un color de relleno constante en vez de un `match` vacío
+- [x] Mejora — Ordenar los nombres de país alfabéticamente en "Mis países" (`localeCompare` con locale "es", ya lo hacía el modal de países del viaje)
+- [x] Mejora — Contador de países junto al título de cada lista ("Visitados N" / "Quiero visitar N")
+- [x] `pnpm run typecheck` limpio tras los 3 cambios
+- [ ] **No se pudo probar visualmente en local** (mismo gap de entorno, tarea #147) — validar en producción: el mapa pinta países al menos con la lista vacía (sin crash) y con países ya clasificados; las listas aparecen ordenadas A-Z con el contador correcto
+
 ### #127 — Botón "Expandir/Colapsar todos" en el acordeón de días (2026-07-26)
 - [x] Back office (viajes, `trip-detail.tsx`) y back office (itinerarios, `itinerary-detail.tsx`) ya tenían el botón implementado desde antes; se corrigió su lógica para que solo muestre "Colapsar todos" cuando **todos** los días están expandidos (antes bastaba con que hubiera uno solo expandido)
 - [x] Pasaporte del viajero (`traveler-trip.tsx`, pestaña Itinerario): añadido el botón "Expandir todos" / "Colapsar todos", que antes no existía en esta vista
