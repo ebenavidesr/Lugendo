@@ -86,6 +86,7 @@
 | #145 | Sistema de emails transaccionales (Resend): verificación, notificaciones, invitaciones y alertas | 🔴 Alta | Infraestructura | Tú |
 | #146 | App móvil iOS/Android con React Native/Expo (renumerado desde un #143 duplicado en Notion) | 🟢 Baja | Infraestructura | Tú |
 | #147 | Arreglar entorno de desarrollo local: el build de Vite falla por falta del binario nativo `@rollup/rollup-darwin-arm64`, ningún paquete carga `.env` automáticamente (falta `dotenv`/`--env-file`), y el dev server de Vite no tiene proxy a `/api` — en QA, pendiente de validar en otra máquina | 🟡 Media | Infraestructura | Tú |
+| #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
 | — | Actividades enriquecidas con más datos (sin número en Notion) | 🔴 Alta | — | — |
 | — | Al subir un itinerario por PDF, el texto desborda el marco donde debería quedar contenido — en curso (sin número en Notion) | 🟡 Media | — | — |
 | — | Arreglar la funcionalidad de búsqueda por mapa (sin número en Notion) | 🟢 Baja | — | — |
