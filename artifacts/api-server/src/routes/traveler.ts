@@ -23,6 +23,7 @@ import {
   CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
   TripPackingItemInputSchema, TripPackingItemUpdateSchema,
   UserCountryInputSchema, UserCountryStatusUpdateSchema,
+  TripClassificationUpdateSchema,
 } from "../lib/schemas";
 import { tripDocumentsTable, tripPackingItemsTable, countryAdvisoriesTable, tripAdvisoryViewsTable } from "@workspace/db";
 import { ObjectStorageService } from "../lib/objectStorage";
@@ -31,6 +32,12 @@ import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advi
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { sanitizeNoteHtml } from "../lib/sanitize";
 import { geocodeCity } from "../lib/geocoding";
+import {
+  defaultDateBasedClassification, ensureTripClassification,
+  ensureTripClassificationByDates, getTripClassification,
+} from "../lib/trip-classification";
+import { tripClassificationsTable } from "@workspace/db";
+import type { TripClassificationValue } from "@workspace/db";
 
 const objectStorage = new ObjectStorageService();
 
@@ -288,11 +295,6 @@ async function mergeItineraryFallbacks(
 }
 
 // ─── List trips (agency-invited + own personal trips) ───────────────────────
-// Statuses where a shared trip belongs in "Mis viajes" (pre-start / travel companion).
-// Ongoing/completed/cancelled shared trips go to "Compartidos" instead.
-// Pre-start statuses: shared trips with these statuses appear in "Mis viajes" (travel companion).
-// active/finished/cancelled trips stay in "Compartidos" (reference/inspiration context).
-const SHARED_MINE_STATUSES = ["draft", "scheduled"] as const;
 
 router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
@@ -432,11 +434,12 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     .from(tripsTable)
     .where(eq(tripsTable.ownerId, userId));
 
-  // 3. Accepted shares where the trip hasn't started yet → appear here, not in "Compartidos"
+  // 3. Accepted shares — always included here now, classified as "compartido" by
+  // default (task #140); the traveler can reclassify to Programado/Realizado manually.
   const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = meRow?.email ?? "";
 
-  const sharedMineRows = await db
+  const sharedRows = await db
     .select({
       id: tripsTable.id,
       name: tripsTable.name,
@@ -450,10 +453,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       createdAt: tripsTable.createdAt,
     })
     .from(tripSharesTable)
-    .innerJoin(tripsTable, and(
-      eq(tripsTable.id, tripSharesTable.tripId),
-      inArray(tripsTable.status, [...SHARED_MINE_STATUSES]),
-    ))
+    .innerJoin(tripsTable, eq(tripsTable.id, tripSharesTable.tripId))
     .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
     .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
     .where(and(
@@ -463,6 +463,12 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       ),
       eq(tripSharesTable.status, "accepted"),
     ));
+
+  const classificationRows = await db
+    .select({ tripId: tripClassificationsTable.tripId, classification: tripClassificationsTable.classification })
+    .from(tripClassificationsTable)
+    .where(eq(tripClassificationsTable.userId, userId));
+  const classificationByTripId = new Map(classificationRows.map(r => [r.tripId, r.classification]));
 
   const trips = [];
 
@@ -491,6 +497,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       countries: row.countries ?? [],
       agencyName: row.agencyName ?? null,
       agencyLogoUrl: row.agencyLogoUrl ?? null,
+      classification: classificationByTripId.get(row.id) ?? defaultDateBasedClassification(row.startDate, row.endDate),
       createdAt: row.createdAt.toISOString(),
     });
   }
@@ -504,20 +511,22 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       agencyName: null,
       agencyLogoUrl: null,
       countries: [],
+      classification: classificationByTripId.get(row.id) ?? defaultDateBasedClassification(row.startDate, row.endDate),
       createdAt: row.createdAt.toISOString(),
     });
   }
 
-  // Add shared trips that are pre-start (travel companion context)
+  // Add shared trips
   const seenIds = new Set(trips.map(t => t.id));
-  for (const row of sharedMineRows) {
-    if (seenIds.has(row.id)) continue; // avoid duplicates with owned trips
+  for (const row of sharedRows) {
+    if (seenIds.has(row.id)) continue; // avoid duplicates with owned/invited trips
     trips.push({
       ...row,
       isPersonal: row.ownerId != null && row.agencyName == null,
       countries: row.countries ?? [],
       agencyName: row.agencyName ?? null,
       agencyLogoUrl: row.agencyLogoUrl ?? null,
+      classification: classificationByTripId.get(row.id) ?? "compartido",
       createdAt: row.createdAt.toISOString(),
     });
   }
@@ -567,6 +576,9 @@ router.post("/me/trips", requireRoles("traveler"), validate(PersonalTripInputSch
     await copyItineraryDaysToTrip(trip.id, Number(itineraryId), userId);
   }
 
+  const classification = defaultDateBasedClassification(trip.startDate, trip.endDate ?? null);
+  await ensureTripClassification(userId, trip.id, classification);
+
   res.status(201).json({
     id: trip.id,
     name: trip.name,
@@ -577,6 +589,7 @@ router.post("/me/trips", requireRoles("traveler"), validate(PersonalTripInputSch
     agencyName: null,
     agencyLogoUrl: null,
     countries: [],
+    classification,
     createdAt: trip.createdAt.toISOString(),
   });
 });
@@ -703,6 +716,9 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     }
   }
 
+  const classification = (await getTripClassification(userId, tripId))
+    ?? (ownedTrip || invite ? defaultDateBasedClassification(row.startDate, row.endDate) : "compartido");
+
   res.json({
     ...row,
     isPersonal: row.ownerId != null && row.agencyName == null,
@@ -710,10 +726,58 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
     travelerCount,
+    classification,
     createdAt: row.createdAt.toISOString(),
     daysSource: effectiveTripDays.length > 0 ? "trip" : "itinerary",
     days: days.map(d => ({ ...d, createdAt: (d.createdAt as Date).toISOString() })),
   });
+});
+
+// ─── Update trip classification (Programado / Realizado / Compartido) ───────
+// Editable by the traveler at any time, regardless of how access was granted
+// (own trip, agency invitation, or share) — see task #140 decisions.
+router.patch("/me/trips/:tripId/classification", requireRoles("traveler"), validate(TripClassificationUpdateSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { classification } = req.body as { classification: TripClassificationValue };
+
+  // Access allowed if: invited traveler OR trip owner OR accepted share
+  const [invite] = await db
+    .select({ id: invitationsTable.id })
+    .from(invitationsTable)
+    .where(and(
+      eq(invitationsTable.travelerId, userId),
+      eq(invitationsTable.tripId, tripId),
+      eq(invitationsTable.status, "accepted"),
+    ));
+  const [ownedTrip] = await db
+    .select({ id: tripsTable.id })
+    .from(tripsTable)
+    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
+  const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
+  const [acceptedShare] = await db
+    .select({ id: tripSharesTable.id })
+    .from(tripSharesTable)
+    .where(and(
+      eq(tripSharesTable.tripId, tripId),
+      or(
+        eq(tripSharesTable.sharedWithUserId, userId),
+        eq(tripSharesTable.sharedWithEmail, me?.email ?? ""),
+      ),
+      eq(tripSharesTable.status, "accepted"),
+    ));
+
+  if (!invite && !ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db
+    .insert(tripClassificationsTable)
+    .values({ userId, tripId, classification })
+    .onConflictDoUpdate({
+      target: [tripClassificationsTable.userId, tripClassificationsTable.tripId],
+      set: { classification, updatedAt: new Date() },
+    });
+
+  res.json({ tripId, classification });
 });
 
 // ─── Update personal trip ─────────────────────────────────────────────────────
@@ -1422,15 +1486,20 @@ router.delete("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), asy
   res.sendStatus(204);
 });
 
-// ─── List trips shared WITH me ────────────────────────────────────────────────
+// ─── List trips shared WITH me (pending invitations to accept) ──────────────
+// Accepted shares are no longer listed here — they show up in /me/trips instead,
+// classified as "compartido" by default (task #140).
 router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const me = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = me[0]?.email;
 
-  const emailFilter = or(
-    eq(tripSharesTable.sharedWithUserId, userId),
-    eq(tripSharesTable.sharedWithEmail, myEmail ?? ""),
+  const emailFilter = and(
+    or(
+      eq(tripSharesTable.sharedWithUserId, userId),
+      eq(tripSharesTable.sharedWithEmail, myEmail ?? ""),
+    ),
+    eq(tripSharesTable.status, "pending"),
   );
 
   const shares = await db.select().from(tripSharesTable).where(emailFilter);
@@ -1457,13 +1526,6 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
 
     if (!row) continue;
 
-    // Pending shares always appear here (user needs to accept them).
-    // Accepted shares only appear here when the trip is already started/done;
-    // pre-start trips (draft/upcoming/scheduled) are shown in "Mis viajes" instead.
-    const isAccepted = share.status === "accepted";
-    const tripIsPreStart = (SHARED_MINE_STATUSES as readonly string[]).includes(row.status ?? "");
-    if (isAccepted && tripIsPreStart) continue;
-
     result.push({
       shareId: share.id,
       shareCode: share.shareCode,
@@ -1480,6 +1542,9 @@ router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promi
         agencyName: row.agencyName ?? null,
         agencyLogoUrl: row.agencyLogoUrl ?? null,
         countries: row.countries ?? [],
+        // Preview only — pending shares aren't accepted yet, so there's no real
+        // classification row. It'll default to "compartido" once accepted (#140).
+        classification: "compartido" as const,
         createdAt: row.createdAt.toISOString(),
       },
     });
@@ -1692,6 +1757,11 @@ router.delete("/me/trips/:tripId/leave", requireRoles("traveler"), async (req, r
     eq(tripSharesTable.status, "accepted"),
   ));
 
+  await db.delete(tripClassificationsTable).where(and(
+    eq(tripClassificationsTable.userId, userId),
+    eq(tripClassificationsTable.tripId, tripId),
+  ));
+
   res.sendStatus(204);
 });
 
@@ -1718,6 +1788,11 @@ router.delete("/me/trips/:tripId/dismiss", requireRoles("traveler"), async (req,
     ),
   ));
 
+  await db.delete(tripClassificationsTable).where(and(
+    eq(tripClassificationsTable.userId, userId),
+    eq(tripClassificationsTable.tripId, tripId),
+  ));
+
   res.sendStatus(204);
 });
 
@@ -1735,6 +1810,10 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
     .set({ status: "accepted", sharedWithUserId: userId })
     .where(eq(tripSharesTable.id, share.id))
     .returning();
+
+  // Shares always default to "compartido" (see task #140 decisions) — the traveler
+  // can still reclassify to Programado/Realizado manually afterwards.
+  await ensureTripClassification(userId, share.tripId, "compartido");
 
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
 });

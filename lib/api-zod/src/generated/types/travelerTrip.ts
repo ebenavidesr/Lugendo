@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TravelerTripClassification } from './travelerTripClassification';
 import type { TravelerTripStatus } from './travelerTripStatus';
 
 export interface TravelerTrip {
@@ -25,5 +26,6 @@ export interface TravelerTrip {
   /** @nullable */
   agencyLogoUrl?: string | null;
   countries?: string[];
+  classification: TravelerTripClassification;
   createdAt: string;
 }

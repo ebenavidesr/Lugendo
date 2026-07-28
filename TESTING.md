@@ -6,6 +6,22 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #140 — Reclasificar vista de viajes del viajero: Programados / Realizados / Compartidos (2026-07-28)
+- [x] Investigación previa: no existe una única tabla "viajero-viaje" — el acceso se resuelve por 3 vías distintas (`trips.ownerId` para propios, `invitations` para agencia, `trip_shares` entre viajeros); se decidió con Quique crear una tabla nueva dedicada en vez de forzar la clasificación en una de las 3 existentes
+- [x] Backend: nueva tabla `trip_classifications` (Drizzle) con FK a `users`/`trips` (`onDelete: cascade`), enum `programado`/`realizado`/`compartido`, constraint único `(user_id, trip_id)`; migración `0019_clear_zaladane.sql` generada y aplicada en Neon
+- [x] Valor por defecto al ganar acceso a un viaje: fechas del viaje (pasado → `realizado`, futuro/en curso → `programado`) para viaje propio o invitación de agencia; siempre `compartido` para un share aceptado. Se engancha en los 4 puntos donde una invitación/share pasa a `accepted` (`auth.ts` login auto-accept, `auth.ts` registro con código, `invitations.ts` aceptar código, `traveler.ts` aceptar share) y en la creación de viaje propio
+- [x] Endpoint `PATCH /me/trips/{tripId}/classification` — el viajero puede cambiar la clasificación en cualquier momento, sin restricciones de flujo (incluye Programado/Realizado, no solo Compartido)
+- [x] `GET /me/trips` unificado: ahora incluye todos los viajes con acceso aceptado (propios + invitados + compartidos) con su `classification` efectiva; se elimina la lógica antigua `SHARED_MINE_STATUSES` basada en el `status` del viaje
+- [x] `GET /me/shared-trips` simplificado: solo devuelve invitaciones pendientes de aceptar (las aceptadas ya aparecen en `/me/trips`, clasificadas como `compartido` por defecto)
+- [x] Al salir de un viaje (`leave`) o descartarlo (`dismiss`) se borra también su fila de clasificación
+- [x] Frontend (`traveler-home.tsx`): 3 pestañas "Programados / Realizados / Compartidos" sustituyendo "Mis viajes / Compartidos", filtrando por `classification`; el panel de código de invitación e invitaciones pendientes se mantiene dentro de la pestaña Compartidos
+- [x] Frontend (`trip-detail-header.tsx` + `traveler-trip.tsx`): selector editable junto al badge de estado en la cabecera del viaje para cambiar la clasificación manualmente
+- [x] `lib/api-spec/openapi.yaml` + Orval: nuevo schema `TravelerTripClassification` y endpoint `PATCH /me/trips/{tripId}/classification` documentados y regenerados
+- [x] `pnpm run typecheck` limpio en todo el workspace
+- [x] Verificado en local (dev server, cuenta de viajero de prueba creada y eliminada tras la prueba): crear un viaje propio con fecha futura → aparece en "Programados"; cambiar su clasificación a "Realizado" desde el selector de la ficha → toast de confirmación y se mueve a "Realizados"; pestaña "Compartidos" muestra correctamente el panel de código de invitación y el empty state
+- [ ] Aceptar una invitación de agencia real y un share entre viajeros real → confirmar que quedan clasificados correctamente (agencia: Programado/Realizado según fechas; share: Compartido) — no probado end-to-end por falta de una segunda cuenta/agencia de prueba en este pase
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+
 ### #139 — Países visitados y países objetivo del viajero: listas editables + mapa de POIs (2026-07-27)
 - [x] Backend: tabla `user_countries` (Drizzle) con FK a `users`, `country_code` (ISO-2), `status` (`visitado`/`objetivo`), constraint único `(user_id, country_code)`; migración `0018_flawless_reavers.sql` generada y aplicada en Neon
 - [x] Dataset de países reubicado de `lib/api-client-react` a `lib/db/src/countries.ts` (accesible también desde el backend vía subpath `@workspace/db/countries`), con mapas `COUNTRY_CODE_BY_NAME`/`COUNTRY_NAME_BY_CODE`; `api-client-react` re-exporta para no romper el combobox de país existente

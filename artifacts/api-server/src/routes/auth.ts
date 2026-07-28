@@ -9,6 +9,7 @@ import { validate } from "../middlewares/validate";
 import { LoginInputSchema, RegisterInputSchema } from "../lib/schemas";
 import { sendApprovalRequestEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
+import { ensureTripClassificationByDates } from "../lib/trip-classification";
 
 const router: IRouter = Router();
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "ebenavidesr@gmail.com";
@@ -75,13 +76,18 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
   req.session.status = user.status;
 
   // Auto-accept any pending invitations for this email
-  await db
+  const newlyAcceptedInvites = await db
     .update(invitationsTable)
     .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })
     .where(and(
       eq(invitationsTable.email, user.email),
       eq(invitationsTable.status, "pending"),
-    ));
+    ))
+    .returning({ tripId: invitationsTable.tripId });
+
+  for (const invite of newlyAcceptedInvites) {
+    if (invite.tripId != null) await ensureTripClassificationByDates(user.id, invite.tripId);
+  }
 
   res.json({
     id: user.id,
@@ -133,6 +139,7 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
         .update(invitationsTable)
         .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })
         .where(eq(invitationsTable.id, invite.id));
+      await ensureTripClassificationByDates(user.id, invite.tripId);
     }
   }
 

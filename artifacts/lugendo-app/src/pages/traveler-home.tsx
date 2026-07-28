@@ -4,7 +4,7 @@ import {
   useListMyTrips, useListSharedWithMe, useAcceptTripShare,
   useDeleteTrip, useLeaveTrip, useDismissTrip,
 } from "@workspace/api-client-react";
-import type { TravelerTrip, TravelerTripStatus, SharedTripEntry } from "@workspace/api-client-react";
+import type { TravelerTrip, TravelerTripStatus, TravelerTripClassification, SharedTripEntry } from "@workspace/api-client-react";
 import { MapPin, ArrowRight, Plus, Users, Inbox, Check, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,23 +154,14 @@ function TripCard({
   );
 }
 
-// ── Shared-with-me tab ────────────────────────────────────────────────────────
+// ── Pending share invitations (shown inside the "Compartidos" tab) ───────────
 
-function SharedWithMeSection({
-  currentUserId,
-  onAction,
-}: {
-  currentUserId?: number;
-  onAction?: (action: TripAction) => void;
-}) {
-  const { data: entries, isLoading } = useListSharedWithMe();
+function PendingSharesPanel() {
+  const { data: pending, isLoading } = useListSharedWithMe();
   const acceptShare = useAcceptTripShare();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [code, setCode] = useState("");
-
-  const pending  = entries?.filter(e => e.status === "pending")  ?? [];
-  const accepted = entries?.filter(e => e.status === "accepted") ?? [];
 
   const handleAccept = (shareCode: string) => {
     acceptShare.mutate(
@@ -178,6 +169,7 @@ function SharedWithMeSection({
       {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
+          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
           toast({ title: "Viaje añadido a tus compartidos" });
         },
         onError: () => toast({ variant: "destructive", title: "No se pudo aceptar la invitación" }),
@@ -190,14 +182,6 @@ function SharedWithMeSection({
     handleAccept(code.trim().toUpperCase());
     setCode("");
   };
-
-  if (isLoading) return (
-    <div className="space-y-3">
-      {[...Array(2)].map((_, i) => (
-        <div key={i} className="h-28 bg-card border border-border rounded-[16px] animate-pulse" />
-      ))}
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -223,7 +207,11 @@ function SharedWithMeSection({
         </div>
       </div>
 
-      {pending.length > 0 && (
+      {isLoading && (
+        <div className="h-20 bg-card border border-border rounded-[16px] animate-pulse" />
+      )}
+
+      {!isLoading && pending && pending.length > 0 && (
         <div>
           <h3 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
             <Inbox className="w-3.5 h-3.5" /> Invitaciones pendientes ({pending.length})
@@ -260,51 +248,23 @@ function SharedWithMeSection({
           </div>
         </div>
       )}
-
-      {accepted.length > 0 && (
-        <div>
-          <h3 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" /> Compartidos conmigo ({accepted.length})
-          </h3>
-          <div className="space-y-3">
-            {accepted.map((entry: SharedTripEntry, idx) => (
-              <TripCard
-                key={entry.shareId}
-                trip={entry.trip}
-                idx={idx + 10}
-                currentUserId={currentUserId}
-                onAction={onAction}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {pending.length === 0 && accepted.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-14 text-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4"
-            style={{ background: "#EAE6F5" }}>
-            <Users className="w-6 h-6" style={{ color: "#3D2F6B" }} />
-          </div>
-          <h3 className="text-[16px] font-medium mb-1.5" style={{ color: "#2D1F0E" }}>
-            Todavía no tienes viajes compartidos
-          </h3>
-          <p className="text-[13px] text-muted-foreground max-w-xs">
-            Cuando alguien comparta un viaje contigo aparecerá aquí. También puedes introducir un código de invitación.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-type Tab = "mine" | "shared";
+type Tab = TravelerTripClassification;
+
+const TAB_LABELS: Record<Tab, string> = {
+  programado: "Programados",
+  realizado: "Realizados",
+  compartido: "Compartidos",
+};
 
 export default function TravelerHome() {
   const [, navigate] = useLocation();
-  const [tab, setTab] = useState<Tab>("mine");
+  const [tab, setTab] = useState<Tab>("programado");
   const { data: trips, isLoading } = useListMyTrips();
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -316,7 +276,8 @@ export default function TravelerHome() {
 
   const [pendingAction, setPendingAction] = useState<TripAction | null>(null);
 
-  const hasTrips = trips && trips.length > 0;
+  const tabTrips = trips?.filter(t => t.classification === tab) ?? [];
+  const hasTrips = tabTrips.length > 0;
 
   const handleAction = (action: TripAction) => {
     setPendingAction(action);
@@ -389,7 +350,7 @@ export default function TravelerHome() {
           <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>Mis viajes</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Tu pasaporte de aventuras</p>
         </div>
-        {tab === "mine" && (
+        {tab !== "compartido" && (
           <Button
             onClick={() => navigate("/traveler/trips/new")}
             size="sm"
@@ -404,73 +365,71 @@ export default function TravelerHome() {
       </div>
 
       <div className="flex gap-1 p-1 rounded-[10px] w-fit" style={{ background: "#ECD5B8" }}>
-        {([
-          { key: "mine",   label: "Mis viajes" },
-          { key: "shared", label: "Compartidos" },
-        ] as { key: Tab; label: string }[]).map(t => (
+        {(Object.keys(TAB_LABELS) as Tab[]).map(key => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={key}
+            onClick={() => setTab(key)}
             className="px-4 py-1.5 rounded-[8px] text-[13px] font-medium transition-all"
-            style={tab === t.key
+            style={tab === key
               ? { background: "#fff", color: "#2D1F0E", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }
               : { color: "#7A5C3A" }
             }
           >
-            {t.label}
+            {TAB_LABELS[key]}
           </button>
         ))}
       </div>
 
-      {tab === "mine" && (
-        <>
-          {isLoading && (
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-card border border-border rounded-[16px] h-40 animate-pulse" />
-              ))}
-            </div>
-          )}
+      {tab === "compartido" && <PendingSharesPanel />}
 
-          {!isLoading && !hasTrips && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-                style={{ background: "#FAEEE4" }}>
-                <MapPin className="w-7 h-7" style={{ color: "#C4793A" }} />
-              </div>
-              <h2 className="text-xl font-medium mb-2" style={{ color: "#2D1F0E" }}>
-                Todavía no tienes viajes
-              </h2>
-              <p className="text-sm text-muted-foreground max-w-xs mb-5">
-                Crea tu propio viaje o únete a uno de agencia con el código de invitación que recibirás por email.
-              </p>
-              <Button onClick={() => navigate("/traveler/trips/new")}
-                style={{ background: "var(--terra)", color: "#fff" }}>
-                <Plus className="w-4 h-4 mr-1.5" />
-                Crear mi primer viaje
-              </Button>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {trips?.map((trip: TravelerTrip, idx) => (
-              <TripCard
-                key={trip.id}
-                trip={trip}
-                idx={idx}
-                currentUserId={user?.id}
-                onAction={handleAction}
-              />
-            ))}
-          </div>
-        </>
+      {isLoading && (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-card border border-border rounded-[16px] h-40 animate-pulse" />
+          ))}
+        </div>
       )}
 
-      {tab === "shared" && (
-        <SharedWithMeSection
-          currentUserId={user?.id}
-          onAction={handleAction}
-        />
+      {!isLoading && !hasTrips && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{ background: "#FAEEE4" }}>
+            {tab === "compartido"
+              ? <Users className="w-7 h-7" style={{ color: "#C4793A" }} />
+              : <MapPin className="w-7 h-7" style={{ color: "#C4793A" }} />}
+          </div>
+          <h2 className="text-xl font-medium mb-2" style={{ color: "#2D1F0E" }}>
+            {tab === "programado" && "Todavía no tienes viajes programados"}
+            {tab === "realizado" && "Todavía no tienes viajes realizados"}
+            {tab === "compartido" && "Todavía no tienes viajes compartidos"}
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-xs mb-5">
+            {tab === "compartido"
+              ? "Cuando alguien comparta un viaje contigo aparecerá aquí, o introduce un código de invitación arriba."
+              : "Crea tu propio viaje o únete a uno de agencia con el código de invitación que recibirás por email."}
+          </p>
+          {tab !== "compartido" && (
+            <Button onClick={() => navigate("/traveler/trips/new")}
+              style={{ background: "var(--terra)", color: "#fff" }}>
+              <Plus className="w-4 h-4 mr-1.5" />
+              Crear mi primer viaje
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!isLoading && hasTrips && (
+        <div className="space-y-4">
+          {tabTrips.map((trip: TravelerTrip, idx) => (
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              idx={idx}
+              currentUserId={user?.id}
+              onAction={handleAction}
+            />
+          ))}
+        </div>
       )}
 
       {pendingAction && dialogContent && (

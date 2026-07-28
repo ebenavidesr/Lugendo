@@ -854,6 +854,28 @@ export interface DeleteTripResult {
   travelersAffected: number;
 }
 
+/**
+ * Traveler-editable classification shown as the 3 tabs in the traveler's trip list (task #140). Defaults from trip dates (programado/realizado) or "compartido" for shares, but the traveler can override it at any time.
+
+ */
+export type TravelerTripClassification = typeof TravelerTripClassification[keyof typeof TravelerTripClassification];
+
+
+export const TravelerTripClassification = {
+  programado: 'programado',
+  realizado: 'realizado',
+  compartido: 'compartido',
+} as const;
+
+export interface UpdateTripClassificationInput {
+  classification: TravelerTripClassification;
+}
+
+export interface TripClassificationResult {
+  tripId: number;
+  classification: TravelerTripClassification;
+}
+
 export type TravelerTripStatus = typeof TravelerTripStatus[keyof typeof TravelerTripStatus];
 
 
@@ -883,6 +905,7 @@ export interface TravelerTrip {
   /** @nullable */
   agencyLogoUrl?: string | null;
   countries?: string[];
+  classification: TravelerTripClassification;
   createdAt: string;
 }
 
@@ -977,6 +1000,7 @@ export interface TravelerTripDetail {
   description?: string | null;
   /** Number of accepted travelers (invitations) for this trip */
   travelerCount?: number;
+  classification: TravelerTripClassification;
   createdAt: string;
   days: TripDay[];
 }

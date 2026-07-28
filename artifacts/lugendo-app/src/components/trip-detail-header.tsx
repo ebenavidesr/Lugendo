@@ -4,7 +4,7 @@ import {
   MoreHorizontal, ShieldCheck, ListChecks, Luggage, StickyNote, Map as MapIcon, Check,
 } from "lucide-react";
 import { Link } from "wouter";
-import type { TravelerTripDetail, TravelerTripDetailStatus } from "@workspace/api-client-react";
+import type { TravelerTripDetail, TravelerTripDetailStatus, TravelerTripClassification } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -14,6 +14,13 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const CLASSIFICATION_LABELS: Record<TravelerTripClassification, string> = {
+  programado: "Programado",
+  realizado: "Realizado",
+  compartido: "Compartido",
+};
 
 export type Tab = "itinerary" | "travelers" | "safety" | "documents" | "checklist" | "packing" | "notes" | "map";
 
@@ -112,6 +119,7 @@ interface TripDetailHeaderProps {
   editMode?: boolean;
   onEditClick: () => void;
   onShareClick: () => void;
+  onClassificationChange: (classification: TravelerTripClassification) => void;
 }
 
 export function TripDetailHeader({
@@ -123,6 +131,7 @@ export function TripDetailHeader({
   editMode = false,
   onEditClick,
   onShareClick,
+  onClassificationChange,
 }: TripDetailHeaderProps) {
   const progress = computeProgress(trip.startDate, trip.endDate);
   const hotelCount = uniqueHotelCount(trip.days);
@@ -179,14 +188,27 @@ export function TripDetailHeader({
 
       {/* Main header content */}
       <div className="px-5 pt-3 pb-4">
-        {/* Status badge */}
-        <div className="mb-2">
+        {/* Status badge + classification (editable, task #140) */}
+        <div className="mb-2 flex items-center gap-2 flex-wrap">
           <span
             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
             style={{ background: s.bg, color: s.color }}
           >
             {s.label}
           </span>
+          <Select value={trip.classification} onValueChange={v => onClassificationChange(v as TravelerTripClassification)}>
+            <SelectTrigger
+              className="h-6 w-auto gap-1 border-none px-2.5 py-0.5 rounded-full text-[11px] font-medium [&>svg]:opacity-60 [&>svg]:h-3 [&>svg]:w-3"
+              style={{ background: "rgba(255,255,255,0.15)", color: "#ECD5B8" }}
+            >
+              <SelectValue>{CLASSIFICATION_LABELS[trip.classification]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(CLASSIFICATION_LABELS) as TravelerTripClassification[]).map(key => (
+                <SelectItem key={key} value={key}>{CLASSIFICATION_LABELS[key]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Trip name */}

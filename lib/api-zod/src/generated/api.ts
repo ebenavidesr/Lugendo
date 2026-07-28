@@ -1479,6 +1479,7 @@ export const ListMyTripsResponseItem = zod.object({
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n'),
   "createdAt": zod.string()
 })
 export const ListMyTripsResponse = zod.array(ListMyTripsResponseItem)
@@ -1575,6 +1576,7 @@ export const GetMyTripResponse = zod.object({
 })).nullish(),
   "description": zod.string().nullish(),
   "travelerCount": zod.number().optional().describe('Number of accepted travelers (invitations) for this trip'),
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n'),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1709,6 +1711,7 @@ export const UpdateMyTripResponse = zod.object({
 })).nullish(),
   "description": zod.string().nullish(),
   "travelerCount": zod.number().optional().describe('Number of accepted travelers (invitations) for this trip'),
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n'),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
   "id": zod.number(),
@@ -1754,6 +1757,23 @@ export const UpdateMyTripResponse = zod.object({
 })).optional(),
   "createdAt": zod.string()
 }))
+})
+
+
+/**
+ * @summary Manually reclassify a trip as Programado / Realizado / Compartido
+ */
+export const UpdateMyTripClassificationParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const UpdateMyTripClassificationBody = zod.object({
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n')
+})
+
+export const UpdateMyTripClassificationResponse = zod.object({
+  "tripId": zod.number(),
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n')
 })
 
 
@@ -2028,6 +2048,7 @@ export const ListSharedWithMeResponseItem = zod.object({
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "countries": zod.array(zod.string()).optional(),
+  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n'),
   "createdAt": zod.string()
 })
 })

@@ -482,3 +482,9 @@ export const UserCountryInputSchema = z.object({
 export const UserCountryStatusUpdateSchema = z.object({
   status: UserCountryStatusSchema,
 });
+
+// ─── Trip classification (Programado / Realizado / Compartido) ────────────
+
+export const TripClassificationUpdateSchema = z.object({
+  classification: z.enum(["programado", "realizado", "compartido"]),
+});

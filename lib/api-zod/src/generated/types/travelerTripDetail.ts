@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { FlightLeg } from './flightLeg';
+import type { TravelerTripClassification } from './travelerTripClassification';
 import type { TravelerTripDetailDaysSource } from './travelerTripDetailDaysSource';
 import type { TravelerTripDetailMyPermission } from './travelerTripDetailMyPermission';
 import type { TravelerTripDetailStatus } from './travelerTripDetailStatus';
@@ -58,6 +59,7 @@ export interface TravelerTripDetail {
   description?: string | null;
   /** Number of accepted travelers (invitations) for this trip */
   travelerCount?: number;
+  classification: TravelerTripClassification;
   createdAt: string;
   days: TripDay[];
 }

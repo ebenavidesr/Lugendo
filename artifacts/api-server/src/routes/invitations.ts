@@ -7,6 +7,7 @@ import { validate } from "../middlewares/validate";
 import { InvitationInputSchema, InvitationUpdateSchema } from "../lib/schemas";
 import { sendInvitationEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
+import { ensureTripClassificationByDates } from "../lib/trip-classification";
 
 const router: IRouter = Router();
 
@@ -179,6 +180,8 @@ router.post("/invitations/:code/accept", requireAuth, async (req, res): Promise<
     .set({ status: "accepted", travelerId: req.session.userId, acceptedAt: new Date() })
     .where(eq(invitationsTable.id, invite.id))
     .returning();
+
+  await ensureTripClassificationByDates(req.session.userId!, invite.tripId);
 
   res.json(serialize(updated as unknown as InvRow));
 });

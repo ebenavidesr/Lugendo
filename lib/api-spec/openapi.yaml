@@ -1335,6 +1335,33 @@ paths:
         "404":
           description: Not found
 
+  /me/trips/{tripId}/classification:
+    patch:
+      operationId: updateMyTripClassification
+      tags: [traveler]
+      summary: Manually reclassify a trip as Programado / Realizado / Compartido
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTripClassificationInput"
+      responses:
+        "200":
+          description: Updated classification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripClassificationResult"
+        "404":
+          description: Not found
+
   /me/trips/{tripId}/days:
     post:
       operationId: createTripDay
@@ -3698,9 +3725,33 @@ components:
           type: integer
           description: Number of travelers who had accepted invitations/shares for this trip
 
+    TravelerTripClassification:
+      type: string
+      enum: [programado, realizado, compartido]
+      description: >
+        Traveler-editable classification shown as the 3 tabs in the traveler's trip
+        list (task #140). Defaults from trip dates (programado/realizado) or "compartido"
+        for shares, but the traveler can override it at any time.
+
+    UpdateTripClassificationInput:
+      type: object
+      required: [classification]
+      properties:
+        classification:
+          $ref: "#/components/schemas/TravelerTripClassification"
+
+    TripClassificationResult:
+      type: object
+      required: [tripId, classification]
+      properties:
+        tripId:
+          type: integer
+        classification:
+          $ref: "#/components/schemas/TravelerTripClassification"
+
     TravelerTrip:
       type: object
-      required: [id, name, status, startDate, isPersonal, createdAt]
+      required: [id, name, status, startDate, isPersonal, classification, createdAt]
       properties:
         id:
           type: integer
@@ -3726,6 +3777,8 @@ components:
           type: array
           items:
             type: string
+        classification:
+          $ref: "#/components/schemas/TravelerTripClassification"
         createdAt:
           type: string
 
@@ -3750,7 +3803,7 @@ components:
 
     TravelerTripDetail:
       type: object
-      required: [id, name, status, startDate, isPersonal, createdAt, days, daysSource]
+      required: [id, name, status, startDate, isPersonal, classification, createdAt, days, daysSource]
       properties:
         id:
           type: integer
@@ -3814,6 +3867,8 @@ components:
         travelerCount:
           type: integer
           description: Number of accepted travelers (invitations) for this trip
+        classification:
+          $ref: "#/components/schemas/TravelerTripClassification"
         createdAt:
           type: string
         days:

@@ -77,6 +77,7 @@ import type {
   TripChecklistItemInput,
   TripChecklistItemUpdate,
   TripChecklistSuggestions,
+  TripClassificationResult,
   TripCountryCandidate,
   TripDay,
   TripDayActivityUpdate,
@@ -97,6 +98,7 @@ import type {
   TripUpdate,
   UpdateMyTripInput,
   UpdateShareInput,
+  UpdateTripClassificationInput,
   UploadUrlRequest,
   UploadUrlResponse,
   User,
@@ -4622,6 +4624,78 @@ export const useUpdateMyTrip = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateMyTripMutationOptions(options));
+    }
+
+export const getUpdateMyTripClassificationUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/classification`
+}
+
+/**
+ * @summary Manually reclassify a trip as Programado / Realizado / Compartido
+ */
+export const updateMyTripClassification = async (tripId: number,
+    updateTripClassificationInput: UpdateTripClassificationInput, options?: RequestInit): Promise<TripClassificationResult> => {
+
+  return customFetch<TripClassificationResult>(getUpdateMyTripClassificationUrl(tripId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateTripClassificationInput,)
+  }
+);}
+
+
+
+
+export const getUpdateMyTripClassificationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTripClassification>>, TError,{tripId: number;data: BodyType<UpdateTripClassificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyTripClassification>>, TError,{tripId: number;data: BodyType<UpdateTripClassificationInput>}, TContext> => {
+
+const mutationKey = ['updateMyTripClassification'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyTripClassification>>, {tripId: number;data: BodyType<UpdateTripClassificationInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  updateMyTripClassification(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyTripClassificationMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyTripClassification>>>
+    export type UpdateMyTripClassificationMutationBody = BodyType<UpdateTripClassificationInput>
+    export type UpdateMyTripClassificationMutationError = ErrorType<void>
+
+    /**
+ * @summary Manually reclassify a trip as Programado / Realizado / Compartido
+ */
+export const useUpdateMyTripClassification = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTripClassification>>, TError,{tripId: number;data: BodyType<UpdateTripClassificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyTripClassification>>,
+        TError,
+        {tripId: number;data: BodyType<UpdateTripClassificationInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyTripClassificationMutationOptions(options));
     }
 
 export const getCreateTripDayUrl = (tripId: number,) => {

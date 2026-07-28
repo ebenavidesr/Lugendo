@@ -3,9 +3,9 @@ import { useParams } from "wouter";
 import { MapPin, Plus } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useUpdateTripDay, useCreateTripDay, useDeleteTripDay,
-  useGetMyTripChecklist, useListTripDocuments,
+  useGetMyTripChecklist, useListTripDocuments, useUpdateMyTripClassification,
 } from "@workspace/api-client-react";
-import type { TravelerTripDetailStatus, TransportMode } from "@workspace/api-client-react";
+import type { TravelerTripDetailStatus, TransportMode, TravelerTripClassification } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TripDetailHeader, type Tab as ActiveTab } from "@/components/trip-detail-header";
 import { TripDayCard, type DayEditData } from "@/components/trip-day-card";
@@ -127,6 +127,7 @@ export default function TravelerTrip() {
   const updateDay = useUpdateTripDay();
   const createDay = useCreateTripDay();
   const deleteDay = useDeleteTripDay();
+  const updateClassification = useUpdateMyTripClassification();
 
   const { data: checklistItems } = useGetMyTripChecklist(tripId);
   const { data: tripDocuments } = useListTripDocuments(tripId);
@@ -152,6 +153,13 @@ export default function TravelerTrip() {
   const saveTripField = async (patch: Record<string, unknown>) => {
     await updateMyTrip.mutateAsync({ tripId, data: patch as Parameters<typeof updateMyTrip.mutateAsync>[0]["data"] });
     await invalidateTrip();
+  };
+
+  const handleClassificationChange = async (classification: TravelerTripClassification) => {
+    await updateClassification.mutateAsync({ tripId, data: { classification } });
+    await invalidateTrip();
+    await qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+    toast({ title: "Clasificación actualizada" });
   };
 
   const handleSaveFlights = async (data: { outboundFlights: FlightLeg[]; returnFlights: FlightLeg[] }) => {
@@ -257,6 +265,7 @@ export default function TravelerTrip() {
           editMode={editMode}
           onEditClick={() => setEditMode(v => !v)}
           onShareClick={() => setActiveTab("travelers")}
+          onClassificationChange={handleClassificationChange}
         />
       </div>
 
