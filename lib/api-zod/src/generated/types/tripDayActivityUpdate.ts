@@ -8,6 +8,7 @@
 import type { TransportMode } from './transportMode';
 
 export interface TripDayActivityUpdate {
+  dayId?: number;
   /** @nullable */
   startTime?: string | null;
   /** @nullable */

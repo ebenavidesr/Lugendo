@@ -505,6 +505,7 @@ export const UpdateItineraryDayParams = zod.object({
 })
 
 export const UpdateItineraryDayBody = zod.object({
+  "dayNumber": zod.number().optional(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "cityFromCountry": zod.string().nullish(),
@@ -1117,6 +1118,7 @@ export const UpdateTripDayAdminParams = zod.object({
 })
 
 export const UpdateTripDayAdminBody = zod.object({
+  "dayNumber": zod.number().optional(),
   "cityFrom": zod.string().nullish(),
   "cityTo": zod.string().nullish(),
   "cityFromCountry": zod.string().nullish(),
@@ -1237,6 +1239,7 @@ export const UpdateTripDayActivityParams = zod.object({
 })
 
 export const UpdateTripDayActivityBody = zod.object({
+  "dayId": zod.number().optional(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
   "notes": zod.string().nullish(),
@@ -2630,6 +2633,7 @@ export const UpdateItineraryDayActivityParams = zod.object({
 })
 
 export const UpdateItineraryDayActivityBody = zod.object({
+  "dayId": zod.number().optional(),
   "startTime": zod.string().nullish(),
   "notes": zod.string().nullish()
 })

@@ -178,6 +178,7 @@ export const ItineraryDayInputSchema = z.object({
 });
 
 export const ItineraryDayUpdateSchema = z.object({
+  dayNumber: z.number().int().positive().optional(),
   cityFrom: z.string().nullable().optional(),
   cityTo: z.string().nullable().optional(),
   cityFromCountry: z.string().nullable().optional(),
@@ -247,6 +248,7 @@ export const TripUpdateSchema = z.object({
 });
 
 export const TripDayUpdateSchema = z.object({
+  dayNumber: z.number().int().positive().optional(),
   cityFrom: z.string().nullable().optional(),
   cityTo: z.string().nullable().optional(),
   cityFromCountry: z.string().nullable().optional(),
@@ -273,11 +275,13 @@ export const DayActivityInputSchema = z.object({
 });
 
 export const ItineraryDayActivityUpdateSchema = z.object({
+  dayId: z.number().int().positive().optional(),
   startTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 
 export const TripDayActivityUpdateSchema = z.object({
+  dayId: z.number().int().positive().optional(),
   startTime: z.string().nullable().optional(),
   endTime: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),

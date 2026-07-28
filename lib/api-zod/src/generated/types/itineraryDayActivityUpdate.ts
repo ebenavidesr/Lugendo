@@ -7,6 +7,7 @@
  */
 
 export interface ItineraryDayActivityUpdate {
+  dayId?: number;
   /** @nullable */
   startTime?: string | null;
   /** @nullable */

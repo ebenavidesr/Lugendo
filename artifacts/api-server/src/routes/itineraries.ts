@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
@@ -7,6 +7,7 @@ import {
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
+import { closeDayGap, repositionDay } from "../lib/day-renumbering";
 import {
   ItineraryInputSchema, ItineraryUpdateSchema,
   ItineraryDayInputSchema, ItineraryDayUpdateSchema,
@@ -444,8 +445,9 @@ router.post("/itineraries/:itineraryId/days", requireAuth, validate(ItineraryDay
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(ItineraryDayUpdateSchema), async (req, res): Promise<void> => {
+  const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight, photoUrl } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, meals, isTransitNight, photoUrl } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
@@ -456,15 +458,36 @@ router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(Itin
   if (meals !== undefined) patch.meals = meals;
   if (isTransitNight !== undefined) patch.isTransitNight = isTransitNight;
   if (photoUrl !== undefined) patch.photoUrl = photoUrl;
-  const [day] = await db.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning();
+
+  const day = await db.transaction(async (tx) => {
+    if (dayNumber !== undefined) {
+      const [current] = await tx.select({ dayNumber: itineraryDaysTable.dayNumber }).from(itineraryDaysTable).where(eq(itineraryDaysTable.id, dayId));
+      if (current && current.dayNumber !== dayNumber) {
+        await repositionDay(tx, "itinerary_days", "itinerary_id", itineraryId, dayId, current.dayNumber, dayNumber);
+      }
+    }
+    const [updated] = Object.keys(patch).length > 0
+      ? await tx.update(itineraryDaysTable).set(patch).where(eq(itineraryDaysTable.id, dayId)).returning()
+      : await tx.select().from(itineraryDaysTable).where(eq(itineraryDaysTable.id, dayId));
+    return updated;
+  });
+
   if (!day) { res.status(404).json({ error: "Not found" }); return; }
   const hotelMap = await getDayHotelMap([day.id]);
   res.json({ ...day, createdAt: day.createdAt.toISOString(), hotels: hotelMap[day.id] ?? [] });
 });
 
 router.delete("/itineraries/:itineraryId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  await db.delete(itineraryDaysTable).where(eq(itineraryDaysTable.id, dayId));
+
+  await db.transaction(async (tx) => {
+    const [removed] = await tx.delete(itineraryDaysTable).where(eq(itineraryDaysTable.id, dayId)).returning({ dayNumber: itineraryDaysTable.dayNumber });
+    if (removed) {
+      await closeDayGap(tx, "itinerary_days", "itinerary_id", itineraryId, removed.dayNumber);
+    }
+  });
+
   res.sendStatus(204);
 });
 
@@ -551,10 +574,20 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, val
 });
 
 router.patch("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), validate(ItineraryDayActivityUpdateSchema), async (req, res): Promise<void> => {
+  const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
-  const body = req.body as { startTime?: string | null; notes?: string | null };
+  const body = req.body as { dayId?: number; startTime?: string | null; notes?: string | null };
 
-  const setValues: { startTime?: string | null; notes?: string | null } = {};
+  const setValues: { dayId?: number; startTime?: string | null; notes?: string | null } = {};
+  if (body.dayId !== undefined) {
+    // Moving to another day: the target day must belong to the same itinerary.
+    const [targetDay] = await db
+      .select({ id: itineraryDaysTable.id })
+      .from(itineraryDaysTable)
+      .where(and(eq(itineraryDaysTable.id, body.dayId), eq(itineraryDaysTable.itineraryId, itineraryId)));
+    if (!targetDay) { res.status(404).json({ error: "Target day not found in this itinerary" }); return; }
+    setValues.dayId = body.dayId;
+  }
   if ("startTime" in body) setValues.startTime = body.startTime ?? null;
   if ("notes" in body) setValues.notes = body.notes ?? null;
 

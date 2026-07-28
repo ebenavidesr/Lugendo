@@ -8,6 +8,7 @@
 import type { TransportMode } from './transportMode';
 
 export interface ItineraryDayUpdate {
+  dayNumber?: number;
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */

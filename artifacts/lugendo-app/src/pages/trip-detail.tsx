@@ -758,7 +758,7 @@ export default function TripDetail() {
                                 })()}
                                 <DayHotelPanel entityType="trip" entityId={tripId} day={day} allDays={trip.days} invalidateKey={`/api/trips/${tripId}`} />
                               </div>
-                              <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} />
+                              <DayActivitiesPanel entityType="trip" entityId={tripId} dayId={day.id} day={day} days={trip.days} />
                             </div>
                           </div>
                         )}

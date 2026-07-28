@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUpdateTripDayActivity, useUpdateItineraryDayActivity, useUpdateActivity } from "@workspace/api-client-react";
 import type { DayActivity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ interface ActivityDetailSheetProps {
   entityType?: "trip" | "itinerary";
   entityId: number;
   dayId: number;
+  days?: { id: number; dayNumber: number }[];
   activity: DayActivity | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,6 +41,7 @@ export function ActivityDetailSheet({
   entityType = "trip",
   entityId,
   dayId,
+  days = [],
   activity,
   open,
   onOpenChange,
@@ -62,6 +65,7 @@ export function ActivityDetailSheet({
 
   const [address, setAddress] = useState("");
   const [durationHours, setDurationHours] = useState("");
+  const [selectedDayId, setSelectedDayId] = useState(dayId);
 
   useEffect(() => {
     if (open && activity) {
@@ -74,6 +78,7 @@ export function ActivityDetailSheet({
       setTransportMode((activity.transportMode as string) ?? "");
       setAddress(activity.address ?? "");
       setDurationHours(activity.durationHours != null ? String(activity.durationHours) : "");
+      setSelectedDayId(dayId);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activity?.id]);
@@ -110,6 +115,8 @@ export function ActivityDetailSheet({
         qc.invalidateQueries({ queryKey: ["/api/activities"] });
       }
 
+      const dayChanged = selectedDayId !== dayId;
+
       if (isItinerary) {
         await new Promise<void>((resolve, reject) => {
           updateItinLink.mutate(
@@ -118,6 +125,7 @@ export function ActivityDetailSheet({
               dayId,
               linkId: activity.id,
               data: {
+                ...(dayChanged ? { dayId: selectedDayId } : {}),
                 startTime: startTime || null,
                 notes: notes || null,
               },
@@ -133,6 +141,7 @@ export function ActivityDetailSheet({
               dayId,
               linkId: activity.id,
               data: {
+                ...(dayChanged ? { dayId: selectedDayId } : {}),
                 startTime: startTime || null,
                 endTime: endTime || null,
                 notes: notes || null,
@@ -148,7 +157,11 @@ export function ActivityDetailSheet({
       }
 
       qc.invalidateQueries({ queryKey: [queryKey] });
-      toast({ title: "Actividad actualizada" });
+      if (dayChanged) {
+        const entityPath = isItinerary ? "itineraries" : "trips";
+        qc.invalidateQueries({ queryKey: [`/api/${entityPath}/${entityId}/days/${selectedDayId}/activities`] });
+      }
+      toast({ title: dayChanged ? "Actividad movida de día" : "Actividad actualizada" });
       onOpenChange(false);
     } catch {
       toast({ variant: "destructive", title: "Error al guardar" });
@@ -243,6 +256,24 @@ export function ActivityDetailSheet({
                 <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: "var(--noche)" }}>
                   Detalles para este día
                 </p>
+
+                {days.length > 1 && (
+                  <div>
+                    <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                      Día
+                    </label>
+                    <Select value={String(selectedDayId)} onValueChange={v => setSelectedDayId(Number(v))}>
+                      <SelectTrigger className="h-9 text-[13px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[...days].sort((a, b) => a.dayNumber - b.dayNumber).map(d => (
+                          <SelectItem key={d.id} value={String(d.id)}>Día {d.dayNumber}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 <div className={isItinerary ? "" : "grid grid-cols-2 gap-3"}>
                   <div>

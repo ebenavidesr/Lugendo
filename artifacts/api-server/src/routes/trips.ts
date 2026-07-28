@@ -20,6 +20,7 @@ import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advi
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { geocodeCity } from "../lib/geocoding";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
+import { closeDayGap, repositionDay, shiftTripNotesForDayRemoval, shiftTripNotesForReposition } from "../lib/day-renumbering";
 
 const objectStorage = new ObjectStorageService();
 
@@ -441,7 +442,14 @@ router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "ag
     .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
   if (!day) { res.status(404).json({ error: "Day not found" }); return; }
 
-  await db.delete(tripDaysTable).where(eq(tripDaysTable.id, dayId));
+  await db.transaction(async (tx) => {
+    const [removed] = await tx.delete(tripDaysTable).where(eq(tripDaysTable.id, dayId)).returning({ dayNumber: tripDaysTable.dayNumber });
+    if (removed) {
+      await closeDayGap(tx, "trip_days", "trip_id", tripId, removed.dayNumber);
+      await shiftTripNotesForDayRemoval(tx, tripId, removed.dayNumber);
+    }
+  });
+
   res.sendStatus(204);
 });
 
@@ -449,7 +457,7 @@ router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "ag
 router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
-  const { cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight, photoUrl } = req.body;
+  const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight, photoUrl } = req.body;
   const patch: Record<string, unknown> = {};
   if (cityFrom !== undefined) patch.cityFrom = cityFrom;
   if (cityTo !== undefined) patch.cityTo = cityTo;
@@ -472,11 +480,19 @@ router.patch("/trips/:tripId/days/:dayId", requireAuth, validate(TripDayUpdateSc
     patch.cityToLng = geo?.lng ?? null;
   }
 
-  const [updated] = await db
-    .update(tripDaysTable)
-    .set(patch)
-    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)))
-    .returning();
+  const updated = await db.transaction(async (tx) => {
+    if (dayNumber !== undefined) {
+      const [current] = await tx.select({ dayNumber: tripDaysTable.dayNumber }).from(tripDaysTable).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+      if (current && current.dayNumber !== dayNumber) {
+        const mapping = await repositionDay(tx, "trip_days", "trip_id", tripId, dayId, current.dayNumber, dayNumber);
+        await shiftTripNotesForReposition(tx, tripId, mapping);
+      }
+    }
+    const [row] = Object.keys(patch).length > 0
+      ? await tx.update(tripDaysTable).set(patch).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId))).returning()
+      : await tx.select().from(tripDaysTable).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+    return row;
+  });
   if (!updated) { res.status(404).json({ error: "Not found" }); return; }
 
   const hotelMap = await getTripDayHotelMap([updated.id]);
@@ -705,6 +721,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
   const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
 
   const {
+    dayId: targetDayId,
     startTime,
     endTime,
     notes,
@@ -716,6 +733,12 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
   } = req.body;
 
   const patch: Record<string, unknown> = {};
+  if (targetDayId !== undefined && targetDayId !== dayId) {
+    // Moving to another day: the target day must belong to the same trip (IDOR prevention).
+    const targetAccess = await verifyTripDayAccess(tripId, targetDayId, currentUserId, req.session.agencyId, role);
+    if (!targetAccess.authorized) { res.status(403).json({ error: targetAccess.reason }); return; }
+    patch.dayId = targetDayId;
+  }
   if (startTime !== undefined) patch.startTime = startTime ?? null;
   if (endTime !== undefined) patch.endTime = endTime ?? null;
   if (notes !== undefined) patch.notes = notes ?? null;

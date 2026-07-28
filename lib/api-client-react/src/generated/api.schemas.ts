@@ -383,6 +383,7 @@ export interface ItineraryDayInput {
 }
 
 export interface ItineraryDayUpdate {
+  dayNumber?: number;
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
@@ -812,6 +813,7 @@ export interface TripUpdate {
 }
 
 export interface TripDayUpdate {
+  dayNumber?: number;
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
@@ -1676,6 +1678,7 @@ export interface DayActivityInput {
 }
 
 export interface ItineraryDayActivityUpdate {
+  dayId?: number;
   /** @nullable */
   startTime?: string | null;
   /** @nullable */
@@ -1683,6 +1686,7 @@ export interface ItineraryDayActivityUpdate {
 }
 
 export interface TripDayActivityUpdate {
+  dayId?: number;
   /** @nullable */
   startTime?: string | null;
   /** @nullable */

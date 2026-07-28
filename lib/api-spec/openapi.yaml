@@ -3067,6 +3067,8 @@ components:
     ItineraryDayUpdate:
       type: object
       properties:
+        dayNumber:
+          type: integer
         cityFrom:
           type: ["string", "null"]
         cityTo:
@@ -3601,6 +3603,8 @@ components:
     TripDayUpdate:
       type: object
       properties:
+        dayNumber:
+          type: integer
         cityFrom:
           type: ["string", "null"]
         cityTo:
@@ -4661,6 +4665,8 @@ components:
     ItineraryDayActivityUpdate:
       type: object
       properties:
+        dayId:
+          type: integer
         startTime:
           type: ["string", "null"]
         notes:
@@ -4669,6 +4675,8 @@ components:
     TripDayActivityUpdate:
       type: object
       properties:
+        dayId:
+          type: integer
         startTime:
           type: ["string", "null"]
         endTime:

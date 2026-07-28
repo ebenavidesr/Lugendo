@@ -44,12 +44,14 @@ export function DayActivitiesPanel({
   dayId,
   compact = false,
   day,
+  days,
 }: {
   entityType: "itinerary" | "trip";
   entityId: number;
   dayId: number;
   compact?: boolean;
   day?: DayContext;
+  days?: { id: number; dayNumber: number }[];
 }) {
   const isItinerary = entityType === "itinerary";
 
@@ -358,6 +360,7 @@ export function DayActivitiesPanel({
             entityType={isItinerary ? "itinerary" : "trip"}
             entityId={entityId}
             dayId={dayId}
+            days={days}
             activity={editActivity}
             open={editSheetOpen}
             onOpenChange={(open) => {

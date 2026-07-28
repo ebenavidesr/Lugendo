@@ -32,6 +32,7 @@ import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advi
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { sanitizeNoteHtml } from "../lib/sanitize";
 import { geocodeCity } from "../lib/geocoding";
+import { repositionDay, shiftTripNotesForReposition } from "../lib/day-renumbering";
 import {
   defaultDateBasedClassification, ensureTripClassification,
   ensureTripClassificationByDates, getTripClassification,
@@ -1668,7 +1669,6 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
   const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight, photoUrl } = req.body;
 
   const patch: Record<string, unknown> = {};
-  if (dayNumber !== undefined) patch.dayNumber = dayNumber;
   if (cityFrom !== undefined) patch.cityFrom = cityFrom ?? null;
   if (cityTo !== undefined) patch.cityTo = cityTo ?? null;
   if (cityFromCountry !== undefined) patch.cityFromCountry = cityFromCountry ?? null;
@@ -1690,11 +1690,19 @@ router.patch("/me/trips/:tripId/days/:dayId", requireRoles("traveler"), validate
     patch.cityToLng = geo?.lng ?? null;
   }
 
-  const [updated] = await db
-    .update(tripDaysTable)
-    .set(patch)
-    .where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)))
-    .returning();
+  const updated = await db.transaction(async (tx) => {
+    if (dayNumber !== undefined) {
+      const [current] = await tx.select({ dayNumber: tripDaysTable.dayNumber }).from(tripDaysTable).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+      if (current && current.dayNumber !== dayNumber) {
+        const mapping = await repositionDay(tx, "trip_days", "trip_id", tripId, dayId, current.dayNumber, dayNumber);
+        await shiftTripNotesForReposition(tx, tripId, mapping);
+      }
+    }
+    const [row] = Object.keys(patch).length > 0
+      ? await tx.update(tripDaysTable).set(patch).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId))).returning()
+      : await tx.select().from(tripDaysTable).where(and(eq(tripDaysTable.id, dayId), eq(tripDaysTable.tripId, tripId)));
+    return row;
+  });
 
   if (!updated) { res.status(404).json({ error: "Día no encontrado" }); return; }
 
