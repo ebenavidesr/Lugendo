@@ -4,7 +4,17 @@ B2B2C travel platform — back office for travel agencies (admin/manager/agent r
 
 ## Local development
 
-**The dev database is not reachable from local machines.** `DATABASE_URL` lives inside Replit's managed Postgres (host `helium`) and is only reachable from within the Replit environment — it is not exposed externally. Do not expect `pnpm --filter @workspace/api-server run dev` (or `migrate`/`generate` against the real dev DB) to work from a local checkout as-is. For now, run and test the backend inside Replit, not locally. Frontend-only work (components, styling, client-side logic) that doesn't need a live API can still be developed locally.
+Backend and frontend both run locally against the shared Neon Postgres database (Replit is fully decommissioned).
+
+- Each package loads its own `.env` automatically — no manual `export` needed:
+  - `artifacts/api-server/.env`: `DATABASE_URL`, `SESSION_SECRET`, `PORT` (8080), plus integration keys (OpenAI, R2, Mapbox, Resend, etc).
+  - `artifacts/lugendo-app/.env`: `VITE_*` build-time vars (e.g. `VITE_MAPBOX_TOKEN`).
+  - `lib/db/.env`: `DATABASE_URL`, used by `generate`/`migrate`/`stamp-baseline`.
+- **Use Neon's unpooled connection string locally** (host without the `-pooler` suffix). `lib/db`'s connection pool sets `options: "-c lock_timeout=..."` on connect, which Neon's PgBouncer-backed pooled endpoint rejects with "unsupported startup parameter in options". The unpooled endpoint accepts it fine and is what both `artifacts/api-server/.env` and `lib/db/.env` use.
+- The frontend dev server proxies `/api` to `http://localhost:8080` (see `server.proxy` in `artifacts/lugendo-app/vite.config.ts`), so relative `/api/...` calls from `customFetch` work without calling `setBaseUrl`.
+- Native optional deps (rollup, esbuild, lightningcss, `@tailwindcss/oxide`) resolve for both `linux-x64` (Railway/CI) and `darwin-arm64` (Apple Silicon dev machines) — see the `overrides` in `pnpm-workspace.yaml`. A plain `pnpm install` is enough on either platform.
+
+With that in place, `pnpm --filter @workspace/api-server run dev` and `pnpm --filter @workspace/lugendo-app run dev` (see [Run & Operate](#run--operate)) work together locally like any other checkout.
 
 ## Run & Operate
 
@@ -121,6 +131,6 @@ No manual `migrate` step is needed after that — the server handles it on every
 - The `sessions` table must exist before starting the API server (already created — do not drop it)
 - `connect-pg-simple` with `createTableIfMissing: true` is BROKEN when bundled (can't find `table.sql`). The `sessions` table is pre-created manually; keep `createTableIfMissing` omitted.
 - Google Fonts `@import url(...)` must be the FIRST line in `index.css` — before any other `@import` or `@plugin` rules.
-- Seed admin: `admin@lugendo.io` / `admin1234` (agencyId=1, role=admin)
-- `DATABASE_URL` cannot be reached from outside Replit — see [Local development](#local-development).
+- **The local `DATABASE_URL` points at real production data** (copied over during the Neon migration, task #117) — `admin@lugendo.io` exists but the `admin1234` seed password documented historically no longer matches it (real password unknown here). Be careful: writes made while developing locally land in the real dataset, not a disposable seed DB.
+- Use Neon's **unpooled** connection string for `DATABASE_URL` locally, not the `-pooler` one — see [Local development](#local-development).
 - Mapa section (Mapbox GL JS, Notion #125): needs the **same public Mapbox token** in two places — `VITE_MAPBOX_TOKEN` in `artifacts/lugendo-app/.env` (frontend map rendering + Directions API route) and `MAPBOX_ACCESS_TOKEN` in `artifacts/api-server/.env` (backend geocoding, `artifacts/api-server/src/lib/geocoding.ts`). Currently using Mapbox's default `light-v11` style; a branded Mapbox Studio style is a planned follow-up — once created, its style URL replaces the hardcoded `mapbox://styles/mapbox/light-v11` in `artifacts/lugendo-app/src/components/trip-map-tab.tsx`.

@@ -555,6 +555,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Probar login como manager y traveler en `lugendo.io`
 - [ ] Replit archivado tras el periodo de gracia (recordatorio programado para el 2026-07-22)
 
+### #147 — Arreglar entorno de desarrollo local (Vite/Rollup, .env, proxy a /api)
+- [x] `pnpm install` resuelve los binarios nativos de darwin-arm64 (rollup, esbuild, lightningcss, `@tailwindcss/oxide`) sin tocar la resolución para Linux/Railway
+- [x] `pnpm --filter @workspace/lugendo-app run build` completa sin el error `ERR_MODULE_NOT_FOUND` de rollup
+- [x] `artifacts/api-server/.env` y `lib/db/.env` se cargan automáticamente (sin exportar variables a mano) al correr `dev`, `generate`, `migrate` y `stamp-baseline`
+- [x] `pnpm --filter @workspace/api-server run dev` arranca, corre las migraciones y queda escuchando en `:8080` contra la base de Neon real
+- [x] `pnpm --filter @workspace/lugendo-app run dev` (`:18147`) hace proxy de `/api/*` al backend local sin usar `setBaseUrl`; probado con un login real que llegó hasta el backend (401 por credenciales, no por fallo de red/proxy)
+- [ ] Confirmar el mismo flujo en otra máquina/checkout (Intel Mac o Linux) para descartar que algo quedó atado a este entorno concreto
+
 ---
 
-> Seed admin para pruebas: `admin@lugendo.io` / `admin1234`
+> Seed admin: `admin@lugendo.io` existe en la base real (agencyId=1, role=admin), pero la contraseña `admin1234` documentada históricamente ya no es válida — la base local apunta a los datos reales de producción (ver #117), no a un seed desechable.

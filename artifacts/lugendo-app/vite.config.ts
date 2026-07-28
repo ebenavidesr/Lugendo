@@ -51,6 +51,16 @@ export default defineConfig({
     ...(port !== undefined && { port, strictPort: true }),
     host: "0.0.0.0",
     allowedHosts: true,
+    // Local dev only: forwards API calls to the api-server dev instance
+    // (see CLAUDE.md) so relative /api/... fetches from customFetch work
+    // without needing setBaseUrl. Not used in production, where the built
+    // frontend and API are served from the same origin already.
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
     fs: {
       strict: true,
     },
