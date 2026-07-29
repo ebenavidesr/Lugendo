@@ -192,14 +192,14 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
     email: user.email,
     role: user.role,
     registeredAt: user.createdAt,
-    approveUrl: `${PUBLIC_APP_URL}/api/auth/approve?token=${approvalToken}&action=approved`,
-    rejectUrl: `${PUBLIC_APP_URL}/api/auth/approve?token=${approvalToken}&action=rejected`,
+    approveUrl: `${PUBLIC_APP_URL}/api/auth/approve/approved/${approvalToken}`,
+    rejectUrl: `${PUBLIC_APP_URL}/api/auth/approve/rejected/${approvalToken}`,
   }).catch((err) => console.error("Failed to send approval request email", err));
 
   sendEmailVerificationEmail({
     to: user.email,
     name: user.name,
-    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email?token=${emailVerificationToken}`,
+    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email/${emailVerificationToken}`,
   }).catch((err) => console.error("Failed to send email verification email", err));
 
   res.status(201).json({
@@ -214,9 +214,13 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
   });
 });
 
-router.get("/auth/approve", async (req, res): Promise<void> => {
-  const token = typeof req.query.token === "string" ? req.query.token : "";
-  const action = req.query.action === "approved" || req.query.action === "rejected" ? req.query.action : null;
+// Path-based (not ?token=&action=): a query string containing a literal "=" right before a
+// long token has been observed to get corrupted in transit (Resend → Gmail), landing on the
+// quoted-printable-escaped "=" mid-line and dropping bytes — see TESTING.md for the reproduction.
+// Keeping the token in the path avoids that character entirely.
+router.get("/auth/approve/:action/:token", async (req, res): Promise<void> => {
+  const { token, action: rawAction } = req.params;
+  const action = rawAction === "approved" || rawAction === "rejected" ? rawAction : null;
 
   if (!token || !action) {
     res.status(400).send(renderInfoPage("Enlace inválido", "El enlace de aprobación no es válido."));
@@ -245,8 +249,8 @@ router.get("/auth/approve", async (req, res): Promise<void> => {
   );
 });
 
-router.get("/auth/verify-email", async (req, res): Promise<void> => {
-  const token = typeof req.query.token === "string" ? req.query.token : "";
+router.get("/auth/verify-email/:token", async (req, res): Promise<void> => {
+  const { token } = req.params;
 
   if (!token) {
     res.status(400).send(renderInfoPage("Enlace inválido", "El enlace de verificación no es válido."));
@@ -304,7 +308,7 @@ router.post("/auth/resend-verification", requireSession, async (req, res): Promi
   sendEmailVerificationEmail({
     to: user.email,
     name: user.name,
-    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email?token=${emailVerificationToken}`,
+    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email/${emailVerificationToken}`,
   }).catch((err) => console.error("Failed to send email verification email", err));
 
   res.sendStatus(204);
@@ -330,7 +334,7 @@ router.post("/auth/forgot-password", validate(ForgotPasswordInputSchema), async 
     sendPasswordResetEmail({
       to: user.email,
       name: user.name,
-      resetUrl: `${PUBLIC_APP_URL}/reset-password?token=${passwordResetToken}`,
+      resetUrl: `${PUBLIC_APP_URL}/reset-password/${passwordResetToken}`,
     }).catch((err) => console.error("Failed to send password reset email", err));
   }
 

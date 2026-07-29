@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,12 +30,11 @@ const schema = z
   });
 
 export default function ResetPassword() {
-  const search = useSearch();
+  const { token = "" } = useParams<{ token?: string }>();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [done, setDone] = useState(false);
   const resetPassword = useResetPassword();
-  const token = new URLSearchParams(search).get("token") ?? "";
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),

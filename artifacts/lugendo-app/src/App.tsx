@@ -68,6 +68,7 @@ function Router() {
       <Route path="/verify-email" component={VerifyEmailPending} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
 
       {/* Back Office */}
       <Route path="/dashboard">
