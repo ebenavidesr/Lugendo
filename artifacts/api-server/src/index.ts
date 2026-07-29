@@ -5,6 +5,7 @@ import { logger } from "./lib/logger";
 import { runMigrations } from "@workspace/db";
 import { setReady } from "./lib/readiness";
 import { scheduleAdvisoryRefresh } from "./lib/travel-advisory-refresh";
+import { scheduleTripReminders } from "./lib/trip-reminders";
 
 // Diagnostic instrumentation added after repeated silent Autoscale promote
 // failures where pino's buffered/async stdout writes appeared to stop after
@@ -102,6 +103,7 @@ runMigrations(migrationsFolder, (step) => {
     logger.info("Migrations complete");
     setReady(buildVersion);
     scheduleAdvisoryRefresh();
+    scheduleTripReminders();
   })
   .catch((err) => {
     logger.error({ err }, "Migration failed — exiting");

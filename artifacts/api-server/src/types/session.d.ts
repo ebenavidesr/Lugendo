@@ -8,5 +8,6 @@ declare module "express-session" {
     email: string;
     name: string;
     status: string;
+    emailVerified: boolean;
   }
 }

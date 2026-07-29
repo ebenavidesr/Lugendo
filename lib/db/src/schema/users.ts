@@ -14,6 +14,13 @@ export const usersTable = pgTable("users", {
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("approved"),
   termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
   approvalToken: text("approval_token").unique(),
+  // Defaults to true so existing rows (created before this column existed) are grandfathered
+  // in as verified — only new registrations are created with this explicitly set to false.
+  emailVerified: boolean("email_verified").notNull().default(true),
+  emailVerificationToken: text("email_verification_token").unique(),
+  emailVerificationExpiresAt: timestamp("email_verification_expires_at", { withTimezone: true }),
+  passwordResetToken: text("password_reset_token").unique(),
+  passwordResetExpiresAt: timestamp("password_reset_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

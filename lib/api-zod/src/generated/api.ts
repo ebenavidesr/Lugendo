@@ -40,7 +40,8 @@ export const GetMeResponse = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
   "agencyName": zod.string().nullish(),
-  "status": zod.enum(['pending', 'approved', 'rejected'])
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "emailVerified": zod.boolean()
 })
 
 
@@ -59,7 +60,8 @@ export const LoginResponse = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
   "agencyName": zod.string().nullish(),
-  "status": zod.enum(['pending', 'approved', 'rejected'])
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "emailVerified": zod.boolean()
 })
 
 
@@ -76,6 +78,27 @@ export const RegisterBody = zod.object({
   "name": zod.string(),
   "inviteCode": zod.string().optional(),
   "acceptTerms": zod.boolean()
+})
+
+
+/**
+ * @summary Request a password reset email. Always responds 204 regardless of whether the email exists, to avoid leaking account existence.
+ */
+export const ForgotPasswordBody = zod.object({
+  "email": zod.string()
+})
+
+
+/**
+ * @summary Reset password using a token from the forgot-password email. Invalidates all other active sessions for the user.
+ */
+export const resetPasswordBodyPasswordMin = 8;
+
+
+
+export const ResetPasswordBody = zod.object({
+  "token": zod.string(),
+  "password": zod.string().min(resetPasswordBodyPasswordMin)
 })
 
 

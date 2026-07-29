@@ -137,6 +137,49 @@ paths:
         "204":
           description: Logged out
 
+  /auth/resend-verification:
+    post:
+      operationId: resendVerificationEmail
+      tags: [auth]
+      summary: Resend the email verification link to the current session's user
+      responses:
+        "204":
+          description: Verification email sent (or account already verified, no-op)
+        "401":
+          description: Unauthorized
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password reset email. Always responds 204 regardless of whether the email exists, to avoid leaking account existence.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "204":
+          description: Reset email sent if the account exists
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Reset password using a token from the forgot-password email. Invalidates all other active sessions for the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "204":
+          description: Password reset
+        "400":
+          description: Invalid or expired token
+
   # ─── AGENCIES ───────────────────────────────────────────────────────────────
   /agencies:
     get:
@@ -2658,7 +2701,7 @@ components:
     # ─── AUTH ─────────────────────────────────────────────────────────────────
     AuthUser:
       type: object
-      required: [id, email, name, role, status]
+      required: [id, email, name, role, status, emailVerified]
       properties:
         id:
           type: integer
@@ -2676,6 +2719,8 @@ components:
         status:
           type: string
           enum: [pending, approved, rejected]
+        emailVerified:
+          type: boolean
 
     LoginInput:
       type: object
@@ -2701,6 +2746,23 @@ components:
           type: string
         acceptTerms:
           type: boolean
+
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    ResetPasswordInput:
+      type: object
+      required: [token, password]
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          minLength: 8
 
     # ─── AGENCY ───────────────────────────────────────────────────────────────
     Agency:

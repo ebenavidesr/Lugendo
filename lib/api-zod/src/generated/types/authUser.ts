@@ -18,4 +18,5 @@ export interface AuthUser {
   /** @nullable */
   agencyName?: string | null;
   status: AuthUserStatus;
+  emailVerified: boolean;
 }

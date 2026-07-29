@@ -11,6 +11,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     res.status(403).json({ error: "AccountPending", status: req.session.status });
     return;
   }
+  // Sessions created before this field existed have no emailVerified set (undefined) —
+  // treat as verified rather than locking out everyone already logged in.
+  if (req.session.emailVerified === false) {
+    res.status(403).json({ error: "EmailNotVerified" });
+    return;
+  }
   next();
 }
 
@@ -32,6 +38,10 @@ export function requireRoles(...roles: string[]) {
     }
     if (req.session.status !== "approved") {
       res.status(403).json({ error: "AccountPending", status: req.session.status });
+      return;
+    }
+    if (req.session.emailVerified === false) {
+      res.status(403).json({ error: "EmailNotVerified" });
       return;
     }
     if (!req.session.role || !roles.includes(req.session.role)) {

@@ -24,6 +24,15 @@ export const RegisterInputSchema = z.object({
   acceptTerms: z.literal(true),
 });
 
+export const ForgotPasswordInputSchema = z.object({
+  email: z.string().email(),
+});
+
+export const ResetPasswordInputSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(8),
+});
+
 // ─── Agency ───────────────────────────────────────────────────────────────────
 
 const WritingToneSchema = z.enum(["informative", "friendly", "adventurous", "luxury", "professional"]);

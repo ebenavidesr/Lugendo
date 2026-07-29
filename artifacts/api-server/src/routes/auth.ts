@@ -2,17 +2,44 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import { usersTable, agenciesTable, invitationsTable } from "@workspace/db";
 import { requireSession } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
-import { LoginInputSchema, RegisterInputSchema } from "../lib/schemas";
-import { sendApprovalRequestEmail } from "../lib/email";
+import { LoginInputSchema, RegisterInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema } from "../lib/schemas";
+import { sendApprovalRequestEmail, sendEmailVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
 import { ensureTripClassificationByDates } from "../lib/trip-classification";
 
 const router: IRouter = Router();
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "ebenavidesr@gmail.com";
+const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+
+// Invalidates every other active session belonging to this user in the connect-pg-simple
+// `sessions` table (pre-created manually, not a Drizzle model — see CLAUDE.md). The `sess`
+// column stores the serialized SessionData as JSON, so userId is matched via a jsonb cast.
+async function invalidateOtherSessions(userId: number, exceptSid?: string): Promise<void> {
+  await pool.query(
+    `DELETE FROM sessions WHERE (sess::jsonb->>'userId')::int = $1 AND sid IS DISTINCT FROM $2`,
+    [userId, exceptSid ?? null],
+  );
+}
+
+function renderInfoPage(title: string, message: string): string {
+  return `
+    <!DOCTYPE html>
+    <html lang="es">
+      <head><meta charset="utf-8"><title>${title}</title></head>
+      <body style="font-family:'DM Sans',Arial,sans-serif;background:#FAF2EB;color:#2D1F0E;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
+        <div style="background:#fff;padding:32px 40px;border-radius:16px;text-align:center;max-width:420px">
+          <h1 style="margin:0 0 12px;font-size:20px">${title}</h1>
+          <p style="margin:0;color:#6B5744;font-size:15px">${message}</p>
+        </div>
+      </body>
+    </html>
+  `;
+}
 
 router.get("/auth/me", requireSession, async (req, res): Promise<void> => {
   const [user] = await db
@@ -23,6 +50,7 @@ router.get("/auth/me", requireSession, async (req, res): Promise<void> => {
       role: usersTable.role,
       agencyId: usersTable.agencyId,
       status: usersTable.status,
+      emailVerified: usersTable.emailVerified,
       agencyName: agenciesTable.name,
     })
     .from(usersTable)
@@ -51,6 +79,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
       passwordHash: usersTable.passwordHash,
       active: usersTable.active,
       status: usersTable.status,
+      emailVerified: usersTable.emailVerified,
       agencyName: agenciesTable.name,
     })
     .from(usersTable)
@@ -74,6 +103,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
   req.session.email = user.email;
   req.session.name = user.name;
   req.session.status = user.status;
+  req.session.emailVerified = user.emailVerified;
 
   // Auto-accept any pending invitations for this email
   const newlyAcceptedInvites = await db
@@ -97,6 +127,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
     agencyId: user.agencyId,
     agencyName: user.agencyName,
     status: user.status,
+    emailVerified: user.emailVerified,
   });
 });
 
@@ -115,6 +146,7 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
 
   const passwordHash = await bcrypt.hash(password, 12);
   const approvalToken = crypto.randomBytes(32).toString("hex");
+  const emailVerificationToken = crypto.randomBytes(32).toString("hex");
   const [user] = await db
     .insert(usersTable)
     .values({
@@ -125,6 +157,9 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
       status: "pending",
       termsAcceptedAt: new Date(),
       approvalToken,
+      emailVerified: false,
+      emailVerificationToken,
+      emailVerificationExpiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
     })
     .returning();
 
@@ -149,6 +184,7 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
   req.session.email = user.email;
   req.session.name = user.name;
   req.session.status = user.status;
+  req.session.emailVerified = user.emailVerified;
 
   sendApprovalRequestEmail({
     to: ADMIN_NOTIFICATION_EMAIL,
@@ -160,6 +196,12 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
     rejectUrl: `${PUBLIC_APP_URL}/api/auth/approve?token=${approvalToken}&action=rejected`,
   }).catch((err) => console.error("Failed to send approval request email", err));
 
+  sendEmailVerificationEmail({
+    to: user.email,
+    name: user.name,
+    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email?token=${emailVerificationToken}`,
+  }).catch((err) => console.error("Failed to send email verification email", err));
+
   res.status(201).json({
     id: user.id,
     email: user.email,
@@ -168,6 +210,7 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
     agencyId: user.agencyId,
     agencyName: null,
     status: user.status,
+    emailVerified: user.emailVerified,
   });
 });
 
@@ -175,21 +218,8 @@ router.get("/auth/approve", async (req, res): Promise<void> => {
   const token = typeof req.query.token === "string" ? req.query.token : "";
   const action = req.query.action === "approved" || req.query.action === "rejected" ? req.query.action : null;
 
-  const renderPage = (title: string, message: string) => `
-    <!DOCTYPE html>
-    <html lang="es">
-      <head><meta charset="utf-8"><title>${title}</title></head>
-      <body style="font-family:'DM Sans',Arial,sans-serif;background:#FAF2EB;color:#2D1F0E;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">
-        <div style="background:#fff;padding:32px 40px;border-radius:16px;text-align:center;max-width:420px">
-          <h1 style="margin:0 0 12px;font-size:20px">${title}</h1>
-          <p style="margin:0;color:#6B5744;font-size:15px">${message}</p>
-        </div>
-      </body>
-    </html>
-  `;
-
   if (!token || !action) {
-    res.status(400).send(renderPage("Enlace inválido", "El enlace de aprobación no es válido."));
+    res.status(400).send(renderInfoPage("Enlace inválido", "El enlace de aprobación no es válido."));
     return;
   }
 
@@ -199,7 +229,7 @@ router.get("/auth/approve", async (req, res): Promise<void> => {
     .where(eq(usersTable.approvalToken, token));
 
   if (!user) {
-    res.status(400).send(renderPage("Enlace ya utilizado", "Este enlace ya fue usado o no es válido."));
+    res.status(400).send(renderInfoPage("Enlace ya utilizado", "Este enlace ya fue usado o no es válido."));
     return;
   }
 
@@ -210,9 +240,125 @@ router.get("/auth/approve", async (req, res): Promise<void> => {
 
   res.send(
     action === "approved"
-      ? renderPage("Usuario aprobado", `${user.name} ya puede acceder a Lugendo.`)
-      : renderPage("Usuario rechazado", `Se ha rechazado el acceso de ${user.name}.`),
+      ? renderInfoPage("Usuario aprobado", `${user.name} ya puede acceder a Lugendo.`)
+      : renderInfoPage("Usuario rechazado", `Se ha rechazado el acceso de ${user.name}.`),
   );
+});
+
+router.get("/auth/verify-email", async (req, res): Promise<void> => {
+  const token = typeof req.query.token === "string" ? req.query.token : "";
+
+  if (!token) {
+    res.status(400).send(renderInfoPage("Enlace inválido", "El enlace de verificación no es válido."));
+    return;
+  }
+
+  const [user] = await db
+    .select({
+      id: usersTable.id,
+      name: usersTable.name,
+      emailVerificationExpiresAt: usersTable.emailVerificationExpiresAt,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.emailVerificationToken, token));
+
+  if (!user || !user.emailVerificationExpiresAt || user.emailVerificationExpiresAt.getTime() < Date.now()) {
+    res.status(400).send(renderInfoPage(
+      "Enlace caducado",
+      "Este enlace de verificación ya no es válido. Inicia sesión y solicita uno nuevo desde tu cuenta.",
+    ));
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ emailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
+    .where(eq(usersTable.id, user.id));
+
+  // If this link is opened in the same browser/session that registered, unblock it
+  // immediately without requiring a fresh login.
+  if (req.session.userId === user.id) {
+    req.session.emailVerified = true;
+  }
+
+  res.send(renderInfoPage("Email verificado", `${user.name}, tu email ha sido confirmado. Ya puedes usar Lugendo.`));
+});
+
+router.post("/auth/resend-verification", requireSession, async (req, res): Promise<void> => {
+  const [user] = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email, emailVerified: usersTable.emailVerified })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.session.userId!));
+
+  if (!user || user.emailVerified) {
+    res.sendStatus(204);
+    return;
+  }
+
+  const emailVerificationToken = crypto.randomBytes(32).toString("hex");
+  await db
+    .update(usersTable)
+    .set({ emailVerificationToken, emailVerificationExpiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS) })
+    .where(eq(usersTable.id, user.id));
+
+  sendEmailVerificationEmail({
+    to: user.email,
+    name: user.name,
+    verifyUrl: `${PUBLIC_APP_URL}/api/auth/verify-email?token=${emailVerificationToken}`,
+  }).catch((err) => console.error("Failed to send email verification email", err));
+
+  res.sendStatus(204);
+});
+
+router.post("/auth/forgot-password", validate(ForgotPasswordInputSchema), async (req, res): Promise<void> => {
+  const { email } = req.body;
+
+  const [user] = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.email, email.toLowerCase().trim()));
+
+  // Always respond 204 regardless of whether the account exists, to avoid leaking
+  // account existence to an unauthenticated caller.
+  if (user) {
+    const passwordResetToken = crypto.randomBytes(32).toString("hex");
+    await db
+      .update(usersTable)
+      .set({ passwordResetToken, passwordResetExpiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS) })
+      .where(eq(usersTable.id, user.id));
+
+    sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl: `${PUBLIC_APP_URL}/reset-password?token=${passwordResetToken}`,
+    }).catch((err) => console.error("Failed to send password reset email", err));
+  }
+
+  res.sendStatus(204);
+});
+
+router.post("/auth/reset-password", validate(ResetPasswordInputSchema), async (req, res): Promise<void> => {
+  const { token, password } = req.body;
+
+  const [user] = await db
+    .select({ id: usersTable.id, passwordResetExpiresAt: usersTable.passwordResetExpiresAt })
+    .from(usersTable)
+    .where(eq(usersTable.passwordResetToken, token));
+
+  if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt.getTime() < Date.now()) {
+    res.status(400).json({ error: "Invalid or expired token" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  await db
+    .update(usersTable)
+    .set({ passwordHash, passwordResetToken: null, passwordResetExpiresAt: null })
+    .where(eq(usersTable.id, user.id));
+
+  await invalidateOtherSessions(user.id, req.sessionID);
+
+  res.sendStatus(204);
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {

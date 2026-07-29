@@ -39,6 +39,7 @@ export interface AuthUser {
   /** @nullable */
   agencyName?: string | null;
   status: AuthUserStatus;
+  emailVerified: boolean;
 }
 
 export interface LoginInput {
@@ -53,6 +54,16 @@ export interface RegisterInput {
   name: string;
   inviteCode?: string;
   acceptTerms: boolean;
+}
+
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  /** @minLength 8 */
+  password: string;
 }
 
 export type AgencyWritingTone = typeof AgencyWritingTone[keyof typeof AgencyWritingTone];

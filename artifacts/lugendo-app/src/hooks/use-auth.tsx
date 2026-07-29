@@ -18,12 +18,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
+      const isPublicRoute = isAuthRoute || location === "/forgot-password" || location === "/reset-password";
       const isPendingRoute = location === "/pending";
-      if (!user && !isAuthRoute) {
+      const isVerifyEmailRoute = location === "/verify-email";
+      if (!user && !isPublicRoute) {
         setLocation("/login");
       } else if (user && user.status !== AuthUserStatus.approved) {
         if (!isPendingRoute) setLocation("/pending");
-      } else if (user && (isAuthRoute || isPendingRoute)) {
+      } else if (user && !user.emailVerified) {
+        if (!isVerifyEmailRoute) setLocation("/verify-email");
+      } else if (user && (isAuthRoute || isPendingRoute || isVerifyEmailRoute)) {
         if (user.role === AuthUserRole.traveler) {
           setLocation("/traveler");
         } else {

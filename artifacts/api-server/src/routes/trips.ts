@@ -15,7 +15,7 @@ import {
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
-import { sendDocumentUploadedEmail } from "../lib/email";
+import { sendDocumentUploadedEmail, sendTripUpdatedEmail } from "../lib/email";
 import { getTripCountries, ensureCountryAdvisoryFresh } from "../lib/travel-advisory-refresh";
 import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { geocodeCity } from "../lib/geocoding";
@@ -25,6 +25,47 @@ import { closeDayGap, repositionDay, shiftTripNotesForDayRemoval, shiftTripNotes
 const objectStorage = new ObjectStorageService();
 
 const router: IRouter = Router();
+
+// Fire-and-forget notification to every traveler who has accepted an invitation to this
+// trip, whenever agency staff (not a traveler self-editing their own personal trip) changes
+// dates, hotels, or activities. No-op for trips without an agency (personal trips).
+async function notifyTripUpdated(tripId: number, changeDescription: string, onError: (err: unknown) => void): Promise<void> {
+  try {
+    const [tripRow] = await db
+      .select({ name: tripsTable.name, agencyId: tripsTable.agencyId })
+      .from(tripsTable)
+      .where(eq(tripsTable.id, tripId));
+    if (!tripRow || !tripRow.agencyId) return;
+
+    const [agency] = await db
+      .select({ name: agenciesTable.name })
+      .from(agenciesTable)
+      .where(eq(agenciesTable.id, tripRow.agencyId));
+    if (!agency) return;
+
+    const accepted = await db
+      .select({ email: invitationsTable.email, name: usersTable.name })
+      .from(invitationsTable)
+      .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
+      .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
+
+    const tripUrl = `${PUBLIC_APP_URL}/#/trips/${tripId}`;
+
+    await Promise.allSettled(
+      accepted.map(t => sendTripUpdatedEmail({
+        to: t.email,
+        name: t.name ?? "viajero",
+        tripName: tripRow.name,
+        agencyName: agency.name,
+        changeDescription,
+        tripUrl,
+        tripId,
+      })),
+    );
+  } catch (err) {
+    onError(err);
+  }
+}
 
 /**
  * Verify a user is authorized to access the given trip+day.
@@ -526,6 +567,15 @@ router.post("/trips/:tripId/days/:dayId/hotels", requireAuth, validate(DayHotelI
     .returning();
 
   res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
+
+  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent";
+  if (isAgencyStaff) {
+    notifyTripUpdated(
+      tripId,
+      `<p style="margin:0">Hotel añadido: ${hotel.name}</p>`,
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireAuth, async (req, res): Promise<void> => {
@@ -539,6 +589,15 @@ router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireAuth, as
 
   await db.delete(tripDayHotelsTable).where(and(eq(tripDayHotelsTable.id, assignmentId), eq(tripDayHotelsTable.tripDayId, dayId)));
   res.sendStatus(204);
+
+  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent";
+  if (isAgencyStaff) {
+    notifyTripUpdated(
+      tripId,
+      `<p style="margin:0">Se ha eliminado un hotel del itinerario.</p>`,
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 // ─── TRIP DAY ACTIVITIES ─────────────────────────────────────────────────────
@@ -687,6 +746,14 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayAc
     createdAt: String(link.created_at),
     canEdit,
   }));
+
+  if (isAgencyStaff) {
+    notifyTripUpdated(
+      tripId,
+      `<p style="margin:0">Actividad añadida: ${actName ?? activityTitle ?? "actividad"}</p>`,
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, validate(TripDayActivityUpdateSchema), async (req, res): Promise<void> => {
@@ -792,6 +859,14 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     createdAt: updated.createdAt.toISOString(),
     canEdit,
   }));
+
+  if (isAgencyStaff) {
+    notifyTripUpdated(
+      tripId,
+      `<p style="margin:0">Actividad actualizada: ${actName ?? updated.activityTitle ?? "actividad"}</p>`,
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, async (req, res): Promise<void> => {
@@ -826,6 +901,15 @@ router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, asyn
 
   await db.execute(sql`DELETE FROM trip_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
+
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+  if (isAgencyStaff) {
+    notifyTripUpdated(
+      tripId,
+      `<p style="margin:0">Se ha eliminado una actividad del itinerario.</p>`,
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> => {
@@ -848,9 +932,25 @@ router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> 
 router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), validate(TripUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const fields = req.body;
+  const [before] = await db.select({ startDate: tripsTable.startDate, endDate: tripsTable.endDate }).from(tripsTable).where(eq(tripsTable.id, id));
   const [trip] = await db.update(tripsTable).set(fields).where(eq(tripsTable.id, id)).returning();
   if (!trip) { res.status(404).json({ error: "Not found" }); return; }
   res.json(serializeTrip({ ...trip, itineraryName: null, invitedCount: 0, acceptedCount: 0 }));
+
+  const changes: string[] = [];
+  if (fields.startDate !== undefined && before && fields.startDate !== before.startDate) {
+    changes.push(`Nueva fecha de inicio: ${fields.startDate}`);
+  }
+  if (fields.endDate !== undefined && before && fields.endDate !== before.endDate) {
+    changes.push(`Nueva fecha de fin: ${fields.endDate ?? "sin definir"}`);
+  }
+  if (changes.length > 0) {
+    notifyTripUpdated(
+      id,
+      changes.map(c => `<p style="margin:0 0 4px">${c}</p>`).join(""),
+      (err) => req.log.error({ err }, "Failed to send trip updated notifications"),
+    );
+  }
 });
 
 // ─── Back-office document endpoints ──────────────────────────────────────────

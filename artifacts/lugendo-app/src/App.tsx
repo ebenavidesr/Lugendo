@@ -10,6 +10,9 @@ import { TravelerLayout } from "@/components/layout/traveler-layout";
 import NotFound from "@/pages/not-found";
 import { Login } from "@/pages/login";
 import PendingApproval from "@/pages/pending-approval";
+import VerifyEmailPending from "@/pages/verify-email-pending";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "@/pages/dashboard";
 import Trips from "@/pages/trips";
 import TripDetail from "@/pages/trip-detail";
@@ -62,6 +65,9 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Login} />
       <Route path="/pending" component={PendingApproval} />
+      <Route path="/verify-email" component={VerifyEmailPending} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* Back Office */}
       <Route path="/dashboard">

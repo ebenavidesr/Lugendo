@@ -58,7 +58,7 @@
 | #89 | Dashboard avanzado: GANTT de viajes, alertas y carga por agente | 🟡 Media | Agencia | Yo |
 | #90 | Log de auditoría de acciones (quién creó, editó, eliminó) | 🟡 Media | Agencia · Roles | Yo |
 | #91 | Rol Guía local (solo lectura en itinerario y viajeros del viaje) | 🟡 Media | Roles | Yo |
-| #92 | Módulo de facturación Lugendo (fees de agencias y suscripciones) | 🟢 Baja | Agencia | Yo |
+| #92 | Módulo de facturación Lugendo (fees de agencias y suscripciones) — incluye ahora el email de aviso de pago/licencia descartado de #145 | 🟢 Baja | Agencia | Yo |
 | #93 | CRM básico: segmentos, score e insignias de viajero | 🟢 Baja | Viajeros · Agencia | Yo |
 | #94 | Seguimiento de documentación por viajero en el back office | 🔴 Alta | Documentos | Yo |
 | #95 | Check-in digital en destino (viajero confirma llegada, agente lo ve) | 🟡 Media | Viajeros | Yo |
@@ -83,7 +83,6 @@
 | #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #143 | Foto del día: placeholder compacto y subida inline | 🟡 Media | Viajeros | Yo |
 | #144 | Alta de cuentas de desarrollador: App Store Connect y Google Play Console | 🟢 Baja | Infraestructura | Tú |
-| #145 | Sistema de emails transaccionales (Resend): verificación, notificaciones, invitaciones y alertas | 🔴 Alta | Infraestructura | Tú |
 | #146 | App móvil iOS/Android con React Native/Expo (renumerado desde un #143 duplicado en Notion) | 🟢 Baja | Infraestructura | Tú |
 | #147 | Arreglar entorno de desarrollo local: el build de Vite falla por falta del binario nativo `@rollup/rollup-darwin-arm64`, ningún paquete carga `.env` automáticamente (falta `dotenv`/`--env-file`), y el dev server de Vite no tiene proxy a `/api` — en QA, pendiente de validar en otra máquina | 🟡 Media | Infraestructura | Tú |
 | #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
@@ -125,6 +124,7 @@
 
 | # | Tarea | Prioridad | Área |
 |---|-------|-----------|------|
+| #145 | Sistema de emails transaccionales (Resend): verificación, notificaciones, invitaciones y alertas (6 de 7 tipos — aviso de pago movido a #92) | 🔴 Alta | Infraestructura |
 | #1 | Hotel multi-día: sugerir misma ciudad al asignar | | Hoteles |
 | #2 | País desde lista y defaults del día | | Itinerarios |
 | #3 | Hotel: buscar antes de listar en el panel de día | | Hoteles |

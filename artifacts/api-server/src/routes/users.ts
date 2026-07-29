@@ -1,13 +1,17 @@
 import { Router, type IRouter } from "express";
+import crypto from "crypto";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
+import { usersTable, agenciesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { UserInputSchema, UserUpdateSchema } from "../lib/schemas";
+import { sendAgencyOnboardingEmail } from "../lib/email";
+import { PUBLIC_APP_URL } from "../lib/publicUrl";
 
 const router: IRouter = Router();
+const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 function serialize(u: typeof usersTable.$inferSelect) {
   return { id: u.id, email: u.email, name: u.name, role: u.role, agencyId: u.agencyId, active: u.active, createdAt: u.createdAt.toISOString() };
@@ -35,11 +39,32 @@ router.post("/users", requireRoles("admin", "manager"), validate(UserInputSchema
   }
   const rawPassword = password || Math.random().toString(36).slice(-10);
   const passwordHash = await bcrypt.hash(rawPassword, 12);
+  const passwordResetToken = role !== "traveler" ? crypto.randomBytes(32).toString("hex") : null;
   const [user] = await db
     .insert(usersTable)
-    .values({ email: email.toLowerCase().trim(), passwordHash, name, role, agencyId: targetAgencyId })
+    .values({
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      name,
+      role,
+      agencyId: targetAgencyId,
+      passwordResetToken,
+      passwordResetExpiresAt: passwordResetToken ? new Date(Date.now() + PASSWORD_RESET_TTL_MS) : null,
+    })
     .returning();
   res.status(201).json(serialize(user));
+
+  if (passwordResetToken && targetAgencyId) {
+    const [agency] = await db.select({ name: agenciesTable.name }).from(agenciesTable).where(eq(agenciesTable.id, targetAgencyId));
+    if (agency) {
+      sendAgencyOnboardingEmail({
+        to: user.email,
+        name: user.name,
+        agencyName: agency.name,
+        activateUrl: `${PUBLIC_APP_URL}/reset-password?token=${passwordResetToken}`,
+      }).catch((err) => req.log.error({ err }, "Failed to send agency onboarding email"));
+    }
+  }
 });
 
 router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
