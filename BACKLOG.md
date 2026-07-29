@@ -88,6 +88,7 @@
 | #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
 | #150 | Etiqueta "Incluída" en actividades del viaje — código implementado 2026-07-29 (sin cambios de schema/backend, el campo `included` ya existía); pendiente de que Quique mueva la tarjeta a QA y valide visualmente | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #151 | Mensaje de error de registro más específico — "No se pudo crear la cuenta" es genérico y oculta la causa real (p. ej. email ya registrado); mostrar el motivo devuelto por el backend | 🟢 Baja | Registro | Yo |
+| #152 | Pantalla de aprobación de registros pendientes en el admin (fallback a los enlaces de email) — hoy la única forma de aprobar/rechazar un registro es el enlace del email de notificación; si falla (como pasó el 2026-07-29, ver #126) no hay ninguna otra vía. Además, la tabla de Equipo muestra "Activo" en usuarios pendientes, confundible con el estado real de aprobación | 🔴 Alta | Registro | Yo |
 | — | Actividades enriquecidas con más datos (sin número en Notion) | 🔴 Alta | — | — |
 | — | Al subir un itinerario por PDF, el texto desborda el marco donde debería quedar contenido — en curso (sin número en Notion) | 🟡 Media | — | — |
 | — | Arreglar la funcionalidad de búsqueda por mapa (sin número en Notion) | 🟢 Baja | — | — |
