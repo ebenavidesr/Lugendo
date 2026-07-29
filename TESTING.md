@@ -396,6 +396,13 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Validado por Quique en Safari de escritorio (macOS): el panel de Contactos/autocompletado ya no bloquea el tecleo manual, y si se elige una cuenta del panel, el valor se refleja en el campo
 - [ ] Validado por Quique en Safari de iPhone/iPad: el registro y el login siguen funcionando correctamente tras este cambio (regresión sobre el fix del 2026-07-25)
 
+### Fix — Registro rechazaba con "Email inválido" un email autorrellenado por el navegador junto con contraseña/confirmar (2026-07-29)
+- [x] Causa raíz identificada: cuando el navegador rellena varios campos de golpe (selector de credenciales/Contactos, no tecleo manual), a veces escribe el valor en el DOM del campo Email sin disparar el evento `input` — react-hook-form nunca se entera del cambio y sigue creyendo que el campo está vacío, así que al enviar valida (y rechaza) ese valor obsoleto aunque el campo se vea relleno en pantalla. El `onBlur` de sincronización del fix anterior no cubre este caso porque el autorrelleno masivo no dispara un ciclo de foco/desenfoque sobre el campo Email si el usuario no vuelve a tocarlo
+- [x] Arreglo: justo antes de `handleSubmit` (en el `onSubmit` de ambos `<form>`, login y registro), se sincroniza el valor real del DOM de email/contraseña/confirmar contraseña hacia el estado de react-hook-form, así el envío siempre valida lo que el usuario ve en pantalla, sin depender de qué eventos haya disparado el navegador
+- [x] Verificado en el navegador: se fuerza el valor del campo Email vía el setter nativo sin disparar ningún evento (reproduce el peor caso de autorrelleno silencioso) y el registro completa con `201 Created`, enviando el email correcto (confirmado inspeccionando el payload de la petición)
+- [x] Mismo caso verificado en `/login`: la petición llega al backend con el email/contraseña correctos (401 esperado por credenciales inexistentes, no bloqueo de validación en el cliente)
+- [ ] Validado por Quique en Safari/Chrome de escritorio real: usar el selector nativo de credenciales para autorrellenar email+contraseña+confirmar de golpe (sin tocar manualmente el campo Email después) completa el registro correctamente
+
 ### Fix reforzado — Bloqueo total del campo Contraseña en /login desde la primera tecla, ni escribir ni pegar (2026-07-11)
 - [x] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
 - [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con contraseñas guardadas

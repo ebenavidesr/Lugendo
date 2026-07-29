@@ -52,6 +52,19 @@ const registerSchema = z
     path: ["confirmPassword"],
   });
 
+// Bug recurrente: cuando el navegador autorrellena varios campos de golpe (selector de credenciales/Contactos,
+// no tecleo manual), a veces escribe el valor en el DOM sin disparar el evento `input` que react-hook-form
+// necesita para actualizar su estado interno — el campo se ve relleno pero react-hook-form sigue creyendo que
+// está vacío, y valida (y envía) ese valor obsoleto en vez del que se ve en pantalla. Sincroniza el valor real
+// del DOM hacia el estado del formulario justo antes de `handleSubmit`, así el envío siempre valida lo que el
+// usuario ve, sin importar si el navegador disparó el evento o no.
+function syncDomValueIntoForm(formEl: HTMLFormElement, domName: string, setValue: (name: string, value: string, opts?: { shouldValidate: boolean }) => void, fieldName: string) {
+  const el = formEl.elements.namedItem(domName);
+  if (el instanceof HTMLInputElement) {
+    setValue(fieldName, el.value, { shouldValidate: false });
+  }
+}
+
 function PasswordRequirements({ password }: { password: string }) {
   return (
     <ul className="space-y-1.5 text-sm">
@@ -155,7 +168,15 @@ export function Login() {
           <CardContent>
             {isRegister ? (
               <Form {...registerForm}>
-                <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    syncDomValueIntoForm(e.currentTarget, "reg-correo", registerForm.setValue, "email");
+                    syncDomValueIntoForm(e.currentTarget, "password", registerForm.setValue, "password");
+                    syncDomValueIntoForm(e.currentTarget, "confirmPassword", registerForm.setValue, "confirmPassword");
+                    return registerForm.handleSubmit(onRegisterSubmit)(e);
+                  }}
+                  className="space-y-4"
+                >
                   {/* Nombre + Apellidos */}
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
@@ -357,7 +378,14 @@ export function Login() {
               </Form>
             ) : (
               <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    syncDomValueIntoForm(e.currentTarget, "acceso-correo", loginForm.setValue, "email");
+                    syncDomValueIntoForm(e.currentTarget, "password", loginForm.setValue, "password");
+                    return loginForm.handleSubmit(onLoginSubmit)(e);
+                  }}
+                  className="space-y-4"
+                >
                   <FormField
                     control={loginForm.control}
                     name="email"
