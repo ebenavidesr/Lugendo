@@ -525,6 +525,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         <ActivityDetailSheet
           entityId={tripId}
           dayId={day.id}
+          days={allDays.map(d => ({ id: d.id, dayNumber: d.dayNumber }))}
           activity={editActivity as unknown as DayActivity}
           open={editSheetOpen}
           onOpenChange={(open) => {
