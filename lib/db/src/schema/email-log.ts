@@ -16,6 +16,7 @@ export const emailSendLogTable = pgTable("email_send_log", {
       "agency_onboarding",
       "document_uploaded",
       "approval_request",
+      "trip_share_invitation",
     ],
   }).notNull(),
   recipientEmail: text("recipient_email").notNull(),

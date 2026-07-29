@@ -158,6 +158,44 @@ export async function sendInvitationEmail(opts: {
   });
 }
 
+// Traveler-to-traveler share (trip_shares table) — distinct from the agency-driven
+// invitation above (invitations table). The recipient may or may not have a Lugendo
+// account yet; ctaUrl/ctaText are chosen by the caller accordingly (login vs. register).
+export async function sendTripShareInvitationEmail(opts: {
+  to: string;
+  ownerName: string;
+  tripName: string;
+  shareCode: string;
+  ctaText: string;
+  ctaUrl: string;
+  tripId?: number;
+}): Promise<void> {
+  const { to, ownerName, tripName, shareCode, ctaText, ctaUrl, tripId } = opts;
+  await sendEmail({
+    to,
+    type: "trip_share_invitation",
+    tripId,
+    subject: `${ownerName} te ha compartido su viaje: ${tripName}`,
+    html: renderBaseTemplate({
+      title: `${ownerName} te ha compartido un viaje`,
+      showFooter: true,
+      bodyHtml: `
+        <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px">
+          <p style="margin:0 0 4px;font-size:13px;color:#9C7A58;text-transform:uppercase;letter-spacing:.05em">Viaje</p>
+          <p style="margin:0;font-size:18px;font-weight:500;color:#2D1F0E">${tripName}</p>
+        </div>
+        <div style="background:#ECD5B8;border-radius:12px;padding:16px 24px;margin-bottom:20px;text-align:center">
+          <p style="margin:0 0 4px;font-size:12px;color:#6B5744;text-transform:uppercase;letter-spacing:.08em">Código de invitación</p>
+          <p style="margin:0;font-size:28px;font-weight:500;letter-spacing:.2em;color:#3D2F6B">${shareCode}</p>
+        </div>
+        <p style="margin:0;font-size:13px;color:#6B5744">Entra a Lugendo e introduce este código desde "¿Tienes un código de invitación?" en tu pantalla de inicio para ver el viaje.</p>
+      `,
+      ctaText,
+      ctaUrl,
+    }),
+  });
+}
+
 export async function sendWelcomeEmail(opts: {
   to: string;
   name: string;

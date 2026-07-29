@@ -33,6 +33,8 @@ import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { sanitizeNoteHtml } from "../lib/sanitize";
 import { geocodeCity } from "../lib/geocoding";
 import { repositionDay, shiftTripNotesForReposition } from "../lib/day-renumbering";
+import { sendTripShareInvitationEmail } from "../lib/email";
+import { PUBLIC_APP_URL } from "../lib/publicUrl";
 import {
   defaultDateBasedClassification, ensureTripClassification,
   ensureTripClassificationByDates, getTripClassification,
@@ -1453,6 +1455,22 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
   }).returning();
 
   res.status(201).json({ ...share, createdAt: share.createdAt.toISOString() });
+
+  const [owner] = await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, userId));
+  const [trip] = await db.select({ name: tripsTable.name }).from(tripsTable).where(eq(tripsTable.id, tripId));
+  if (owner && trip) {
+    sendTripShareInvitationEmail({
+      to: share.sharedWithEmail,
+      ownerName: owner.name,
+      tripName: trip.name,
+      shareCode,
+      // The recipient may already have a Lugendo account (in which case the pending
+      // share already shows up on their traveler home once they log in) or not yet.
+      ctaText: recipient ? "Iniciar sesión" : "Crear mi cuenta",
+      ctaUrl: `${PUBLIC_APP_URL}/#/${recipient ? "login" : "register"}`,
+      tripId,
+    }).catch((err) => req.log.error({ err }, "Failed to send trip share invitation email"));
+  }
 });
 
 // ─── Update share permission ──────────────────────────────────────────────────
