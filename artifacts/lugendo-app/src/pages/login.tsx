@@ -194,16 +194,18 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (nombre+email+contraseña+confirmar) como un registro y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (nombre+email+contraseña+confirmar) como un registro y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". Campo no controlado (sin prop `value`): en Safari de escritorio, el panel de "Contactos"/emails guardados escribe el valor directamente en el DOM sin disparar el evento `input` que React usa para reconciliar un campo controlado, así que un `value={field.value}` fuerza el campo de vuelta a vacío en el siguiente render y bloquea tanto la selección del panel como el tecleo manual posterior. Con `defaultValue` el DOM manda y `onChange`/`onBlur` solo sincronizan el estado de react-hook-form. */}
                           <Input
                             inputMode="text"
                             placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            {...field}
+                            ref={field.ref}
+                            defaultValue={field.value}
+                            onChange={field.onChange}
                             onBlur={(e) => {
-                              if (e.target.value !== field.value) field.onChange(e.target.value);
+                              field.onChange(e.target.value);
                               field.onBlur();
                             }}
                             name="reg-correo"
@@ -363,16 +365,18 @@ export function Login() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (email+contraseña) como un login y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". Tampoco se usa autoFocus: forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo. */}
+                          {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador (Chrome, Safari/Keychain, móvil) reconocen el formulario completo (email+contraseña) como un login y capturan el teclado, incluso sin type="email"/autoComplete="email". Mitigación (sin readOnly: en iOS Safari un input readOnly no abre el teclado virtual, y desbloquearlo en onFocus llega tarde para esa decisión): nombre de campo no estándar, autoComplete="off" y atributos para ignorar gestores de contraseñas, y el placeholder ya no contiene "@" ni "email.com". Tampoco se usa autoFocus: forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo. Campo no controlado (sin prop `value`): en Safari de escritorio, el panel de "Contactos"/emails guardados escribe el valor directamente en el DOM sin disparar el evento `input` que React usa para reconciliar un campo controlado, así que un `value={field.value}` fuerza el campo de vuelta a vacío en el siguiente render y bloquea tanto la selección del panel como el tecleo manual posterior. Con `defaultValue` el DOM manda y `onChange`/`onBlur` solo sincronizan el estado de react-hook-form. */}
                           <Input
                             inputMode="text"
                             placeholder="Introduce tu correo"
                             autoCapitalize="off"
                             autoCorrect="off"
                             spellCheck={false}
-                            {...field}
+                            ref={field.ref}
+                            defaultValue={field.value}
+                            onChange={field.onChange}
                             onBlur={(e) => {
-                              if (e.target.value !== field.value) field.onChange(e.target.value);
+                              field.onChange(e.target.value);
                               field.onBlur();
                             }}
                             name="acceso-correo"

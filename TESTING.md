@@ -388,6 +388,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] El placeholder ya no muestra "nombre@email.com" sino "Introduce tu correo" (sin "@")
 - [ ] Registro y login completan correctamente de principio a fin tras el cambio, con el email introducido conservado
 
+### Fix — Campo Email bloqueado en Safari de escritorio: el panel de Contactos/autocompletado no rellenaba el campo y el tecleo posterior tampoco (2026-07-29)
+- [x] Causa raíz identificada: los campos Email de `/login` y `/register` eran inputs controlados (`value={field.value}` vía `{...field}` de react-hook-form). En Safari de escritorio, el panel nativo de "Contactos"/emails guardados escribe el valor en el DOM sin disparar el evento `input` que React necesita para reconciliar un campo controlado; el siguiente render de React lo revertía a `""`, y el mismo desajuste dejaba el campo sin poder recibir tecleo manual después
+- [x] Ambos campos convertidos a no controlados (`defaultValue={field.value}` + `ref`/`onChange`/`onBlur` manuales, sin prop `value`), manteniendo el resto de mitigaciones ya existentes (`autoComplete="off"`, nombres de campo no estándar, `data-lpignore`, sin `autoFocus`)
+- [x] Verificado en el navegador (Chromium): el campo Email de `/register` acepta texto a la primera tecla y conserva el valor tras salir y volver a entrar del campo
+- [x] Verificado en el navegador (Chromium): el campo Email de `/login` acepta texto a la primera tecla y conserva el valor tras salir y volver a entrar del campo
+- [ ] Validado por Quique en Safari de escritorio (macOS): el panel de Contactos/autocompletado ya no bloquea el tecleo manual, y si se elige una cuenta del panel, el valor se refleja en el campo
+- [ ] Validado por Quique en Safari de iPhone/iPad: el registro y el login siguen funcionando correctamente tras este cambio (regresión sobre el fix del 2026-07-25)
+
 ### Fix reforzado — Bloqueo total del campo Contraseña en /login desde la primera tecla, ni escribir ni pegar (2026-07-11)
 - [x] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
 - [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con contraseñas guardadas
