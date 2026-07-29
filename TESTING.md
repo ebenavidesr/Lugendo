@@ -28,6 +28,20 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] **Pendiente de infraestructura (manual, no automatizable desde código)**: verificar el dominio `lugendo.io` en el dashboard de Resend (registros SPF/DKIM en Cloudflare DNS) — hasta entonces, todos los emails a direcciones reales seguirán usando el remitente sandbox de Resend
 - [x] **Añadido tras QA (2026-07-29)**: email de invitación viajero-a-viajero (`sendTripShareInvitationEmail`, tipo `trip_share_invitation`), enganchado en `POST /me/trips/:tripId/shares` (tabla `trip_shares`, distinta de `invitations`) — antes este flujo no notificaba nada, solo devolvía el `shareCode` en la respuesta JSON. El CTA cambia según si el destinatario ya tiene cuenta (login) o no (registro); no requiere migración (el tipo nuevo se añade al enum TS-only de `email_send_log.type`, columna `text` sin `CHECK` en la base). Verificado end-to-end con dos cuentas de prueba desechables (creadas y eliminadas en la misma sesión): login del propietario → creación de viaje personal → compartir con el email del segundo usuario → `email_send_log` registra el intento con el `shareCode` correcto (falla esperada de Resend por dominio `@example.com`, no probado con dirección real)
 
+### #150 — Etiqueta "Incluída" en actividades del viaje (2026-07-29)
+- [x] Investigación previa: el campo `included: boolean` ya existía en `trip_day_activities` (`lib/db/src/schema/trips.ts:89`), ya estaba leído/escrito de punta a punta en `artifacts/api-server/src/routes/trips.ts`, y ya tenía un toggle "Incluida"/"Por libre" funcional en `activity-detail-sheet.tsx` disponible para agencia y viajero — no hizo falta ningún cambio de schema, backend ni `openapi.yaml`
+- [x] Badge "Incluída" añadido en `trip-day-card.tsx` (vista viajero/Passport) cuando `activity.included === true`, junto al badge "Por libre" existente
+- [x] Badge "Incluída" añadido en `day-activities-panel.tsx` (vista agencia, compartida entre viaje e itinerario), con guarda explícita `!isItinerary` para que no aparezca en itinerarios/plantillas
+- [x] `pnpm run typecheck` limpio
+- [ ] Verificación visual en navegador pendiente — sin credenciales de login funcionales en local (ver nota en `CLAUDE.md` sobre `admin@lugendo.io`)
+- [ ] Una actividad de agencia marcada como incluida muestra la etiqueta "Incluída"
+- [ ] Una actividad de agencia NO incluida no muestra la etiqueta
+- [ ] Una actividad del viajero ("Por libre") que además está incluida muestra ambas etiquetas
+- [ ] Una actividad del viajero no incluida solo muestra "Por libre"
+- [ ] La etiqueta "Incluída" no aparece en la vista de itinerarios (plantillas sin fechas), solo en viajes
+- [ ] Tanto agencia como viajero pueden alternar el estado "incluida" de una actividad (según permisos del rol) — el toggle ya existía en `activity-detail-sheet.tsx`, no se tocó su lógica
+- [ ] No hay regresión en el tag de tipo de actividad (Visita/Gastronomía/Traslado/Libre) ni en la etiqueta "Por libre" existente
+
 ### #148 — Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) (2026-07-29)
 - [x] Investigación previa (fase de planificación): el modelo YA es individual por viajero — `trip_checklist_items`, `trip_packing_items` y `trip_notes` tienen `tripId` + `userId` desde el inicio; no hizo falta ninguna migración de schema. Alcance de la tarea reducido de "migrar" a "verificar y blindar con tests" tras confirmarlo con Quique
 - [x] Verificado con una transacción real contra la base de datos con rollback explícito (datos desechables, cero filas persistidas): un viaje con un share **aceptado y con permiso "full" (edición)** — el caso más exigente — confirma que el usuario invitado obtiene 0 items del checklist/equipaje/notas del propietario al consultar con su propio `userId`; sus propios items creados no colisionan ni exponen los del propietario

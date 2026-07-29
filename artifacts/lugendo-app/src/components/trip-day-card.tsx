@@ -315,6 +315,14 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                             )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
+                            {activity.included && (
+                              <span
+                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+                              >
+                                Incluída
+                              </span>
+                            )}
                             {isFree && (
                               <span
                                 className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"

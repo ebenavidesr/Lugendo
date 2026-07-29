@@ -292,6 +292,12 @@ export function DayActivitiesPanel({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
+                            {!isItinerary && a.included && (
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                                Incluída
+                              </span>
+                            )}
                             {isFree && (
                               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                                 style={{ background: "#F0F4F0", color: "#4A6A4A" }}>
