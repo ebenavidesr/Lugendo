@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Users, UserPlus, Trash2, Copy, Check, Pencil, Crown,
 } from "lucide-react";
@@ -36,20 +36,22 @@ function InviteDialog({
   const qc = useQueryClient();
   const shareTrip = useShareTrip();
   const [email, setEmail] = useState("");
-  const [emailLocked, setEmailLocked] = useState(true);
+  const emailRef = useRef<HTMLInputElement>(null);
   const [permission, setPermission] = useState<"read" | "full">("read");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
 
   const handleShare = () => {
-    if (!email.trim()) return;
+    const value = emailRef.current?.value ?? email;
+    if (!value.trim()) return;
     shareTrip.mutate(
-      { tripId, data: { email: email.trim(), permission } },
+      { tripId, data: { email: value.trim(), permission } },
       {
         onSuccess: () => {
           invalidate();
-          toast({ title: `Invitación enviada a ${email.trim()}` });
+          toast({ title: `Invitación enviada a ${value.trim()}` });
           setEmail("");
+          if (emailRef.current) emailRef.current.value = "";
           onClose();
         },
         onError: (err: unknown) => {
@@ -74,7 +76,7 @@ function InviteDialog({
             <label className="text-[12px] font-medium block mb-1.5" style={{ color: "var(--noche)" }}>
               Email del viajero
             </label>
-            {/* Bug recurrente: el autocompletado/sugerencias nativas de email del navegador reconocen el campo y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", placeholder sin "@", sin autoFocus (forzar el foco en el primer render es justo el momento en que el autofill engine engancha el campo) y readOnly hasta el primer foco manual del usuario. */}
+            {/* Bug recurrente: el autocompletado/gestor de contraseñas del navegador reconoce el campo como "email" y captura el teclado. Mitigación validada (ver login.tsx): NO usar readOnly-hasta-foco (desbloquear en onFocus llega tarde en iOS Safari y en Chrome/Safari de escritorio provoca que el campo se "active y desactive" al escribir). En su lugar: campo no controlado (defaultValue, sin `value`) para que el autofill pueda escribir directamente en el DOM sin que un re-render lo borre, y se relee el valor real del DOM (emailRef) justo antes de enviar. */}
             <Input
               inputMode="text"
               autoComplete="off"
@@ -83,12 +85,10 @@ function InviteDialog({
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              readOnly={emailLocked}
-              onFocus={() => setEmailLocked(false)}
               placeholder="Correo del viajero"
-              value={email}
+              ref={emailRef}
+              defaultValue={email}
               onChange={e => setEmail(e.target.value)}
-              onBlur={e => { if (e.target.value !== email) setEmail(e.target.value); }}
               onKeyDown={e => e.key === "Enter" && handleShare()}
             />
           </div>

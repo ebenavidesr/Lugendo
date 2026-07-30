@@ -423,6 +423,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Validado por Quique con la invitación real re-creada a `ebenavidesr@me.com` para el viaje "Sri Lanka": el botón del email de invitación lleva a login/registro correctamente, y tras aceptar el código en Compartidos el viaje aparece en esa pestaña
 - [ ] Validado por Quique: el email de "viaje actualizado" y el de "documento subido" (agencia → viajero) llevan al viaje del viajero correctamente, no a una página en blanco ni al back-office
 
+### Fix — Campo de email "se activa y desactiva" al escribir en Invitar viajero y en crear/editar usuario, en Safari y Chrome (2026-07-30)
+- [x] Causa raíz identificada: `trip-travelers-tab.tsx` (invitar viajero) y `team.tsx` (crear/editar usuario) seguían usando el patrón `readOnly` hasta el primer `onFocus` para despistar al autocompletado — el mismo patrón ya retirado de `login.tsx` el 2026-07-25 por romper el teclado en iOS Safari. Alternar el atributo `readOnly` con el campo ya enfocado hace que el motor de autofill de Chrome/Safari reevalúe el campo en cada focus, cortando el tecleo de forma intermitente — confirmado ahora también en Safari y Chrome de escritorio, no solo en iOS
+- [x] Arreglo: en los tres campos se elimina `readOnly`/`onFocus`/el estado `emailLocked`; el input pasa a ser no controlado (`defaultValue` en vez de `value`) y se relee el valor real del DOM con un `ref` justo antes de compartir/crear/guardar — mismo patrón ya validado en `login.tsx` (`defaultValue` + resync antes de enviar)
+- [x] Aplicado en `trip-travelers-tab.tsx` (diálogo "Invitar viajero") y `team.tsx` (diálogos "Crear usuario" y "Editar usuario")
+- [x] Como estos diálogos permanecen montados entre apertura y cierre (solo cambia el `open` de Radix, no hay remount), se limpia también `ref.current.value = ""` tras un envío/creación exitosa, para que el campo no controlado no conserve el valor anterior la próxima vez que se abra
+- [x] Documentado en la memoria del proyecto (`.agents/memory/email-input-type-uneditable.md`) que el patrón `readOnly`-hasta-el-foco queda retirado de todo el código; no reintroducirlo en futuros campos de email/contraseña
+- [x] `pnpm run typecheck` pasa sin errores tras el cambio
+- [ ] Validado por Quique: escribir de un tirón un email en "Invitar viajero" (ficha de viaje) funciona sin cortes, tanto en Safari como en Chrome de escritorio
+- [ ] Validado por Quique: mismo comportamiento en Equipo → Crear usuario y Equipo → Editar usuario, incluyendo con el gestor de contraseñas/Llavero activo
+- [ ] Validado por Quique: tras invitar/crear con éxito y volver a abrir el diálogo, el campo de email aparece vacío (no conserva el valor anterior)
+
 ### Fix reforzado — Bloqueo total del campo Contraseña en /login desde la primera tecla, ni escribir ni pegar (2026-07-11)
 - [x] En `/login`, hacer clic o tap en el campo Contraseña y escribir inmediatamente funciona a la primera tecla, en Chrome de escritorio
 - [ ] Igual en Safari de escritorio, con Llavero/iCloud Keychain activo y con contraseñas guardadas

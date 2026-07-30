@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Plus, Mail, Pencil, UserPlus, KeyRound, Search, Check, X, HelpCircle } from "lucide-react";
 import {
   useListUsers, useCreateUser, useUpdateUser,
@@ -108,7 +108,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const empty = { firstName: "", lastName: "", email: "", role: "agent" as UserRole, agencyId: null as number | null, password: "", confirm: "" };
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof empty, string>>>({});
-  const [emailLocked, setEmailLocked] = useState(true);
+  const emailRef = useRef<HTMLInputElement>(null);
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
   const needsAgency = form.role !== "traveler";
@@ -118,7 +118,6 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
   const canSubmit =
     (form.firstName ?? "").trim() &&
     (form.lastName ?? "").trim() &&
-    (form.email ?? "").trim() &&
     form.role &&
     (!needsAgency || form.agencyId) &&
     passwordStrong &&
@@ -126,10 +125,12 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     !createUser.isPending;
 
   const handleSubmit = () => {
+    const liveEmail = emailRef.current?.value ?? form.email;
+
     const errs: typeof errors = {};
     if (!(form.firstName ?? "").trim()) errs.firstName = "El nombre es obligatorio";
     if (!(form.lastName ?? "").trim()) errs.lastName = "Los apellidos son obligatorios";
-    if (!(form.email ?? "").trim()) errs.email = "El email es obligatorio";
+    if (!liveEmail.trim()) errs.email = "El email es obligatorio";
     if (needsAgency && !form.agencyId) errs.agencyId = "La agencia es obligatoria para este rol";
     if (!passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (!passwordsMatch) errs.confirm = "Las contraseñas no coinciden";
@@ -138,12 +139,13 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
 
     const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     createUser.mutate(
-      { data: { name: fullName, email: form.email.trim(), role: form.role, agencyId: needsAgency ? form.agencyId : undefined, password: form.password } },
+      { data: { name: fullName, email: liveEmail.trim(), role: form.role, agencyId: needsAgency ? form.agencyId : undefined, password: form.password } },
       {
         onSuccess: (u) => {
           qc.invalidateQueries({ queryKey: ["/api/users"] });
           toast({ title: `Usuario "${u.name}" creado correctamente` });
           setForm(empty);
+          if (emailRef.current) emailRef.current.value = "";
           onClose();
         },
         onError: () => toast({ variant: "destructive", title: "Error al crear el usuario. El email puede estar en uso." }),
@@ -151,7 +153,12 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
     );
   };
 
-  const handleClose = () => { setForm(empty); setErrors({}); onClose(); };
+  const handleClose = () => {
+    setForm(empty);
+    setErrors({});
+    if (emailRef.current) emailRef.current.value = "";
+    onClose();
+  };
 
   return (
     <Dialog open={open} onOpenChange={v => !v && handleClose()}>
@@ -191,7 +198,7 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
-              {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador reconocen el formulario completo (nombre+email+contraseña) como un registro y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", placeholder sin "@", y readOnly hasta el primer foco para que el motor de autofill no enganche el campo durante el render inicial. */}
+              {/* Bug recurrente: el autocompletado/gestor de contraseñas del navegador reconoce el formulario completo (nombre+email+contraseña) como un registro y captura el teclado. Mitigación validada (ver login.tsx): NO usar readOnly-hasta-foco (desbloquear en onFocus provoca que el campo se "active y desactive" al escribir, tanto en Safari como en Chrome). En su lugar: campo no controlado (defaultValue, sin `value`) y relectura del valor real del DOM (emailRef) justo antes de validar/enviar. */}
               <Input
                 inputMode="text"
                 autoComplete="off"
@@ -200,12 +207,10 @@ function CreateUserDialog({ open, onClose }: { open: boolean; onClose: () => voi
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                readOnly={emailLocked}
-                onFocus={() => setEmailLocked(false)}
                 placeholder="Correo del usuario"
-                value={form.email}
+                ref={emailRef}
+                defaultValue={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
-                onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
               />
               {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
             </div>
@@ -336,7 +341,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     confirm:   "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
-  const [emailLocked, setEmailLocked] = useState(true);
+  const emailRef = useRef<HTMLInputElement>(null);
   const set = (p: Partial<typeof form>) => setForm(f => ({ ...f, ...p }));
 
   const isSelf = me?.id === user.id;
@@ -349,16 +354,17 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
   const canSave =
     (form.firstName ?? "").trim() &&
     (form.lastName ?? "").trim() &&
-    (form.email ?? "").trim() &&
     passwordStrong &&
     passwordsMatch &&
     !updateUser.isPending;
 
   const handleSave = () => {
+    const liveEmail = emailRef.current?.value ?? form.email;
+
     const errs: typeof errors = {};
     if (!(form.firstName ?? "").trim()) errs.firstName = "El nombre es obligatorio";
     if (!(form.lastName ?? "").trim())  errs.lastName  = "Los apellidos son obligatorios";
-    if (!(form.email ?? "").trim())     errs.email     = "El email es obligatorio";
+    if (!liveEmail.trim())              errs.email     = "El email es obligatorio";
     if (changingPwd && !passwordStrong) errs.password = "La contraseña no cumple los requisitos";
     if (changingPwd && !passwordsMatch) errs.confirm  = "Las contraseñas no coinciden";
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -367,7 +373,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
     const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`;
     const patch: Record<string, unknown> = {};
     if (fullName    !== user.name)   patch.name   = fullName;
-    if (form.email  !== user.email)  patch.email  = form.email.trim();
+    if (liveEmail   !== user.email)  patch.email  = liveEmail.trim();
     if (form.role     !== user.role)          patch.role     = form.role;
     if (form.agencyId !== (user.agencyId ?? null)) patch.agencyId = form.agencyId;
     if (form.active   !== user.active)        patch.active   = form.active;
@@ -426,7 +432,7 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 sm:col-span-1">
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Email *</label>
-              {/* Bug recurrente: el autocompletado/sugerencias nativas de email-contraseña del navegador reconocen el formulario completo (nombre+email+contraseña) como un registro y capturan el teclado. Mitigación reforzada (no eliminable al 100%): sin autoComplete="email", inputMode="text", y readOnly hasta el primer foco para que el motor de autofill no enganche el campo durante el render inicial. */}
+              {/* Bug recurrente: el autocompletado/gestor de contraseñas del navegador reconoce el formulario completo (nombre+email+contraseña) como un registro y captura el teclado. Mitigación validada (ver login.tsx): NO usar readOnly-hasta-foco (desbloquear en onFocus provoca que el campo se "active y desactive" al escribir, tanto en Safari como en Chrome). En su lugar: campo no controlado (defaultValue, sin `value`) y relectura del valor real del DOM (emailRef) justo antes de validar/enviar. */}
               <Input
                 inputMode="text"
                 autoComplete="off"
@@ -435,11 +441,9 @@ function EditUserDialog({ user, onClose }: { user: User; onClose: () => void }) 
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
-                readOnly={emailLocked}
-                onFocus={() => setEmailLocked(false)}
-                value={form.email}
+                ref={emailRef}
+                defaultValue={form.email}
                 onChange={e => { set({ email: e.target.value }); setErrors(er => ({ ...er, email: undefined })); }}
-                onBlur={e => { if (e.target.value !== form.email) set({ email: e.target.value }); }}
               />
               {errors.email && <p className="text-[11px] text-destructive mt-1">{errors.email}</p>}
             </div>
