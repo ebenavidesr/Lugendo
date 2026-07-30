@@ -2055,6 +2055,38 @@ export const RevokeTripShareParams = zod.object({
 
 
 /**
+ * @summary List photo shares (frozen snapshot links) for a trip owned/managed by the current traveler
+ */
+export const ListTripPhotoSharesParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripPhotoSharesResponseItem = zod.object({
+  "id": zod.number(),
+  "shareCode": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListTripPhotoSharesResponse = zod.array(ListTripPhotoSharesResponseItem)
+
+
+/**
+ * @summary Generate a new frozen "photo" snapshot link of a trip, for sharing with a contact without an account
+ */
+export const CreateTripPhotoShareParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Revoke a trip photo share
+ */
+export const RevokeTripPhotoShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "photoShareId": zod.coerce.number()
+})
+
+
+/**
  * @summary List trips shared with the current traveler (all statuses)
  */
 export const ListSharedWithMeResponseItem = zod.object({
@@ -2523,6 +2555,49 @@ export const AcceptTripShareResponse = zod.object({
   "permission": zod.enum(['full', 'read']),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary View a shared trip photo (public, no auth — accessed via link/code)
+ */
+export const GetTripPhotoParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetTripPhotoResponse = zod.object({
+  "shareCode": zod.string(),
+  "snapshot": zod.object({
+  "tripName": zod.string(),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullable(),
+  "description": zod.string().nullable(),
+  "days": zod.array(zod.object({
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullable(),
+  "cityTo": zod.string().nullable(),
+  "hotels": zod.array(zod.object({
+  "name": zod.string(),
+  "address": zod.string().nullable(),
+  "phone": zod.string().nullable(),
+  "website": zod.string().nullable()
+})),
+  "activities": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string().nullable(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable()
+}))
+}))
+})
+})
+
+
+/**
+ * @summary Create a brand new, editable personal trip pre-filled from a shared photo's snapshot
+ */
+export const UseTripPhotoAsTemplateParams = zod.object({
+  "code": zod.coerce.string()
 })
 
 

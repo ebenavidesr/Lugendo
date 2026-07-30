@@ -31,6 +31,7 @@ import TravelerProfile from "@/pages/traveler-profile";
 import Agencies from "@/pages/agencies";
 import AgencyDetail from "@/pages/agency-detail";
 import AgencySettings from "@/pages/agency-settings";
+import TripPhotoView from "@/pages/trip-photo-view";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />
+      <Route path="/foto/:code" component={TripPhotoView} />
 
       {/* Back Office */}
       <Route path="/dashboard">

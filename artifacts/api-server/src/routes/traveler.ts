@@ -9,8 +9,9 @@ import {
   tripDayActivitiesTable, itineraryDayActivitiesTable,
   tripSharesTable, usersTable, activitiesTable,
   tripChecklistItemsTable, checklistTemplatesTable,
-  userCountriesTable,
+  userCountriesTable, tripPhotoSharesTable,
 } from "@workspace/db";
+import type { TripPhotoSnapshot, TripPhotoSnapshotDay } from "@workspace/db";
 import { COUNTRY_NAME_BY_CODE, COUNTRY_CODE_BY_NAME } from "@workspace/db/countries";
 import { requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -1844,6 +1845,164 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
   await ensureTripClassification(userId, share.tripId, "compartido");
 
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
+});
+
+// ─── Trip photo shares: frozen snapshot for an external contact without an
+// account ("Invitada", task #141) ─────────────────────────────────────────────
+
+function buildTripPhotoSnapshotDay(
+  day: typeof tripDaysTable.$inferSelect,
+  hotels: ReturnType<typeof serializeDayHotel>[],
+  activities: Array<{ activityName: string; notes: string | null; startTime: string | null; endTime: string | null }>,
+): TripPhotoSnapshotDay {
+  return {
+    dayNumber: day.dayNumber,
+    cityFrom: day.cityFrom ?? null,
+    cityTo: day.cityTo ?? null,
+    hotels: hotels.map(h => ({ name: h.hotelName, address: h.hotelAddress, phone: h.hotelPhone, website: h.hotelWebsite })),
+    activities: activities.map(a => ({ name: a.activityName, description: a.notes, startTime: a.startTime, endTime: a.endTime })),
+  };
+}
+
+async function buildTripPhotoSnapshot(tripId: number, creatorUserId: number): Promise<TripPhotoSnapshot | null> {
+  const [trip] = await db.select().from(tripsTable).where(eq(tripsTable.id, tripId));
+  if (!trip) return null;
+
+  let tripDayRows = await db.select().from(tripDaysTable).where(eq(tripDaysTable.tripId, tripId)).orderBy(tripDaysTable.dayNumber);
+  if (tripDayRows.length === 0 && trip.itineraryId) {
+    tripDayRows = await copyItineraryDaysToTrip(tripId, trip.itineraryId, creatorUserId);
+  }
+
+  const [hotelMap, activityMap] = await Promise.all([
+    getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
+    getTripDayActivityMap(tripDayRows.map(d => d.id)),
+  ]);
+  await mergeItineraryFallbacks(trip.itineraryId, tripDayRows, hotelMap, activityMap);
+
+  return {
+    tripName: trip.name,
+    startDate: trip.startDate,
+    endDate: trip.endDate ?? null,
+    description: trip.description ?? null,
+    days: tripDayRows.map(d => buildTripPhotoSnapshotDay(d, hotelMap[d.id] ?? [], activityMap[d.id] ?? [])),
+  };
+}
+
+// A materialized template trip is always personal (no agency involved), so hotels
+// and activities are resolved against the same agencyId:null "free entry" catalog
+// travelers already use for their own personal trips (#32) — find-or-create by name.
+async function findOrCreatePersonalHotel(name: string, city: string | null): Promise<number> {
+  const [existing] = await db.select({ id: hotelsTable.id }).from(hotelsTable)
+    .where(and(eq(hotelsTable.name, name), sql`${hotelsTable.agencyId} IS NULL`));
+  if (existing) return existing.id;
+  const [created] = await db.insert(hotelsTable).values({ name, city: city ?? "", country: "" }).returning({ id: hotelsTable.id });
+  return created.id;
+}
+
+async function findOrCreatePersonalActivity(name: string): Promise<number> {
+  const [existing] = await db.select({ id: activitiesTable.id }).from(activitiesTable)
+    .where(and(eq(activitiesTable.name, name), sql`${activitiesTable.agencyId} IS NULL`));
+  if (existing) return existing.id;
+  const [created] = await db.insert(activitiesTable).values({ name }).returning({ id: activitiesTable.id });
+  return created.id;
+}
+
+async function materializeTripFromSnapshot(snapshot: TripPhotoSnapshot, userId: number): Promise<number> {
+  const [trip] = await db.insert(tripsTable).values({
+    name: snapshot.tripName,
+    startDate: snapshot.startDate,
+    endDate: snapshot.endDate,
+    description: snapshot.description,
+    ownerId: userId,
+    status: "draft",
+  }).returning();
+
+  for (const day of snapshot.days) {
+    const [tripDay] = await db.insert(tripDaysTable).values({
+      tripId: trip.id,
+      dayNumber: day.dayNumber,
+      cityFrom: day.cityFrom,
+      cityTo: day.cityTo,
+    }).returning();
+
+    for (const hotel of day.hotels) {
+      const hotelId = await findOrCreatePersonalHotel(hotel.name, day.cityTo ?? day.cityFrom);
+      await db.insert(tripDayHotelsTable).values({ tripDayId: tripDay.id, hotelId });
+    }
+    for (const activity of day.activities) {
+      const activityId = await findOrCreatePersonalActivity(activity.name);
+      await db.insert(tripDayActivitiesTable).values({
+        dayId: tripDay.id, activityId, sortOrder: 0,
+        startTime: activity.startTime, notes: activity.description, createdByUserId: userId,
+      });
+    }
+  }
+
+  return trip.id;
+}
+
+// ─── Generate a photo share for a trip I own/manage ──────────────────────────
+router.post("/me/trips/:tripId/photo-shares", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
+
+  const snapshot = await buildTripPhotoSnapshot(tripId, userId);
+  if (!snapshot) { res.status(404).json({ error: "Trip not found" }); return; }
+
+  const shareCode = makeShareCode();
+  const [photoShare] = await db.insert(tripPhotoSharesTable).values({ tripId, ownerId: userId, shareCode, snapshot }).returning();
+
+  res.status(201).json({ id: photoShare.id, shareCode: photoShare.shareCode, createdAt: photoShare.createdAt.toISOString() });
+});
+
+// ─── List / revoke photo shares for a trip I own/manage ──────────────────────
+router.get("/me/trips/:tripId/photo-shares", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
+
+  const shares = await db
+    .select({ id: tripPhotoSharesTable.id, shareCode: tripPhotoSharesTable.shareCode, createdAt: tripPhotoSharesTable.createdAt })
+    .from(tripPhotoSharesTable)
+    .where(eq(tripPhotoSharesTable.tripId, tripId));
+  res.json(shares.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
+});
+
+router.delete("/me/trips/:tripId/photo-shares/:photoShareId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const photoShareId = parseInt(Array.isArray(req.params.photoShareId) ? req.params.photoShareId[0] : req.params.photoShareId, 10);
+
+  if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
+
+  await db.delete(tripPhotoSharesTable).where(and(eq(tripPhotoSharesTable.id, photoShareId), eq(tripPhotoSharesTable.tripId, tripId)));
+  res.sendStatus(204);
+});
+
+// ─── Public: view a shared photo (no auth — accessible via link/code) ────────
+router.get("/trip-photos/:code", async (req, res): Promise<void> => {
+  const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+  const [photoShare] = await db.select().from(tripPhotoSharesTable).where(eq(tripPhotoSharesTable.shareCode, code));
+  if (!photoShare) { res.status(404).json({ error: "Foto no encontrada" }); return; }
+  res.json({ shareCode: photoShare.shareCode, snapshot: photoShare.snapshot });
+});
+
+// ─── Use a shared photo as a template for a brand new, editable personal trip ─
+// Classified "compartido" by default (task #140 decisions) since it doesn't come
+// from official agency membership.
+router.post("/trip-photos/:code/use-as-template", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
+  const [photoShare] = await db.select().from(tripPhotoSharesTable).where(eq(tripPhotoSharesTable.shareCode, code));
+  if (!photoShare) { res.status(404).json({ error: "Foto no encontrada" }); return; }
+
+  const newTripId = await materializeTripFromSnapshot(photoShare.snapshot, userId);
+  await ensureTripClassification(userId, newTripId, "compartido");
+
+  res.status(201).json({ tripId: newTripId });
 });
 
 // ─── Trip Documents ───────────────────────────────────────────────────────────

@@ -1707,6 +1707,70 @@ paths:
         "204":
           description: Revoked
 
+  /me/trips/{tripId}/photo-shares:
+    get:
+      operationId: listTripPhotoShares
+      tags: [traveler]
+      summary: List photo shares (frozen snapshot links) for a trip owned/managed by the current traveler
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of photo shares
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripPhotoShare"
+        "403":
+          description: Not the trip owner/manager
+    post:
+      operationId: createTripPhotoShare
+      tags: [traveler]
+      summary: Generate a new frozen "photo" snapshot link of a trip, for sharing with a contact without an account
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Photo share created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPhotoShare"
+        "403":
+          description: Not the trip owner/manager
+        "404":
+          description: Trip not found
+
+  /me/trips/{tripId}/photo-shares/{photoShareId}:
+    delete:
+      operationId: revokeTripPhotoShare
+      tags: [traveler]
+      summary: Revoke a trip photo share
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: photoShareId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Revoked
+
   /me/shared-trips:
     get:
       operationId: listSharedWithMe
@@ -2359,6 +2423,48 @@ paths:
                 $ref: "#/components/schemas/TripShare"
         "404":
           description: Share not found or already handled
+
+  /trip-photos/{code}:
+    get:
+      operationId: getTripPhoto
+      tags: [traveler]
+      summary: View a shared trip photo (public, no auth — accessed via link/code)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The frozen trip snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripPhotoView"
+        "404":
+          description: Photo not found
+
+  /trip-photos/{code}/use-as-template:
+    post:
+      operationId: useTripPhotoAsTemplate
+      tags: [traveler]
+      summary: Create a brand new, editable personal trip pre-filled from a shared photo's snapshot
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: New trip created from the photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UseTripPhotoTemplateResponse"
+        "404":
+          description: Photo not found
 
   # ─── DAY ACTIVITIES ─────────────────────────────────────────────────────────
   /itineraries/suggest-day-description:
@@ -4455,6 +4561,95 @@ components:
           enum: [pending, accepted, rejected]
         createdAt:
           type: string
+
+    TripPhotoShare:
+      type: object
+      required: [id, shareCode, createdAt]
+      properties:
+        id:
+          type: integer
+        shareCode:
+          type: string
+        createdAt:
+          type: string
+
+    TripPhotoSnapshotHotel:
+      type: object
+      required: [name, address, phone, website]
+      properties:
+        name:
+          type: string
+        address:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+
+    TripPhotoSnapshotActivity:
+      type: object
+      required: [name, description, startTime, endTime]
+      properties:
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        startTime:
+          type: ["string", "null"]
+        endTime:
+          type: ["string", "null"]
+
+    TripPhotoSnapshotDay:
+      type: object
+      required: [dayNumber, cityFrom, cityTo, hotels, activities]
+      properties:
+        dayNumber:
+          type: integer
+        cityFrom:
+          type: ["string", "null"]
+        cityTo:
+          type: ["string", "null"]
+        hotels:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripPhotoSnapshotHotel"
+        activities:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripPhotoSnapshotActivity"
+
+    TripPhotoSnapshot:
+      type: object
+      required: [tripName, startDate, endDate, description, days]
+      properties:
+        tripName:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripPhotoSnapshotDay"
+
+    TripPhotoView:
+      type: object
+      required: [shareCode, snapshot]
+      properties:
+        shareCode:
+          type: string
+        snapshot:
+          $ref: "#/components/schemas/TripPhotoSnapshot"
+
+    UseTripPhotoTemplateResponse:
+      type: object
+      required: [tripId]
+      properties:
+        tripId:
+          type: integer
 
     ShareTripInput:
       type: object

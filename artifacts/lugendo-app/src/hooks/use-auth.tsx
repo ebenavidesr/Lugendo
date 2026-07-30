@@ -16,6 +16,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, isLoading, isError } = useGetMe();
 
   useEffect(() => {
+    // /foto/:code (task #141) is a standalone public "shared photo" link — an external
+    // contact ("Invitada") must be able to view it whether logged out, logged in as a
+    // traveler, or logged in as back-office staff, so it's fully exempt from routing.
+    if (location.startsWith("/foto/")) return;
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
       const isPublicRoute = isAuthRoute || location === "/forgot-password" || location === "/reset-password";

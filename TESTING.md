@@ -6,6 +6,32 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #141 — Compartir viaje: permisos vista/edición + foto para invitada externa (2026-07-30)
+- [x] Investigación previa: el modo viajero-a-viajero (vista/edición) YA estaba completamente implementado (tabla `trip_shares` con `permission` `full`/`read`, endpoints CRUD, UI en `trip-travelers-tab.tsx`, clasificación `compartido` al aceptar ya la escribía #140) — sin trabajo nuevo en esa parte, la tarjeta de Notion asumía que faltaba
+- [x] Schema: nueva tabla `trip_photo_shares` (`jsonb` con el snapshot congelado, `shareCode` público único, sin FK a destinatario) — migración `0021_many_omega_red.sql` generada y aplicada en Neon
+- [x] Backend: `POST/GET/DELETE /me/trips/{tripId}/photo-shares` (crear/listar/revocar, mismo patrón de autorización `canManageShares` que `trip_shares`)
+- [x] Backend: `GET /trip-photos/{code}` público sin auth (ver la foto) y `POST /trip-photos/{code}/use-as-template` (crea un viaje personal nuevo y editable a partir del snapshot, clasificado `compartido` por defecto según #140)
+- [x] Snapshot: reutiliza el ensamblado de días+hoteles+actividades ya usado en `GET /me/trips/{tripId}` (`getTravelerDayHotelMap`, `getTripDayActivityMap`, `mergeItineraryFallbacks`); "usar como plantilla" resuelve hoteles/actividades por nombre contra el catálogo personal (`agencyId: null`), mismo patrón que las actividades libres del viajero (#32)
+- [x] `openapi.yaml` + Orval: 5 endpoints y 8 schemas nuevos documentados y regenerados
+- [x] Frontend: ruta pública `/foto/:code` (`trip-photo-view.tsx`) — vista de solo lectura, exenta del guard de auth global (`use-auth.tsx`), con CTA "Usar como plantilla" (directo si ya hay sesión de viajero, o enlaces a login/registro con el código en la URL si no)
+- [x] Frontend: sección "Fotos para invitadas" en `trip-travelers-tab.tsx` (crear/copiar enlace/revocar), junto a los shares existentes
+- [x] Frontend: tercera opción "Usar una foto compartida" en el wizard de alta de viaje (`traveler-trip-wizard.tsx`), con prefill automático del código si se llega desde `/foto/:code` → "Crear mi cuenta y usarla"
+- [x] Naming acordado con Quique: copy visible "Invitada" para el contacto externo sin cuenta; nombre interno `tripPhotoShare`/`contacto_externo`
+- [x] Bug lateral encontrado investigando #140 y corregido de paso (pedido explícito de Quique): `POST/GET/PATCH/DELETE /trips/{tripId}/invitations` no verificaban que el viaje perteneciera a la agencia del agente que llama — cualquier admin/manager/agent podía gestionar invitaciones de un viaje de otra agencia
+- [x] `pnpm run typecheck` limpio en todo el workspace
+- [ ] **No probado en vivo en el navegador** — el puerto 8080 (api-server) estaba ocupado por el servidor de desarrollo de otra sesión de Claude Code trabajando en este mismo checkout; verificado solo por typecheck y revisión de código, no por un recorrido real en UI
+- [ ] Crear una foto de un viaje real → visitar `/foto/:code` sin sesión (se ve, solo lectura) → registrarse → "Usar como plantilla" → el nuevo viaje aparece en "Compartidos" con los días/hoteles/actividades copiados
+- [ ] Revocar un enlace de foto → deja de ser accesible
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+
+### #140 (fix) — Bug: clasificación pisada por "compartido" (2026-07-30)
+- [x] Root cause: `ensureTripClassification` (`trip-classification.ts`) usaba `onConflictDoNothing` para las 4 rutas de escritura (login auto-accept, registro con código, aceptar invitación, aceptar share) sobre la misma clave `(userId, tripId)` sin ninguna prioridad — si un share (`compartido`) se aceptaba antes que la invitación oficial de agencia para el mismo viaje, la invitación posterior no podía corregir el valor
+- [x] Fix: `ensureTripClassificationByDates` (usada por los 3 flujos de invitación de agencia) ahora hace `onConflictDoUpdate` con `setWhere: classification = 'compartido'` — puede corregir un `compartido` heredado, pero nunca pisa un `programado`/`realizado` ya existente; el share-accept se queda con `onConflictDoNothing` (nunca rebaja una clasificación oficial)
+- [x] Verificado con una transacción real contra Neon con rollback explícito (datos desechables, cero filas persistidas): compartido→programado (fecha futura) ✅, compartido→realizado (fecha pasada) ✅, programado no se rebaja por un share-accept posterior ✅
+- [x] `pnpm run typecheck` limpio
+- [ ] **No probado en vivo en el navegador** (mismo motivo que #141 arriba) — pendiente de que Quique repita la prueba real que detectó el bug (aceptar la invitación de agencia que le apareció como "Compartido") y confirme que ahora queda "Programado"
+- [ ] Validar en producción tras desplegar
+
 ### #145 — Sistema de emails transaccionales (Resend) (2026-07-29)
 - [x] Investigación previa: ya existía una integración parcial con Resend (`lib/email.ts`, fetch directo a la API, no el SDK oficial) con 5 funciones — 3 en uso (`sendInvitationEmail`, `sendDocumentUploadedEmail`, `sendApprovalRequestEmail`) y 2 código muerto (`sendWelcomeEmail`, `sendTripUpdatedEmail`); no existía `email_verificado`, invalidación de sesiones, ni ningún scheduler/cron en el repo
 - [x] Alcance ajustado con Quique tras la investigación: el email de "aviso de pago/licencia" se descartó (no hay Stripe/suscripciones en el repo) y se movió como nota a #92; el recordatorio de 7/3 días usa `setInterval` in-process (mismo patrón que `travel-advisory-refresh.ts`) en vez de `node-cron`, al descubrir que el repo ya tiene ese patrón establecido sin dependencias externas

@@ -95,6 +95,8 @@ import type {
   TripPackingItem,
   TripPackingItemInput,
   TripPackingItemUpdate,
+  TripPhotoShare,
+  TripPhotoView,
   TripShare,
   TripTravelAdvisoriesResponse,
   TripUpdate,
@@ -103,6 +105,7 @@ import type {
   UpdateTripClassificationInput,
   UploadUrlRequest,
   UploadUrlResponse,
+  UseTripPhotoTemplateResponse,
   User,
   UserCountry,
   UserCountryConflict,
@@ -5797,6 +5800,225 @@ export const useRevokeTripShare = <TError = ErrorType<unknown>,
       return useMutation(getRevokeTripShareMutationOptions(options));
     }
 
+export const getListTripPhotoSharesUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/photo-shares`
+}
+
+/**
+ * @summary List photo shares (frozen snapshot links) for a trip owned/managed by the current traveler
+ */
+export const listTripPhotoShares = async (tripId: number, options?: RequestInit): Promise<TripPhotoShare[]> => {
+
+  return customFetch<TripPhotoShare[]>(getListTripPhotoSharesUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripPhotoSharesQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/photo-shares`
+    ] as const;
+    }
+
+
+export const getListTripPhotoSharesQueryOptions = <TData = Awaited<ReturnType<typeof listTripPhotoShares>>, TError = ErrorType<void>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripPhotoShares>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripPhotoSharesQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripPhotoShares>>> = ({ signal }) => listTripPhotoShares(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripPhotoShares>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripPhotoSharesQueryResult = NonNullable<Awaited<ReturnType<typeof listTripPhotoShares>>>
+export type ListTripPhotoSharesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List photo shares (frozen snapshot links) for a trip owned/managed by the current traveler
+ */
+
+export function useListTripPhotoShares<TData = Awaited<ReturnType<typeof listTripPhotoShares>>, TError = ErrorType<void>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripPhotoShares>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripPhotoSharesQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripPhotoShareUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/photo-shares`
+}
+
+/**
+ * @summary Generate a new frozen "photo" snapshot link of a trip, for sharing with a contact without an account
+ */
+export const createTripPhotoShare = async (tripId: number, options?: RequestInit): Promise<TripPhotoShare> => {
+
+  return customFetch<TripPhotoShare>(getCreateTripPhotoShareUrl(tripId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreateTripPhotoShareMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripPhotoShare>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripPhotoShare>>, TError,{tripId: number}, TContext> => {
+
+const mutationKey = ['createTripPhotoShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripPhotoShare>>, {tripId: number}> = (props) => {
+          const {tripId} = props ?? {};
+
+          return  createTripPhotoShare(tripId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripPhotoShareMutationResult = NonNullable<Awaited<ReturnType<typeof createTripPhotoShare>>>
+
+    export type CreateTripPhotoShareMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate a new frozen "photo" snapshot link of a trip, for sharing with a contact without an account
+ */
+export const useCreateTripPhotoShare = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripPhotoShare>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripPhotoShare>>,
+        TError,
+        {tripId: number},
+        TContext
+      > => {
+      return useMutation(getCreateTripPhotoShareMutationOptions(options));
+    }
+
+export const getRevokeTripPhotoShareUrl = (tripId: number,
+    photoShareId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/photo-shares/${photoShareId}`
+}
+
+/**
+ * @summary Revoke a trip photo share
+ */
+export const revokeTripPhotoShare = async (tripId: number,
+    photoShareId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeTripPhotoShareUrl(tripId,photoShareId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeTripPhotoShareMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeTripPhotoShare>>, TError,{tripId: number;photoShareId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeTripPhotoShare>>, TError,{tripId: number;photoShareId: number}, TContext> => {
+
+const mutationKey = ['revokeTripPhotoShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeTripPhotoShare>>, {tripId: number;photoShareId: number}> = (props) => {
+          const {tripId,photoShareId} = props ?? {};
+
+          return  revokeTripPhotoShare(tripId,photoShareId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeTripPhotoShareMutationResult = NonNullable<Awaited<ReturnType<typeof revokeTripPhotoShare>>>
+
+    export type RevokeTripPhotoShareMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke a trip photo share
+ */
+export const useRevokeTripPhotoShare = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeTripPhotoShare>>, TError,{tripId: number;photoShareId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeTripPhotoShare>>,
+        TError,
+        {tripId: number;photoShareId: number},
+        TContext
+      > => {
+      return useMutation(getRevokeTripPhotoShareMutationOptions(options));
+    }
+
 export const getListSharedWithMeUrl = () => {
 
 
@@ -8083,6 +8305,153 @@ export const useAcceptTripShare = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAcceptTripShareMutationOptions(options));
+    }
+
+export const getGetTripPhotoUrl = (code: string,) => {
+
+
+
+
+  return `/api/trip-photos/${code}`
+}
+
+/**
+ * @summary View a shared trip photo (public, no auth — accessed via link/code)
+ */
+export const getTripPhoto = async (code: string, options?: RequestInit): Promise<TripPhotoView> => {
+
+  return customFetch<TripPhotoView>(getGetTripPhotoUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTripPhotoQueryKey = (code: string,) => {
+    return [
+    `/api/trip-photos/${code}`
+    ] as const;
+    }
+
+
+export const getGetTripPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getTripPhoto>>, TError = ErrorType<void>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTripPhotoQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTripPhoto>>> = ({ signal }) => getTripPhoto(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(code), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTripPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTripPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getTripPhoto>>>
+export type GetTripPhotoQueryError = ErrorType<void>
+
+
+/**
+ * @summary View a shared trip photo (public, no auth — accessed via link/code)
+ */
+
+export function useGetTripPhoto<TData = Awaited<ReturnType<typeof getTripPhoto>>, TError = ErrorType<void>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTripPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTripPhotoQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUseTripPhotoAsTemplateUrl = (code: string,) => {
+
+
+
+
+  return `/api/trip-photos/${code}/use-as-template`
+}
+
+/**
+ * @summary Create a brand new, editable personal trip pre-filled from a shared photo's snapshot
+ */
+export const useTripPhotoAsTemplate = async (code: string, options?: RequestInit): Promise<UseTripPhotoTemplateResponse> => {
+
+  return customFetch<UseTripPhotoTemplateResponse>(getUseTripPhotoAsTemplateUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUseTripPhotoAsTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useTripPhotoAsTemplate>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof useTripPhotoAsTemplate>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['useTripPhotoAsTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof useTripPhotoAsTemplate>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  useTripPhotoAsTemplate(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UseTripPhotoAsTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof useTripPhotoAsTemplate>>>
+
+    export type UseTripPhotoAsTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a brand new, editable personal trip pre-filled from a shared photo's snapshot
+ */
+export const useUseTripPhotoAsTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useTripPhotoAsTemplate>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof useTripPhotoAsTemplate>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getUseTripPhotoAsTemplateMutationOptions(options));
     }
 
 export const getSuggestDayDescriptionUrl = () => {

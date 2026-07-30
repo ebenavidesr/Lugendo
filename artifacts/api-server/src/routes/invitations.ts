@@ -16,6 +16,14 @@ function makeCode(): string {
     Math.random().toString(36).slice(2, 6).toUpperCase();
 }
 
+// admin bypasses; manager/agent must belong to the trip's own agency.
+async function verifyAgencyOwnsTrip(tripId: number, role: string | undefined, agencyId: number | null | undefined): Promise<boolean> {
+  const [trip] = await db.select({ agencyId: tripsTable.agencyId }).from(tripsTable).where(eq(tripsTable.id, tripId));
+  if (!trip) return false;
+  if (role === "admin") return true;
+  return agencyId != null && trip.agencyId === agencyId;
+}
+
 interface InvRow {
   id: number;
   tripId: number;
@@ -46,6 +54,10 @@ function serialize(i: InvRow) {
 
 router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
+    res.status(403).json({ error: "No autorizado para ver las invitaciones de este viaje" });
+    return;
+  }
   const rows = await db
     .select({
       id: invitationsTable.id,
@@ -67,6 +79,10 @@ router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent
 
 router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), validate(InvitationInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
+    res.status(403).json({ error: "No autorizado para invitar a este viaje" });
+    return;
+  }
 
   // Accept both old format {emails: string[]} and new format {invitees: [{email, segment?}]}
   let invitees: Array<{ email: string; segment?: string | null }> = [];
@@ -134,6 +150,10 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
 router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), validate(InvitationUpdateSchema), async (req, res): Promise<void> => {
   const invitationId = parseInt(Array.isArray(req.params.invitationId) ? req.params.invitationId[0] : req.params.invitationId, 10);
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
+    res.status(403).json({ error: "No autorizado para editar invitaciones de este viaje" });
+    return;
+  }
   const { segment } = req.body as { segment?: "basic" | "standard" | "premium" | null };
 
   const [updated] = await db
@@ -154,6 +174,11 @@ router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "
 
 router.delete("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const invitationId = parseInt(Array.isArray(req.params.invitationId) ? req.params.invitationId[0] : req.params.invitationId, 10);
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
+    res.status(403).json({ error: "No autorizado para eliminar invitaciones de este viaje" });
+    return;
+  }
   await db.delete(invitationsTable).where(eq(invitationsTable.id, invitationId));
   res.sendStatus(204);
 });

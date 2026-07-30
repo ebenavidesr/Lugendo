@@ -148,6 +148,13 @@
       "when": 1785301107719,
       "tag": "0020_famous_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1785425981396,
+      "tag": "0021_many_omega_red",
+      "breakpoints": true
     }
   ]
 }

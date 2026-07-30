@@ -1444,6 +1444,61 @@ export interface TripShare {
   createdAt: string;
 }
 
+export interface TripPhotoShare {
+  id: number;
+  shareCode: string;
+  createdAt: string;
+}
+
+export interface TripPhotoSnapshotHotel {
+  name: string;
+  /** @nullable */
+  address: string | null;
+  /** @nullable */
+  phone: string | null;
+  /** @nullable */
+  website: string | null;
+}
+
+export interface TripPhotoSnapshotActivity {
+  name: string;
+  /** @nullable */
+  description: string | null;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+}
+
+export interface TripPhotoSnapshotDay {
+  dayNumber: number;
+  /** @nullable */
+  cityFrom: string | null;
+  /** @nullable */
+  cityTo: string | null;
+  hotels: TripPhotoSnapshotHotel[];
+  activities: TripPhotoSnapshotActivity[];
+}
+
+export interface TripPhotoSnapshot {
+  tripName: string;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  /** @nullable */
+  description: string | null;
+  days: TripPhotoSnapshotDay[];
+}
+
+export interface TripPhotoView {
+  shareCode: string;
+  snapshot: TripPhotoSnapshot;
+}
+
+export interface UseTripPhotoTemplateResponse {
+  tripId: number;
+}
+
 export type ShareTripInputPermission = typeof ShareTripInputPermission[keyof typeof ShareTripInputPermission];
 
 

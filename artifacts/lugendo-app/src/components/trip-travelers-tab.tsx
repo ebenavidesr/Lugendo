@@ -4,8 +4,10 @@ import {
 } from "lucide-react";
 import {
   useListTripShares, useShareTrip, useRevokeTripShare, useUpdateTripShare,
+  useListTripPhotoShares, useCreateTripPhotoShare, useRevokeTripPhotoShare,
 } from "@workspace/api-client-react";
-import type { TripShare } from "@workspace/api-client-react";
+import type { TripShare, TripPhotoShare } from "@workspace/api-client-react";
+import { Camera } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -310,6 +312,96 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
 
       {canEdit && (
         <InviteDialog tripId={tripId} open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      )}
+
+      {canEdit && <TripPhotoSharesSection tripId={tripId} />}
+    </div>
+  );
+}
+
+// ─── Photo shares: frozen "photo" links for an external contact without an
+// account ("Invitada", task #141) ─────────────────────────────────────────────
+function TripPhotoSharesSection({ tripId }: { tripId: number }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: photoShares, isLoading } = useListTripPhotoShares(tripId);
+  const createPhotoShare = useCreateTripPhotoShare();
+  const revokePhotoShare = useRevokeTripPhotoShare();
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/photo-shares`] });
+
+  const photoUrl = (code: string) => `${window.location.origin}/foto/${code}`;
+
+  const copyLink = (code: string) => {
+    navigator.clipboard.writeText(photoUrl(code));
+    setCopied(code);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleCreate = () => {
+    createPhotoShare.mutate(
+      { tripId },
+      {
+        onSuccess: (share) => { invalidate(); copyLink(share.shareCode); toast({ title: "Enlace de foto creado y copiado" }); },
+        onError: () => toast({ variant: "destructive", title: "Error al crear la foto" }),
+      }
+    );
+  };
+
+  const handleRevoke = (photoShareId: number) => {
+    if (!confirm("¿Revocar este enlace de foto?")) return;
+    revokePhotoShare.mutate(
+      { tripId, photoShareId },
+      {
+        onSuccess: () => { invalidate(); toast({ title: "Enlace revocado" }); },
+        onError: () => toast({ variant: "destructive", title: "Error al revocar" }),
+      }
+    );
+  };
+
+  return (
+    <div className="pt-4 mt-4 border-t border-border/50 space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>Fotos para invitadas</p>
+          <p className="text-[12px] text-muted-foreground">Enlaces de solo lectura para compartir con contactos sin cuenta.</p>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCreate}
+          disabled={createPhotoShare.isPending}
+          className="h-8 gap-1.5 text-[12px]"
+        >
+          <Camera className="w-3.5 h-3.5" />
+          Crear foto
+        </Button>
+      </div>
+
+      {!isLoading && photoShares && photoShares.length > 0 && (
+        <div className="space-y-2">
+          {photoShares.map((s: TripPhotoShare) => (
+            <div key={s.id} className="p-3 rounded-[12px] border border-border bg-card flex items-center justify-between gap-2">
+              <button
+                onClick={() => copyLink(s.shareCode)}
+                className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors min-w-0"
+              >
+                {copied === s.shareCode
+                  ? <><Check className="w-3.5 h-3.5 shrink-0" /> Enlace copiado</>
+                  : <><Copy className="w-3.5 h-3.5 shrink-0" /> <span className="truncate font-mono">{s.shareCode}</span></>}
+              </button>
+              <button
+                onClick={() => handleRevoke(s.id)}
+                disabled={revokePhotoShare.isPending}
+                className="text-muted-foreground hover:text-destructive shrink-0 p-1 transition-colors"
+                title="Revocar enlace"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

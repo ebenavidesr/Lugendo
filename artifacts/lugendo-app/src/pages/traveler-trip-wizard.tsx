@@ -1,8 +1,8 @@
-import { useState, useRef, Fragment } from "react";
-import { useLocation } from "wouter";
+import { useState, useRef, useEffect, Fragment } from "react";
+import { useLocation, useSearch } from "wouter";
 import {
   Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings,
-  Hotel, ChevronRight, Zap, Search, Plus, QrCode,
+  Hotel, ChevronRight, Zap, Search, Plus, QrCode, Camera,
 } from "lucide-react";
 import {
   useCreateMyTrip,
@@ -17,6 +17,7 @@ import {
   useAddDayActivity,
   useAddItineraryDayHotel,
   useAcceptTripShare,
+  useUseTripPhotoAsTemplate,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -35,13 +36,14 @@ import { TripCountryClaimModal } from "@/components/trip-country-claim-modal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Origin = "join" | "create";
+type Origin = "join" | "create" | "photo";
 type NewMode = "scratch" | "pdf";
 type Step = 1 | 2 | 3 | 4;
 
 interface WizardData {
   origin: Origin | null;
   inviteCode: string;
+  photoCode: string;
   newMode: NewMode | null;
   scratchName: string;
   scratchNumDays: string;
@@ -62,8 +64,8 @@ const STEP_ICONS = [MapPin, FileText, Settings, Check];
 
 // ── Stepper ──────────────────────────────────────────────────────────────────
 
-function Stepper({ step, joinMode }: { step: Step; joinMode: boolean }) {
-  const labels = joinMode ? ["Inicio", "Unirse", "", ""] : STEP_LABELS;
+function Stepper({ step, joinMode, stepTwoLabel = "Unirse" }: { step: Step; joinMode: boolean; stepTwoLabel?: string }) {
+  const labels = joinMode ? ["Inicio", stepTwoLabel, "", ""] : STEP_LABELS;
   const maxVisible = joinMode ? 2 : 4;
 
   return (
@@ -113,6 +115,7 @@ function Stepper({ step, joinMode }: { step: Step; joinMode: boolean }) {
 
 export default function TravelerTripWizard() {
   const [, navigate] = useLocation();
+  const search = useSearch();
   const qc = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +125,7 @@ export default function TravelerTripWizard() {
   const [data, setData] = useState<WizardData>({
     origin: null,
     inviteCode: "",
+    photoCode: "",
     newMode: null,
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
     parsedItinerary: null, dayHotels: {}, dayTransitNights: {}, dayActivities: {},
@@ -132,6 +136,19 @@ export default function TravelerTripWizard() {
   const [isParsing, setIsParsing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const [isUsingPhoto, setIsUsingPhoto] = useState(false);
+  const useAsTemplate = useUseTripPhotoAsTemplate();
+
+  // Coming from a shared photo link (/foto/:code → "Crear mi cuenta y usarla") —
+  // task #141. Jump straight to the code-confirmation step with it prefilled.
+  useEffect(() => {
+    const photoCode = new URLSearchParams(search).get("photoCode");
+    if (photoCode) {
+      setData(d => ({ ...d, origin: "photo", photoCode }));
+      setStep(2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Inline hotel form state ───────────────────────────────────────────────
   const [inlineHotelDay, setInlineHotelDay] = useState<number | null>(null);
@@ -171,7 +188,7 @@ export default function TravelerTripWizard() {
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
 
-  const joinMode = data.origin === "join";
+  const joinMode = data.origin === "join" || data.origin === "photo";
 
   const getDays = (): ParsedDay[] => {
     if (data.parsedItinerary) return data.parsedItinerary.days;
@@ -372,6 +389,23 @@ export default function TravelerTripWizard() {
     }
   };
 
+  // ── Handle "use shared photo as template" ─────────────────────────────────
+  const handleUsePhoto = async () => {
+    const code = data.photoCode.trim();
+    if (!code) return;
+    setIsUsingPhoto(true);
+    try {
+      const result = await useAsTemplate.mutateAsync({ code });
+      qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
+      toast({ title: "¡Viaje creado a partir de la foto compartida!" });
+      setPendingClaim({ tripId: result.tripId, navigateTo: `/traveler/trips/${result.tripId}` });
+    } catch {
+      toast({ variant: "destructive", title: "Código no válido o la foto ya no está disponible" });
+    } finally {
+      setIsUsingPhoto(false);
+    }
+  };
+
   // ── Handle create personal trip ───────────────────────────────────────────
   const handleCreate = async () => {
     if (!data.tripName || !data.startDate) {
@@ -517,12 +551,64 @@ export default function TravelerTripWizard() {
                 <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Crear viaje propio</div>
                 <div className="text-[12px] text-muted-foreground">Organiza tu propio viaje desde cero o a partir de un archivo.</div>
               </button>
+              <button
+                onClick={() => { set({ origin: "photo" }); nextStep(); }}
+                className="p-5 rounded-[14px] border-2 text-left transition-all hover:shadow-md sm:col-span-2"
+                style={{
+                  borderColor: data.origin === "photo" ? "#8B4420" : "#E5D4BF",
+                  background: data.origin === "photo" ? "#F3E6D8" : "white",
+                }}
+              >
+                <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-3" style={{ background: "#F3E6D8" }}>
+                  <Camera className="w-5 h-5" style={{ color: "#8B4420" }} />
+                </div>
+                <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Usar una foto compartida</div>
+                <div className="text-[12px] text-muted-foreground">Alguien te compartió una foto de su viaje y quieres usarla como plantilla.</div>
+              </button>
             </div>
           </div>
         );
 
-      // ── STEP 2: join → código / create → Programa ───────────────────────────
+      // ── STEP 2: join → código / create → Programa / photo → código de foto ──
       case 2:
+        if (data.origin === "photo") {
+          return (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Introduce el código de la foto</h2>
+                <p className="text-[13px] text-muted-foreground">Lo encontrarás en el enlace que te compartieron.</p>
+              </div>
+              <div>
+                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de foto</label>
+                <Input
+                  placeholder="Ej. ABC123XYZ"
+                  value={data.photoCode}
+                  onChange={e => set({ photoCode: e.target.value.toUpperCase() })}
+                  className="text-[15px] font-mono tracking-widest"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === "Enter" && data.photoCode.trim()) handleUsePhoto(); }}
+                />
+              </div>
+              <button
+                onClick={handleUsePhoto}
+                disabled={!data.photoCode.trim() || isUsingPhoto}
+                className="w-full py-2.5 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: "#8B4420", color: "white" }}
+              >
+                {isUsingPhoto ? "Creando viaje…" : (
+                  <><Check className="w-4 h-4" /> Usar como plantilla</>
+                )}
+              </button>
+              <div className="p-4 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
+                <div className="text-[12px] text-muted-foreground">
+                  ¿No tienes código?
+                  {" "}<button className="font-medium hover:underline" style={{ color: "#C4793A" }} onClick={() => { set({ origin: "create" }); }}>crea tu propio viaje</button>.
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         if (data.origin === "join") {
           return (
             <div className="space-y-4">
@@ -1082,7 +1168,7 @@ export default function TravelerTripWizard() {
     switch (step) {
       case 1: return !!data.origin;
       case 2:
-        if (data.origin === "join") return false;
+        if (data.origin === "join" || data.origin === "photo") return false;
         if (data.newMode === "scratch") return !!data.scratchName && !!data.scratchNumDays;
         if (data.newMode === "pdf") return !!data.parsedItinerary;
         return false;
@@ -1093,7 +1179,7 @@ export default function TravelerTripWizard() {
   };
 
   const isLastStep = step === 4;
-  const isJoinStep = step === 2 && data.origin === "join";
+  const isJoinStep = step === 2 && (data.origin === "join" || data.origin === "photo");
 
   return (
     <div className="p-6 max-w-2xl">
@@ -1114,7 +1200,7 @@ export default function TravelerTripWizard() {
       <p className="text-sm text-muted-foreground mb-6">Únete a un viaje existente o crea el tuyo propio.</p>
 
       <div className="bg-card border border-border rounded-[14px] shadow-sm p-6">
-        <Stepper step={step} joinMode={joinMode} />
+        <Stepper step={step} joinMode={joinMode} stepTwoLabel={data.origin === "photo" ? "Foto" : "Unirse"} />
 
         <div className="min-h-[260px]">
           {renderStep()}
