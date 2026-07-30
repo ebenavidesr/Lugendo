@@ -165,6 +165,8 @@ export * from './userCountryStatusUpdateStatus';
 export * from './userInput';
 export * from './userInputRole';
 export * from './userRole';
+export * from './userStatus';
 export * from './userUpdate';
 export * from './userUpdateRole';
+export * from './userUpdateStatus';
 export * from './useTripPhotoTemplateResponse';

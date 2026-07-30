@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UserUpdateRole } from './userUpdateRole';
+import type { UserUpdateStatus } from './userUpdateStatus';
 
 export interface UserUpdate {
   email?: string;
@@ -14,5 +15,7 @@ export interface UserUpdate {
   /** @nullable */
   agencyId?: number | null;
   active?: boolean;
+  /** Approve or reject a pending registration. Setting this also invalidates the user's approval-email token. */
+  status?: UserUpdateStatus;
   password?: string;
 }

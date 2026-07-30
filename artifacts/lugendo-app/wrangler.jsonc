@@ -13,6 +13,12 @@
   "assets": {
     "directory": "./dist/public",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Without this, Cloudflare's asset layer serves the SPA's index.html (as the
+    // single-page-application fallback) for ANY path that isn't a static file --
+    // including /api/*, since no route matches. That happens before worker.js's
+    // fetch handler ever runs, so its /api/ proxy is silently skipped. This makes
+    // /api/* hit the Worker first so the proxy actually executes.
+    "run_worker_first": ["/api/*"]
   }
 }

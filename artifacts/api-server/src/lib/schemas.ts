@@ -340,6 +340,7 @@ export const UserUpdateSchema = z.object({
   role: UserRoleSchema.optional(),
   agencyId: z.number().int().positive().nullable().optional(),
   active: z.boolean().optional(),
+  status: z.enum(["approved", "rejected"]).optional(),
   password: z.string().min(8).optional(),
 });
 

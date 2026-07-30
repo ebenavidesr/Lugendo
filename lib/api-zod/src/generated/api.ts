@@ -229,6 +229,7 @@ export const ListUsersResponseItem = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
@@ -260,6 +261,7 @@ export const GetUserResponse = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
 })
 
@@ -277,6 +279,7 @@ export const UpdateUserBody = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']).optional(),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean().optional(),
+  "status": zod.enum(['approved', 'rejected']).optional().describe('Approve or reject a pending registration. Setting this also invalidates the user\'s approval-email token.'),
   "password": zod.string().optional()
 })
 
@@ -287,6 +290,7 @@ export const UpdateUserResponse = zod.object({
   "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
 })
 

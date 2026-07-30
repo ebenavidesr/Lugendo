@@ -90,6 +90,24 @@ export function ActiveBadge({ active }: { active: boolean }) {
   );
 }
 
+export function StatusBadge({ user }: { user: Pick<User, "status" | "active"> }) {
+  if (user.status === "pending") {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium" style={{ background: "#FFF3D6", color: "#C47A00" }}>
+        Pendiente de aprobación
+      </span>
+    );
+  }
+  if (user.status === "rejected") {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
+        Rechazado
+      </span>
+    );
+  }
+  return <ActiveBadge active={user.active} />;
+}
+
 export function AgencyBadge({ name }: { name: string | null | undefined }) {
   if (!name) {
     return <span className="text-[11px] text-muted-foreground italic">Sin agencia</span>;
@@ -655,6 +673,23 @@ function UserRow({
 }: {
   user: User; isAdmin: boolean; onEdit: (u: User) => void; avatarColor: string; agencyName?: string; showAgency?: boolean;
 }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const updateStatus = useUpdateUser();
+
+  const setStatus = (status: "approved" | "rejected") => {
+    updateStatus.mutate(
+      { userId: user.id, data: { status } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: ["/api/users"] });
+          toast({ title: status === "approved" ? `${user.name} aprobado` : `${user.name} rechazado` });
+        },
+        onError: () => toast({ variant: "destructive", title: "Error al actualizar el estado" }),
+      }
+    );
+  };
+
   return (
     <tr className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
       <td className="px-5 py-3">
@@ -671,17 +706,39 @@ function UserRow({
       <td className="px-5 py-3 text-muted-foreground">{user.email}</td>
       <td className="px-5 py-3"><RoleBadge role={user.role} /></td>
       {showAgency && <td className="px-5 py-3"><AgencyBadge name={agencyName} /></td>}
-      <td className="px-5 py-3"><ActiveBadge active={user.active} /></td>
+      <td className="px-5 py-3"><StatusBadge user={user} /></td>
       <td className="px-5 py-3 text-muted-foreground">{fmt(user.createdAt)}</td>
       {isAdmin && (
         <td className="px-5 py-3">
-          <button
-            onClick={() => onEdit(user)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[6px] hover:bg-[#EAE6F5]"
-            title="Editar usuario"
-          >
-            <Pencil className="w-3.5 h-3.5" style={{ color: "#3D2F6B" }} />
-          </button>
+          <div className="flex items-center gap-1">
+            {user.status === "pending" && (
+              <>
+                <button
+                  onClick={() => setStatus("approved")}
+                  disabled={updateStatus.isPending}
+                  className="p-1.5 rounded-[6px] hover:bg-[#E4F3EC] disabled:opacity-50"
+                  title="Aprobar usuario"
+                >
+                  <Check className="w-3.5 h-3.5" style={{ color: "#2E7D5A" }} />
+                </button>
+                <button
+                  onClick={() => setStatus("rejected")}
+                  disabled={updateStatus.isPending}
+                  className="p-1.5 rounded-[6px] hover:bg-[#FDECEA] disabled:opacity-50"
+                  title="Rechazar usuario"
+                >
+                  <X className="w-3.5 h-3.5" style={{ color: "#C0392B" }} />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => onEdit(user)}
+              className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-[6px] hover:bg-[#EAE6F5]"
+              title="Editar usuario"
+            >
+              <Pencil className="w-3.5 h-3.5" style={{ color: "#3D2F6B" }} />
+            </button>
+          </div>
         </td>
       )}
     </tr>

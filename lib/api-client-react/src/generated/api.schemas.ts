@@ -143,6 +143,15 @@ export const UserRole = {
   traveler: 'traveler',
 } as const;
 
+export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
+
+
+export const UserStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export interface User {
   id: number;
   email: string;
@@ -151,6 +160,7 @@ export interface User {
   /** @nullable */
   agencyId?: number | null;
   active: boolean;
+  status: UserStatus;
   createdAt: string;
 }
 
@@ -183,6 +193,17 @@ export const UserUpdateRole = {
   traveler: 'traveler',
 } as const;
 
+/**
+ * Approve or reject a pending registration. Setting this also invalidates the user's approval-email token.
+ */
+export type UserUpdateStatus = typeof UserUpdateStatus[keyof typeof UserUpdateStatus];
+
+
+export const UserUpdateStatus = {
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export interface UserUpdate {
   email?: string;
   name?: string;
@@ -190,6 +211,8 @@ export interface UserUpdate {
   /** @nullable */
   agencyId?: number | null;
   active?: boolean;
+  /** Approve or reject a pending registration. Setting this also invalidates the user's approval-email token. */
+  status?: UserUpdateStatus;
   password?: string;
 }
 

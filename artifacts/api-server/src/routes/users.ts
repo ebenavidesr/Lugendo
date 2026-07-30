@@ -14,7 +14,7 @@ const router: IRouter = Router();
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
 function serialize(u: typeof usersTable.$inferSelect) {
-  return { id: u.id, email: u.email, name: u.name, role: u.role, agencyId: u.agencyId, active: u.active, createdAt: u.createdAt.toISOString() };
+  return { id: u.id, email: u.email, name: u.name, role: u.role, agencyId: u.agencyId, active: u.active, status: u.status, createdAt: u.createdAt.toISOString() };
 }
 
 router.get("/users", requireAuth, async (req, res): Promise<void> => {
@@ -79,7 +79,7 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
 
 router.patch("/users/:userId", requireRoles("admin", "manager"), validate(UserUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId, 10);
-  const { name, email, role, agencyId, active, password } = req.body;
+  const { name, email, role, agencyId, active, status, password } = req.body;
 
   const updateFields: Partial<typeof usersTable.$inferInsert> = {};
   if (name) updateFields.name = name;
@@ -87,6 +87,10 @@ router.patch("/users/:userId", requireRoles("admin", "manager"), validate(UserUp
   if (role) updateFields.role = role;
   if (agencyId !== undefined && req.session.role === "admin") updateFields.agencyId = agencyId;
   if (active !== undefined) updateFields.active = active;
+  if (status) {
+    updateFields.status = status;
+    updateFields.approvalToken = null;
+  }
   if (password) updateFields.passwordHash = await bcrypt.hash(password, 12);
 
   const [user] = await db

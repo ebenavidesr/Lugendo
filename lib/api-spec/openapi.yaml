@@ -2930,7 +2930,7 @@ components:
     # ─── USER ─────────────────────────────────────────────────────────────────
     User:
       type: object
-      required: [id, email, name, role, active, createdAt]
+      required: [id, email, name, role, active, status, createdAt]
       properties:
         id:
           type: integer
@@ -2945,6 +2945,9 @@ components:
           type: ["integer", "null"]
         active:
           type: boolean
+        status:
+          type: string
+          enum: [pending, approved, rejected]
         createdAt:
           type: string
 
@@ -2978,6 +2981,10 @@ components:
           type: ["integer", "null"]
         active:
           type: boolean
+        status:
+          type: string
+          enum: [approved, rejected]
+          description: Approve or reject a pending registration. Setting this also invalidates the user's approval-email token.
         password:
           type: string
 
