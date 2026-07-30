@@ -1467,7 +1467,9 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
       // The recipient may already have a Lugendo account (in which case the pending
       // share already shows up on their traveler home once they log in) or not yet.
       ctaText: recipient ? "Iniciar sesión" : "Crear mi cuenta",
-      ctaUrl: `${PUBLIC_APP_URL}/#/${recipient ? "login" : "register"}`,
+      // Wouter uses plain paths, not hash-routing — no "/#/" prefix (see TESTING.md for
+      // the 2026-07-30 bug where this landed on a blank page for every recipient).
+      ctaUrl: `${PUBLIC_APP_URL}/${recipient ? "login" : "register"}`,
       tripId,
     }).catch((err) => req.log.error({ err }, "Failed to send trip share invitation email"));
   }

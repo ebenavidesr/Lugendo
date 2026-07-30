@@ -83,7 +83,7 @@ async function sendRemindersForMilestone(daysUntil: 7 | 3, targetDateISO: string
         tripName: trip.name,
         daysUntil,
         pendingItems,
-        tripUrl: `${PUBLIC_APP_URL}/#/traveler/trips/${traveler.tripId}`,
+        tripUrl: `${PUBLIC_APP_URL}/traveler/trips/${traveler.tripId}`,
         tripId: traveler.tripId,
       });
     } catch (err) {

@@ -49,7 +49,10 @@ async function notifyTripUpdated(tripId: number, changeDescription: string, onEr
       .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
       .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
 
-    const tripUrl = `${PUBLIC_APP_URL}/#/trips/${tripId}`;
+    // Wouter uses plain paths, not hash-routing, and this goes to travelers (not back-office
+    // staff) — /trips/:id is the agency route and would be blocked by role, and "/#/" resolves
+    // to a blank page regardless (see TESTING.md, 2026-07-30).
+    const tripUrl = `${PUBLIC_APP_URL}/traveler/trips/${tripId}`;
 
     await Promise.allSettled(
       accepted.map(t => sendTripUpdatedEmail({
@@ -1077,7 +1080,10 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
           ),
         );
 
-      const tripUrl = `${PUBLIC_APP_URL}/#/trips/${tripId}/documents`;
+      // Same fix as the trip-updated email above: plain path, traveler-facing route. The
+      // traveler trip page has no per-tab deep link yet, so this lands on the trip's default
+      // tab rather than Documentos specifically.
+      const tripUrl = `${PUBLIC_APP_URL}/traveler/trips/${tripId}`;
 
       await Promise.allSettled(
         accepted.map(t =>
