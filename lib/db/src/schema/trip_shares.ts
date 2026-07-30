@@ -10,6 +10,10 @@ export const tripSharesTable = pgTable("trip_shares", {
   sharedWithUserId: integer("shared_with_user_id").references(() => usersTable.id),
   shareCode:        text("share_code").notNull().unique(),
   permission:       text("permission", { enum: ["full", "read"] }).notNull().default("read"),
+  // "member": a real co-traveler on this personal trip — classified programado/realizado
+  // by dates, like the owner. "guest": view-only inspiration access — always classified
+  // "compartido" and forced to read-only permission, regardless of what's requested.
+  memberType:       text("member_type", { enum: ["member", "guest"] }).notNull().default("guest"),
   status:           text("status", { enum: ["pending", "accepted", "rejected"] }).notNull().default("pending"),
   createdAt:        timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

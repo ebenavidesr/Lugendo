@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TripShareMemberType } from './tripShareMemberType';
 import type { TripSharePermission } from './tripSharePermission';
 import type { TripShareStatus } from './tripShareStatus';
 
@@ -17,6 +18,7 @@ export interface TripShare {
   sharedWithUserId?: number | null;
   shareCode: string;
   permission: TripSharePermission;
+  memberType: TripShareMemberType;
   status: TripShareStatus;
   createdAt: string;
 }

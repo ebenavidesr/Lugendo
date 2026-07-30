@@ -38,7 +38,7 @@ import { sendTripShareInvitationEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
 import {
   defaultDateBasedClassification, ensureTripClassification,
-  ensureTripClassificationByDates, getTripClassification,
+  ensureTripClassificationByDates, getTripClassification, setTripClassification,
 } from "../lib/trip-classification";
 import { tripClassificationsTable } from "@workspace/db";
 import type { TripClassificationValue } from "@workspace/db";
@@ -1421,7 +1421,11 @@ router.get("/me/trips/:tripId/shares", requireRoles("traveler"), async (req, res
 router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(ShareTripInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
-  const { email, permission = "read" } = req.body;
+  const { email } = req.body;
+  const memberType: "member" | "guest" = req.body.memberType === "member" ? "member" : "guest";
+  // A guest is always view-only (task #141 Miembro/Invitado); a member defaults to
+  // full edit access but can still be shared as view-only if explicitly requested.
+  const permission: "full" | "read" = memberType === "guest" ? "read" : (req.body.permission === "read" ? "read" : "full");
 
   if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
@@ -1451,7 +1455,8 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
     sharedWithEmail: email.toLowerCase(),
     sharedWithUserId: recipient?.id ?? null,
     shareCode,
-    permission: permission === "full" ? "full" : "read",
+    permission,
+    memberType,
     status: "pending",
   }).returning();
 
@@ -1476,7 +1481,7 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
   }
 });
 
-// ─── Update share permission ──────────────────────────────────────────────────
+// ─── Update share permission / member-type ────────────────────────────────────
 router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), validate(UpdateShareInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
@@ -1484,15 +1489,34 @@ router.patch("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), vali
 
   if (!(await canManageShares(tripId, userId))) { res.status(403).json({ error: "Not your trip" }); return; }
 
-  const { permission } = req.body;
+  const [existing] = await db.select().from(tripSharesTable)
+    .where(and(eq(tripSharesTable.id, shareId), eq(tripSharesTable.tripId, tripId)));
+  if (!existing) { res.status(404).json({ error: "Share not found" }); return; }
+
+  const newMemberType: "member" | "guest" = req.body.memberType ?? existing.memberType;
+  // A guest is always view-only; switching an existing guest to member defaults to
+  // full access unless the caller explicitly asks to keep it view-only (task #141).
+  const newPermission: "full" | "read" = newMemberType === "guest"
+    ? "read"
+    : (req.body.permission ?? (existing.memberType === "guest" ? "full" : existing.permission));
 
   const [updated] = await db
     .update(tripSharesTable)
-    .set({ permission })
+    .set({ permission: newPermission, memberType: newMemberType })
     .where(and(eq(tripSharesTable.id, shareId), eq(tripSharesTable.tripId, tripId)))
     .returning();
 
-  if (!updated) { res.status(404).json({ error: "Share not found" }); return; }
+  // Reclassify the recipient if their member-type actually changed after acceptance —
+  // the only relationship a non-owner has to a personal trip is this share, so this is
+  // a deliberate, safe classification change (task #141).
+  if (updated.status === "accepted" && updated.sharedWithUserId && existing.memberType !== newMemberType) {
+    if (newMemberType === "member") {
+      await ensureTripClassificationByDates(updated.sharedWithUserId, tripId);
+    } else {
+      await setTripClassification(updated.sharedWithUserId, tripId, "compartido");
+    }
+  }
+
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
 });
 
@@ -1840,9 +1864,14 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
     .where(eq(tripSharesTable.id, share.id))
     .returning();
 
-  // Shares always default to "compartido" (see task #140 decisions) — the traveler
-  // can still reclassify to Programado/Realizado manually afterwards.
-  await ensureTripClassification(userId, share.tripId, "compartido");
+  // A "guest" share always defaults to "compartido" (task #140 decisions); a "member"
+  // share (task #141 Miembro/Invitado) is a real co-traveler, classified by dates like
+  // the owner. The traveler can still reclassify manually afterwards either way.
+  if (share.memberType === "member") {
+    await ensureTripClassificationByDates(userId, share.tripId);
+  } else {
+    await ensureTripClassification(userId, share.tripId, "compartido");
+  }
 
   res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
 });

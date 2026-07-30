@@ -424,10 +424,14 @@ export const TripNoteUpdateSchema = z.object({
 export const ShareTripInputSchema = z.object({
   email: z.string().email(),
   permission: z.enum(["full", "read"]).optional(),
+  memberType: z.enum(["member", "guest"]).optional(),
 });
 
 export const UpdateShareInputSchema = z.object({
-  permission: z.enum(["full", "read"]),
+  permission: z.enum(["full", "read"]).optional(),
+  memberType: z.enum(["member", "guest"]).optional(),
+}).refine(d => d.permission !== undefined || d.memberType !== undefined, {
+  message: "Debe indicarse permission y/o memberType",
 });
 
 export const TripDocumentInputSchema = z.object({

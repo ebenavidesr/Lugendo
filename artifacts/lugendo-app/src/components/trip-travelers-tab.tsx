@@ -31,6 +31,13 @@ const permStyle: Record<string, { bg: string; color: string; label: string }> = 
   full: { bg: "#EDE9F7", color: "#3D2F6B", label: "Edición completa" },
 };
 
+// "Miembro" = real co-traveler (classified programado/realizado like the owner);
+// "Invitado" = view-only inspiration access (always classified compartido) — task #141.
+const memberTypeStyle: Record<string, { bg: string; color: string; label: string }> = {
+  member: { bg: "#FAEEE4", color: "var(--terra)", label: "Miembro" },
+  guest:  { bg: "#F2EFEA", color: "#7A5C3A", label: "Invitado" },
+};
+
 function InviteDialog({
   tripId, open, onClose,
 }: { tripId: number; open: boolean; onClose: () => void }) {
@@ -39,7 +46,13 @@ function InviteDialog({
   const shareTrip = useShareTrip();
   const [email, setEmail] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
+  const [memberType, setMemberType] = useState<"member" | "guest">("guest");
   const [permission, setPermission] = useState<"read" | "full">("read");
+
+  const handleMemberTypeChange = (v: "member" | "guest") => {
+    setMemberType(v);
+    setPermission(v === "guest" ? "read" : "full");
+  };
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
 
@@ -47,13 +60,14 @@ function InviteDialog({
     const value = emailRef.current?.value ?? email;
     if (!value.trim()) return;
     shareTrip.mutate(
-      { tripId, data: { email: value.trim(), permission } },
+      { tripId, data: { email: value.trim(), memberType, permission: memberType === "guest" ? "read" : permission } },
       {
         onSuccess: () => {
           invalidate();
           toast({ title: `Invitación enviada a ${value.trim()}` });
           setEmail("");
           if (emailRef.current) emailRef.current.value = "";
+          handleMemberTypeChange("guest");
           onClose();
         },
         onError: (err: unknown) => {
@@ -96,9 +110,32 @@ function InviteDialog({
           </div>
           <div>
             <label className="text-[12px] font-medium block mb-1.5" style={{ color: "var(--noche)" }}>
+              Tipo de acceso
+            </label>
+            <Select value={memberType} onValueChange={v => handleMemberTypeChange(v as "member" | "guest")}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="member">Miembro — es parte del viaje</SelectItem>
+                <SelectItem value="guest">Invitado — solo lo consulta</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {memberType === "member"
+                ? "Le aparecerá en \"Programados\"/\"Realizados\", como a ti."
+                : "Le aparecerá en \"Compartidos\" y solo puede ver el viaje."}
+            </p>
+          </div>
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "var(--noche)" }}>
               Nivel de acceso
             </label>
-            <Select value={permission} onValueChange={v => setPermission(v as "read" | "full")}>
+            <Select
+              value={permission}
+              onValueChange={v => setPermission(v as "read" | "full")}
+              disabled={memberType === "guest"}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -159,6 +196,16 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
       {
         onSuccess: () => { invalidate(); toast({ title: "Permiso actualizado" }); },
         onError: () => toast({ variant: "destructive", title: "Error al actualizar el permiso" }),
+      }
+    );
+  };
+
+  const handleMemberTypeChange = (shareId: number, memberType: "member" | "guest") => {
+    updateShare.mutate(
+      { tripId, shareId, data: { memberType } },
+      {
+        onSuccess: () => { invalidate(); toast({ title: memberType === "member" ? "Ahora es miembro del viaje" : "Ahora es invitado" }); },
+        onError: () => toast({ variant: "destructive", title: "Error al actualizar el tipo de acceso" }),
       }
     );
   };
@@ -241,6 +288,7 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
           shares.map((s: TripShare) => {
             const st = statusStyle[s.status] ?? statusStyle.pending;
             const pm = permStyle[s.permission] ?? permStyle.read;
+            const mt = memberTypeStyle[s.memberType] ?? memberTypeStyle.guest;
             return (
               <div key={s.id} className="p-4 rounded-[14px] border border-border bg-card space-y-2">
                 <div className="flex items-start justify-between gap-2">
@@ -255,6 +303,13 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
                         style={{ background: st.bg, color: st.color }}
                       >
                         {st.label}
+                      </span>
+                      {/* Member-type badge — always visible */}
+                      <span
+                        className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: mt.bg, color: mt.color }}
+                      >
+                        {mt.label}
                       </span>
                       {/* Permission badge — always visible */}
                       <span
@@ -287,21 +342,39 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
                   )}
                 </div>
                 {canEdit && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                    <Pencil className="w-3 h-3 shrink-0 text-muted-foreground" />
-                    <Select
-                      value={s.permission}
-                      onValueChange={v => handlePermissionChange(s.id, v as "read" | "full")}
-                      disabled={updateShare.isPending}
-                    >
-                      <SelectTrigger className="h-7 text-[12px] border-0 bg-transparent px-1 focus:ring-0 shadow-none w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="read">Solo ver</SelectItem>
-                        <SelectItem value="full">Edición completa</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="pt-2 border-t border-border/50 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <Select
+                        value={s.memberType}
+                        onValueChange={v => handleMemberTypeChange(s.id, v as "member" | "guest")}
+                        disabled={updateShare.isPending}
+                      >
+                        <SelectTrigger className="h-7 text-[12px] border-0 bg-transparent px-1 focus:ring-0 shadow-none w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="member">Miembro — es parte del viaje</SelectItem>
+                          <SelectItem value="guest">Invitado — solo lo consulta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Pencil className="w-3 h-3 shrink-0 text-muted-foreground" />
+                      <Select
+                        value={s.permission}
+                        onValueChange={v => handlePermissionChange(s.id, v as "read" | "full")}
+                        disabled={updateShare.isPending || s.memberType === "guest"}
+                      >
+                        <SelectTrigger className="h-7 text-[12px] border-0 bg-transparent px-1 focus:ring-0 shadow-none w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="read">Solo ver</SelectItem>
+                          <SelectItem value="full">Edición completa</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
               </div>

@@ -1422,6 +1422,14 @@ export const TripSharePermission = {
   read: 'read',
 } as const;
 
+export type TripShareMemberType = typeof TripShareMemberType[keyof typeof TripShareMemberType];
+
+
+export const TripShareMemberType = {
+  member: 'member',
+  guest: 'guest',
+} as const;
+
 export type TripShareStatus = typeof TripShareStatus[keyof typeof TripShareStatus];
 
 
@@ -1440,6 +1448,7 @@ export interface TripShare {
   sharedWithUserId?: number | null;
   shareCode: string;
   permission: TripSharePermission;
+  memberType: TripShareMemberType;
   status: TripShareStatus;
   createdAt: string;
 }
@@ -1499,6 +1508,9 @@ export interface UseTripPhotoTemplateResponse {
   tripId: number;
 }
 
+/**
+ * Ignored (forced to "read") when memberType is "guest".
+ */
 export type ShareTripInputPermission = typeof ShareTripInputPermission[keyof typeof ShareTripInputPermission];
 
 
@@ -1507,9 +1519,23 @@ export const ShareTripInputPermission = {
   read: 'read',
 } as const;
 
+/**
+ * member: a real co-traveler, classified programado/realizado by dates. guest: view-only, always classified compartido.
+ */
+export type ShareTripInputMemberType = typeof ShareTripInputMemberType[keyof typeof ShareTripInputMemberType];
+
+
+export const ShareTripInputMemberType = {
+  member: 'member',
+  guest: 'guest',
+} as const;
+
 export interface ShareTripInput {
   email: string;
+  /** Ignored (forced to "read") when memberType is "guest". */
   permission?: ShareTripInputPermission;
+  /** member: a real co-traveler, classified programado/realizado by dates. guest: view-only, always classified compartido. */
+  memberType?: ShareTripInputMemberType;
 }
 
 export type UpdateShareInputPermission = typeof UpdateShareInputPermission[keyof typeof UpdateShareInputPermission];
@@ -1520,8 +1546,20 @@ export const UpdateShareInputPermission = {
   read: 'read',
 } as const;
 
+export type UpdateShareInputMemberType = typeof UpdateShareInputMemberType[keyof typeof UpdateShareInputMemberType];
+
+
+export const UpdateShareInputMemberType = {
+  member: 'member',
+  guest: 'guest',
+} as const;
+
+/**
+ * At least one of permission/memberType must be provided.
+ */
 export interface UpdateShareInput {
-  permission: UpdateShareInputPermission;
+  permission?: UpdateShareInputPermission;
+  memberType?: UpdateShareInputMemberType;
 }
 
 export type SharedTripEntryPermission = typeof SharedTripEntryPermission[keyof typeof SharedTripEntryPermission];

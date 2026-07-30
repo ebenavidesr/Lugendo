@@ -5,9 +5,13 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShareTripInputMemberType } from './shareTripInputMemberType';
 import type { ShareTripInputPermission } from './shareTripInputPermission';
 
 export interface ShareTripInput {
   email: string;
+  /** Ignored (forced to "read") when memberType is "guest". */
   permission?: ShareTripInputPermission;
+  /** member: a real co-traveler, classified programado/realizado by dates. guest: view-only, always classified compartido. */
+  memberType?: ShareTripInputMemberType;
 }

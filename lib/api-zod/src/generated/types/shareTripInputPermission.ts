@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * Ignored (forced to "read") when memberType is "guest".
+ */
 export type ShareTripInputPermission = typeof ShareTripInputPermission[keyof typeof ShareTripInputPermission];
 
 

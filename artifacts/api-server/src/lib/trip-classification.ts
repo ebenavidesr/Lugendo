@@ -17,14 +17,15 @@ export async function ensureTripClassification(userId: number, tripId: number, c
     .onConflictDoNothing({ target: [tripClassificationsTable.userId, tripClassificationsTable.tripId] });
 }
 
-// Convenience for the "own trip" / "agency invitation" access paths, where the
-// default is derived from the trip's dates rather than being fixed (unlike shares,
-// which always default to "compartido" — see task #140 decisions).
+// Convenience for the "own trip" / "agency invitation" / "member share" access paths,
+// where the default is derived from the trip's dates rather than being fixed (unlike
+// guest shares, which always default to "compartido" — see task #140 decisions).
 //
-// Unlike ensureTripClassification, this upserts: official agency membership must be
-// able to correct a "compartido" row left over from an earlier share-accept for the
+// Unlike ensureTripClassification, this upserts: an official membership (agency invite,
+// or a "member" trip_shares row — task #141's Miembro/Invitado distinction) must be able
+// to correct a "compartido" row left over from an earlier guest-share accept for the
 // same (userId, tripId) pair (task #140 bug). It never overwrites an existing
-// "programado"/"realizado" — official membership is never downgraded by anything.
+// "programado"/"realizado" — membership is never downgraded by anything here.
 export async function ensureTripClassificationByDates(userId: number, tripId: number): Promise<void> {
   const [trip] = await db
     .select({ startDate: tripsTable.startDate, endDate: tripsTable.endDate })
@@ -39,6 +40,21 @@ export async function ensureTripClassificationByDates(userId: number, tripId: nu
       target: [tripClassificationsTable.userId, tripClassificationsTable.tripId],
       set: { classification, updatedAt: new Date() },
       setWhere: sql`${tripClassificationsTable.classification} = 'compartido'`,
+    });
+}
+
+// Unconditional overwrite — unlike the two helpers above, this always sets the value,
+// even downgrading an existing "programado"/"realizado". Only safe to call when the
+// caller has just deliberately revoked the specific membership that justified the
+// previous classification (e.g. the trip owner demotes a "member" share back to
+// "guest") — never call this from a generic access-grant path.
+export async function setTripClassification(userId: number, tripId: number, classification: TripClassificationValue): Promise<void> {
+  await db
+    .insert(tripClassificationsTable)
+    .values({ userId, tripId, classification })
+    .onConflictDoUpdate({
+      target: [tripClassificationsTable.userId, tripClassificationsTable.tripId],
+      set: { classification, updatedAt: new Date() },
     });
 }
 

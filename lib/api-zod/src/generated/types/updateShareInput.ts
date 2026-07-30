@@ -5,8 +5,13 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateShareInputMemberType } from './updateShareInputMemberType';
 import type { UpdateShareInputPermission } from './updateShareInputPermission';
 
+/**
+ * At least one of permission/memberType must be provided.
+ */
 export interface UpdateShareInput {
-  permission: UpdateShareInputPermission;
+  permission?: UpdateShareInputPermission;
+  memberType?: UpdateShareInputMemberType;
 }

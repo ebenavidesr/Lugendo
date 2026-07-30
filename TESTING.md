@@ -6,6 +6,22 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #141 (mejora) — Elegir Miembro vs Invitado al compartir un viaje propio (2026-07-30)
+- [x] Detectado por Quique tras el QA de #141: al compartir un viaje solo se elegía el nivel de acceso (Solo ver/Edición), sin ninguna forma de marcar si la persona es un viajero real del grupo o solo alguien que lo consulta — no existía en ningún sitio del schema ni de la UI, no era una opción escondida
+- [x] Schema: nueva columna `trip_shares.member_type` (`member`/`guest`, default `guest` — no cambia el comportamiento de shares ya existentes), migración `0022_rainy_inertia.sql`
+- [x] Backend: un **Miembro** por defecto tiene edición completa (se puede bajar a "solo ver" manualmente) y se clasifica Programado/Realizado por fechas, igual que el propietario; un **Invitado** siempre queda forzado a "solo ver" (el backend ignora cualquier intento de darle edición) y se clasifica Compartido — igual que antes de esta mejora
+- [x] Reclasificar Miembro↔Invitado también funciona **después** de aceptado (no solo al invitar), vía `PATCH /me/trips/{tripId}/shares/{shareId}`: promocionar a Miembro corrige la clasificación con la misma lógica de upsert-protegido del fix de #140 (nunca rebaja un Programado/Realizado ya existente); degradar a Invitado fuerza la vuelta a Compartido de forma explícita (única vía de acceso de un no-propietario a un viaje personal es este share, así que es seguro)
+- [x] `artifacts/api-server/src/lib/trip-classification.ts`: nueva función `setTripClassification` (sobrescritura incondicional) — documentada para usarse solo cuando se revoca deliberadamente la membresía que justificaba la clasificación anterior
+- [x] `openapi.yaml` + Orval: `memberType` añadido a `TripShare`/`ShareTripInput`/`UpdateShareInput`, regenerado
+- [x] Frontend (`trip-travelers-tab.tsx`): selector "Tipo de acceso" (Miembro/Invitado) en el diálogo de compartir, con el selector de permiso bloqueado en "Solo ver" cuando se elige Invitado; mismo selector añadido a cada fila de la lista de shares ya existentes para reclasificar en cualquier momento; badge de tipo de acceso siempre visible
+- [x] `pnpm run typecheck` limpio en todo el workspace
+- [x] Verificado con una transacción real contra Neon con rollback explícito (cero filas persistidas): aceptar como invitado → compartido ✅; promover invitado→miembro ya aceptado (viaje futuro) → programado ✅; degradar miembro→invitado ya aceptado → vuelve a compartido ✅; aceptar directamente como miembro → programado ✅
+- [ ] **No probado en vivo en el navegador** (puerto 8080 ocupado por el servidor de desarrollo de otra sesión de Claude Code en este mismo checkout) — verificado solo por typecheck y transacción real contra la base de datos
+- [ ] Compartir un viaje eligiendo "Miembro" → el destinatario, al aceptar, lo ve en "Programados"/"Realizados" (no en "Compartidos")
+- [ ] Compartir eligiendo "Invitado" → el selector de permiso queda bloqueado en "Solo ver" y no se puede cambiar a edición
+- [ ] Reclasificar un share ya aceptado de Invitado a Miembro (o viceversa) desde la lista existente actualiza la pestaña donde aparece el viaje para el destinatario
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+
 ### #141 — Compartir viaje: permisos vista/edición + foto para invitada externa (2026-07-30)
 - [x] Investigación previa: el modo viajero-a-viajero (vista/edición) YA estaba completamente implementado (tabla `trip_shares` con `permission` `full`/`read`, endpoints CRUD, UI en `trip-travelers-tab.tsx`, clasificación `compartido` al aceptar ya la escribía #140) — sin trabajo nuevo en esa parte, la tarjeta de Notion asumía que faltaba
 - [x] Schema: nueva tabla `trip_photo_shares` (`jsonb` con el snapshot congelado, `shareCode` público único, sin FK a destinatario) — migración `0021_many_omega_red.sql` generada y aplicada en Neon

@@ -1,0 +1,1 @@
+ALTER TABLE "trip_shares" ADD COLUMN "member_type" text DEFAULT 'guest' NOT NULL;

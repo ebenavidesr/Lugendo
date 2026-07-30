@@ -181,7 +181,7 @@
 | #134 | Wizard de itinerario (PDF): buscar-o-crear automáticamente el hotel/actividad detectado por IA y pre-rellenar el día | 🟡 Media | Itinerarios · IA |
 | #127 (Notion) | Botón "Expandir/Colapsar todos" en el acordeón de días — aplicado a detalle de viaje, detalle de itinerario y pasaporte del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros |
 | #140 | Reclasificar vista de viajes del viajero: Programados / Realizados / Compartidos (fix 2026-07-30: bug de clasificación pisada por "compartido" corregido) | 🟡 Media | Viajes · Viajeros |
-| #141 | Compartir viaje: permisos vista/edición entre viajeros (ya existía) y "foto" de inspiración para contactos externos ("Invitada") | 🟡 Media | Viajes · Viajeros |
+| #141 | Compartir viaje: permisos vista/edición entre viajeros (ya existía) y "foto" de inspiración para contactos externos ("Invitada") — mejora 2026-07-30: elegir Miembro (edición, Programado/Realizado) vs Invitado (solo vista, Compartido) al compartir, reclasificable después | 🟡 Media | Viajes · Viajeros |
 
 ---
 

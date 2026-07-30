@@ -1999,6 +1999,7 @@ export const ListTripSharesResponseItem = zod.object({
   "sharedWithUserId": zod.number().nullish(),
   "shareCode": zod.string(),
   "permission": zod.enum(['full', 'read']),
+  "memberType": zod.enum(['member', 'guest']),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
   "createdAt": zod.string()
 })
@@ -2012,11 +2013,12 @@ export const ShareTripParams = zod.object({
   "tripId": zod.coerce.number()
 })
 
-export const shareTripBodyPermissionDefault = `read`;
+export const shareTripBodyMemberTypeDefault = `guest`;
 
 export const ShareTripBody = zod.object({
   "email": zod.string().email(),
-  "permission": zod.enum(['full', 'read']).default(shareTripBodyPermissionDefault)
+  "permission": zod.enum(['full', 'read']).optional().describe('Ignored (forced to \"read\") when memberType is \"guest\".'),
+  "memberType": zod.enum(['member', 'guest']).default(shareTripBodyMemberTypeDefault).describe('member: a real co-traveler, classified programado\/realizado by dates. guest: view-only, always classified compartido.')
 })
 
 
@@ -2029,8 +2031,9 @@ export const UpdateTripShareParams = zod.object({
 })
 
 export const UpdateTripShareBody = zod.object({
-  "permission": zod.enum(['full', 'read'])
-})
+  "permission": zod.enum(['full', 'read']).optional(),
+  "memberType": zod.enum(['member', 'guest']).optional()
+}).describe('At least one of permission\/memberType must be provided.')
 
 export const UpdateTripShareResponse = zod.object({
   "id": zod.number(),
@@ -2040,6 +2043,7 @@ export const UpdateTripShareResponse = zod.object({
   "sharedWithUserId": zod.number().nullish(),
   "shareCode": zod.string(),
   "permission": zod.enum(['full', 'read']),
+  "memberType": zod.enum(['member', 'guest']),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
   "createdAt": zod.string()
 })
@@ -2553,6 +2557,7 @@ export const AcceptTripShareResponse = zod.object({
   "sharedWithUserId": zod.number().nullish(),
   "shareCode": zod.string(),
   "permission": zod.enum(['full', 'read']),
+  "memberType": zod.enum(['member', 'guest']),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
   "createdAt": zod.string()
 })

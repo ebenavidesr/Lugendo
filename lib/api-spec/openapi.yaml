@@ -4539,7 +4539,7 @@ components:
     # ─── TRIP SHARES ─────────────────────────────────────────────────────────
     TripShare:
       type: object
-      required: [id, tripId, ownerId, sharedWithEmail, shareCode, permission, status, createdAt]
+      required: [id, tripId, ownerId, sharedWithEmail, shareCode, permission, memberType, status, createdAt]
       properties:
         id:
           type: integer
@@ -4556,6 +4556,9 @@ components:
         permission:
           type: string
           enum: [full, read]
+        memberType:
+          type: string
+          enum: [member, guest]
         status:
           type: string
           enum: [pending, accepted, rejected]
@@ -4661,15 +4664,23 @@ components:
         permission:
           type: string
           enum: [full, read]
-          default: read
+          description: Ignored (forced to "read") when memberType is "guest".
+        memberType:
+          type: string
+          enum: [member, guest]
+          default: guest
+          description: "member: a real co-traveler, classified programado/realizado by dates. guest: view-only, always classified compartido."
 
     UpdateShareInput:
       type: object
-      required: [permission]
+      description: At least one of permission/memberType must be provided.
       properties:
         permission:
           type: string
           enum: [full, read]
+        memberType:
+          type: string
+          enum: [member, guest]
 
     SharedTripEntry:
       type: object
