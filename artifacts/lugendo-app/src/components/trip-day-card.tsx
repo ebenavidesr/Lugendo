@@ -328,7 +328,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                                 className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                                 style={{ background: "#F0F4F0", color: "#4A6A4A" }}
                               >
-                                Por libre
+                                {activity.isMine ? "Mi actividad" : "Por libre"}
                               </span>
                             )}
                             {canEdit && (

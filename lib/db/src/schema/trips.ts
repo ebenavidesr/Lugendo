@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer, timestamp, jsonb, index, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, jsonb, index, doublePrecision, numeric, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
@@ -89,13 +89,26 @@ export const tripDayActivitiesTable = pgTable("trip_day_activities", {
   included: boolean("included").notNull().default(true),
   transportMode: text("transport_mode"),
   createdByUserId: integer("created_by_user_id").references(() => usersTable.id),
+  // Coste por persona. Solo se guarda/muestra en actividades por libre (#151); las incluidas
+  // quedan para la #136. Divisa fija a EUR por ahora -- la app no tiene selector de divisa
+  // en ningún otro sitio -- pero vive en columna propia para que la #136 no necesite migrar.
+  costAmount: numeric("cost_amount", { precision: 10, scale: 2 }),
+  costCurrency: text("cost_currency").default("EUR"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("tda_day_idx").on(t.dayId)]);
+
+export const tripDayActivityParticipantsTable = pgTable("trip_day_activity_participants", {
+  id: serial("id").primaryKey(),
+  activityLinkId: integer("activity_link_id").notNull().references(() => tripDayActivitiesTable.id, { onDelete: "cascade" }),
+  travelerId: integer("traveler_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique().on(t.activityLinkId, t.travelerId)]);
 
 export const insertTripSchema = createInsertSchema(tripsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripDaySchema = createInsertSchema(tripDaysTable).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripDayHotelSchema = createInsertSchema(tripDayHotelsTable).omit({ id: true, createdAt: true });
 export const insertTripDayActivitySchema = createInsertSchema(tripDayActivitiesTable).omit({ id: true, createdAt: true });
+export const insertTripDayActivityParticipantSchema = createInsertSchema(tripDayActivityParticipantsTable).omit({ id: true, createdAt: true });
 
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type Trip = typeof tripsTable.$inferSelect;
@@ -103,3 +116,5 @@ export type InsertTripDay = z.infer<typeof insertTripDaySchema>;
 export type TripDay = typeof tripDaysTable.$inferSelect;
 export type TripDayHotel = typeof tripDayHotelsTable.$inferSelect;
 export type TripDayActivity = typeof tripDayActivitiesTable.$inferSelect;
+export type InsertTripDayActivityParticipant = z.infer<typeof insertTripDayActivityParticipantSchema>;
+export type TripDayActivityParticipant = typeof tripDayActivityParticipantsTable.$inferSelect;

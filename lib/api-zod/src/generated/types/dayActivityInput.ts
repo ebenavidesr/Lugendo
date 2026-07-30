@@ -20,4 +20,6 @@ export interface DayActivityInput {
   addressOverride?: string;
   included?: boolean;
   transportMode?: TransportMode | null;
+  costAmount?: number;
+  participantIds?: number[];
 }

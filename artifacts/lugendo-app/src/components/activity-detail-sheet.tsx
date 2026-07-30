@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, MapPin, Timer, StickyNote, Pencil, Building2, AlarmClock } from "lucide-react";
+import { Clock, MapPin, Timer, StickyNote, Pencil, Building2, AlarmClock, Euro, Users, Check, ChevronsUpDown, X } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -9,12 +9,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useUpdateTripDayActivity, useUpdateItineraryDayActivity, useUpdateActivity } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  useUpdateTripDayActivity, useUpdateItineraryDayActivity, useUpdateActivity,
+  useListTripMembers, useAddActivityParticipant, useRemoveActivityParticipant,
+  getListTripMembersQueryKey,
+} from "@workspace/api-client-react";
 import type { DayActivity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { categoryMeta } from "@/components/activity-meta";
 import { TransportSelect } from "@/components/transport-select";
+import { cn } from "@/lib/utils";
 
 interface ActivityDetailSheetProps {
   entityType?: "trip" | "itinerary";
@@ -52,6 +67,8 @@ export function ActivityDetailSheet({
   const updateTripLink = useUpdateTripDayActivity();
   const updateItinLink = useUpdateItineraryDayActivity();
   const updateActivity = useUpdateActivity();
+  const addParticipant = useAddActivityParticipant();
+  const removeParticipant = useRemoveActivityParticipant();
 
   const isItinerary = entityType === "itinerary";
 
@@ -62,6 +79,9 @@ export function ActivityDetailSheet({
   const [addressOverride, setAddressOverride] = useState("");
   const [included, setIncluded] = useState(true);
   const [transportMode, setTransportMode] = useState("");
+  const [costAmount, setCostAmount] = useState("");
+  const [participants, setParticipants] = useState<{ id: number; name: string }[]>([]);
+  const [participantPickerOpen, setParticipantPickerOpen] = useState(false);
 
   const [address, setAddress] = useState("");
   const [durationHours, setDurationHours] = useState("");
@@ -79,9 +99,18 @@ export function ActivityDetailSheet({
       setAddress(activity.address ?? "");
       setDurationHours(activity.durationHours != null ? String(activity.durationHours) : "");
       setSelectedDayId(dayId);
+      setCostAmount(activity.costAmount != null ? String(activity.costAmount) : "");
+      setParticipants(activity.participants ?? []);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activity?.id]);
+
+  const { user } = useAuth();
+  const isPorLibre = !isItinerary && !included;
+  const membersQuery = useListTripMembers(entityId, { query: { queryKey: getListTripMembersQueryKey(entityId), enabled: open && isPorLibre } });
+  const availableMembers = (membersQuery.data?.members ?? []).filter(
+    m => m.id !== user?.id && !participants.some(p => p.id === m.id),
+  );
 
   if (!activity) return null;
 
@@ -89,6 +118,28 @@ export function ActivityDetailSheet({
   const canEdit = activity.canEdit !== false;
   const isPending = updateTripLink.isPending || updateItinLink.isPending || updateActivity.isPending;
   const isAdHoc = activity.activityId == null;
+
+  const invalidateActivities = () => qc.invalidateQueries({ queryKey: [queryKey] });
+
+  const handleAddParticipant = (travelerId: number) => {
+    addParticipant.mutate(
+      { tripId: entityId, dayId, linkId: activity.id, data: { travelerId } },
+      {
+        onSuccess: (res) => { setParticipants(res.participants); invalidateActivities(); },
+        onError: () => toast({ variant: "destructive", title: "No se pudo añadir el participante" }),
+      },
+    );
+  };
+
+  const handleRemoveParticipant = (travelerId: number) => {
+    removeParticipant.mutate(
+      { tripId: entityId, dayId, linkId: activity.id, travelerId },
+      {
+        onSuccess: (res) => { setParticipants(res.participants); invalidateActivities(); },
+        onError: () => toast({ variant: "destructive", title: "No se pudo quitar el participante" }),
+      },
+    );
+  };
 
   const handleSave = async () => {
     const catalogChanged = !isAdHoc && (
@@ -116,6 +167,7 @@ export function ActivityDetailSheet({
       }
 
       const dayChanged = selectedDayId !== dayId;
+      let timeWarning: string | null | undefined;
 
       if (isItinerary) {
         await new Promise<void>((resolve, reject) => {
@@ -149,9 +201,10 @@ export function ActivityDetailSheet({
                 addressOverride: addressOverride || null,
                 included,
                 transportMode: (transportMode || null) as import("@workspace/api-client-react").DayActivityInput["transportMode"],
+                ...(isPorLibre ? { costAmount: costAmount ? parseFloat(costAmount) : null } : {}),
               },
             },
-            { onSuccess: () => resolve(), onError: reject }
+            { onSuccess: (res) => { timeWarning = res.warning; resolve(); }, onError: reject }
           );
         });
       }
@@ -162,6 +215,7 @@ export function ActivityDetailSheet({
         qc.invalidateQueries({ queryKey: [`/api/${entityPath}/${entityId}/days/${selectedDayId}/activities`] });
       }
       toast({ title: dayChanged ? "Actividad movida de día" : "Actividad actualizada" });
+      if (timeWarning) toast({ title: "Aviso", description: timeWarning });
       onOpenChange(false);
     } catch {
       toast({ variant: "destructive", title: "Error al guardar" });
@@ -207,10 +261,21 @@ export function ActivityDetailSheet({
               <ReadOnlyField label="Dirección" value={activity.addressOverride ?? activity.address} />
               <ReadOnlyField label="Notas" value={activity.notes} />
               {!activity.included && (
-                <div>
-                  <p className="text-[11px] font-medium mb-0.5" style={{ color: "var(--text-ter)" }}>Tipo</p>
-                  <p className="text-[13px]" style={{ color: "var(--noche)" }}>Por libre (no incluida)</p>
-                </div>
+                <>
+                  <div>
+                    <p className="text-[11px] font-medium mb-0.5" style={{ color: "var(--text-ter)" }}>Tipo</p>
+                    <p className="text-[13px]" style={{ color: "var(--noche)" }}>Por libre (no incluida)</p>
+                  </div>
+                  {activity.costAmount != null && (
+                    <ReadOnlyField label="Coste por persona" value={`${activity.costAmount.toFixed(2)} ${activity.costCurrency ?? "EUR"}`} />
+                  )}
+                  <div>
+                    <p className="text-[11px] font-medium mb-0.5" style={{ color: "var(--text-ter)" }}>Participantes</p>
+                    <p className="text-[13px]" style={{ color: "var(--noche)" }}>
+                      {participants.length > 0 ? participants.map(p => p.name).join(", ") : "Ninguno"}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           ) : (
@@ -373,6 +438,86 @@ export function ActivityDetailSheet({
                         </button>
                       </div>
                     </div>
+
+                    {isPorLibre && (
+                      <div className="space-y-4 p-3 rounded-[8px]" style={{ background: "#F5F8F5", border: "1px solid #E0E8E0" }}>
+                        <div>
+                          <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                            <Euro className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                            Coste por persona (€)
+                          </label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={costAmount}
+                            onChange={e => setCostAmount(e.target.value)}
+                            className="h-9 text-[13px] w-32"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                            <Users className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                            Participantes
+                          </label>
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {participants.length === 0 && (
+                              <p className="text-[12px]" style={{ color: "var(--text-ter)" }}>Nadie más, de momento</p>
+                            )}
+                            {participants.map(p => (
+                              <span key={p.id} className="inline-flex items-center gap-1 text-[11px] font-medium pl-2 pr-1 py-1 rounded-full"
+                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                                {p.name}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveParticipant(p.id)}
+                                  disabled={removeParticipant.isPending}
+                                  className="rounded-full hover:bg-black/10 p-0.5"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                          <Popover open={participantPickerOpen} onOpenChange={setParticipantPickerOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={participantPickerOpen}
+                                className="w-full justify-between font-normal h-9 px-3 text-[13px] text-muted-foreground"
+                              >
+                                <span>Añadir participante…</span>
+                                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[280px] p-0" align="start">
+                              <Command>
+                                <CommandList>
+                                  <CommandEmpty>
+                                    {membersQuery.isLoading ? "Cargando…" : "No hay más viajeros disponibles."}
+                                  </CommandEmpty>
+                                  <CommandGroup>
+                                    {availableMembers.map(m => (
+                                      <CommandItem
+                                        key={m.id}
+                                        value={m.name}
+                                        onSelect={() => { handleAddParticipant(m.id); setParticipantPickerOpen(false); }}
+                                      >
+                                        <Check className={cn("mr-2 h-3.5 w-3.5 opacity-0")} />
+                                        {m.name}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 

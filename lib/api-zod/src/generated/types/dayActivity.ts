@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityParticipant } from './activityParticipant';
 import type { DayActivityTimeOfDay } from './dayActivityTimeOfDay';
 import type { TransportMode } from './transportMode';
 
@@ -37,4 +38,24 @@ export interface DayActivity {
   transportMode?: TransportMode | null;
   canEdit: boolean;
   createdAt: string;
+  /**
+     * Coste por persona. Solo se muestra/edita en actividades por libre (#151).
+     * @nullable
+     */
+  costAmount?: number | null;
+  /**
+     * ISO 4217. Fijo a EUR por ahora.
+     * @nullable
+     */
+  costCurrency?: string | null;
+  /**
+     * Nombre de quien creó la actividad. Usado para el badge "Por libre · nombre" en el back office.
+     * @nullable
+     */
+  createdByName?: string | null;
+  /** Solo presente en la vista de viajero -- creador o participante de esta actividad por libre. */
+  isMine?: boolean;
+  participants?: ActivityParticipant[];
+  /** Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida). */
+  warning?: string;
 }

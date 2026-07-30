@@ -281,6 +281,8 @@ export const DayActivityInputSchema = z.object({
   addressOverride: z.string().optional(),
   included: z.boolean().optional(),
   transportMode: TransportModeSchema,
+  costAmount: z.number().nonnegative().optional(),
+  participantIds: z.array(z.number().int().positive()).optional(),
 });
 
 export const ItineraryDayActivityUpdateSchema = z.object({
@@ -299,6 +301,7 @@ export const TripDayActivityUpdateSchema = z.object({
   included: z.boolean().optional(),
   transportMode: TransportModeSchema,
   activityTitle: z.string().nullable().optional(),
+  costAmount: z.number().nonnegative().nullable().optional(),
 });
 
 // ─── Invitations ─────────────────────────────────────────────────────────────

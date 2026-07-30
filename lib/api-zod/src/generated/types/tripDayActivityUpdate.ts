@@ -23,4 +23,6 @@ export interface TripDayActivityUpdate {
   transportMode?: TransportMode | null;
   /** @nullable */
   activityTitle?: string | null;
+  /** @nullable */
+  costAmount?: number | null;
 }

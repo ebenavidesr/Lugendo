@@ -76,14 +76,12 @@
 | #118 | Toggle Incluida/Por libre al crear itinerario — en curso | — | Itinerarios | — |
 | #126 | Sistema de aprobación manual de nuevos registros (registro restringido a beta) — en curso | 🔴 Alta | Registro | — |
 | #128 | Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes — en curso, pendiente de validar en producción | 🟡 Media | Itinerarios · Viajes | Tú |
-| #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) — en QA, pendiente de validar en producción | 🟡 Media | Itinerarios | Tú |
 | #136 | Costes de viaje asignados por viajero (hoteles, actividades, transporte) — arquitectura pendiente | — | Itinerarios · Viajes · Viajeros | — |
 | #137 | Catálogo de agencia: soportar más de un hotel por día en el itinerario | — | Hoteles · Itinerarios | — |
 | #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #143 | Foto del día: placeholder compacto y subida inline | 🟡 Media | Viajeros | Yo |
 | #144 | Alta de cuentas de desarrollador: App Store Connect y Google Play Console | 🟢 Baja | Infraestructura | Tú |
 | #146 | App móvil iOS/Android con React Native/Expo (renumerado desde un #143 duplicado en Notion) | 🟢 Baja | Infraestructura | Tú |
-| #147 | Arreglar entorno de desarrollo local: el build de Vite falla por falta del binario nativo `@rollup/rollup-darwin-arm64`, ningún paquete carga `.env` automáticamente (falta `dotenv`/`--env-file`), y el dev server de Vite no tiene proxy a `/api` — en QA, pendiente de validar en otra máquina | 🟡 Media | Infraestructura | Tú |
 | #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
 | #150 | Etiqueta "Incluída" en actividades del viaje — código implementado 2026-07-29 (sin cambios de schema/backend, el campo `included` ya existía); pendiente de que Quique mueva la tarjeta a QA y valide visualmente | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #153 | Verificar el dominio `lugendo.io` en Resend (SPF/DKIM en Cloudflare DNS) — paso manual pendiente desde tarea #145; sin él, proveedores estrictos (iCloud confirmado el 2026-07-29) filtran o descartan en silencio los emails transaccionales aunque Resend los marque como enviados sin error | 🟡 Media | Infraestructura | Yo |
@@ -182,6 +180,8 @@
 | #127 (Notion) | Botón "Expandir/Colapsar todos" en el acordeón de días — aplicado a detalle de viaje, detalle de itinerario y pasaporte del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros |
 | #140 | Reclasificar vista de viajes del viajero: Programados / Realizados / Compartidos (fix 2026-07-30: bug de clasificación pisada por "compartido" corregido) | 🟡 Media | Viajes · Viajeros |
 | #141 | Compartir viaje: permisos vista/edición entre viajeros (ya existía) y "foto" de inspiración para contactos externos ("Invitada") — mejora 2026-07-30: elegir Miembro (edición, Programado/Realizado) vs Invitado (solo vista, Compartido) al compartir, reclasificable después | 🟡 Media | Viajes · Viajeros |
+| #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) | 🟡 Media | Itinerarios |
+| #147 | Arreglar entorno de desarrollo local: binario nativo de Vite/Rollup, carga automática de `.env`, proxy de `/api` en el dev server — confirmado también en otra máquina | 🟡 Media | Infraestructura |
 
 ---
 

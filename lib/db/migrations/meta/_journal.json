@@ -162,6 +162,13 @@
       "when": 1785428092534,
       "tag": "0022_rainy_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1785445340298,
+      "tag": "0023_special_nomad",
+      "breakpoints": true
     }
   ]
 }

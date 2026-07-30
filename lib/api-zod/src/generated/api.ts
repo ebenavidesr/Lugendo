@@ -979,7 +979,14 @@ export const GetTripResponse = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "canEdit": zod.boolean()
+  "canEdit": zod.boolean(),
+  "costAmount": zod.number().nullish(),
+  "costCurrency": zod.string().nullish(),
+  "isMine": zod.boolean().optional().describe('Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional()
 })).optional(),
   "createdAt": zod.string()
 })),
@@ -1196,7 +1203,14 @@ export const UpdateTripDayAdminResponse = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "canEdit": zod.boolean()
+  "canEdit": zod.boolean(),
+  "costAmount": zod.number().nullish(),
+  "costCurrency": zod.string().nullish(),
+  "isMine": zod.boolean().optional().describe('Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1228,7 +1242,16 @@ export const ListTripDayActivitiesResponseItem = zod.object({
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "canEdit": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "costAmount": zod.number().nullish().describe('Coste por persona. Solo se muestra\/edita en actividades por libre (#151).'),
+  "costCurrency": zod.string().nullish().describe('ISO 4217. Fijo a EUR por ahora.'),
+  "createdByName": zod.string().nullish().describe('Nombre de quien creó la actividad. Usado para el badge \"Por libre · nombre\" en el back office.'),
+  "isMine": zod.boolean().optional().describe('Solo presente en la vista de viajero -- creador o participante de esta actividad por libre.'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 export const ListTripDayActivitiesResponse = zod.array(ListTripDayActivitiesResponseItem)
 
@@ -1252,7 +1275,9 @@ export const AddTripDayActivityBody = zod.object({
   "companyContact": zod.string().optional(),
   "addressOverride": zod.string().optional(),
   "included": zod.boolean().optional(),
-  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish()
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "costAmount": zod.number().optional(),
+  "participantIds": zod.array(zod.number()).optional()
 })
 
 
@@ -1274,7 +1299,8 @@ export const UpdateTripDayActivityBody = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean().optional(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "activityTitle": zod.string().nullish()
+  "activityTitle": zod.string().nullish(),
+  "costAmount": zod.number().nullish()
 })
 
 export const UpdateTripDayActivityResponse = zod.object({
@@ -1295,7 +1321,16 @@ export const UpdateTripDayActivityResponse = zod.object({
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "canEdit": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "costAmount": zod.number().nullish().describe('Coste por persona. Solo se muestra\/edita en actividades por libre (#151).'),
+  "costCurrency": zod.string().nullish().describe('ISO 4217. Fijo a EUR por ahora.'),
+  "createdByName": zod.string().nullish().describe('Nombre de quien creó la actividad. Usado para el badge \"Por libre · nombre\" en el back office.'),
+  "isMine": zod.boolean().optional().describe('Solo presente en la vista de viajero -- creador o participante de esta actividad por libre.'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 
 
@@ -1306,6 +1341,53 @@ export const RemoveTripDayActivityParams = zod.object({
   "tripId": zod.coerce.number(),
   "dayId": zod.coerce.number(),
   "linkId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a participant to a por-libre activity (creator only)
+ */
+export const AddActivityParticipantParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+export const AddActivityParticipantBody = zod.object({
+  "travelerId": zod.number()
+})
+
+
+/**
+ * @summary Remove a participant from a por-libre activity (creator only)
+ */
+export const RemoveActivityParticipantParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number(),
+  "travelerId": zod.coerce.number()
+})
+
+export const RemoveActivityParticipantResponse = zod.object({
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+}))
+})
+
+
+/**
+ * @summary List travelers with accepted access to a trip (owner, accepted invitations, accepted member-type shares -- excludes guests). Used for the por-libre activity participant picker.
+ */
+export const ListTripMembersParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripMembersResponse = zod.object({
+  "members": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+}))
 })
 
 
@@ -1648,7 +1730,14 @@ export const GetMyTripResponse = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "canEdit": zod.boolean()
+  "canEdit": zod.boolean(),
+  "costAmount": zod.number().nullish(),
+  "costCurrency": zod.string().nullish(),
+  "isMine": zod.boolean().optional().describe('Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1783,7 +1872,14 @@ export const UpdateMyTripResponse = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "canEdit": zod.boolean()
+  "canEdit": zod.boolean(),
+  "costAmount": zod.number().nullish(),
+  "costCurrency": zod.string().nullish(),
+  "isMine": zod.boolean().optional().describe('Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -1886,7 +1982,14 @@ export const UpdateTripDayResponse = zod.object({
   "addressOverride": zod.string().nullish(),
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
-  "canEdit": zod.boolean()
+  "canEdit": zod.boolean(),
+  "costAmount": zod.number().nullish(),
+  "costCurrency": zod.string().nullish(),
+  "isMine": zod.boolean().optional().describe('Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2702,7 +2805,16 @@ export const ListDayActivitiesResponseItem = zod.object({
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "canEdit": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "costAmount": zod.number().nullish().describe('Coste por persona. Solo se muestra\/edita en actividades por libre (#151).'),
+  "costCurrency": zod.string().nullish().describe('ISO 4217. Fijo a EUR por ahora.'),
+  "createdByName": zod.string().nullish().describe('Nombre de quien creó la actividad. Usado para el badge \"Por libre · nombre\" en el back office.'),
+  "isMine": zod.boolean().optional().describe('Solo presente en la vista de viajero -- creador o participante de esta actividad por libre.'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 export const ListDayActivitiesResponse = zod.array(ListDayActivitiesResponseItem)
 
@@ -2726,7 +2838,9 @@ export const AddDayActivityBody = zod.object({
   "companyContact": zod.string().optional(),
   "addressOverride": zod.string().optional(),
   "included": zod.boolean().optional(),
-  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish()
+  "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
+  "costAmount": zod.number().optional(),
+  "participantIds": zod.array(zod.number()).optional()
 })
 
 
@@ -2763,7 +2877,16 @@ export const UpdateItineraryDayActivityResponse = zod.object({
   "included": zod.boolean(),
   "transportMode": zod.union([zod.literal('plane'),zod.literal('ship'),zod.literal('ferry'),zod.literal('train'),zod.literal('self_drive'),zod.literal('car_driver'),zod.literal('bus'),zod.literal('motorcycle'),zod.literal('bicycle'),zod.literal('walking'),zod.literal(null)]).nullish(),
   "canEdit": zod.boolean(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "costAmount": zod.number().nullish().describe('Coste por persona. Solo se muestra\/edita en actividades por libre (#151).'),
+  "costCurrency": zod.string().nullish().describe('ISO 4217. Fijo a EUR por ahora.'),
+  "createdByName": zod.string().nullish().describe('Nombre de quien creó la actividad. Usado para el badge \"Por libre · nombre\" en el back office.'),
+  "isMine": zod.boolean().optional().describe('Solo presente en la vista de viajero -- creador o participante de esta actividad por libre.'),
+  "participants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 
 

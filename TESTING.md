@@ -6,6 +6,26 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #151 (Notion) — Actividades por libre: participantes, visibilidad y coste (2026-07-30)
+- [x] **Nota de numeración**: esta es la tarjeta de Notion "#151 Actividades por libre por viajero: participantes, visibilidad y coste" — colisiona con el `#151` de `BACKLOG.md` ("Mensaje de error de registro", ver entrada siguiente), son tareas distintas. Detectado por Quique al testear: "he editado una actividad por libre pero no tengo la opción de invitar a nadie" — investigación confirmó que la tarjeta de Notion figuraba como QA pero la funcionalidad nunca se implementó (sin tabla de participantes, sin selector, sin campo de coste en el código); el estado de Notion se corrigió a Planned → In progress antes de implementar
+- [x] Investigación previa (evitó trabajo duplicado): `trip_day_activities.created_by_user_id` ya existía (reutilizado como autor); `trip_day_activities.included` ya existía; `trips.owner_id` ya identifica al dueño de un viaje propio; `trip_shares.permission`/`member_type` ya existían (#141). La UI de creación de actividades libres por el viajero (`free-activity-sheet.tsx`, botón "Añadir actividad libre" en `trip-day-card.tsx`) **ya existía** — no se detectó en la investigación inicial y no hizo falta construirla
+- [x] Bug encontrado y corregido de paso: `getTripDayActivityMap` (`traveler.ts`) aceptaba `currentUserId` pero lo ignoraba por completo — `canEdit` estaba hardcodeado a `true` para todas las filas y no había ningún filtro de visibilidad. Cualquier viajero con acceso a un viaje compartido veía (y en teoría podía llamar a la API para editar) todas las actividades de todos los demás
+- [x] Alcance acordado con Quique tras la investigación: solo `agent` (no admin/manager) puede crear actividades por libre además del propio viajero — el rol "guía local" de la #91 no existe todavía en el enum de roles y queda fuera de esta tarea; `cost_currency` se guarda fijo a `EUR` sin selector de divisa en la UI (la app no tenía multi-divisa en ningún otro sitio), pendiente de revisar en Fase I/II
+- [x] Schema: `trip_day_activities` gana `cost_amount`/`cost_currency` (coste por persona); nueva tabla `trip_day_activity_participants` (única por actividad+viajero, borrado en cascada) — migración `0023_special_nomad.sql`
+- [x] Backend (`trips.ts`): nuevo `canManageActivity` — actividad incluida: solo el creador del viaje (staff de la misma agencia, o dueño del viaje propio); actividad por libre: solo quien la creó. Sustituye la regla anterior ("cualquier participante puede editar" en PATCH, y un DELETE demasiado estricto que solo dejaba borrar al mismo miembro de staff que la creó). Creación de actividad incluida restringida al creador del viaje; creación de actividad por libre restringida a `agent` o viajero sin share de solo-invitado (`member_type = 'guest'`)
+- [x] Backend: `listTripMembers` (owner + invitaciones aceptadas + shares aceptados `member_type = 'member'`, excluye guests) para el selector de participantes; endpoints `POST`/`DELETE .../activities/:linkId/participants` (solo el creador de la actividad) y `GET /trips/:tripId/members`
+- [x] Backend: aviso blando (no bloqueante) de colisión de horario con una actividad incluida del mismo día al crear/editar una actividad por libre
+- [x] Backend: visibilidad corregida en ambas rutas de lectura — la de agencia (`GET /trips/:tripId/days/:dayId/activities`) sigue devolviendo todas las actividades por libre (con autor y participantes, de solo lectura salvo las creadas por la propia agencia); la de viajero (`getTripDayActivityMap`) ahora filtra: una actividad por libre solo se devuelve a su creador o a sus participantes. El snapshot de foto para Seguidoras (`buildTripPhotoSnapshot`, #141) hereda el mismo filtro con el id de quien comparte
+- [x] `openapi.yaml` + Orval regenerados: `costAmount`, `costCurrency`, `participants`, `isMine`, `createdByName`, `warning` en `DayActivity`/`TripDayActivityItem`; endpoints de participantes y de listado de miembros
+- [x] Frontend: `activity-detail-sheet.tsx` — para actividades por libre, campo "Coste por persona (€)" y selector de participantes (patrón Command+Popover de `country-select.tsx`), editable solo por el creador; participantes ven la lista en solo lectura. Badge "Mi actividad" (antes "Por libre" a secas) en `trip-day-card.tsx` cuando el viajero es creador o participante; badge "Por libre · nombre" en `day-activities-panel.tsx` (vista agencia)
+- [x] `pnpm run typecheck` limpio en todo el workspace
+- [x] Verificado con script transaccional contra Neon (patrón #148, `ROLLBACK` explícito, cero filas persistidas): creador ve y puede gestionar su actividad; participante la ve pero no puede editarla; un share con `permission = 'full'` que NO es participante no la ve; un ajeno tampoco — 6/6 comprobaciones superadas
+- [x] Verificado end-to-end en el navegador con 3 cuentas desechables (creadas y eliminadas en esta misma sesión, sin dejar rastro en datos reales): como creador, añadir un participante desde el picker (confirmado por `POST .../participants` → `201`) y guardar un coste (`PATCH` → `200`); como participante, la actividad aparece etiquetada "Mi actividad" vía `GET /me/trips/:tripId` con `canEdit: false`, `costAmount` y la lista de participantes visibles; como viajero con share `permission: 'full'` pero sin ser participante, `GET /me/trips/:tripId` devuelve `activities: []` para ese día — la actividad privada es invisible pese al permiso de edición completo
+- [x] Bug corregido durante la verificación: el selector de participantes ofrecía añadir al propio creador como participante de su propia actividad (no filtraba al usuario actual) — corregido para excluirlo
+- [ ] **No verificado en el navegador el lado de agencia** (badge "Por libre · nombre" en `day-activities-panel.tsx`) — el fixture de prueba era un viaje personal (sin agencia); verificado solo por tipo y lectura de código, no por recorrido real en UI
+- [ ] Validar en producción tras desplegar (aplica la migración automáticamente al arrancar el servidor)
+- [ ] Reconciliar con Quique la colisión de numeración `#151` entre `BACKLOG.md` y Notion (ver nota arriba) — pendiente desde antes de esta tarea
+
 ### #151 — Mensaje de error de registro más específico (2026-07-30)
 - [x] Backend ya devolvía `400 { error: "Email already in use" }` (email duplicado) y `400 { error: "Validation failed", errors: fieldErrors }` (fallo de Zod) desde `POST /auth/register` — no hizo falta ningún cambio de backend, solo el frontend ignoraba el cuerpo del error
 - [x] `artifacts/lugendo-app/src/pages/login.tsx`: nuevo `getRegisterErrorMessage(err)`, usado en el `onError` de `registerMutation` (`onRegisterSubmit`) — mapea `"Email already in use"` → "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña.", `"Validation failed"` → "Revisa los datos del formulario e inténtalo de nuevo.", y cualquier otro caso (fallo de red, 500) sigue mostrando el genérico "No se pudo crear la cuenta. Inténtalo de nuevo."
@@ -245,16 +265,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Frontend: `trip-wizard.tsx` excluye itinerarios inactivos de la selección de catálogo al crear un viaje nuevo
 - [x] Permisos: acciones de borrar/desactivar visibles y permitidas solo para admin, manager y agent (frontend y backend)
 - [x] `pnpm run typecheck` limpio en todos los paquetes
-- [ ] **No se pudo probar de extremo a extremo en local** — `DATABASE_URL` no está configurada en este checkout, no se puede levantar el backend
-- [ ] Itinerario sin viajes vinculados: botón "Borrar" habilitado, borrado funciona tras confirmación
-- [ ] Itinerario con al menos un viaje vinculado: botón "Borrar" deshabilitado con tooltip correcto (ficha y listado)
-- [ ] Intentar borrar por API un itinerario con viajes vinculados (manipulando la petición) → rechazado por el backend con 409
-- [ ] Marcar un itinerario con viajes vinculados como inactivo → aparece con badge "Inactivo" en el listado y en la ficha
-- [ ] Filtro "Mostrar inactivos" en el listado oculta/muestra correctamente los itinerarios inactivos
-- [ ] Un itinerario inactivo no aparece como opción al crear un viaje nuevo desde catálogo (trip-wizard)
-- [ ] Un viaje ya creado a partir de un itinerario ahora inactivo sigue funcionando con normalidad
-- [ ] Reactivar un itinerario inactivo funciona y vuelve a aparecer en la creación de viajes
-- [ ] Rol Guía local: no existe todavía en el código (tarea #91 sin empezar) — no aplica, cubierto automáticamente cuando se implemente
+- [x] Verificado de extremo a extremo — **validado por Quique (2026-07-30)**
+- [x] Itinerario sin viajes vinculados: botón "Borrar" habilitado, borrado funciona tras confirmación — **validado por Quique**
+- [x] Itinerario con al menos un viaje vinculado: botón "Borrar" deshabilitado con tooltip correcto (ficha y listado) — **validado por Quique**
+- [x] Intentar borrar por API un itinerario con viajes vinculados (manipulando la petición) → rechazado por el backend con 409 — **validado por Quique**
+- [x] Marcar un itinerario con viajes vinculados como inactivo → aparece con badge "Inactivo" en el listado y en la ficha — **validado por Quique**
+- [x] Filtro "Mostrar inactivos" en el listado oculta/muestra correctamente los itinerarios inactivos — **validado por Quique**
+- [x] Un itinerario inactivo no aparece como opción al crear un viaje nuevo desde catálogo (trip-wizard) — **validado por Quique**
+- [x] Un viaje ya creado a partir de un itinerario ahora inactivo sigue funcionando con normalidad — **validado por Quique**
+- [x] Reactivar un itinerario inactivo funciona y vuelve a aparecer en la creación de viajes — **validado por Quique**
+- [x] Rol Guía local: no existe todavía en el código (tarea #91 sin empezar) — no aplica, cubierto automáticamente cuando se implemente
 
 ### #133 — Reestructurar Dockerfile para aprovechar cache de capas de Docker (2026-07-22)
 - [ ] `Dockerfile`: copia primero `package.json` raíz, `pnpm-lock.yaml`, `pnpm-workspace.yaml` y el `package.json` de cada uno de los 11 paquetes del monorepo, ejecuta `pnpm install --frozen-lockfile`, y solo después copia el resto del código (`COPY . .`) y compila
@@ -749,7 +769,7 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `artifacts/api-server/.env` y `lib/db/.env` se cargan automáticamente (sin exportar variables a mano) al correr `dev`, `generate`, `migrate` y `stamp-baseline`
 - [x] `pnpm --filter @workspace/api-server run dev` arranca, corre las migraciones y queda escuchando en `:8080` contra la base de Neon real
 - [x] `pnpm --filter @workspace/lugendo-app run dev` (`:18147`) hace proxy de `/api/*` al backend local sin usar `setBaseUrl`; probado con un login real que llegó hasta el backend (401 por credenciales, no por fallo de red/proxy)
-- [ ] Confirmar el mismo flujo en otra máquina/checkout (Intel Mac o Linux) para descartar que algo quedó atado a este entorno concreto
+- [x] Confirmar el mismo flujo en otra máquina/checkout (Intel Mac o Linux) para descartar que algo quedó atado a este entorno concreto — **validado por Quique**
 
 ---
 

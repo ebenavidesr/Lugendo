@@ -163,12 +163,20 @@ async function getTravelerDayHotelMap(dayIds: number[], kind: "trip" | "itinerar
   return map;
 }
 
-async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
+// #151: `currentUserId` now actually gates visibility and edit rights, instead of being
+// accepted-but-ignored. A por-libre activity (included = false) is only returned to its creator
+// or its participants; an included activity is editable only by the trip's owner (this router is
+// traveler-only, so "trip creator" here always means the personal-trip owner -- agency staff
+// never call these /me/... routes). `tripOwnerId` lets every caller share one owner lookup
+// instead of re-querying trips per call.
+async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tripOwnerId: number | null) {
   type ActivityItem = {
     id: number; activityId: number | null; activityName: string; activityCategory: string | null;
     startTime: string | null; endTime: string | null; address: string | null; addressOverride: string | null;
     durationHours: number | null; notes: string | null; companyContact: string | null;
     included: boolean; transportMode: string | null; canEdit: boolean;
+    costAmount: number | null; costCurrency: string | null;
+    isMine: boolean; participants: { id: number; name: string }[];
   };
   if (dayIds.length === 0) return {} as Record<number, ActivityItem[]>;
   let rows: Awaited<ReturnType<typeof db.execute>>;
@@ -179,8 +187,18 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
       a.name AS activity_name, a.category AS activity_category,
       tda.sort_order, tda.start_time, tda.end_time, tda.notes,
       tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
-      tda.created_by_user_id,
-      a.address AS activity_address, a.duration_hours AS activity_duration_hours
+      tda.created_by_user_id, tda.cost_amount, tda.cost_currency,
+      a.address AS activity_address, a.duration_hours AS activity_duration_hours,
+      EXISTS(
+        SELECT 1 FROM trip_day_activity_participants p
+        WHERE p.activity_link_id = tda.id AND p.traveler_id = ${currentUserId}
+      ) AS is_participant,
+      COALESCE((
+        SELECT json_agg(json_build_object('id', u.id, 'name', u.name))
+        FROM trip_day_activity_participants p
+        JOIN users u ON u.id = p.traveler_id
+        WHERE p.activity_link_id = tda.id
+      ), '[]') AS participants
     FROM trip_day_activities tda
     LEFT JOIN activities a ON a.id = tda.activity_id
     WHERE tda.day_id IN ${dayIds}
@@ -198,9 +216,18 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
   }
   const map: Record<number, ActivityItem[]> = {};
   for (const r of rows.rows as Array<Record<string, unknown>>) {
+    const included = Boolean(r.included);
+    const createdByUserId = r.created_by_user_id != null ? Number(r.created_by_user_id) : null;
+    const isCreator = createdByUserId === currentUserId;
+    const isParticipant = Boolean(r.is_participant);
+
+    // Visibility: an included activity is visible to everyone with access to the trip; a
+    // por-libre activity is visible only to its creator and its participants.
+    if (!included && !isCreator && !isParticipant) continue;
+
     const dayId = Number(r.day_id);
     if (!map[dayId]) map[dayId] = [];
-    const canEdit = true;
+    const canEdit = included ? tripOwnerId === currentUserId : isCreator;
     map[dayId].push({
       id: Number(r.id),
       activityId: r.activity_id != null ? Number(r.activity_id) : null,
@@ -213,9 +240,13 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId?: number) {
       addressOverride: r.address_override as string | null,
       address: (r.address_override as string | null) ?? (r.activity_address as string | null),
       durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
-      included: Boolean(r.included),
+      included,
       transportMode: r.transport_mode as string | null,
       canEdit,
+      costAmount: r.cost_amount != null ? parseFloat(r.cost_amount as string) : null,
+      costCurrency: r.cost_currency as string | null,
+      isMine: isCreator || isParticipant,
+      participants: r.participants as { id: number; name: string }[],
     });
   }
   return map;
@@ -702,7 +733,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   if (tripDayRows.length > 0) {
     const [hotelMap, activityMap] = await Promise.all([
       getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
-      getTripDayActivityMap(tripDayRows.map(d => d.id), currentUserId),
+      getTripDayActivityMap(tripDayRows.map(d => d.id), currentUserId, row.ownerId),
     ]);
     await mergeItineraryFallbacks(row.itineraryId, tripDayRows, hotelMap, activityMap);
     days = tripDayRows.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
@@ -713,7 +744,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     if (effectiveTripDays.length > 0) {
       const [hotelMap, activityMap] = await Promise.all([
         getTravelerDayHotelMap(effectiveTripDays.map(d => d.id), "trip"),
-        getTripDayActivityMap(effectiveTripDays.map(d => d.id), currentUserId),
+        getTripDayActivityMap(effectiveTripDays.map(d => d.id), currentUserId, row.ownerId),
       ]);
       await mergeItineraryFallbacks(row.itineraryId, effectiveTripDays, hotelMap, activityMap);
       days = effectiveTripDays.map(d => ({ ...d, hotels: hotelMap[d.id] ?? [], activities: activityMap[d.id] ?? [] }));
@@ -1904,7 +1935,9 @@ async function buildTripPhotoSnapshot(tripId: number, creatorUserId: number): Pr
 
   const [hotelMap, activityMap] = await Promise.all([
     getTravelerDayHotelMap(tripDayRows.map(d => d.id), "trip"),
-    getTripDayActivityMap(tripDayRows.map(d => d.id)),
+    // #151: scope the snapshot to what the sharer themself can see -- their own included
+    // activities plus por-libre activities they created or participate in, never anyone else's.
+    getTripDayActivityMap(tripDayRows.map(d => d.id), creatorUserId, trip.ownerId),
   ]);
   await mergeItineraryFallbacks(trip.itineraryId, tripDayRows, hotelMap, activityMap);
 

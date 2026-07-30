@@ -515,6 +515,11 @@ export const ActivityCategory = {
   other: 'other',
 } as const;
 
+export interface ActivityParticipant {
+  id: number;
+  name: string;
+}
+
 export interface TripDayActivityItem {
   id: number;
   /** @nullable */
@@ -538,6 +543,13 @@ export interface TripDayActivityItem {
   included: boolean;
   transportMode?: TransportMode | null;
   canEdit: boolean;
+  /** @nullable */
+  costAmount?: number | null;
+  /** @nullable */
+  costCurrency?: string | null;
+  /** Creador o participante de esta actividad por libre (siempre presente en la vista de viajero). */
+  isMine?: boolean;
+  participants?: ActivityParticipant[];
 }
 
 export interface Activity {
@@ -1779,6 +1791,26 @@ export interface DayActivity {
   transportMode?: TransportMode | null;
   canEdit: boolean;
   createdAt: string;
+  /**
+     * Coste por persona. Solo se muestra/edita en actividades por libre (#151).
+     * @nullable
+     */
+  costAmount?: number | null;
+  /**
+     * ISO 4217. Fijo a EUR por ahora.
+     * @nullable
+     */
+  costCurrency?: string | null;
+  /**
+     * Nombre de quien creó la actividad. Usado para el badge "Por libre · nombre" en el back office.
+     * @nullable
+     */
+  createdByName?: string | null;
+  /** Solo presente en la vista de viajero -- creador o participante de esta actividad por libre. */
+  isMine?: boolean;
+  participants?: ActivityParticipant[];
+  /** Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida). */
+  warning?: string;
 }
 
 export type DayActivityInputTimeOfDay = typeof DayActivityInputTimeOfDay[keyof typeof DayActivityInputTimeOfDay];
@@ -1802,6 +1834,8 @@ export interface DayActivityInput {
   addressOverride?: string;
   included?: boolean;
   transportMode?: TransportMode | null;
+  costAmount?: number;
+  participantIds?: number[];
 }
 
 export interface ItineraryDayActivityUpdate {
@@ -1828,6 +1862,12 @@ export interface TripDayActivityUpdate {
   transportMode?: TransportMode | null;
   /** @nullable */
   activityTitle?: string | null;
+  /** @nullable */
+  costAmount?: number | null;
+}
+
+export interface ActivityParticipantInput {
+  travelerId: number;
 }
 
 export type DashboardSummaryTripsByStatus = {
@@ -1864,6 +1904,18 @@ export interface DestinationDescribeInput {
 export interface DestinationDescribeResult {
   description: string;
 }
+
+export type AddActivityParticipant201 = {
+  participants: ActivityParticipant[];
+};
+
+export type RemoveActivityParticipant200 = {
+  participants: ActivityParticipant[];
+};
+
+export type ListTripMembers200 = {
+  members: ActivityParticipant[];
+};
 
 export type GetTripDocumentDownloadUrlAdmin200 = {
   /** Short-lived pre-signed URL (15 minutes) */

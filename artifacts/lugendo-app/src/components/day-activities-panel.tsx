@@ -301,13 +301,7 @@ export function DayActivitiesPanel({
                             {isFree && (
                               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
                                 style={{ background: "#F0F4F0", color: "#4A6A4A" }}>
-                                Por libre
-                              </span>
-                            )}
-                            {!canEdit && isFree && (
-                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                style={{ background: "#FFF3D6", color: "#C47A00" }}>
-                                Viajero
+                                {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
                               </span>
                             )}
                           </div>

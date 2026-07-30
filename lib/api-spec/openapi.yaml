@@ -1019,6 +1019,112 @@ paths:
         "204":
           description: Unlinked
 
+  /trips/{tripId}/days/{dayId}/activities/{linkId}/participants:
+    post:
+      operationId: addActivityParticipant
+      tags: [trips]
+      summary: Add a participant to a por-libre activity (creator only)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityParticipantInput"
+      responses:
+        "201":
+          description: Participant added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [participants]
+                properties:
+                  participants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
+  /trips/{tripId}/days/{dayId}/activities/{linkId}/participants/{travelerId}:
+    delete:
+      operationId: removeActivityParticipant
+      tags: [trips]
+      summary: Remove a participant from a por-libre activity (creator only)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: travelerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Participant removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [participants]
+                properties:
+                  participants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
+  /trips/{tripId}/members:
+    get:
+      operationId: listTripMembers
+      tags: [trips]
+      summary: List travelers with accepted access to a trip (owner, accepted invitations, accepted member-type shares -- excludes guests). Used for the por-libre activity participant picker.
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Trip members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [members]
+                properties:
+                  members:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
   # ─── INVITATIONS ─────────────────────────────────────────────────────────────
   /trips/{tripId}/invitations:
     get:
@@ -3436,6 +3542,17 @@ components:
           $ref: "#/components/schemas/TransportMode"
         canEdit:
           type: boolean
+        costAmount:
+          type: ["number", "null"]
+        costCurrency:
+          type: ["string", "null"]
+        isMine:
+          type: boolean
+          description: Creador o participante de esta actividad por libre (siempre presente en la vista de viajero).
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityParticipant"
 
     TransportMode:
       type: string
@@ -4909,6 +5026,34 @@ components:
           type: boolean
         createdAt:
           type: string
+        costAmount:
+          type: ["number", "null"]
+          description: Coste por persona. Solo se muestra/edita en actividades por libre (#151).
+        costCurrency:
+          type: ["string", "null"]
+          description: ISO 4217. Fijo a EUR por ahora.
+        createdByName:
+          type: ["string", "null"]
+          description: Nombre de quien creó la actividad. Usado para el badge "Por libre · nombre" en el back office.
+        isMine:
+          type: boolean
+          description: Solo presente en la vista de viajero -- creador o participante de esta actividad por libre.
+        participants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityParticipant"
+        warning:
+          type: string
+          description: Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).
+
+    ActivityParticipant:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
 
     DayActivityInput:
       type: object
@@ -4936,6 +5081,12 @@ components:
           type: boolean
         transportMode:
           $ref: "#/components/schemas/TransportMode"
+        costAmount:
+          type: number
+        participantIds:
+          type: array
+          items:
+            type: integer
 
     ItineraryDayActivityUpdate:
       type: object
@@ -4968,6 +5119,15 @@ components:
           $ref: "#/components/schemas/TransportMode"
         activityTitle:
           type: ["string", "null"]
+        costAmount:
+          type: ["number", "null"]
+
+    ActivityParticipantInput:
+      type: object
+      required: [travelerId]
+      properties:
+        travelerId:
+          type: integer
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────
     DashboardSummary:

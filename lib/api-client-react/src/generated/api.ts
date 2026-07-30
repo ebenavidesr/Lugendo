@@ -22,7 +22,9 @@ import type {
 import type {
   Activity,
   ActivityInput,
+  ActivityParticipantInput,
   ActivityUpdate,
+  AddActivityParticipant201,
   Agency,
   AgencyInput,
   AgencyUpdate,
@@ -60,12 +62,14 @@ import type {
   ItineraryDetail,
   ItineraryInput,
   ItineraryUpdate,
+  ListTripMembers200,
   LoginInput,
   ParsePdfInput,
   ParsedItinerary,
   PersonalTripDayInput,
   PersonalTripDayUpdateInput,
   RegisterInput,
+  RemoveActivityParticipant200,
   ResetPasswordInput,
   ShareTripInput,
   SharedTripEntry,
@@ -3726,6 +3730,235 @@ export const useRemoveTripDayActivity = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRemoveTripDayActivityMutationOptions(options));
     }
+
+export const getAddActivityParticipantUrl = (tripId: number,
+    dayId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities/${linkId}/participants`
+}
+
+/**
+ * @summary Add a participant to a por-libre activity (creator only)
+ */
+export const addActivityParticipant = async (tripId: number,
+    dayId: number,
+    linkId: number,
+    activityParticipantInput: ActivityParticipantInput, options?: RequestInit): Promise<AddActivityParticipant201> => {
+
+  return customFetch<AddActivityParticipant201>(getAddActivityParticipantUrl(tripId,dayId,linkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      activityParticipantInput,)
+  }
+);}
+
+
+
+
+export const getAddActivityParticipantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<ActivityParticipantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<ActivityParticipantInput>}, TContext> => {
+
+const mutationKey = ['addActivityParticipant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addActivityParticipant>>, {tripId: number;dayId: number;linkId: number;data: BodyType<ActivityParticipantInput>}> = (props) => {
+          const {tripId,dayId,linkId,data} = props ?? {};
+
+          return  addActivityParticipant(tripId,dayId,linkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddActivityParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof addActivityParticipant>>>
+    export type AddActivityParticipantMutationBody = BodyType<ActivityParticipantInput>
+    export type AddActivityParticipantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add a participant to a por-libre activity (creator only)
+ */
+export const useAddActivityParticipant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<ActivityParticipantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addActivityParticipant>>,
+        TError,
+        {tripId: number;dayId: number;linkId: number;data: BodyType<ActivityParticipantInput>},
+        TContext
+      > => {
+      return useMutation(getAddActivityParticipantMutationOptions(options));
+    }
+
+export const getRemoveActivityParticipantUrl = (tripId: number,
+    dayId: number,
+    linkId: number,
+    travelerId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities/${linkId}/participants/${travelerId}`
+}
+
+/**
+ * @summary Remove a participant from a por-libre activity (creator only)
+ */
+export const removeActivityParticipant = async (tripId: number,
+    dayId: number,
+    linkId: number,
+    travelerId: number, options?: RequestInit): Promise<RemoveActivityParticipant200> => {
+
+  return customFetch<RemoveActivityParticipant200>(getRemoveActivityParticipantUrl(tripId,dayId,linkId,travelerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveActivityParticipantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;travelerId: number}, TContext> => {
+
+const mutationKey = ['removeActivityParticipant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeActivityParticipant>>, {tripId: number;dayId: number;linkId: number;travelerId: number}> = (props) => {
+          const {tripId,dayId,linkId,travelerId} = props ?? {};
+
+          return  removeActivityParticipant(tripId,dayId,linkId,travelerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveActivityParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof removeActivityParticipant>>>
+
+    export type RemoveActivityParticipantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a participant from a por-libre activity (creator only)
+ */
+export const useRemoveActivityParticipant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeActivityParticipant>>, TError,{tripId: number;dayId: number;linkId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeActivityParticipant>>,
+        TError,
+        {tripId: number;dayId: number;linkId: number;travelerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveActivityParticipantMutationOptions(options));
+    }
+
+export const getListTripMembersUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/members`
+}
+
+/**
+ * @summary List travelers with accepted access to a trip (owner, accepted invitations, accepted member-type shares -- excludes guests). Used for the por-libre activity participant picker.
+ */
+export const listTripMembers = async (tripId: number, options?: RequestInit): Promise<ListTripMembers200> => {
+
+  return customFetch<ListTripMembers200>(getListTripMembersUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripMembersQueryKey = (tripId: number,) => {
+    return [
+    `/api/trips/${tripId}/members`
+    ] as const;
+    }
+
+
+export const getListTripMembersQueryOptions = <TData = Awaited<ReturnType<typeof listTripMembers>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripMembersQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripMembers>>> = ({ signal }) => listTripMembers(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripMembers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listTripMembers>>>
+export type ListTripMembersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List travelers with accepted access to a trip (owner, accepted invitations, accepted member-type shares -- excludes guests). Used for the por-libre activity participant picker.
+ */
+
+export function useListTripMembers<TData = Awaited<ReturnType<typeof listTripMembers>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripMembersQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListInvitationsUrl = (tripId: number,) => {
 

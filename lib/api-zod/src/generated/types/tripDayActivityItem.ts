@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ActivityCategory } from './activityCategory';
+import type { ActivityParticipant } from './activityParticipant';
 import type { TransportMode } from './transportMode';
 
 export interface TripDayActivityItem {
@@ -31,4 +32,11 @@ export interface TripDayActivityItem {
   included: boolean;
   transportMode?: TransportMode | null;
   canEdit: boolean;
+  /** @nullable */
+  costAmount?: number | null;
+  /** @nullable */
+  costCurrency?: string | null;
+  /** Creador o participante de esta actividad por libre (siempre presente en la vista de viajero). */
+  isMine?: boolean;
+  participants?: ActivityParticipant[];
 }
