@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #151 — Mensaje de error de registro más específico (2026-07-30)
+- [x] Backend ya devolvía `400 { error: "Email already in use" }` (email duplicado) y `400 { error: "Validation failed", errors: fieldErrors }` (fallo de Zod) desde `POST /auth/register` — no hizo falta ningún cambio de backend, solo el frontend ignoraba el cuerpo del error
+- [x] `artifacts/lugendo-app/src/pages/login.tsx`: nuevo `getRegisterErrorMessage(err)`, usado en el `onError` de `registerMutation` (`onRegisterSubmit`) — mapea `"Email already in use"` → "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña.", `"Validation failed"` → "Revisa los datos del formulario e inténtalo de nuevo.", y cualquier otro caso (fallo de red, 500) sigue mostrando el genérico "No se pudo crear la cuenta. Inténtalo de nuevo."
+- [x] `onLoginSubmit` (login) no se tocó — fuera de alcance de esta tarea, mantiene su mensaje genérico de credenciales por diseño
+- [x] `pnpm run typecheck` limpio
+- [x] Verificado en el navegador contra la base real: registrar con `admin@lugendo.io` (cuenta ya existente) → toast "Error al registrarse: Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña." — confirmado por `GET /api/auth/me`/network request (`400 { error: "Email already in use" }`) y por el texto renderizado en la página. El intento no crea ninguna fila (la comprobación de email duplicado corre antes del `insert`)
+- [ ] Validar en producción tras desplegar: registrar con un email nuevo sigue funcionando con normalidad (sin regresión en el camino feliz)
+- [ ] Un error de validación real (p. ej. sorteando el zod del cliente) muestra el mensaje "Revisa los datos del formulario..." en vez del genérico anterior
+
 ### #152 — Aprobación de registros pendientes rota: el enlace del email daba 404 y no había fallback en el admin (2026-07-30)
 - [x] Causa raíz del 404 identificada: el Worker de Cloudflare (`artifacts/lugendo-app/worker.js`) que debería proxyar `/api/*` hacia Railway nunca llegaba a ejecutarse para esas rutas. Con `assets.not_found_handling: "single-page-application"`, Cloudflare sirve el fallback SPA (`index.html`) para **cualquier** ruta que no coincida con un archivo estático — incluido `/api/auth/approve/...` — en la capa de Assets, antes de invocar el `fetch` handler del Worker. Confirmado en producción: `GET https://lugendo.io/api/auth/approve/approved/<token>` devolvía `200` pero con el bundle de la SPA (`index-*.js`/`.css`), nunca llegaba a Railway; Wouter no encontraba ruta y caía en la página 404 — coincide exactamente con el síntoma reportado
 - [x] Arreglo: `artifacts/lugendo-app/wrangler.jsonc` añade `"run_worker_first": ["/api/*"]` dentro de `assets`, forzando que esas rutas pasen primero por el Worker (y su proxy a Railway) en vez de por el fallback SPA. El resto de rutas siguen sirviéndose directamente desde Assets sin invocar el Worker (sin impacto de rendimiento)

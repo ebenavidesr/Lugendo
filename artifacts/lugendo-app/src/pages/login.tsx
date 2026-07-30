@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useLogin, useRegister } from "@workspace/api-client-react";
+import { useLogin, useRegister, ApiError } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { LugendoCompass } from "@/components/logo";
 import { HelpCircle, Check, X, Eye, EyeOff } from "lucide-react";
@@ -51,6 +51,19 @@ const registerSchema = z
     message: "Las contraseñas no coinciden",
     path: ["confirmPassword"],
   });
+
+function getRegisterErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.data && typeof err.data === "object" && "error" in err.data) {
+    const backendError = (err.data as { error?: unknown }).error;
+    if (backendError === "Email already in use") {
+      return "Ya existe una cuenta con este email. Inicia sesión o recupera tu contraseña.";
+    }
+    if (backendError === "Validation failed") {
+      return "Revisa los datos del formulario e inténtalo de nuevo.";
+    }
+  }
+  return "No se pudo crear la cuenta. Inténtalo de nuevo.";
+}
 
 // Bug recurrente: cuando el navegador autorrellena varios campos de golpe (selector de credenciales/Contactos,
 // no tecleo manual), a veces escribe el valor en el DOM sin disparar el evento `input` que react-hook-form
@@ -132,8 +145,8 @@ export function Login() {
           queryClient.setQueryData(["/api/auth/me"], user);
           toast({ title: "Cuenta creada", description: "¡Bienvenido a Lugendo!" });
         },
-        onError: () => {
-          toast({ variant: "destructive", title: "Error al registrarse", description: "No se pudo crear la cuenta." });
+        onError: (err) => {
+          toast({ variant: "destructive", title: "Error al registrarse", description: getRegisterErrorMessage(err) });
         },
       }
     );
