@@ -89,6 +89,7 @@
 | #150 | Etiqueta "Incluída" en actividades del viaje — código implementado 2026-07-29 (sin cambios de schema/backend, el campo `included` ya existía); pendiente de que Quique mueva la tarjeta a QA y valide visualmente | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #151 | Mensaje de error de registro más específico — "No se pudo crear la cuenta" es genérico y oculta la causa real (p. ej. email ya registrado); mostrar el motivo devuelto por el backend | 🟢 Baja | Registro | Yo |
 | #152 | Pantalla de aprobación de registros pendientes en el admin (fallback a los enlaces de email) — hoy la única forma de aprobar/rechazar un registro es el enlace del email de notificación; si falla (como pasó el 2026-07-29, ver #126) no hay ninguna otra vía. Además, la tabla de Equipo muestra "Activo" en usuarios pendientes, confundible con el estado real de aprobación | 🔴 Alta | Registro | Yo |
+| #153 | Verificar el dominio `lugendo.io` en Resend (SPF/DKIM en Cloudflare DNS) — paso manual pendiente desde tarea #145; sin él, proveedores estrictos (iCloud confirmado el 2026-07-29) filtran o descartan en silencio los emails transaccionales aunque Resend los marque como enviados sin error | 🟡 Media | Infraestructura | Yo |
 | — | Actividades enriquecidas con más datos (sin número en Notion) | 🔴 Alta | — | — |
 | — | Al subir un itinerario por PDF, el texto desborda el marco donde debería quedar contenido — en curso (sin número en Notion) | 🟡 Media | — | — |
 | — | Arreglar la funcionalidad de búsqueda por mapa (sin número en Notion) | 🟢 Baja | — | — |
