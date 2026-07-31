@@ -1478,7 +1478,11 @@ export const ListTripDocumentsAdminResponseItem = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
 })
 export const ListTripDocumentsAdminResponse = zod.array(ListTripDocumentsAdminResponseItem)
 
@@ -1517,7 +1521,11 @@ export const RenameTripDocumentAdminResponse = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
 })
 
 
@@ -1540,6 +1548,85 @@ export const GetTripDocumentDownloadUrlAdminParams = zod.object({
 
 export const GetTripDocumentDownloadUrlAdminResponse = zod.object({
   "signedUrl": zod.string().describe('Short-lived pre-signed URL (15 minutes)')
+})
+
+
+/**
+ * @summary List agency-authored notes for a trip (back-office,
+ */
+export const ListTripNotesAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripNotesAdminResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish(),
+  "content": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})
+export const ListTripNotesAdminResponse = zod.array(ListTripNotesAdminResponseItem)
+
+
+/**
+ * @summary Create an agency note for a trip day (back-office,
+ */
+export const CreateTripNoteAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripNoteAdminBody = zod.object({
+  "content": zod.string(),
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish()
+})
+
+
+/**
+ * @summary Update an agency note (back-office,
+ */
+export const UpdateTripNoteAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+export const UpdateTripNoteAdminBody = zod.object({
+  "content": zod.string(),
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish()
+})
+
+export const UpdateTripNoteAdminResponse = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "dayNumber": zod.number().nullish(),
+  "endDayNumber": zod.number().nullish(),
+  "content": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})
+
+
+/**
+ * @summary Delete an agency note (back-office,
+ */
+export const DeleteTripNoteAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
 })
 
 
@@ -2023,7 +2110,7 @@ export const GetMyTripMapResponse = zod.object({
 
 
 /**
- * @summary Get personal notes for a trip
+ * @summary List notes visible to the traveler for a trip (agency notes + own + shared with me,
  */
 export const ListMyTripNotesParams = zod.object({
   "tripId": zod.coerce.number()
@@ -2037,7 +2124,12 @@ export const ListMyTripNotesResponseItem = zod.object({
   "endDayNumber": zod.number().nullish(),
   "content": zod.string(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
 })
 export const ListMyTripNotesResponse = zod.array(ListMyTripNotesResponseItem)
 
@@ -2078,7 +2170,12 @@ export const UpdateTripNoteResponse = zod.object({
   "endDayNumber": zod.number().nullish(),
   "content": zod.string(),
   "createdAt": zod.string(),
-  "updatedAt": zod.string().optional()
+  "updatedAt": zod.string().optional(),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
 })
 
 
@@ -2088,6 +2185,29 @@ export const UpdateTripNoteResponse = zod.object({
 export const DeleteTripNoteParams = zod.object({
   "tripId": zod.coerce.number(),
   "noteId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Share a personal note with other trip members (creator only,
+ */
+export const AddTripNoteSharesParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+export const AddTripNoteSharesBody = zod.object({
+  "travelerIds": zod.array(zod.number())
+})
+
+
+/**
+ * @summary Remove a recipient from a personal note, or leave one you were shared (#153)
+ */
+export const RemoveTripNoteShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "noteId": zod.coerce.number(),
+  "travelerId": zod.coerce.number()
 })
 
 
@@ -2247,7 +2367,11 @@ export const ListTripDocumentsResponseItem = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)')
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
 })
 export const ListTripDocumentsResponse = zod.array(ListTripDocumentsResponseItem)
 
@@ -2272,6 +2396,29 @@ export const CreateTripDocumentBody = zod.object({
 export const DeleteTripDocumentParams = zod.object({
   "tripId": zod.coerce.number(),
   "documentId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Share a personal document with other trip members (creator only,
+ */
+export const AddTripDocumentSharesParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number()
+})
+
+export const AddTripDocumentSharesBody = zod.object({
+  "travelerIds": zod.array(zod.number())
+})
+
+
+/**
+ * @summary Remove a recipient from a personal document, or leave one you were shared (#153)
+ */
+export const RemoveTripDocumentShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "documentId": zod.coerce.number(),
+  "travelerId": zod.coerce.number()
 })
 
 

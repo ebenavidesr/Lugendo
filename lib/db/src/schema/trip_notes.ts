@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tripsTable } from "./trips";
@@ -17,6 +17,16 @@ export const tripNotesTable = pgTable("trip_notes", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
 
+export const tripNoteSharesTable = pgTable("trip_note_shares", {
+  id: serial("id").primaryKey(),
+  noteId: integer("note_id").notNull().references(() => tripNotesTable.id, { onDelete: "cascade" }),
+  travelerId: integer("traveler_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique().on(t.noteId, t.travelerId)]);
+
 export const insertTripNoteSchema = createInsertSchema(tripNotesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertTripNoteShareSchema = createInsertSchema(tripNoteSharesTable).omit({ id: true, createdAt: true });
 export type InsertTripNote = z.infer<typeof insertTripNoteSchema>;
 export type TripNote = typeof tripNotesTable.$inferSelect;
+export type InsertTripNoteShare = z.infer<typeof insertTripNoteShareSchema>;
+export type TripNoteShare = typeof tripNoteSharesTable.$inferSelect;

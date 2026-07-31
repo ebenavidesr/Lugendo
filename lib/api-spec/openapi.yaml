@@ -1361,6 +1361,98 @@ paths:
         "404":
           description: Not found
 
+  /trips/{tripId}/notes:
+    get:
+      operationId: listTripNotesAdmin
+      tags: [trips]
+      summary: List agency-authored notes for a trip (back-office, #153). Never returns travelers' own notes.
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of agency notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripNote"
+    post:
+      operationId: createTripNoteAdmin
+      tags: [trips]
+      summary: Create an agency note for a trip day (back-office, #153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripNoteInput"
+      responses:
+        "201":
+          description: Note created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripNote"
+
+  /trips/{tripId}/notes/{noteId}:
+    patch:
+      operationId: updateTripNoteAdmin
+      tags: [trips]
+      summary: Update an agency note (back-office, #153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripNoteUpdate"
+      responses:
+        "200":
+          description: Updated note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripNote"
+    delete:
+      operationId: deleteTripNoteAdmin
+      tags: [trips]
+      summary: Delete an agency note (back-office, #153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /invitations/{code}/accept:
     post:
       operationId: acceptInvitation
@@ -1623,7 +1715,7 @@ paths:
     get:
       operationId: listMyTripNotes
       tags: [traveler]
-      summary: Get personal notes for a trip
+      summary: List notes visible to the traveler for a trip (agency notes + own + shared with me, #153)
       parameters:
         - name: tripId
           in: path
@@ -1710,6 +1802,67 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /me/trips/{tripId}/notes/{noteId}/shares:
+    post:
+      operationId: addTripNoteShares
+      tags: [traveler]
+      summary: Share a personal note with other trip members (creator only, #153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripResourceSharesInput"
+      responses:
+        "201":
+          description: Recipients added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sharedWith]
+                properties:
+                  sharedWith:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
+  /me/trips/{tripId}/notes/{noteId}/shares/{travelerId}:
+    delete:
+      operationId: removeTripNoteShare
+      tags: [traveler]
+      summary: Remove a recipient from a personal note, or leave one you were shared (#153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: travelerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
 
   # ─── TRIP SHARES ─────────────────────────────────────────────────────────────
 
@@ -1970,6 +2123,67 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /me/trips/{tripId}/documents/{documentId}/shares:
+    post:
+      operationId: addTripDocumentShares
+      tags: [traveler]
+      summary: Share a personal document with other trip members (creator only, #153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripResourceSharesInput"
+      responses:
+        "201":
+          description: Recipients added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sharedWith]
+                properties:
+                  sharedWith:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
+  /me/trips/{tripId}/documents/{documentId}/shares/{travelerId}:
+    delete:
+      operationId: removeTripDocumentShare
+      tags: [traveler]
+      summary: Remove a recipient from a personal document, or leave one you were shared (#153)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: travelerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
 
   /me/trips/{tripId}/checklist:
     get:
@@ -4316,6 +4530,11 @@ components:
         uploaderRole:
           type: string
           description: Role of the user who uploaded the document (admin, manager, agent, traveler)
+        sharedWith:
+          type: array
+          description: Recipients this document has been shared with. Only present when the caller is the document's creator (#153).
+          items:
+            $ref: "#/components/schemas/ActivityParticipant"
 
     TripDocumentInput:
       type: object
@@ -4637,6 +4856,14 @@ components:
           type: string
         updatedAt:
           type: string
+        uploaderRole:
+          type: string
+          description: Role of the user who authored the note (admin, manager, agent, traveler)
+        sharedWith:
+          type: array
+          description: Recipients this note has been shared with. Only present when the caller is the note's creator (#153).
+          items:
+            $ref: "#/components/schemas/ActivityParticipant"
 
     TripNoteInput:
       type: object
@@ -5128,6 +5355,15 @@ components:
       properties:
         travelerId:
           type: integer
+
+    TripResourceSharesInput:
+      type: object
+      required: [travelerIds]
+      properties:
+        travelerIds:
+          type: array
+          items:
+            type: integer
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────
     DashboardSummary:

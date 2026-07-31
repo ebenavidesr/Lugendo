@@ -18,6 +18,7 @@ import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import { DayPhotoZone } from "@/components/day-photo-editor";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
+import { AgencyTripNotes } from "@/components/agency-trip-notes";
 import { TripSafetyAdvisories } from "@/components/trip-safety-advisories";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
@@ -817,6 +818,9 @@ export default function TripDetail() {
 
       {/* Documents */}
       <AgencyTripDocuments tripId={tripId} readOnly={!canEditDocuments} />
+
+      {/* Notes (#153) */}
+      <AgencyTripNotes tripId={tripId} days={trip.days ?? []} readOnly={!canEditDocuments} />
 
       {/* Invitations */}
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">

@@ -6,6 +6,7 @@ import {
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
   usersTable, tripDocumentsTable, countryAdvisoriesTable, tripDayActivityParticipantsTable,
+  tripNotesTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -13,6 +14,7 @@ import {
   TripInputSchema, TripUpdateSchema, TripDayUpdateSchema,
   DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
+  TripNoteInputSchema, TripNoteUpdateSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { sendDocumentUploadedEmail, sendTripUpdatedEmail } from "../lib/email";
@@ -21,6 +23,7 @@ import { buildAdvisoryUrl } from "../lib/travel-advisory-scraper";
 import { geocodeCity } from "../lib/geocoding";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
 import { closeDayGap, repositionDay, shiftTripNotesForDayRemoval, shiftTripNotesForReposition } from "../lib/day-renumbering";
+import { sanitizeNoteHtml } from "../lib/sanitize";
 
 const objectStorage = new ObjectStorageService();
 
@@ -70,7 +73,7 @@ async function notifyTripUpdated(tripId: number, changeDescription: string, onEr
   }
 }
 
-interface TripDayAccessResult {
+export interface TripDayAccessResult {
   authorized: boolean;
   reason: string;
   trip?: { agencyId: number | null; ownerId: number | null };
@@ -86,7 +89,7 @@ interface TripDayAccessResult {
  * verifyTripDayAccess (after it confirms dayId belongs to tripId) and by trip-level-only
  * endpoints like GET /trips/:tripId/members.
  */
-async function verifyTripAccessCore(
+export async function verifyTripAccessCore(
   tripId: number,
   userId: number,
   agencyId: number | null | undefined,
@@ -314,7 +317,7 @@ async function getActivityParticipants(activityLinkId: number): Promise<{ id: nu
 // just an email -- needed for the por-libre participant picker (#151). Guests (member_type =
 // "guest") are deliberately excluded: they can't be added as participants. Mirrors the
 // owner+invitations+shares union already used by GET /trips/:tripId/usage, but resolves identity.
-async function listTripMembers(tripId: number): Promise<{ id: number; name: string }[]> {
+export async function listTripMembers(tripId: number): Promise<{ id: number; name: string }[]> {
   const [trip] = await db.select({ ownerId: tripsTable.ownerId }).from(tripsTable).where(eq(tripsTable.id, tripId));
 
   const invited = await db
@@ -1325,6 +1328,8 @@ router.get("/trips/:tripId/travel-advisories", requireRoles("admin", "manager", 
   res.json({ international: true, advisories });
 });
 
+// #153: the back office never sees a traveler's own documents, by any route -- only what the
+// agency itself uploaded. Filtering by uploader role, not a parallel origin column.
 router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1345,8 +1350,8 @@ router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent")
       uploaderRole: usersTable.role,
     })
     .from(tripDocumentsTable)
-    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
-    .where(eq(tripDocumentsTable.tripId, tripId))
+    .innerJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
+    .where(and(eq(tripDocumentsTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
     .orderBy(tripDocumentsTable.createdAt);
   res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), uploaderRole: d.uploaderRole ?? "traveler" })));
 });
@@ -1434,11 +1439,14 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
   }
 
   const [doc] = await db
-    .select({ id: tripDocumentsTable.id, userId: tripDocumentsTable.userId })
+    .select({ id: tripDocumentsTable.id, userId: tripDocumentsTable.userId, uploaderRole: usersTable.role })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
 
   if (role === "agent" && doc.userId !== userId) {
     res.status(403).json({ error: "Agents can only rename documents they uploaded" }); return;
@@ -1464,11 +1472,14 @@ router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "man
   }
 
   const [doc] = await db
-    .select()
+    .select({ id: tripDocumentsTable.id, userId: tripDocumentsTable.userId, storageKey: tripDocumentsTable.storageKey, uploaderRole: usersTable.role })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
 
   // Agents can only delete documents they uploaded
   if (role === "agent" && doc.userId !== userId) {
@@ -1496,11 +1507,14 @@ router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin"
   }
 
   const [doc] = await db
-    .select()
+    .select({ storageKey: tripDocumentsTable.storageKey, uploaderRole: usersTable.role })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
 
   try {
     const signedUrl = await objectStorage.getSignedDownloadUrl(doc.storageKey, 900);
@@ -1509,6 +1523,114 @@ router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin"
     req.log.error({ err }, "Error generating signed download URL");
     res.status(500).json({ error: "Failed to generate download URL" });
   }
+});
+
+// ─── Back-office note endpoints (#153) ────────────────────────────────────────
+// Agency notes are a new concept: previously trip_notes only had traveler-authored rows.
+// Same visibility rule as documents -- the back office only ever sees/manages its own notes,
+// never a traveler's; travelers see these via GET /me/trips/:tripId/notes (traveler.ts).
+router.get("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const notes = await db
+    .select({
+      id: tripNotesTable.id,
+      tripId: tripNotesTable.tripId,
+      userId: tripNotesTable.userId,
+      dayNumber: tripNotesTable.dayNumber,
+      endDayNumber: tripNotesTable.endDayNumber,
+      content: tripNotesTable.content,
+      createdAt: tripNotesTable.createdAt,
+      updatedAt: tripNotesTable.updatedAt,
+      uploaderRole: usersTable.role,
+    })
+    .from(tripNotesTable)
+    .innerJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
+    .where(and(eq(tripNotesTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
+    .orderBy(tripNotesTable.dayNumber);
+  res.json(notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString(), uploaderRole: n.uploaderRole ?? "traveler" })));
+});
+
+router.post("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const { content, dayNumber, endDayNumber } = req.body as { content: string; dayNumber?: number | null; endDayNumber?: number | null };
+  const [note] = await db
+    .insert(tripNotesTable)
+    .values({ tripId, userId: userId!, content: sanitizeNoteHtml(content), dayNumber, endDayNumber })
+    .returning();
+  res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString(), uploaderRole: role! });
+});
+
+router.patch("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [existing] = await db
+    .select({ id: tripNotesTable.id, userId: tripNotesTable.userId, uploaderRole: usersTable.role })
+    .from(tripNotesTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
+    .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.tripId, tripId)));
+
+  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent"].includes(existing.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
+  if (role === "agent" && existing.userId !== userId) {
+    res.status(403).json({ error: "Agents can only edit notes they created" }); return;
+  }
+
+  const { content, dayNumber, endDayNumber } = req.body as { content: string; dayNumber?: number | null; endDayNumber?: number | null };
+  const patch: Record<string, unknown> = { content: sanitizeNoteHtml(content) };
+  if (dayNumber !== undefined) patch.dayNumber = dayNumber;
+  if (endDayNumber !== undefined) patch.endDayNumber = endDayNumber;
+
+  const [note] = await db
+    .update(tripNotesTable)
+    .set(patch)
+    .where(eq(tripNotesTable.id, noteId))
+    .returning();
+  res.json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString(), uploaderRole: role! });
+});
+
+router.delete("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [existing] = await db
+    .select({ id: tripNotesTable.id, userId: tripNotesTable.userId, uploaderRole: usersTable.role })
+    .from(tripNotesTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
+    .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.tripId, tripId)));
+
+  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent"].includes(existing.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
+  if (role === "agent" && existing.userId !== userId) {
+    res.status(403).json({ error: "Agents can only delete notes they created" }); return;
+  }
+
+  await db.delete(tripNotesTable).where(eq(tripNotesTable.id, noteId));
+  res.sendStatus(204);
 });
 
 router.delete("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {

@@ -448,6 +448,10 @@ export const TripDocumentRenameSchema = z.object({
   filename: z.string().min(1),
 });
 
+export const TripResourceSharesInputSchema = z.object({
+  travelerIds: z.array(z.number().int().positive()).min(1),
+});
+
 // ─── Checklists ───────────────────────────────────────────────────────────────
 
 export const ChecklistTemplateInputSchema = z.object({

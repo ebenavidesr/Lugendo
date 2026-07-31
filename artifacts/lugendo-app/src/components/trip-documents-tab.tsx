@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
+  useAddTripDocumentShares, useRemoveTripDocumentShare,
   getTripDocumentDownloadUrl,
 } from "@workspace/api-client-react";
 import type { TripDocument, TravelerTripDetail } from "@workspace/api-client-react";
@@ -17,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ResourceSharePanel } from "@/components/resource-share-panel";
 
 function getMimeIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
@@ -100,8 +102,30 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const { data: documents, isLoading } = useListTripDocuments(tripId);
   const createDoc = useCreateTripDocument();
   const deleteDoc = useDeleteTripDocument();
+  const addShares = useAddTripDocumentShares();
+  const removeShare = useRemoveTripDocumentShare();
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/documents`] });
+
+  const handleAddShares = (doc: TripDocument, travelerIds: number[]) => {
+    addShares.mutate(
+      { tripId, documentId: doc.id, data: { travelerIds } },
+      {
+        onSuccess: invalidate,
+        onError: () => toast({ variant: "destructive", title: "No se pudo compartir el documento" }),
+      },
+    );
+  };
+
+  const handleRemoveShare = (doc: TripDocument, travelerId: number) => {
+    removeShare.mutate(
+      { tripId, documentId: doc.id, travelerId },
+      {
+        onSuccess: () => { invalidate(); toast({ title: "Documento actualizado" }); },
+        onError: () => toast({ variant: "destructive", title: "No se pudo actualizar la compartición" }),
+      },
+    );
+  };
 
   const hasOutbound = !!(trip.airline || trip.flightNumber || trip.reservationCode);
   const hasReturn = !!(trip.returnAirline || trip.returnFlightNumber || trip.returnReservationCode);
@@ -361,7 +385,8 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
               const canPreview = isPreviewable(doc.mimeType);
               const isOwn = doc.userId === user?.id;
               return (
-                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-[14px] border border-border bg-card">
+                <div key={doc.id} className="flex flex-col gap-2 p-3 rounded-[14px] border border-border bg-card">
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handlePreview(doc)}
                     disabled={previewingId === doc.id}
@@ -411,6 +436,20 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                       </button>
                     )}
                   </div>
+                </div>
+                <div className="pl-12">
+                  <ResourceSharePanel
+                    tripId={tripId}
+                    isOwner={isOwn}
+                    isRecipient={!isOwn}
+                    sharedWith={doc.sharedWith ?? []}
+                    currentUserId={user?.id}
+                    isAdding={addShares.isPending}
+                    isRemoving={removeShare.isPending}
+                    onAdd={(travelerIds) => handleAddShares(doc, travelerIds)}
+                    onRemove={(travelerId) => handleRemoveShare(doc, travelerId)}
+                  />
+                </div>
                 </div>
               );
             })}

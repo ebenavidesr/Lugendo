@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityParticipant } from './activityParticipant';
 
 export interface TripDocument {
   id: number;
@@ -16,4 +17,6 @@ export interface TripDocument {
   createdAt: string;
   /** Role of the user who uploaded the document (admin, manager, agent, traveler) */
   uploaderRole: string;
+  /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
+  sharedWith?: ActivityParticipant[];
 }

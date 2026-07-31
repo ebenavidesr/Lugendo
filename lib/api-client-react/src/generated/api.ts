@@ -25,6 +25,8 @@ import type {
   ActivityParticipantInput,
   ActivityUpdate,
   AddActivityParticipant201,
+  AddTripDocumentShares201,
+  AddTripNoteShares201,
   Agency,
   AgencyInput,
   AgencyUpdate,
@@ -101,6 +103,7 @@ import type {
   TripPackingItemUpdate,
   TripPhotoShare,
   TripPhotoView,
+  TripResourceSharesInput,
   TripShare,
   TripTravelAdvisoriesResponse,
   TripUpdate,
@@ -4632,6 +4635,301 @@ export function useGetTripDocumentDownloadUrlAdmin<TData = Awaited<ReturnType<ty
 
 
 
+export const getListTripNotesAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/notes`
+}
+
+/**
+ * @summary List agency-authored notes for a trip (back-office,
+ */
+export const listTripNotesAdmin = async (tripId: number, options?: RequestInit): Promise<TripNote[]> => {
+
+  return customFetch<TripNote[]>(getListTripNotesAdminUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripNotesAdminQueryKey = (tripId: number,) => {
+    return [
+    `/api/trips/${tripId}/notes`
+    ] as const;
+    }
+
+
+export const getListTripNotesAdminQueryOptions = <TData = Awaited<ReturnType<typeof listTripNotesAdmin>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripNotesAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripNotesAdminQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripNotesAdmin>>> = ({ signal }) => listTripNotesAdmin(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripNotesAdmin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripNotesAdminQueryResult = NonNullable<Awaited<ReturnType<typeof listTripNotesAdmin>>>
+export type ListTripNotesAdminQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List agency-authored notes for a trip (back-office,
+ */
+
+export function useListTripNotesAdmin<TData = Awaited<ReturnType<typeof listTripNotesAdmin>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripNotesAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripNotesAdminQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripNoteAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/notes`
+}
+
+/**
+ * @summary Create an agency note for a trip day (back-office,
+ */
+export const createTripNoteAdmin = async (tripId: number,
+    tripNoteInput: TripNoteInput, options?: RequestInit): Promise<TripNote> => {
+
+  return customFetch<TripNote>(getCreateTripNoteAdminUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripNoteInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripNoteAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripNoteAdmin>>, TError,{tripId: number;data: BodyType<TripNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripNoteAdmin>>, TError,{tripId: number;data: BodyType<TripNoteInput>}, TContext> => {
+
+const mutationKey = ['createTripNoteAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripNoteAdmin>>, {tripId: number;data: BodyType<TripNoteInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripNoteAdmin(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripNoteAdminMutationResult = NonNullable<Awaited<ReturnType<typeof createTripNoteAdmin>>>
+    export type CreateTripNoteAdminMutationBody = BodyType<TripNoteInput>
+    export type CreateTripNoteAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an agency note for a trip day (back-office,
+ */
+export const useCreateTripNoteAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripNoteAdmin>>, TError,{tripId: number;data: BodyType<TripNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripNoteAdmin>>,
+        TError,
+        {tripId: number;data: BodyType<TripNoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripNoteAdminMutationOptions(options));
+    }
+
+export const getUpdateTripNoteAdminUrl = (tripId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/notes/${noteId}`
+}
+
+/**
+ * @summary Update an agency note (back-office,
+ */
+export const updateTripNoteAdmin = async (tripId: number,
+    noteId: number,
+    tripNoteUpdate: TripNoteUpdate, options?: RequestInit): Promise<TripNote> => {
+
+  return customFetch<TripNote>(getUpdateTripNoteAdminUrl(tripId,noteId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripNoteUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateTripNoteAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripNoteAdmin>>, TError,{tripId: number;noteId: number;data: BodyType<TripNoteUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTripNoteAdmin>>, TError,{tripId: number;noteId: number;data: BodyType<TripNoteUpdate>}, TContext> => {
+
+const mutationKey = ['updateTripNoteAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTripNoteAdmin>>, {tripId: number;noteId: number;data: BodyType<TripNoteUpdate>}> = (props) => {
+          const {tripId,noteId,data} = props ?? {};
+
+          return  updateTripNoteAdmin(tripId,noteId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTripNoteAdminMutationResult = NonNullable<Awaited<ReturnType<typeof updateTripNoteAdmin>>>
+    export type UpdateTripNoteAdminMutationBody = BodyType<TripNoteUpdate>
+    export type UpdateTripNoteAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update an agency note (back-office,
+ */
+export const useUpdateTripNoteAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTripNoteAdmin>>, TError,{tripId: number;noteId: number;data: BodyType<TripNoteUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTripNoteAdmin>>,
+        TError,
+        {tripId: number;noteId: number;data: BodyType<TripNoteUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateTripNoteAdminMutationOptions(options));
+    }
+
+export const getDeleteTripNoteAdminUrl = (tripId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/notes/${noteId}`
+}
+
+/**
+ * @summary Delete an agency note (back-office,
+ */
+export const deleteTripNoteAdmin = async (tripId: number,
+    noteId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripNoteAdminUrl(tripId,noteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripNoteAdminMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripNoteAdmin>>, TError,{tripId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripNoteAdmin>>, TError,{tripId: number;noteId: number}, TContext> => {
+
+const mutationKey = ['deleteTripNoteAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripNoteAdmin>>, {tripId: number;noteId: number}> = (props) => {
+          const {tripId,noteId} = props ?? {};
+
+          return  deleteTripNoteAdmin(tripId,noteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripNoteAdminMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripNoteAdmin>>>
+
+    export type DeleteTripNoteAdminMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an agency note (back-office,
+ */
+export const useDeleteTripNoteAdmin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripNoteAdmin>>, TError,{tripId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripNoteAdmin>>,
+        TError,
+        {tripId: number;noteId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripNoteAdminMutationOptions(options));
+    }
+
 export const getAcceptInvitationUrl = (code: string,) => {
 
 
@@ -5452,7 +5750,7 @@ export const getListMyTripNotesUrl = (tripId: number,) => {
 }
 
 /**
- * @summary Get personal notes for a trip
+ * @summary List notes visible to the traveler for a trip (agency notes + own + shared with me,
  */
 export const listMyTripNotes = async (tripId: number, options?: RequestInit): Promise<TripNote[]> => {
 
@@ -5499,7 +5797,7 @@ export type ListMyTripNotesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Get personal notes for a trip
+ * @summary List notes visible to the traveler for a trip (agency notes + own + shared with me,
  */
 
 export function useListMyTripNotes<TData = Awaited<ReturnType<typeof listMyTripNotes>>, TError = ErrorType<unknown>>(
@@ -5736,6 +6034,154 @@ export const useDeleteTripNote = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTripNoteMutationOptions(options));
+    }
+
+export const getAddTripNoteSharesUrl = (tripId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/notes/${noteId}/shares`
+}
+
+/**
+ * @summary Share a personal note with other trip members (creator only,
+ */
+export const addTripNoteShares = async (tripId: number,
+    noteId: number,
+    tripResourceSharesInput: TripResourceSharesInput, options?: RequestInit): Promise<AddTripNoteShares201> => {
+
+  return customFetch<AddTripNoteShares201>(getAddTripNoteSharesUrl(tripId,noteId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripResourceSharesInput,)
+  }
+);}
+
+
+
+
+export const getAddTripNoteSharesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripNoteShares>>, TError,{tripId: number;noteId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTripNoteShares>>, TError,{tripId: number;noteId: number;data: BodyType<TripResourceSharesInput>}, TContext> => {
+
+const mutationKey = ['addTripNoteShares'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTripNoteShares>>, {tripId: number;noteId: number;data: BodyType<TripResourceSharesInput>}> = (props) => {
+          const {tripId,noteId,data} = props ?? {};
+
+          return  addTripNoteShares(tripId,noteId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTripNoteSharesMutationResult = NonNullable<Awaited<ReturnType<typeof addTripNoteShares>>>
+    export type AddTripNoteSharesMutationBody = BodyType<TripResourceSharesInput>
+    export type AddTripNoteSharesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Share a personal note with other trip members (creator only,
+ */
+export const useAddTripNoteShares = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripNoteShares>>, TError,{tripId: number;noteId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTripNoteShares>>,
+        TError,
+        {tripId: number;noteId: number;data: BodyType<TripResourceSharesInput>},
+        TContext
+      > => {
+      return useMutation(getAddTripNoteSharesMutationOptions(options));
+    }
+
+export const getRemoveTripNoteShareUrl = (tripId: number,
+    noteId: number,
+    travelerId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/notes/${noteId}/shares/${travelerId}`
+}
+
+/**
+ * @summary Remove a recipient from a personal note, or leave one you were shared (#153)
+ */
+export const removeTripNoteShare = async (tripId: number,
+    noteId: number,
+    travelerId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveTripNoteShareUrl(tripId,noteId,travelerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveTripNoteShareMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripNoteShare>>, TError,{tripId: number;noteId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTripNoteShare>>, TError,{tripId: number;noteId: number;travelerId: number}, TContext> => {
+
+const mutationKey = ['removeTripNoteShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTripNoteShare>>, {tripId: number;noteId: number;travelerId: number}> = (props) => {
+          const {tripId,noteId,travelerId} = props ?? {};
+
+          return  removeTripNoteShare(tripId,noteId,travelerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTripNoteShareMutationResult = NonNullable<Awaited<ReturnType<typeof removeTripNoteShare>>>
+
+    export type RemoveTripNoteShareMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a recipient from a personal note, or leave one you were shared (#153)
+ */
+export const useRemoveTripNoteShare = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripNoteShare>>, TError,{tripId: number;noteId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTripNoteShare>>,
+        TError,
+        {tripId: number;noteId: number;travelerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveTripNoteShareMutationOptions(options));
     }
 
 export const getListTripSharesUrl = (tripId: number,) => {
@@ -6618,6 +7064,154 @@ export const useDeleteTripDocument = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteTripDocumentMutationOptions(options));
+    }
+
+export const getAddTripDocumentSharesUrl = (tripId: number,
+    documentId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents/${documentId}/shares`
+}
+
+/**
+ * @summary Share a personal document with other trip members (creator only,
+ */
+export const addTripDocumentShares = async (tripId: number,
+    documentId: number,
+    tripResourceSharesInput: TripResourceSharesInput, options?: RequestInit): Promise<AddTripDocumentShares201> => {
+
+  return customFetch<AddTripDocumentShares201>(getAddTripDocumentSharesUrl(tripId,documentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripResourceSharesInput,)
+  }
+);}
+
+
+
+
+export const getAddTripDocumentSharesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripDocumentShares>>, TError,{tripId: number;documentId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTripDocumentShares>>, TError,{tripId: number;documentId: number;data: BodyType<TripResourceSharesInput>}, TContext> => {
+
+const mutationKey = ['addTripDocumentShares'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTripDocumentShares>>, {tripId: number;documentId: number;data: BodyType<TripResourceSharesInput>}> = (props) => {
+          const {tripId,documentId,data} = props ?? {};
+
+          return  addTripDocumentShares(tripId,documentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTripDocumentSharesMutationResult = NonNullable<Awaited<ReturnType<typeof addTripDocumentShares>>>
+    export type AddTripDocumentSharesMutationBody = BodyType<TripResourceSharesInput>
+    export type AddTripDocumentSharesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Share a personal document with other trip members (creator only,
+ */
+export const useAddTripDocumentShares = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripDocumentShares>>, TError,{tripId: number;documentId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTripDocumentShares>>,
+        TError,
+        {tripId: number;documentId: number;data: BodyType<TripResourceSharesInput>},
+        TContext
+      > => {
+      return useMutation(getAddTripDocumentSharesMutationOptions(options));
+    }
+
+export const getRemoveTripDocumentShareUrl = (tripId: number,
+    documentId: number,
+    travelerId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/documents/${documentId}/shares/${travelerId}`
+}
+
+/**
+ * @summary Remove a recipient from a personal document, or leave one you were shared (#153)
+ */
+export const removeTripDocumentShare = async (tripId: number,
+    documentId: number,
+    travelerId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveTripDocumentShareUrl(tripId,documentId,travelerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveTripDocumentShareMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripDocumentShare>>, TError,{tripId: number;documentId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTripDocumentShare>>, TError,{tripId: number;documentId: number;travelerId: number}, TContext> => {
+
+const mutationKey = ['removeTripDocumentShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTripDocumentShare>>, {tripId: number;documentId: number;travelerId: number}> = (props) => {
+          const {tripId,documentId,travelerId} = props ?? {};
+
+          return  removeTripDocumentShare(tripId,documentId,travelerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTripDocumentShareMutationResult = NonNullable<Awaited<ReturnType<typeof removeTripDocumentShare>>>
+
+    export type RemoveTripDocumentShareMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a recipient from a personal document, or leave one you were shared (#153)
+ */
+export const useRemoveTripDocumentShare = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripDocumentShare>>, TError,{tripId: number;documentId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTripDocumentShare>>,
+        TError,
+        {tripId: number;documentId: number;travelerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveTripDocumentShareMutationOptions(options));
     }
 
 export const getGetMyTripChecklistUrl = (tripId: number,) => {

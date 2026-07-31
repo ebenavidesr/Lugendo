@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { StickyNote, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { StickyNote, Plus, Pencil, Trash2, Check, X, Building2 } from "lucide-react";
 import {
   useListMyTripNotes, useCreateTripNote, useUpdateTripNote, useDeleteTripNote,
+  useAddTripNoteShares, useRemoveTripNoteShare,
 } from "@workspace/api-client-react";
 import type { TripNote, TravelerTripDetail } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { NoteRichTextEditor } from "@/components/note-rich-text-editor";
+import { ResourceSharePanel } from "@/components/resource-share-panel";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+
+const AGENCY_ROLES = new Set(["admin", "manager", "agent"]);
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
@@ -34,10 +39,13 @@ interface TripNotesTabProps {
 export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   const { toast } = useToast();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const { data: notes, isLoading } = useListMyTripNotes(tripId);
   const createNote = useCreateTripNote();
   const updateNote = useUpdateTripNote();
   const deleteNote = useDeleteTripNote();
+  const addShares = useAddTripNoteShares();
+  const removeShare = useRemoveTripNoteShare();
 
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
@@ -107,11 +115,36 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
     );
   };
 
+  const handleAddShares = (note: TripNote, travelerIds: number[]) => {
+    addShares.mutate(
+      { tripId, noteId: note.id, data: { travelerIds } },
+      {
+        onSuccess: invalidate,
+        onError: () => toast({ variant: "destructive", title: "No se pudo compartir la nota" }),
+      },
+    );
+  };
+
+  const handleRemoveShare = (note: TripNote, travelerId: number) => {
+    removeShare.mutate(
+      { tripId, noteId: note.id, travelerId },
+      {
+        onSuccess: () => { invalidate(); toast({ title: "Nota actualizada" }); },
+        onError: () => toast({ variant: "destructive", title: "No se pudo actualizar la compartición" }),
+      },
+    );
+  };
+
+  const allNotes = (notes as TripNote[] | undefined) ?? [];
+  const isAgencyNote = (n: TripNote) => AGENCY_ROLES.has(n.uploaderRole ?? "traveler");
+  const agencyNotes = allNotes.filter(isAgencyNote);
+  const myNotes = allNotes.filter(n => !isAgencyNote(n));
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
-          Mis notas del viaje
+          Mis notas
         </p>
         {!showForm && (
           <Button
@@ -207,7 +240,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
           <div className="h-20 bg-card border border-border rounded-[14px] animate-pulse" />
           <div className="h-20 bg-card border border-border rounded-[14px] animate-pulse" />
         </div>
-      ) : !notes || notes.length === 0 ? (
+      ) : allNotes.length === 0 ? (
         <div
           className="border border-border rounded-[14px] p-8 text-center"
           style={{ background: "var(--arena)" }}
@@ -228,79 +261,201 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
           )}
         </div>
       ) : (
-        <div className="space-y-2">
-          {(notes as TripNote[]).map(note => (
-            <div key={note.id} className="p-4 rounded-[14px] border border-border bg-card space-y-2">
-              {editingId === note.id ? (
-                <>
-                  <NoteRichTextEditor
-                    initialHtml={editContent}
-                    onChange={setEditContent}
-                    className={EDITOR_MIN_HEIGHT}
-                    autoFocus
+        <div className="space-y-4">
+          {agencyNotes.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-3.5 h-3.5 text-muted-foreground" />
+                <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+                  Notas de la agencia
+                </p>
+              </div>
+              <div className="space-y-2">
+                {agencyNotes.map(note => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    editable={false}
+                    currentUserId={user?.id}
+                    tripId={tripId}
+                    isEditing={false}
+                    editContent={editContent}
+                    onEditContentChange={setEditContent}
+                    onStartEdit={() => handleEdit(note)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onSaveEdit={() => handleSaveEdit(note.id)}
+                    isSaving={updateNote.isPending}
+                    onDelete={() => handleDelete(note.id)}
+                    isDeleting={deleteNote.isPending}
+                    onAddShares={(travelerIds) => handleAddShares(note, travelerIds)}
+                    onRemoveShare={(travelerId) => handleRemoveShare(note, travelerId)}
+                    isAddingShare={addShares.isPending}
+                    isRemovingShare={removeShare.isPending}
                   />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleSaveEdit(note.id)}
-                      disabled={isHtmlEmpty(editContent) || updateNote.isPending}
-                      className="p-1.5 rounded-[8px] transition-colors"
-                      style={{ color: "var(--terra)" }}
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      {note.dayNumber != null && (
-                        <span
-                          className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full mb-1.5"
-                          style={{ background: "rgba(61,47,107,0.08)", color: "var(--indigo)" }}
-                        >
-                          {note.endDayNumber != null && note.endDayNumber !== note.dayNumber
-                            ? `Días ${note.dayNumber}–${note.endDayNumber}`
-                            : `Día ${note.dayNumber}`}
-                        </span>
-                      )}
-                      {/* content is sanitized server-side (sanitizeNoteHtml, allowlisted tags only) before storage */}
-                      <div
-                        className="text-[13px] leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:font-semibold [&_b]:font-semibold"
-                        style={{ color: "var(--noche)" }}
-                        dangerouslySetInnerHTML={{ __html: note.content }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                      <button
-                        onClick={() => handleEdit(note)}
-                        className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        title="Editar nota"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(note.id)}
-                        disabled={deleteNote.isPending}
-                        className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
-                        title="Eliminar nota"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground">{fmtDate(note.createdAt)}</p>
-                </>
-              )}
+                ))}
+              </div>
             </div>
-          ))}
+          )}
+
+          {myNotes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+                Mis notas
+              </p>
+              <div className="space-y-2">
+                {myNotes.map(note => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    editable={note.userId === user?.id}
+                    currentUserId={user?.id}
+                    tripId={tripId}
+                    isEditing={editingId === note.id}
+                    editContent={editContent}
+                    onEditContentChange={setEditContent}
+                    onStartEdit={() => handleEdit(note)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onSaveEdit={() => handleSaveEdit(note.id)}
+                    isSaving={updateNote.isPending}
+                    onDelete={() => handleDelete(note.id)}
+                    isDeleting={deleteNote.isPending}
+                    onAddShares={(travelerIds) => handleAddShares(note, travelerIds)}
+                    onRemoveShare={(travelerId) => handleRemoveShare(note, travelerId)}
+                    isAddingShare={addShares.isPending}
+                    isRemovingShare={removeShare.isPending}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+    </div>
+  );
+}
+
+interface NoteCardProps {
+  note: TripNote;
+  editable: boolean;
+  currentUserId: number | undefined;
+  tripId: number;
+  isEditing: boolean;
+  editContent: string;
+  onEditContentChange: (html: string) => void;
+  onStartEdit: () => void;
+  onCancelEdit: () => void;
+  onSaveEdit: () => void;
+  isSaving: boolean;
+  onDelete: () => void;
+  isDeleting: boolean;
+  onAddShares: (travelerIds: number[]) => void;
+  onRemoveShare: (travelerId: number) => void;
+  isAddingShare: boolean;
+  isRemovingShare: boolean;
+}
+
+function NoteCard({
+  note, editable, currentUserId, tripId, isEditing, editContent, onEditContentChange,
+  onStartEdit, onCancelEdit, onSaveEdit, isSaving, onDelete, isDeleting,
+  onAddShares, onRemoveShare, isAddingShare, isRemovingShare,
+}: NoteCardProps) {
+  const isOwn = note.userId === currentUserId;
+  const isAgencyNote = AGENCY_ROLES.has(note.uploaderRole ?? "traveler");
+  return (
+    <div className="p-4 rounded-[14px] border border-border bg-card space-y-2">
+      {isEditing ? (
+        <>
+          <NoteRichTextEditor
+            initialHtml={editContent}
+            onChange={onEditContentChange}
+            className={EDITOR_MIN_HEIGHT}
+            autoFocus
+          />
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={onCancelEdit}
+              className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onSaveEdit}
+              disabled={isHtmlEmpty(editContent) || isSaving}
+              className="p-1.5 rounded-[8px] transition-colors"
+              style={{ color: "var(--terra)" }}
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                {note.dayNumber != null && (
+                  <span
+                    className="inline-block text-[11px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(61,47,107,0.08)", color: "var(--indigo)" }}
+                  >
+                    {note.endDayNumber != null && note.endDayNumber !== note.dayNumber
+                      ? `Días ${note.dayNumber}–${note.endDayNumber}`
+                      : `Día ${note.dayNumber}`}
+                  </span>
+                )}
+                {!editable && !isOwn && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+                    style={{ background: "rgba(61,47,107,0.10)", color: "var(--indigo)" }}
+                  >
+                    {isAgencyNote ? "Agencia" : "Compartida"}
+                  </span>
+                )}
+              </div>
+              {/* content is sanitized server-side (sanitizeNoteHtml, allowlisted tags only) before storage */}
+              <div
+                className="text-[13px] leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:font-semibold [&_b]:font-semibold"
+                style={{ color: "var(--noche)" }}
+                dangerouslySetInnerHTML={{ __html: note.content }}
+              />
+            </div>
+            {editable && (
+              <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                <button
+                  onClick={onStartEdit}
+                  className="p-1.5 rounded-[8px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  title="Editar nota"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={onDelete}
+                  disabled={isDeleting}
+                  className="p-1.5 rounded-[8px] text-muted-foreground hover:text-destructive hover:bg-accent transition-colors"
+                  title="Eliminar nota"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] text-muted-foreground">{fmtDate(note.createdAt)}</p>
+            {!isAgencyNote && (
+              <ResourceSharePanel
+                tripId={tripId}
+                isOwner={isOwn}
+                isRecipient={!isOwn}
+                sharedWith={note.sharedWith ?? []}
+                currentUserId={currentUserId}
+                isAdding={isAddingShare}
+                isRemoving={isRemovingShare}
+                onAdd={onAddShares}
+                onRemove={onRemoveShare}
+              />
+            )}
+          </div>
+        </>
       )}
     </div>
   );

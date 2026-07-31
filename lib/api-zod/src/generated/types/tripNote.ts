@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ActivityParticipant } from './activityParticipant';
 
 export interface TripNote {
   id: number;
@@ -17,4 +18,8 @@ export interface TripNote {
   content: string;
   createdAt: string;
   updatedAt?: string;
+  /** Role of the user who authored the note (admin, manager, agent, traveler) */
+  uploaderRole?: string;
+  /** Recipients this note has been shared with. Only present when the caller is the note's creator (#153). */
+  sharedWith?: ActivityParticipant[];
 }

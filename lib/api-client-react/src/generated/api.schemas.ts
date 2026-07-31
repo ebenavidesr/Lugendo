@@ -1163,6 +1163,8 @@ export interface TripDocument {
   createdAt: string;
   /** Role of the user who uploaded the document (admin, manager, agent, traveler) */
   uploaderRole: string;
+  /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
+  sharedWith?: ActivityParticipant[];
 }
 
 export interface TripDocumentInput {
@@ -1431,6 +1433,10 @@ export interface TripNote {
   content: string;
   createdAt: string;
   updatedAt?: string;
+  /** Role of the user who authored the note (admin, manager, agent, traveler) */
+  uploaderRole?: string;
+  /** Recipients this note has been shared with. Only present when the caller is the note's creator (#153). */
+  sharedWith?: ActivityParticipant[];
 }
 
 export interface TripNoteInput {
@@ -1870,6 +1876,10 @@ export interface ActivityParticipantInput {
   travelerId: number;
 }
 
+export interface TripResourceSharesInput {
+  travelerIds: number[];
+}
+
 export type DashboardSummaryTripsByStatus = {
   draft: number;
   scheduled: number;
@@ -1924,6 +1934,14 @@ export type GetTripDocumentDownloadUrlAdmin200 = {
 
 export type GetMyTripMap200 = {
   waypoints: TripMapWaypoint[];
+};
+
+export type AddTripNoteShares201 = {
+  sharedWith: ActivityParticipant[];
+};
+
+export type AddTripDocumentShares201 = {
+  sharedWith: ActivityParticipant[];
 };
 
 export type GetTripDocumentDownloadUrl200 = {

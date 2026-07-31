@@ -10,6 +10,7 @@ import {
   tripSharesTable, usersTable, activitiesTable,
   tripChecklistItemsTable, checklistTemplatesTable,
   userCountriesTable, tripPhotoSharesTable,
+  tripDocumentSharesTable, tripNoteSharesTable,
 } from "@workspace/db";
 import type { TripPhotoSnapshot, TripPhotoSnapshotDay } from "@workspace/db";
 import { COUNTRY_NAME_BY_CODE, COUNTRY_CODE_BY_NAME } from "@workspace/db/countries";
@@ -20,7 +21,7 @@ import {
   PersonalTripDayInputSchema, PersonalTripDayUpdateSchema,
   TripNoteInputSchema, TripNoteUpdateSchema,
   ShareTripInputSchema, UpdateShareInputSchema,
-  TripDocumentInputSchema,
+  TripDocumentInputSchema, TripResourceSharesInputSchema,
   CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
   TripPackingItemInputSchema, TripPackingItemUpdateSchema,
   UserCountryInputSchema, UserCountryStatusUpdateSchema,
@@ -42,6 +43,11 @@ import {
 } from "../lib/trip-classification";
 import { tripClassificationsTable } from "@workspace/db";
 import type { TripClassificationValue } from "@workspace/db";
+import { verifyTripAccessCore, listTripMembers } from "./trips";
+
+// Roles whose uploads/authoring count as "agency" origin (#153): derived from the author's role,
+// no parallel origin column on trip_documents/trip_notes.
+const AGENCY_STAFF_ROLES = new Set(["admin", "manager", "agent"]);
 
 const objectStorage = new ObjectStorageService();
 
@@ -977,26 +983,76 @@ router.get("/me/trips/:tripId/map", requireRoles("traveler"), async (req, res): 
 });
 
 // ─── Notes ───────────────────────────────────────────────────────────────────
+// Visibility (#153): same rule as documents -- agency-authored notes are visible to every trip
+// member; a traveler's own note is visible only to its creator plus explicit trip_note_shares
+// recipients. Resolved here in the query, never filtered client-side.
 router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
   const notes = await db
-    .select()
+    .select({
+      id: tripNotesTable.id,
+      tripId: tripNotesTable.tripId,
+      userId: tripNotesTable.userId,
+      dayNumber: tripNotesTable.dayNumber,
+      endDayNumber: tripNotesTable.endDayNumber,
+      content: tripNotesTable.content,
+      createdAt: tripNotesTable.createdAt,
+      updatedAt: tripNotesTable.updatedAt,
+      uploaderRole: usersTable.role,
+    })
     .from(tripNotesTable)
-    .where(and(eq(tripNotesTable.tripId, tripId), eq(tripNotesTable.userId, userId)))
+    .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
+    .where(and(
+      eq(tripNotesTable.tripId, tripId),
+      or(
+        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        eq(tripNotesTable.userId, userId),
+        sql`EXISTS(SELECT 1 FROM trip_note_shares s WHERE s.note_id = ${tripNotesTable.id} AND s.traveler_id = ${userId})`,
+      ),
+    ))
     .orderBy(tripNotesTable.dayNumber);
-  res.json(notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() })));
+
+  const myNoteIds = notes.filter(n => n.userId === userId).map(n => n.id);
+  const shareRows = myNoteIds.length > 0
+    ? await db
+        .select({ noteId: tripNoteSharesTable.noteId, id: usersTable.id, name: usersTable.name })
+        .from(tripNoteSharesTable)
+        .innerJoin(usersTable, eq(usersTable.id, tripNoteSharesTable.travelerId))
+        .where(inArray(tripNoteSharesTable.noteId, myNoteIds))
+    : [];
+  const sharedWithByNote: Record<number, { id: number; name: string | null }[]> = {};
+  for (const s of shareRows) (sharedWithByNote[s.noteId] ??= []).push({ id: s.id, name: s.name });
+
+  res.json(notes.map(n => ({
+    ...n,
+    createdAt: n.createdAt.toISOString(),
+    updatedAt: n.updatedAt.toISOString(),
+    uploaderRole: n.uploaderRole ?? "traveler",
+    sharedWith: n.userId === userId ? (sharedWithByNote[n.id] ?? []) : undefined,
+  })));
 });
 
 router.post("/me/trips/:tripId/notes", requireRoles("traveler"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+  if (access.memberType === "guest") {
+    res.status(403).json({ error: "Los invitados no pueden crear notas propias" }); return;
+  }
+
   const { content, dayNumber, endDayNumber } = req.body;
   const [note] = await db
     .insert(tripNotesTable)
     .values({ tripId, userId, content: sanitizeNoteHtml(content), dayNumber, endDayNumber })
     .returning();
-  res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString() });
+  res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString(), uploaderRole: "traveler", sharedWith: [] });
 });
 
 router.patch("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
@@ -1023,6 +1079,57 @@ router.delete("/me/trips/:tripId/notes/:noteId", requireRoles("traveler"), async
   await db
     .delete(tripNotesTable)
     .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.userId, userId)));
+  res.sendStatus(204);
+});
+
+// Creator adds recipients to their own note. Same recipient rules as document shares (#153):
+// trip members with member access only, validated against listTripMembers.
+router.post("/me/trips/:tripId/notes/:noteId/shares", requireRoles("traveler"), validate(TripResourceSharesInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
+  const { travelerIds } = req.body as { travelerIds: number[] };
+
+  const [note] = await db
+    .select()
+    .from(tripNotesTable)
+    .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.tripId, tripId), eq(tripNotesTable.userId, userId)));
+  if (!note) { res.status(404).json({ error: "Not found" }); return; }
+
+  const members = await listTripMembers(tripId);
+  const memberIds = new Set(members.map(m => m.id));
+  const validTravelerIds = travelerIds.filter(id => memberIds.has(id) && id !== userId);
+  if (validTravelerIds.length === 0) { res.status(400).json({ error: "Ningún viajero válido para compartir" }); return; }
+
+  await db.insert(tripNoteSharesTable)
+    .values(validTravelerIds.map(travelerId => ({ noteId, travelerId })))
+    .onConflictDoNothing();
+
+  const shareRows = await db
+    .select({ id: usersTable.id, name: usersTable.name })
+    .from(tripNoteSharesTable)
+    .innerJoin(usersTable, eq(usersTable.id, tripNoteSharesTable.travelerId))
+    .where(eq(tripNoteSharesTable.noteId, noteId));
+  res.status(201).json({ sharedWith: shareRows });
+});
+
+// Removes a recipient; the creator can remove anyone, a recipient can remove themselves (leave).
+router.delete("/me/trips/:tripId/notes/:noteId/shares/:travelerId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
+  const travelerId = parseInt(Array.isArray(req.params.travelerId) ? req.params.travelerId[0] : req.params.travelerId, 10);
+
+  const [note] = await db.select().from(tripNotesTable).where(eq(tripNotesTable.id, noteId));
+  if (!note) { res.status(404).json({ error: "Not found" }); return; }
+
+  const isCreator = note.userId === userId;
+  const isSelfRemoval = travelerId === userId;
+  if (!isCreator && !isSelfRemoval) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.delete(tripNoteSharesTable).where(and(
+    eq(tripNoteSharesTable.noteId, noteId),
+    eq(tripNoteSharesTable.travelerId, travelerId),
+  ));
   res.sendStatus(204);
 });
 
@@ -2068,45 +2175,16 @@ router.post("/trip-photos/:code/use-as-template", requireRoles("traveler"), asyn
 });
 
 // ─── Trip Documents ───────────────────────────────────────────────────────────
+// Visibility (#153): agency-authored docs are visible to every trip member; a traveler's own
+// upload is visible only to its creator plus whoever it's been explicitly shared with via
+// trip_document_shares. Always resolved here in the backend query, never filtered client-side.
 router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  // Verify the user has access to this trip before listing documents
-  const [invite] = await db
-    .select({ id: invitationsTable.id })
-    .from(invitationsTable)
-    .where(and(
-      eq(invitationsTable.travelerId, userId),
-      eq(invitationsTable.tripId, tripId),
-      eq(invitationsTable.status, "accepted"),
-    ));
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
 
-  const [ownedTrip] = await db
-    .select({ id: tripsTable.id })
-    .from(tripsTable)
-    .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-
-  const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
-  const myEmail = me?.email ?? "";
-
-  const [acceptedShare] = await db
-    .select({ id: tripSharesTable.id })
-    .from(tripSharesTable)
-    .where(and(
-      eq(tripSharesTable.tripId, tripId),
-      or(
-        eq(tripSharesTable.sharedWithUserId, userId),
-        eq(tripSharesTable.sharedWithEmail, myEmail),
-      ),
-      eq(tripSharesTable.status, "accepted"),
-    ));
-
-  if (!invite && !ownedTrip && !acceptedShare) {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
-
-  // Return all documents for the trip (own uploads + agency-uploaded docs)
   const docs = await db
     .select({
       id: tripDocumentsTable.id,
@@ -2120,38 +2198,44 @@ router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, 
     })
     .from(tripDocumentsTable)
     .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
-    .where(eq(tripDocumentsTable.tripId, tripId))
+    .where(and(
+      eq(tripDocumentsTable.tripId, tripId),
+      or(
+        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        eq(tripDocumentsTable.userId, userId),
+        sql`EXISTS(SELECT 1 FROM trip_document_shares s WHERE s.document_id = ${tripDocumentsTable.id} AND s.traveler_id = ${userId})`,
+      ),
+    ))
     .orderBy(tripDocumentsTable.createdAt);
-  res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), uploaderRole: d.uploaderRole ?? "traveler" })));
+
+  const myDocIds = docs.filter(d => d.userId === userId).map(d => d.id);
+  const shareRows = myDocIds.length > 0
+    ? await db
+        .select({ documentId: tripDocumentSharesTable.documentId, id: usersTable.id, name: usersTable.name })
+        .from(tripDocumentSharesTable)
+        .innerJoin(usersTable, eq(usersTable.id, tripDocumentSharesTable.travelerId))
+        .where(inArray(tripDocumentSharesTable.documentId, myDocIds))
+    : [];
+  const sharedWithByDoc: Record<number, { id: number; name: string | null }[]> = {};
+  for (const s of shareRows) (sharedWithByDoc[s.documentId] ??= []).push({ id: s.id, name: s.name });
+
+  res.json(docs.map(d => ({
+    ...d,
+    createdAt: d.createdAt.toISOString(),
+    uploaderRole: d.uploaderRole ?? "traveler",
+    sharedWith: d.userId === userId ? (sharedWithByDoc[d.id] ?? []) : undefined,
+  })));
 });
 
 router.post("/me/trips/:tripId/documents", requireRoles("traveler"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  // Ensure the user actually has access to this trip (owner or accepted share)
-  const [tripAccess] = await db
-    .select({ id: tripsTable.id })
-    .from(tripsTable)
-    .leftJoin(
-      tripSharesTable,
-      and(
-        eq(tripSharesTable.tripId, tripsTable.id),
-        eq(tripSharesTable.sharedWithUserId, userId),
-        eq(tripSharesTable.status, "accepted"),
-      ),
-    )
-    .where(
-      and(
-        eq(tripsTable.id, tripId),
-        or(
-          eq(tripsTable.ownerId, userId),
-          eq(tripSharesTable.sharedWithUserId, userId),
-        ),
-      ),
-    );
-
-  if (!tripAccess) { res.status(403).json({ error: "Forbidden" }); return; }
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+  if (access.memberType === "guest") {
+    res.status(403).json({ error: "Los invitados no pueden crear documentos propios" }); return;
+  }
 
   const { filename, mimeType, storageKey } = req.body;
 
@@ -2165,7 +2249,7 @@ router.post("/me/trips/:tripId/documents", requireRoles("traveler"), validate(Tr
     .insert(tripDocumentsTable)
     .values({ tripId, userId, filename, mimeType, storageKey })
     .returning();
-  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: "traveler" });
+  res.status(201).json({ ...doc, createdAt: doc.createdAt.toISOString(), uploaderRole: "traveler", sharedWith: [] });
 });
 
 router.delete("/me/trips/:tripId/documents/:documentId", requireRoles("traveler"), async (req, res): Promise<void> => {
@@ -2190,58 +2274,90 @@ router.delete("/me/trips/:tripId/documents/:documentId", requireRoles("traveler"
   res.sendStatus(204);
 });
 
+// Creator adds recipients to their own document. Recipients must be trip members with member
+// access (not guests) -- validated against the same listTripMembers used by the #151 participant
+// picker rather than the agency invitation table.
+router.post("/me/trips/:tripId/documents/:documentId/shares", requireRoles("traveler"), validate(TripResourceSharesInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+  const { travelerIds } = req.body as { travelerIds: number[] };
+
+  const [doc] = await db
+    .select()
+    .from(tripDocumentsTable)
+    .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId), eq(tripDocumentsTable.userId, userId)));
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  const members = await listTripMembers(tripId);
+  const memberIds = new Set(members.map(m => m.id));
+  const validTravelerIds = travelerIds.filter(id => memberIds.has(id) && id !== userId);
+  if (validTravelerIds.length === 0) { res.status(400).json({ error: "Ningún viajero válido para compartir" }); return; }
+
+  await db.insert(tripDocumentSharesTable)
+    .values(validTravelerIds.map(travelerId => ({ documentId, travelerId })))
+    .onConflictDoNothing();
+
+  const shareRows = await db
+    .select({ id: usersTable.id, name: usersTable.name })
+    .from(tripDocumentSharesTable)
+    .innerJoin(usersTable, eq(usersTable.id, tripDocumentSharesTable.travelerId))
+    .where(eq(tripDocumentSharesTable.documentId, documentId));
+  res.status(201).json({ sharedWith: shareRows });
+});
+
+// Removes a recipient. The creator can remove anyone; a recipient can remove themselves (leave).
+// The creator can re-add them afterwards -- leaving is not a block, see #153 scope decisions.
+router.delete("/me/trips/:tripId/documents/:documentId/shares/:travelerId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
+  const travelerId = parseInt(Array.isArray(req.params.travelerId) ? req.params.travelerId[0] : req.params.travelerId, 10);
+
+  const [doc] = await db.select().from(tripDocumentsTable).where(eq(tripDocumentsTable.id, documentId));
+  if (!doc) { res.status(404).json({ error: "Not found" }); return; }
+
+  const isCreator = doc.userId === userId;
+  const isSelfRemoval = travelerId === userId;
+  if (!isCreator && !isSelfRemoval) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.delete(tripDocumentSharesTable).where(and(
+    eq(tripDocumentSharesTable.documentId, documentId),
+    eq(tripDocumentSharesTable.travelerId, travelerId),
+  ));
+  res.sendStatus(204);
+});
+
 // ─── Get signed download URL for a trip document ─────────────────────────────
 router.get("/me/trips/:tripId/documents/:documentId/download", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
 
-  // Find the document for this trip
   const [doc] = await db
-    .select()
+    .select({
+      id: tripDocumentsTable.id, tripId: tripDocumentsTable.tripId, userId: tripDocumentsTable.userId,
+      storageKey: tripDocumentsTable.storageKey, uploaderRole: usersTable.role,
+    })
     .from(tripDocumentsTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
   if (!doc) { res.status(404).json({ error: "Not found" }); return; }
 
-  // Authorization: the user must either have uploaded the doc, or have trip access
-  const isUploader = doc.userId === userId;
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
 
-  if (!isUploader) {
-    // Check trip access: invited traveler, owner, or accepted share
-    const [invite] = await db
-      .select({ id: invitationsTable.id })
-      .from(invitationsTable)
-      .where(and(
-        eq(invitationsTable.travelerId, userId),
-        eq(invitationsTable.tripId, tripId),
-        eq(invitationsTable.status, "accepted"),
-      ));
-
-    const [ownedTrip] = await db
-      .select({ id: tripsTable.id })
-      .from(tripsTable)
-      .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
-
-    const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
-    const myEmail = me?.email ?? "";
-
-    const [acceptedShare] = await db
-      .select({ id: tripSharesTable.id })
-      .from(tripSharesTable)
-      .where(and(
-        eq(tripSharesTable.tripId, tripId),
-        or(
-          eq(tripSharesTable.sharedWithUserId, userId),
-          eq(tripSharesTable.sharedWithEmail, myEmail),
-        ),
-        eq(tripSharesTable.status, "accepted"),
-      ));
-
-    if (!invite && !ownedTrip && !acceptedShare) {
-      res.status(403).json({ error: "Forbidden" }); return;
-    }
+  const isAgencyDoc = doc.uploaderRole ? AGENCY_STAFF_ROLES.has(doc.uploaderRole) : false;
+  const isCreator = doc.userId === userId;
+  let isRecipient = false;
+  if (!isAgencyDoc && !isCreator) {
+    const [share] = await db
+      .select({ id: tripDocumentSharesTable.id })
+      .from(tripDocumentSharesTable)
+      .where(and(eq(tripDocumentSharesTable.documentId, documentId), eq(tripDocumentSharesTable.travelerId, userId)));
+    isRecipient = !!share;
   }
+  if (!isAgencyDoc && !isCreator && !isRecipient) { res.status(403).json({ error: "Forbidden" }); return; }
 
   try {
     const signedUrl = await objectStorage.getSignedDownloadUrl(doc.storageKey, 900);
