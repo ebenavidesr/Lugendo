@@ -120,7 +120,7 @@
 
 | # | Tarea | Prioridad | Área |
 |---|-------|-----------|------|
-| #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero — extraídas las piezas duplicadas (Stepper, subida/parseo de PDF, asignación día-a-día de hotel/actividad) a `components/trip-itinerary-wizard/`; `trip-wizard.tsx` y `traveler-trip-wizard.tsx` siguen siendo dos páginas separadas (no un componente único fusionado, ver nota de arquitectura) pero ya sin duplicación real | 🟡 Media | Itinerarios · Viajes · Viajeros |
+| #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero — extraídas las piezas duplicadas (Stepper, subida/parseo de PDF, asignación día-a-día de hotel/actividad) a `components/trip-itinerary-wizard/`; el wizard de agencia se redujo además de 7 a 4 pasos (Origen, Programa, Datos del viaje, Crear), igual que el del viajero — se quitó el paso de Vuelos (se añaden después desde la ficha del viaje, como ya hacía el viajero) y se fusionaron Fechas+Nombre e Itinerario+Invitaciones+resumen | 🟡 Media | Itinerarios · Viajes · Viajeros |
 | #126 | Sistema de aprobación manual de nuevos registros (registro restringido a beta) | 🔴 Alta | Registro |
 | #150 | Etiqueta "Incluída" en actividades del viaje | 🟡 Media | Itinerarios · Viajes · Viajeros |
 | #151 | Mensaje de error de registro más específico — email duplicado y fallos de validación ahora muestran el motivo real devuelto por el backend, en vez del genérico "No se pudo crear la cuenta" | 🟢 Baja | Registro |

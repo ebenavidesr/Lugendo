@@ -35,7 +35,7 @@ import { ActivityInlineAddPanel } from "@/components/trip-itinerary-wizard/activ
 
 type Origin = "existing" | "new";
 type NewMode = "scratch" | "pdf";
-type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+type Step = 1 | 2 | 3 | 4;
 
 interface WizardData {
   origin: Origin | null;
@@ -53,29 +53,12 @@ interface WizardData {
   startDate: string;
   endDate: string;
   maxCapacity: string;
-  outboundLegs: FlightLeg[];
-  returnLegs: FlightLeg[];
   tripName: string;
   tripDescription: string;
   emails: string;
 }
 
-interface FlightLeg {
-  airline: string;
-  flightNumber: string;
-  cityFrom: string;
-  cityTo: string;
-  departureTime: string;
-  arrivalTime: string;
-  reservationCode: string;
-}
-
-const emptyLeg = (): FlightLeg => ({
-  airline: "", flightNumber: "", cityFrom: "", cityTo: "",
-  departureTime: "", arrivalTime: "", reservationCode: "",
-});
-
-const STEP_LABELS = ["Origen", "Programa", "Fechas", "Vuelos", "Nombre", "Itinerario", "Invitaciones"];
+const STEP_LABELS = ["Origen", "Programa", "Datos del viaje", "Crear"];
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -90,8 +73,6 @@ export default function TripWizard() {
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
     parsedItinerary: null, dayHotels: {}, dayTransitNights: {}, dayActivities: {},
     startDate: "", endDate: "", maxCapacity: "",
-    outboundLegs: [emptyLeg()],
-    returnLegs: [emptyLeg()],
     tripName: "", tripDescription: "", emails: "",
   });
   const [isCreating, setIsCreating] = useState(false);
@@ -152,7 +133,7 @@ export default function TripWizard() {
   const days = getDays();
   const hasDays = days.length > 0;
 
-  const nextStep = () => setStep(s => Math.min(s + 1, 7) as Step);
+  const nextStep = () => setStep(s => Math.min(s + 1, 4) as Step);
   const prevStep = () => setStep(s => Math.max(s - 1, 1) as Step);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,8 +264,6 @@ export default function TripWizard() {
           ...(itineraryId ? { itineraryId } : {}),
           ...(data.maxCapacity ? { maxCapacity: parseInt(data.maxCapacity) } : {}),
           ...(data.tripDescription ? { description: data.tripDescription } : {}),
-          ...(data.outboundLegs.some(l => l.airline || l.flightNumber) ? { outboundFlights: data.outboundLegs.filter(l => l.airline || l.flightNumber) } : {}),
-          ...(data.returnLegs.some(l => l.airline || l.flightNumber) ? { returnFlights: data.returnLegs.filter(l => l.airline || l.flightNumber) } : {}),
         },
       });
 
@@ -451,13 +430,17 @@ export default function TripWizard() {
           </div>
         );
 
-      // ── STEP 3: Fechas ──────────────────────────────────────────────────────
+      // ── STEP 3: Datos del viaje ──────────────────────────────────────────────
       case 3:
         return (
           <div className="space-y-4">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Fechas del viaje</h2>
-              <p className="text-[13px] text-muted-foreground">Define cuándo sale y vuelve el grupo.</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Datos del viaje</h2>
+              <p className="text-[13px] text-muted-foreground">Nombre, fechas y capacidad del grupo.</p>
+            </div>
+            <div>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre del viaje *</label>
+              <Input placeholder="Marruecos Imperial Junio 2026" value={data.tripName} onChange={e => set({ tripName: e.target.value })} className="text-[15px]" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -468,151 +451,11 @@ export default function TripWizard() {
                 <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de regreso</label>
                 <Input type="date" value={data.endDate} onChange={e => set({ endDate: e.target.value })} min={data.startDate} />
               </div>
-              <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Capacidad máxima</label>
-                <Input type="number" placeholder="20 viajeros" value={data.maxCapacity} onChange={e => set({ maxCapacity: e.target.value })} />
-                <p className="text-[11px] mt-1 text-muted-foreground">El semáforo de ocupación se calcula sobre este valor.</p>
-              </div>
-            </div>
-          </div>
-        );
-
-      // ── STEP 4: Vuelos ──────────────────────────────────────────────────────
-      case 4:
-        return (
-          <div className="space-y-5">
-            <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Información de vuelos</h2>
-              <p className="text-[13px] text-muted-foreground">Añade varios tramos si hay escalas. Todos los campos son opcionales.</p>
-            </div>
-
-            {/* Vuelo de ida */}
-            <div className="p-4 rounded-[12px] border border-border space-y-4" style={{ background: "white" }}>
-              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#C4793A" }}>
-                <Plane className="w-3.5 h-3.5" /> Vuelo de ida
-              </div>
-              {data.outboundLegs.map((leg, idx) => (
-                <div key={idx}>
-                  {idx > 0 && (
-                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
-                      <button
-                        onClick={() => set({ outboundLegs: data.outboundLegs.filter((_, i) => i !== idx) })}
-                        className="ml-auto text-[11px] text-destructive hover:underline"
-                      >Eliminar tramo</button>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
-                      <Input placeholder="Iberia" value={leg.airline} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
-                      <Input placeholder="IB1234" value={leg.flightNumber} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label>
-                      <Input placeholder="Madrid" value={leg.cityFrom} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label>
-                      <Input placeholder="Edimburgo" value={leg.cityTo} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
-                      <Input type="time" value={leg.departureTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label>
-                      <Input type="time" value={leg.arrivalTime} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
-                      <Input placeholder="ABCDEF" value={leg.reservationCode} onChange={e => set({ outboundLegs: data.outboundLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button
-                onClick={() => set({ outboundLegs: [...data.outboundLegs, emptyLeg()] })}
-                className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-colors"
-                style={{ background: "#FAEEE4", color: "#C4793A" }}
-              >
-                <Plus className="w-3 h-3" /> Añadir tramo
-              </button>
-            </div>
-
-            {/* Vuelo de vuelta */}
-            <div className="p-4 rounded-[12px] border border-border space-y-4" style={{ background: "white" }}>
-              <div className="text-[12px] font-semibold uppercase tracking-wide flex items-center gap-1.5" style={{ color: "#3D2F6B" }}>
-                <Plane className="w-3.5 h-3.5 rotate-180" /> Vuelo de vuelta
-              </div>
-              {data.returnLegs.map((leg, idx) => (
-                <div key={idx}>
-                  {idx > 0 && (
-                    <div className="flex items-center gap-2 pb-2 pt-3 border-t border-border">
-                      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Tramo {idx + 1}</span>
-                      <button
-                        onClick={() => set({ returnLegs: data.returnLegs.filter((_, i) => i !== idx) })}
-                        className="ml-auto text-[11px] text-destructive hover:underline"
-                      >Eliminar tramo</button>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Aerolínea</label>
-                      <Input placeholder="Iberia" value={leg.airline} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, airline: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Número de vuelo</label>
-                      <Input placeholder="IB5678" value={leg.flightNumber} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, flightNumber: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad origen</label>
-                      <Input placeholder="Edimburgo" value={leg.cityFrom} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityFrom: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Ciudad destino</label>
-                      <Input placeholder="Madrid" value={leg.cityTo} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, cityTo: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de salida</label>
-                      <Input type="time" value={leg.departureTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, departureTime: e.target.value } : l) })} />
-                    </div>
-                    <div>
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Hora de llegada</label>
-                      <Input type="time" value={leg.arrivalTime} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, arrivalTime: e.target.value } : l) })} />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de reserva</label>
-                      <Input placeholder="FEDCBA" value={leg.reservationCode} onChange={e => set({ returnLegs: data.returnLegs.map((l, i) => i === idx ? { ...l, reservationCode: e.target.value } : l) })} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <button
-                onClick={() => set({ returnLegs: [...data.returnLegs, emptyLeg()] })}
-                className="flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-full transition-colors"
-                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
-              >
-                <Plus className="w-3 h-3" /> Añadir tramo
-              </button>
-            </div>
-          </div>
-        );
-
-      // ── STEP 5: Nombre ──────────────────────────────────────────────────────
-      case 5:
-        return (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Nombre del viaje</h2>
-              <p className="text-[13px] text-muted-foreground">Se sugiere desde el itinerario, puedes editarlo libremente.</p>
             </div>
             <div>
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Nombre del viaje *</label>
-              <Input placeholder="Marruecos Imperial Junio 2026" value={data.tripName} onChange={e => set({ tripName: e.target.value })} className="text-[15px]" />
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Capacidad máxima</label>
+              <Input type="number" placeholder="20 viajeros" value={data.maxCapacity} onChange={e => set({ maxCapacity: e.target.value })} />
+              <p className="text-[11px] mt-1 text-muted-foreground">El semáforo de ocupación se calcula sobre este valor.</p>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
@@ -630,39 +473,16 @@ export default function TripWizard() {
                 onChange={e => set({ tripDescription: e.target.value })}
               />
             </div>
-            <div className="p-4 rounded-[12px] border border-border space-y-1.5" style={{ background: "#FAF2EB" }}>
-              <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen</div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
-                <span className="text-muted-foreground">Itinerario</span>
-                <span style={{ color: "#2D1F0E" }}>
-                  {data.origin === "existing" ? (selectedItinerary?.name ?? "—") : (data.scratchName || data.parsedItinerary?.name || "Nuevo")}
-                </span>
-                <span className="text-muted-foreground">Salida</span>
-                <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
-                <span className="text-muted-foreground">Regreso</span>
-                <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
-                <span className="text-muted-foreground">Capacidad</span>
-                <span style={{ color: "#2D1F0E" }}>{data.maxCapacity ? `${data.maxCapacity} viajeros` : "—"}</span>
-                {data.outboundLegs.some(l => l.airline || l.flightNumber) && <>
-                  <span className="text-muted-foreground">Vuelo ida</span>
-                  <span style={{ color: "#2D1F0E" }}>{data.outboundLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                </>}
-                {data.returnLegs.some(l => l.airline || l.flightNumber) && <>
-                  <span className="text-muted-foreground">Vuelo vuelta</span>
-                  <span style={{ color: "#2D1F0E" }}>{data.returnLegs.filter(l => l.airline || l.flightNumber).map(l => `${l.airline} ${l.flightNumber}`.trim()).join(" + ")}</span>
-                </>}
-              </div>
-            </div>
           </div>
         );
 
-      // ── STEP 6: Itinerario detallado ────────────────────────────────────────
-      case 6:
+      // ── STEP 4: Itinerario y confirmación ────────────────────────────────────
+      case 4:
         return (
-          <div className="space-y-3">
+          <div className="space-y-5">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Itinerario detallado</h2>
-              <p className="text-[13px] text-muted-foreground">Hoteles y actividades por día. Opcional — puedes completarlo después.</p>
+              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Itinerario y confirmación</h2>
+              <p className="text-[13px] text-muted-foreground">Hoteles, actividades e invitaciones. Todo opcional — puedes completarlo después.</p>
             </div>
             {!hasDays ? (
               <div className="p-6 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
@@ -892,33 +712,38 @@ export default function TripWizard() {
                 })}
               </div>
             )}
-          </div>
-        );
 
-      // ── STEP 7: Invitaciones ────────────────────────────────────────────────
-      case 7:
-        return (
-          <div className="space-y-4">
             <div>
-              <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Invitar viajeros</h2>
-              <p className="text-[13px] text-muted-foreground">Opcional — puedes invitar más viajeros desde el detalle del viaje.</p>
-            </div>
-            <div>
-              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Emails de viajeros</label>
+              <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Emails de viajeros (opcional)</label>
               <Textarea
                 placeholder={"viajero1@email.com\nviajero2@email.com\nviajero3@email.com"}
-                rows={5}
+                rows={4}
                 value={data.emails}
                 onChange={e => set({ emails: e.target.value })}
                 className="font-mono text-[12px]"
               />
               <p className="text-[11px] mt-1 text-muted-foreground">Uno por línea o separados por coma. Recibirán un enlace de invitación.</p>
             </div>
-            <div className="p-4 rounded-[12px] border border-border" style={{ background: "#FAF2EB" }}>
-              <div className="text-[12px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Listo para crear</div>
-              <div className="text-[12px] text-muted-foreground">
-                {data.tripName} · {data.startDate}{data.endDate ? ` → ${data.endDate}` : ""}
-                {data.emails.trim() ? ` · ${data.emails.split(/[\n,]+/).filter(e => e.trim()).length} invitación(es)` : " · sin invitaciones"}
+
+            <div className="p-4 rounded-[12px] border border-border space-y-1.5" style={{ background: "#FAF2EB" }}>
+              <div className="text-[11px] font-medium uppercase tracking-wide" style={{ color: "#9C7A58" }}>Resumen final</div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
+                <span className="text-muted-foreground">Itinerario</span>
+                <span style={{ color: "#2D1F0E" }}>
+                  {data.origin === "existing" ? (selectedItinerary?.name ?? "—") : (data.scratchName || data.parsedItinerary?.name || "Nuevo")}
+                </span>
+                <span className="text-muted-foreground">Nombre</span>
+                <span style={{ color: "#2D1F0E" }}>{data.tripName || "—"}</span>
+                <span className="text-muted-foreground">Salida</span>
+                <span style={{ color: "#2D1F0E" }}>{data.startDate || "—"}</span>
+                <span className="text-muted-foreground">Regreso</span>
+                <span style={{ color: "#2D1F0E" }}>{data.endDate || "—"}</span>
+                <span className="text-muted-foreground">Capacidad</span>
+                <span style={{ color: "#2D1F0E" }}>{data.maxCapacity ? `${data.maxCapacity} viajeros` : "—"}</span>
+                <span className="text-muted-foreground">Invitaciones</span>
+                <span style={{ color: "#2D1F0E" }}>
+                  {data.emails.trim() ? `${data.emails.split(/[\n,]+/).filter(e => e.trim()).length} invitación(es)` : "sin invitaciones"}
+                </span>
               </div>
             </div>
           </div>
@@ -934,11 +759,8 @@ export default function TripWizard() {
         if (data.newMode === "scratch") return !!data.scratchName && !!data.scratchNumDays;
         if (data.newMode === "pdf") return !!data.parsedItinerary;
         return false;
-      case 3: return !!data.startDate;
+      case 3: return !!data.tripName && !!data.startDate;
       case 4: return true;
-      case 5: return !!data.tripName;
-      case 6: return true;
-      case 7: return true;
       default: return true;
     }
   };
@@ -968,7 +790,7 @@ export default function TripWizard() {
             ← Anterior
           </button>
           <div className="flex items-center gap-2">
-            {step < 7 && (
+            {step < 4 && (
               <button
                 onClick={nextStep}
                 disabled={!canProceed()}
@@ -979,7 +801,7 @@ export default function TripWizard() {
                 Siguiente <ChevronRight className="w-4 h-4" />
               </button>
             )}
-            {step === 7 && (
+            {step === 4 && (
               <button
                 onClick={handleCreate}
                 disabled={isCreating || !data.tripName || !data.startDate}
