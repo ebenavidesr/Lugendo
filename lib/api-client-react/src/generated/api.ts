@@ -6698,6 +6698,76 @@ export const useRevokeTripPhotoShare = <TError = ErrorType<unknown>,
       return useMutation(getRevokeTripPhotoShareMutationOptions(options));
     }
 
+export const getUseSharedTripAsTemplateUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/use-as-template`
+}
+
+/**
+ * @summary Create a brand new, independent personal trip pre-filled from a trip shared with the current traveler via trip_shares (#152)
+ */
+export const useSharedTripAsTemplate = async (tripId: number, options?: RequestInit): Promise<UseTripPhotoTemplateResponse> => {
+
+  return customFetch<UseTripPhotoTemplateResponse>(getUseSharedTripAsTemplateUrl(tripId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUseSharedTripAsTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useSharedTripAsTemplate>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof useSharedTripAsTemplate>>, TError,{tripId: number}, TContext> => {
+
+const mutationKey = ['useSharedTripAsTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof useSharedTripAsTemplate>>, {tripId: number}> = (props) => {
+          const {tripId} = props ?? {};
+
+          return  useSharedTripAsTemplate(tripId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UseSharedTripAsTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof useSharedTripAsTemplate>>>
+
+    export type UseSharedTripAsTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a brand new, independent personal trip pre-filled from a trip shared with the current traveler via trip_shares (#152)
+ */
+export const useUseSharedTripAsTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof useSharedTripAsTemplate>>, TError,{tripId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof useSharedTripAsTemplate>>,
+        TError,
+        {tripId: number},
+        TContext
+      > => {
+      return useMutation(getUseSharedTripAsTemplateMutationOptions(options));
+    }
+
 export const getListSharedWithMeUrl = () => {
 
 

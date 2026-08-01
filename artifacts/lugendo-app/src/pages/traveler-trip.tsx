@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { MapPin, Plus } from "lucide-react";
 import {
   useGetMyTrip, useUpdateMyTrip, useUpdateTripDay, useCreateTripDay, useDeleteTripDay,
-  useGetMyTripChecklist, useListTripDocuments, useUpdateMyTripClassification,
+  useGetMyTripChecklist, useListTripDocuments, useUpdateMyTripClassification, useUseSharedTripAsTemplate,
 } from "@workspace/api-client-react";
 import type { TravelerTripDetailStatus, TransportMode, TravelerTripClassification } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -23,6 +23,7 @@ import type { FlightLeg } from "@/components/flight-edit-panel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/utils";
 
 function computeDefaultExpanded(days: { dayNumber: number }[], startDate: string): Set<number> {
   const today = new Date();
@@ -77,6 +78,7 @@ function fromApiLeg(l: { airline?: string; flightNumber?: string; cityFrom?: str
 
 export default function TravelerTrip() {
   const params = useParams<{ id: string }>();
+  const [, navigate] = useLocation();
   const tripId = parseInt(params.id ?? "0");
   const { data: trip, isLoading } = useGetMyTrip(tripId);
   const { user } = useAuth();
@@ -128,6 +130,7 @@ export default function TravelerTrip() {
   const createDay = useCreateTripDay();
   const deleteDay = useDeleteTripDay();
   const updateClassification = useUpdateMyTripClassification();
+  const useAsTemplate = useUseSharedTripAsTemplate();
 
   const { data: checklistItems } = useGetMyTripChecklist(tripId);
   const { data: tripDocuments } = useListTripDocuments(tripId);
@@ -160,6 +163,21 @@ export default function TravelerTrip() {
     await invalidateTrip();
     await qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
     toast({ title: "Clasificación actualizada" });
+  };
+
+  const handleUseAsTemplate = () => {
+    useAsTemplate.mutate({ tripId }, {
+      onSuccess: (res) => {
+        toast({
+          title: trip?.myMemberType === "guest" ? "¡Viaje creado!" : "¡Viaje duplicado!",
+          description: "Ya puedes editarlo a tu gusto.",
+        });
+        navigate(`/traveler/trips/${res.tripId}`);
+      },
+      onError: (err) => {
+        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo copiar este viaje") });
+      },
+    });
   };
 
   const handleSaveFlights = async (data: { outboundFlights: FlightLeg[]; returnFlights: FlightLeg[] }) => {
@@ -268,6 +286,32 @@ export default function TravelerTrip() {
           onClassificationChange={handleClassificationChange}
         />
       </div>
+
+      {/* #152: only shown when access to this trip came via an accepted trip_shares row --
+          owners and agency-invited travelers already have their own real trip. */}
+      {!isOwner && trip.myMemberType && (
+        <div
+          className="rounded-[14px] border border-border/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          style={{ background: "#FAEEE4" }}
+        >
+          <p className="text-[13px]" style={{ color: "#2D1F0E" }}>
+            {trip.myMemberType === "guest"
+              ? "¿Te inspira este viaje? Puedes usarlo como base para crear el tuyo propio, totalmente editable."
+              : "Puedes duplicar este viaje para tener tu propia copia editable."}
+          </p>
+          <button
+            onClick={handleUseAsTemplate}
+            disabled={useAsTemplate.isPending}
+            className="shrink-0 h-9 px-4 rounded-[10px] text-[13px] font-medium text-white disabled:opacity-60"
+            style={{ background: "var(--terra)" }}
+            data-testid="button-use-shared-trip-as-template"
+          >
+            {useAsTemplate.isPending
+              ? "Creando…"
+              : trip.myMemberType === "guest" ? "Usar como base para un viaje mío" : "Duplicar viaje"}
+          </button>
+        </div>
+      )}
 
       {/* Inline edit panel for personal trips */}
       {canEditPersonal && editMode && (

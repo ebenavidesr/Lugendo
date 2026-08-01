@@ -1742,6 +1742,7 @@ export const GetMyTripResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "daysSource": zod.enum(['trip', 'itinerary']).describe('Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days)'),
   "myPermission": zod.enum(['full', 'read', 'null']).nullish().describe('Permission level of the current user when accessing via a share (null if owner or agency-invited)'),
+  "myMemberType": zod.enum(['member', 'guest', 'null']).nullish().describe('How the current user\'s access to this trip was granted via trip_shares (null if owner or agency-invited) —'),
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "airline": zod.string().nullish(),
@@ -1884,6 +1885,7 @@ export const UpdateMyTripResponse = zod.object({
   "itineraryId": zod.number().nullish(),
   "daysSource": zod.enum(['trip', 'itinerary']).describe('Whether the days array contains trip_days or itinerary_days (personal trips without trip_days use itinerary_days)'),
   "myPermission": zod.enum(['full', 'read', 'null']).nullish().describe('Permission level of the current user when accessing via a share (null if owner or agency-invited)'),
+  "myMemberType": zod.enum(['member', 'guest', 'null']).nullish().describe('How the current user\'s access to this trip was granted via trip_shares (null if owner or agency-invited) —'),
   "agencyName": zod.string().nullish(),
   "agencyLogoUrl": zod.string().nullish(),
   "airline": zod.string().nullish(),
@@ -2314,6 +2316,14 @@ export const CreateTripPhotoShareParams = zod.object({
 export const RevokeTripPhotoShareParams = zod.object({
   "tripId": zod.coerce.number(),
   "photoShareId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Create a brand new, independent personal trip pre-filled from a trip shared with the current traveler via trip_shares (#152)
+ */
+export const UseSharedTripAsTemplateParams = zod.object({
+  "tripId": zod.coerce.number()
 })
 
 

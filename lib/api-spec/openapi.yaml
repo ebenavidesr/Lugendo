@@ -2030,6 +2030,29 @@ paths:
         "204":
           description: Revoked
 
+  /me/trips/{tripId}/use-as-template:
+    post:
+      operationId: useSharedTripAsTemplate
+      tags: [traveler]
+      summary: Create a brand new, independent personal trip pre-filled from a trip shared with the current traveler via trip_shares (#152)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: New trip created from the shared trip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UseTripPhotoTemplateResponse"
+        "403":
+          description: Not a shared trip for this traveler (no accepted trip_shares row)
+        "404":
+          description: Trip not found
+
   /me/shared-trips:
     get:
       operationId: listSharedWithMe
@@ -4340,6 +4363,10 @@ components:
           type: ["string", "null"]
           enum: [full, read, "null"]
           description: Permission level of the current user when accessing via a share (null if owner or agency-invited)
+        myMemberType:
+          type: ["string", "null"]
+          enum: [member, guest, "null"]
+          description: How the current user's access to this trip was granted via trip_shares (null if owner or agency-invited) — #152 uses this to label "crear viaje nuevo" (guest) vs "duplicar viaje" (member)
         agencyName:
           type: ["string", "null"]
         agencyLogoUrl:

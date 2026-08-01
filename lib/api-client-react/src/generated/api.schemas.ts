@@ -1001,6 +1001,19 @@ export const TravelerTripDetailMyPermission = {
   null: 'null',
 } as const;
 
+/**
+ * How the current user's access to this trip was granted via trip_shares (null if owner or agency-invited) —
+ * @nullable
+ */
+export type TravelerTripDetailMyMemberType = typeof TravelerTripDetailMyMemberType[keyof typeof TravelerTripDetailMyMemberType] | null;
+
+
+export const TravelerTripDetailMyMemberType = {
+  member: 'member',
+  guest: 'guest',
+  null: 'null',
+} as const;
+
 export interface TravelerTripDetail {
   id: number;
   name: string;
@@ -1020,6 +1033,11 @@ export interface TravelerTripDetail {
      * @nullable
      */
   myPermission?: TravelerTripDetailMyPermission;
+  /**
+     * How the current user's access to this trip was granted via trip_shares (null if owner or agency-invited) —
+     * @nullable
+     */
+  myMemberType?: TravelerTripDetailMyMemberType;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */

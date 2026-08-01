@@ -103,6 +103,7 @@ export * from './travelerTrip';
 export * from './travelerTripClassification';
 export * from './travelerTripDetail';
 export * from './travelerTripDetailDaysSource';
+export * from './travelerTripDetailMyMemberType';
 export * from './travelerTripDetailMyPermission';
 export * from './travelerTripDetailStatus';
 export * from './travelerTripStatus';

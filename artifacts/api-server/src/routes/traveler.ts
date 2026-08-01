@@ -659,7 +659,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   const myEmail = me?.email ?? "";
 
   const [acceptedShare] = await db
-    .select({ id: tripSharesTable.id, permission: tripSharesTable.permission })
+    .select({ id: tripSharesTable.id, permission: tripSharesTable.permission, memberType: tripSharesTable.memberType })
     .from(tripSharesTable)
     .where(and(
       eq(tripSharesTable.tripId, tripId),
@@ -673,6 +673,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   if (!invite && !ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
 
   const myPermission: string | null = acceptedShare ? acceptedShare.permission : null;
+  const myMemberType: string | null = acceptedShare ? acceptedShare.memberType : null;
 
   const [row] = await db
     .select({
@@ -764,6 +765,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
     ...row,
     isPersonal: row.ownerId != null && row.agencyName == null,
     myPermission,
+    myMemberType,
     agencyName: row.agencyName ?? null,
     agencyLogoUrl: row.agencyLogoUrl ?? null,
     travelerCount,
@@ -2169,6 +2171,57 @@ router.post("/trip-photos/:code/use-as-template", requireRoles("traveler"), asyn
   if (!photoShare) { res.status(404).json({ error: "Foto no encontrada" }); return; }
 
   const newTripId = await materializeTripFromSnapshot(photoShare.snapshot, userId);
+  await ensureTripClassification(userId, newTripId, "compartido");
+
+  res.status(201).json({ tripId: newTripId });
+});
+
+// Copy the trip_notes a traveler can see on the original trip (their own + ones explicitly
+// shared with them via trip_note_shares, same visibility rule as GET /me/trips/:tripId/notes)
+// into the newly materialized trip, as new independent notes owned by that traveler.
+async function copyVisibleTripNotes(tripId: number, newTripId: number, userId: number): Promise<void> {
+  const notes = await db
+    .select({
+      dayNumber: tripNotesTable.dayNumber,
+      endDayNumber: tripNotesTable.endDayNumber,
+      content: tripNotesTable.content,
+    })
+    .from(tripNotesTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
+    .where(and(
+      eq(tripNotesTable.tripId, tripId),
+      or(
+        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        eq(tripNotesTable.userId, userId),
+        sql`EXISTS(SELECT 1 FROM trip_note_shares s WHERE s.note_id = ${tripNotesTable.id} AND s.traveler_id = ${userId})`,
+      ),
+    ));
+
+  if (notes.length === 0) return;
+  await db.insert(tripNotesTable).values(
+    notes.map(n => ({ tripId: newTripId, userId, dayNumber: n.dayNumber, endDayNumber: n.endDayNumber, content: n.content })),
+  );
+}
+
+// ─── Use a trip shared with me (via trip_shares) as a template for my own trip ─
+// #152: an Invitado ("crear un viaje nuevo") or Miembro ("duplicar viaje") with an accepted
+// share can copy the trip they can see into an independent trip of their own. Reuses the same
+// snapshot/materialize logic as the photo-share flow above (#141) instead of a second copier.
+// Classified "compartido" like #141 regardless of memberType.
+router.post("/me/trips/:tripId/use-as-template", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  // Only meaningful when access came via an accepted trip_shares row (member or guest) --
+  // owners/staff/invited travelers already have their own real trip, nothing to copy here.
+  if (!access.authorized || !access.memberType) { res.status(403).json({ error: "Not a shared trip for this traveler" }); return; }
+
+  const snapshot = await buildTripPhotoSnapshot(tripId, userId);
+  if (!snapshot) { res.status(404).json({ error: "Trip not found" }); return; }
+
+  const newTripId = await materializeTripFromSnapshot(snapshot, userId);
+  await copyVisibleTripNotes(tripId, newTripId, userId);
   await ensureTripClassification(userId, newTripId, "compartido");
 
   res.status(201).json({ tripId: newTripId });

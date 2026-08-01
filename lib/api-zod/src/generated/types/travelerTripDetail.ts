@@ -8,6 +8,7 @@
 import type { FlightLeg } from './flightLeg';
 import type { TravelerTripClassification } from './travelerTripClassification';
 import type { TravelerTripDetailDaysSource } from './travelerTripDetailDaysSource';
+import type { TravelerTripDetailMyMemberType } from './travelerTripDetailMyMemberType';
 import type { TravelerTripDetailMyPermission } from './travelerTripDetailMyPermission';
 import type { TravelerTripDetailStatus } from './travelerTripDetailStatus';
 import type { TripDay } from './tripDay';
@@ -31,6 +32,11 @@ export interface TravelerTripDetail {
      * @nullable
      */
   myPermission?: TravelerTripDetailMyPermission;
+  /**
+     * How the current user's access to this trip was granted via trip_shares (null if owner or agency-invited) —
+     * @nullable
+     */
+  myMemberType?: TravelerTripDetailMyMemberType;
   /** @nullable */
   agencyName?: string | null;
   /** @nullable */
