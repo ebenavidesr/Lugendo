@@ -82,6 +82,7 @@
 | #146 | App móvil iOS/Android con React Native/Expo (renumerado desde un #143 duplicado en Notion) | 🟢 Baja | Infraestructura | Tú |
 | #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
 | #153 | Verificar el dominio `lugendo.io` en Resend (SPF/DKIM en Cloudflare DNS) — paso manual pendiente desde tarea #145; sin él, proveedores estrictos (iCloud confirmado el 2026-07-29) filtran o descartan en silencio los emails transaccionales aunque Resend los marque como enviados sin error | 🟡 Media | Infraestructura | Yo |
+| #154 | Backfill de `trip_shares` con `member_type=guest` + `permission=full` (datos previos a la tarea #141, ej. immahgg en los viajes de China y Escocia) — la insignia muestra "Edición completa" pero al ser `guest` sigue sin poder crear actividades por libre; detectado investigando por qué no podía editar actividades en Sri Lanka | 🟢 Baja | Viajes · Viajeros | Yo |
 | — | Actividades enriquecidas con más datos (sin número en Notion) | 🔴 Alta | — | — |
 | — | Al subir un itinerario por PDF, el texto desborda el marco donde debería quedar contenido — en curso (sin número en Notion) | 🟡 Media | — | — |
 | — | Arreglar la funcionalidad de búsqueda por mapa (sin número en Notion) | 🟢 Baja | — | — |

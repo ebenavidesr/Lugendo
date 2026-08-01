@@ -353,8 +353,13 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                         </div>
 
                         {/* Extra details */}
-                        {(activity.companyContact || (activity.addressOverride ?? activity.address) || activity.notes) && (
+                        {(activity.companyContact || (activity.addressOverride ?? activity.address) || activity.notes || (isFree && activity.costAmount != null)) && (
                           <div className="mt-1 space-y-0.5">
+                            {isFree && activity.costAmount != null && (
+                              <p className="text-[11px] font-medium" style={{ color: "var(--terra)" }}>
+                                💶 {activity.costAmount.toFixed(2)} {activity.costCurrency ?? "EUR"} por persona
+                              </p>
+                            )}
                             {activity.companyContact && (
                               <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
                                 🏢 {activity.companyContact}
