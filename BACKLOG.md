@@ -74,16 +74,13 @@
 | #111 | Perfil de viajero: días de viaje, próximos y completados | 🟡 Media | Viajeros | Yo |
 | #113 | Bloquear borrado de tareas de agencia en checklist — en curso | 🟡 Media | Viajeros | Yo |
 | #118 | Toggle Incluida/Por libre al crear itinerario — en curso | — | Itinerarios | — |
-| #126 | Sistema de aprobación manual de nuevos registros (registro restringido a beta) — en curso | 🔴 Alta | Registro | — |
 | #128 | Editar día completo (destino, origen y país por ciudad) en itinerarios y viajes — en curso, pendiente de validar en producción | 🟡 Media | Itinerarios · Viajes | Tú |
 | #136 | Costes de viaje asignados por viajero (hoteles, actividades, transporte) — arquitectura pendiente | — | Itinerarios · Viajes · Viajeros | — |
 | #137 | Catálogo de agencia: soportar más de un hotel por día en el itinerario | — | Hoteles · Itinerarios | — |
-| #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #143 | Foto del día: placeholder compacto y subida inline | 🟡 Media | Viajeros | Yo |
 | #144 | Alta de cuentas de desarrollador: App Store Connect y Google Play Console | 🟢 Baja | Infraestructura | Tú |
 | #146 | App móvil iOS/Android con React Native/Expo (renumerado desde un #143 duplicado en Notion) | 🟢 Baja | Infraestructura | Tú |
 | #148 | Equipaje y Notas individuales por viajero (no compartidos en viajes de grupo) — planificada 2026-07-29: la investigación confirmó que el modelo ya es por (viaje, viajero), alcance reducido a tests de aislamiento + verificación (sin migración de schema) | 🔴 Alta | Viajes · Viajeros | Tú |
-| #150 | Etiqueta "Incluída" en actividades del viaje — código implementado 2026-07-29 (sin cambios de schema/backend, el campo `included` ya existía); pendiente de que Quique mueva la tarjeta a QA y valide visualmente | 🟡 Media | Itinerarios · Viajes · Viajeros | Tú |
 | #153 | Verificar el dominio `lugendo.io` en Resend (SPF/DKIM en Cloudflare DNS) — paso manual pendiente desde tarea #145; sin él, proveedores estrictos (iCloud confirmado el 2026-07-29) filtran o descartan en silencio los emails transaccionales aunque Resend los marque como enviados sin error | 🟡 Media | Infraestructura | Yo |
 | — | Actividades enriquecidas con más datos (sin número en Notion) | 🔴 Alta | — | — |
 | — | Al subir un itinerario por PDF, el texto desborda el marco donde debería quedar contenido — en curso (sin número en Notion) | 🟡 Media | — | — |
@@ -123,6 +120,9 @@
 
 | # | Tarea | Prioridad | Área |
 |---|-------|-----------|------|
+| #142 | Unificar el alta de viaje de agencia/admin con el wizard de creación de viaje del viajero — extraídas las piezas duplicadas (Stepper, subida/parseo de PDF, asignación día-a-día de hotel/actividad) a `components/trip-itinerary-wizard/`; `trip-wizard.tsx` y `traveler-trip-wizard.tsx` siguen siendo dos páginas separadas (no un componente único fusionado, ver nota de arquitectura) pero ya sin duplicación real | 🟡 Media | Itinerarios · Viajes · Viajeros |
+| #126 | Sistema de aprobación manual de nuevos registros (registro restringido a beta) | 🔴 Alta | Registro |
+| #150 | Etiqueta "Incluída" en actividades del viaje | 🟡 Media | Itinerarios · Viajes · Viajeros |
 | #151 | Mensaje de error de registro más específico — email duplicado y fallos de validación ahora muestran el motivo real devuelto por el backend, en vez del genérico "No se pudo crear la cuenta" | 🟢 Baja | Registro |
 | #152 | Pantalla de aprobación de registros pendientes en el admin (fallback a los enlaces de email) + fix del 404 en el enlace del email (Cloudflare Worker no proxyaba `/api/*`, servía el fallback SPA) | 🔴 Alta | Registro |
 | #145 | Sistema de emails transaccionales (Resend): verificación, notificaciones, invitaciones y alertas (6 de 7 tipos — aviso de pago movido a #92) | 🔴 Alta | Infraestructura |

@@ -1,6 +1,6 @@
 import { useState, useRef, Fragment, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Check, Upload, FileText, X, MapPin, Plane, Calendar, Settings, Hotel, Mail, ChevronRight, Zap, Search, Plus, Loader2 } from "lucide-react";
+import { Check, Upload, FileText, X, Plane, Hotel, ChevronRight, Zap, Plus, Loader2 } from "lucide-react";
 import {
   useListItineraries,
   useListItineraryDays,
@@ -10,10 +10,7 @@ import {
   useCreateTrip,
   useSendInvitations,
   useListHotels,
-  useParseItineraryPdf,
   useListActivities,
-  useCreateActivity,
-  useCreateHotel,
   useAddDayActivity,
   useAddItineraryDayHotel,
   useRemoveItineraryDayHotel,
@@ -21,15 +18,18 @@ import {
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { TransportSelect } from "@/components/transport-select";
 import { useAutoDescription } from "@/hooks/use-auto-description";
-import { CountrySelectSmall } from "@/components/country-select";
 import { getApiErrorMessage } from "@/lib/utils";
-import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
+import { WizardStepper } from "@/components/trip-itinerary-wizard/wizard-stepper";
+import { ItineraryModePicker, ItineraryUploadPanel } from "@/components/trip-itinerary-wizard/itinerary-upload-panel";
+import { useItineraryImport } from "@/components/trip-itinerary-wizard/use-itinerary-import";
+import { useHotelAssignment, useActivityAssignment } from "@/components/trip-itinerary-wizard/use-day-assignment";
+import { HotelInlineCreatePanel } from "@/components/trip-itinerary-wizard/hotel-inline-panel";
+import { ActivityInlineAddPanel } from "@/components/trip-itinerary-wizard/activity-inline-panel";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -76,42 +76,6 @@ const emptyLeg = (): FlightLeg => ({
 });
 
 const STEP_LABELS = ["Origen", "Programa", "Fechas", "Vuelos", "Nombre", "Itinerario", "Invitaciones"];
-const STEP_ICONS = [MapPin, FileText, Calendar, Plane, Settings, Hotel, Mail];
-
-// ── Stepper ──────────────────────────────────────────────────────────────────
-
-function Stepper({ step }: { step: Step }) {
-  return (
-    <div className="flex items-start gap-0 mb-8">
-      {STEP_LABELS.map((label, i) => {
-        const num = (i + 1) as Step;
-        const done = num < step;
-        const active = num === step;
-        return (
-          <div key={label} className="flex items-start flex-1">
-            <div className="flex flex-col items-center min-w-0">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-medium flex-shrink-0"
-                style={{
-                  background: done ? "#C4793A" : active ? "#3D2F6B" : "#ECD5B8",
-                  color: done || active ? "white" : "#9C7A58",
-                }}>
-                {done ? <Check className="w-3.5 h-3.5" /> : num}
-              </div>
-              <div className="text-[10px] mt-1 text-center whitespace-nowrap"
-                style={{ color: active ? "#2D1F0E" : "#9C7A58", fontWeight: active ? 500 : 400 }}>
-                {label}
-              </div>
-            </div>
-            {i < STEP_LABELS.length - 1 && (
-              <div className="flex-1 h-[2px] mt-3.5 mx-1"
-                style={{ background: done ? "#C4793A" : "#ECD5B8" }} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -119,8 +83,6 @@ export default function TripWizard() {
   const [, navigate] = useLocation();
   const qc = useQueryClient();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   const [step, setStep] = useState<Step>(1);
   const [data, setData] = useState<WizardData>({
     origin: null, selectedItineraryId: null,
@@ -132,31 +94,7 @@ export default function TripWizard() {
     returnLegs: [emptyLeg()],
     tripName: "", tripDescription: "", emails: "",
   });
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [isParsing, setIsParsing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-
-  // ── Inline hotel form state ───────────────────────────────────────────────
-  const [inlineHotelDay, setInlineHotelDay] = useState<number | null>(null);
-  const [hotelSearchQ, setHotelSearchQ] = useState("");
-  const [hotelLookupLoading, setHotelLookupLoading] = useState(false);
-  const [hotelSearchDone, setHotelSearchDone] = useState(false);
-  type HotelSuggestion = { name: string; city: string; country: string; address: string; phone: string; website: string };
-  const [hotelLookupResults, setHotelLookupResults] = useState<HotelSuggestion[]>([]);
-  const [newHotelForm, setNewHotelForm] = useState({ name: "", city: "", country: "", address: "", phone: "", website: "" });
-  const [creatingHotel, setCreatingHotel] = useState(false);
-
-  // ── Inline activity form state ────────────────────────────────────────────
-  const [inlineActivityDay, setInlineActivityDay] = useState<number | null>(null);
-  const [activitySearchQ, setActivitySearchQ] = useState("");
-  const [newActivityMode, setNewActivityMode] = useState(false);
-  const [newActivityForm, setNewActivityForm] = useState({ name: "", category: "", city: "", country: "" });
-  const [creatingActivity, setCreatingActivity] = useState(false);
-  const [activityLookupQ, setActivityLookupQ] = useState("");
-  const [activityLookupLoading, setActivityLookupLoading] = useState(false);
-  const [activityLookupDone, setActivityLookupDone] = useState(false);
-  type ActivitySuggestion = { name: string; city: string; country: string; address: string; description: string };
-  const [activityLookupResults, setActivityLookupResults] = useState<ActivitySuggestion[]>([]);
   const [dayTransports, setDayTransports] = useState<Record<number, string>>({});
 
   const { data: itineraries } = useListItineraries();
@@ -165,19 +103,22 @@ export default function TripWizard() {
   const { data: existingDays } = useListItineraryDays(
     data.selectedItineraryId ?? 0
   );
-  const parsePdf = useParseItineraryPdf();
   const createItinerary = useCreateItinerary();
   const createDay = useCreateItineraryDay();
   const updateDay = useUpdateItineraryDay();
   const createTrip = useCreateTrip();
   const sendInvitations = useSendInvitations();
-  const createHotel = useCreateHotel();
-  const createActivity = useCreateActivity();
   const addDayActivity = useAddDayActivity();
   const addDayHotel = useAddItineraryDayHotel();
   const removeDayHotel = useRemoveItineraryDayHotel();
 
   const set = (partial: Partial<WizardData>) => setData(d => ({ ...d, ...partial }));
+
+  const itineraryImport = useItineraryImport();
+  const hotelAssignment = useHotelAssignment((dayNum, hotelId) => set({ dayHotels: { ...data.dayHotels, [dayNum]: hotelId } }));
+  const activityAssignment = useActivityAssignment((dayNum, activityId) =>
+    set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), activityId] } })
+  );
 
   const selectedItinerary = itineraries?.find(i => i.id === data.selectedItineraryId);
   const { isLoading: tripDescLoading, trigger: triggerTripDesc } = useAutoDescription("destination");
@@ -214,162 +155,29 @@ export default function TripWizard() {
   const nextStep = () => setStep(s => Math.min(s + 1, 7) as Step);
   const prevStep = () => setStep(s => Math.max(s - 1, 1) as Step);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPdfFile(file);
+    itineraryImport.selectFile(file);
     set({ parsedItinerary: null });
   };
 
   const handleParsePdf = async () => {
-    if (!pdfFile) return;
-    setIsParsing(true);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = (e.target?.result as string).split(",")[1];
-      try {
-        const result = await parsePdf.mutateAsync({ data: { fileBase64: base64, fileName: pdfFile.name } });
-
-        // Extract transports from parsed days
-        const transMap: Record<number, string> = {};
-        for (const d of result.days) {
-          if (d.transport) transMap[d.dayNumber] = d.transport;
-        }
-        setDayTransports(transMap);
-
-        // Auto-match or create activities and hotels from parsed names
-        const currentActivities = activities ?? [];
-        const currentHotels = hotels ?? [];
-        const singleCountry = result.countries?.length === 1 ? result.countries[0] : undefined;
-        const newDayActivities: Record<number, number[]> = {};
-        const newDayHotels: Record<number, string> = {};
-        for (const day of result.days) {
-          const actIds = await matchOrCreateActivityIds(day, currentActivities, args => createActivity.mutateAsync(args));
-          if (actIds.length) newDayActivities[day.dayNumber] = actIds;
-
-          const hotelId = await matchOrCreateHotelId(day, currentHotels, args => createHotel.mutateAsync(args), singleCountry);
-          if (hotelId) newDayHotels[day.dayNumber] = hotelId;
-        }
-        if (Object.keys(newDayActivities).length || Object.keys(newDayHotels).length) {
-          qc.invalidateQueries({ queryKey: ["/api/activities"] });
-          qc.invalidateQueries({ queryKey: ["/api/hotels"] });
-        }
-
-        const actCount = Object.values(newDayActivities).reduce((s, ids) => s + ids.length, 0);
-        const hotelCount = Object.keys(newDayHotels).length;
-        const extras: string[] = [];
-        if (actCount) extras.push(`${actCount} actividad${actCount !== 1 ? "es" : ""}`);
-        if (hotelCount) extras.push(`${hotelCount} hotel${hotelCount !== 1 ? "es" : ""}`);
-
-        set({
-          parsedItinerary: result,
-          scratchName: result.name,
-          scratchNumDays: String(result.numDays),
-          scratchCountries: result.countries?.join(", ") ?? "",
-          scratchDescription: result.description ?? "",
-          tripName: result.name,
-          ...(result.startDate ? { startDate: result.startDate } : {}),
-          ...(result.endDate ? { endDate: result.endDate } : {}),
-          ...(Object.keys(newDayActivities).length ? { dayActivities: newDayActivities } : {}),
-          ...(Object.keys(newDayHotels).length ? { dayHotels: newDayHotels } : {}),
-        });
-        toast({ title: `Itinerario extraído: ${result.numDays} días${extras.length ? ` · ${extras.join(" · ")}` : ""}` });
-      } catch (err) {
-        console.error("Error parsing itinerary file", err);
-        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo analizar el archivo. Intenta con un .txt o PDF de texto.") });
-      } finally {
-        setIsParsing(false);
-      }
-    };
-    reader.readAsDataURL(pdfFile);
-  };
-
-  // ── Activity lookup ───────────────────────────────────────────────────────
-  const handleActivityLookup = async () => {
-    if (!activityLookupQ.trim()) return;
-    setActivityLookupLoading(true);
-    setActivityLookupDone(false);
-    try {
-      const res = await fetch(`/api/activities/lookup?q=${encodeURIComponent(activityLookupQ)}`, { credentials: "include" });
-      if (res.ok) {
-        setActivityLookupResults(await res.json());
-      } else {
-        toast({ variant: "destructive", title: "Error al buscar actividades" });
-      }
-    } catch {
-      toast({ variant: "destructive", title: "Error de conexión al buscar actividades" });
-    } finally {
-      setActivityLookupLoading(false);
-      setActivityLookupDone(true);
-    }
-  };
-
-  // ── Hotel lookup (Google Places or DB fallback) ───────────────────────────
-  const handleHotelLookup = async () => {
-    if (!hotelSearchQ.trim()) return;
-    setHotelLookupLoading(true);
-    setHotelSearchDone(false);
-    try {
-      const res = await fetch(`/api/hotels/lookup?q=${encodeURIComponent(hotelSearchQ)}`, { credentials: "include" });
-      if (res.ok) {
-        setHotelLookupResults(await res.json());
-      } else {
-        toast({ variant: "destructive", title: "Error al buscar hoteles" });
-      }
-    } catch {
-      toast({ variant: "destructive", title: "Error de conexión al buscar hoteles" });
-    } finally {
-      setHotelLookupLoading(false);
-      setHotelSearchDone(true);
-    }
-  };
-
-  const handleCreateHotel = async (dayNum: number) => {
-    if (!newHotelForm.name || !newHotelForm.city || !newHotelForm.country) return;
-    setCreatingHotel(true);
-    try {
-      const hotel = await createHotel.mutateAsync({ data: {
-        name: newHotelForm.name, city: newHotelForm.city, country: newHotelForm.country,
-        ...(newHotelForm.address ? { address: newHotelForm.address } : {}),
-        ...(newHotelForm.phone ? { phone: newHotelForm.phone } : {}),
-        ...(newHotelForm.website ? { website: newHotelForm.website } : {}),
-      }});
-      qc.invalidateQueries({ queryKey: ["/api/hotels"] });
-      set({ dayHotels: { ...data.dayHotels, [dayNum]: String(hotel.id) } });
-      setInlineHotelDay(null);
-      setHotelLookupResults([]);
-      toast({ title: `Hotel "${hotel.name}" creado y asignado` });
-    } catch {
-      toast({ variant: "destructive", title: "Error al crear el hotel" });
-    } finally {
-      setCreatingHotel(false);
-    }
-  };
-
-  const handleCreateActivity = async (dayNum: number) => {
-    if (!newActivityForm.name) return;
-    setCreatingActivity(true);
-    try {
-      const act = await createActivity.mutateAsync({ data: {
-        name: newActivityForm.name,
-        ...(newActivityForm.city ? { city: newActivityForm.city } : {}),
-        ...(newActivityForm.country ? { country: newActivityForm.country } : {}),
-        ...(newActivityForm.category && newActivityForm.category !== "none" ? { category: newActivityForm.category as "cultural" | "gastronomic" | "adventure" | "nature" | "beach" | "city" | "excursion" | "other" } : {}),
-      }});
-      qc.setQueryData(["/api/activities"], (old: typeof act[] | undefined) =>
-        old ? [...old, act] : [act]
-      );
-      qc.invalidateQueries({ queryKey: ["/api/activities"] });
-      set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), act.id] } });
-      setNewActivityMode(false);
-      setNewActivityForm({ name: "", category: "", city: "", country: "" });
-      setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
-      toast({ title: `Actividad "${act.name}" creada` });
-    } catch {
-      toast({ variant: "destructive", title: "Error al crear la actividad" });
-    } finally {
-      setCreatingActivity(false);
-    }
+    const result = await itineraryImport.parse(activities ?? [], hotels ?? []);
+    if (!result) return;
+    setDayTransports(result.dayTransports);
+    set({
+      parsedItinerary: result.parsedItinerary,
+      scratchName: result.parsedItinerary.name,
+      scratchNumDays: String(result.parsedItinerary.numDays),
+      scratchCountries: result.parsedItinerary.countries?.join(", ") ?? "",
+      scratchDescription: result.parsedItinerary.description ?? "",
+      tripName: result.parsedItinerary.name,
+      ...(result.parsedItinerary.startDate ? { startDate: result.parsedItinerary.startDate } : {}),
+      ...(result.parsedItinerary.endDate ? { endDate: result.parsedItinerary.endDate } : {}),
+      ...(Object.keys(result.dayActivities).length ? { dayActivities: result.dayActivities } : {}),
+      ...(Object.keys(result.dayHotels).length ? { dayHotels: result.dayHotels } : {}),
+    });
   };
 
   const handleCreate = async () => {
@@ -590,21 +398,7 @@ export default function TripWizard() {
               <p className="text-[13px] text-muted-foreground">¿Cómo quieres definir el itinerario?</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              {(["scratch", "pdf"] as NewMode[]).map(mode => (
-                <button key={mode}
-                  onClick={() => set({ newMode: mode })}
-                  className="p-4 rounded-[12px] border-2 text-left transition-all"
-                  style={{ borderColor: data.newMode === mode ? "#C4793A" : "#E5D4BF", background: data.newMode === mode ? "#FAEEE4" : "white" }}>
-                  <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>
-                    {mode === "scratch" ? "Desde cero" : "Subir archivo"}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    {mode === "scratch" ? "Rellena los campos manualmente" : "PDF, Word, Excel o texto — la IA extrae la estructura"}
-                  </div>
-                </button>
-              ))}
-            </div>
+            <ItineraryModePicker mode={data.newMode} onChange={mode => set({ newMode: mode })} />
 
             {data.newMode === "scratch" && (
               <div className="space-y-3 pt-2 border-t border-border">
@@ -644,55 +438,15 @@ export default function TripWizard() {
             )}
 
             {data.newMode === "pdf" && (
-              <div className="space-y-3 pt-2 border-t border-border">
-                <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md,.xlsx" className="hidden" onChange={handleFileChange} />
-                {!pdfFile ? (
-                  <button onClick={() => fileInputRef.current?.click()}
-                    className="w-full p-8 rounded-[12px] border-2 border-dashed text-center transition-all hover:bg-[#FAF2EB]"
-                    style={{ borderColor: "#E5D4BF" }}>
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                    <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
-                    <div className="text-[11px] text-muted-foreground">PDF, Word, Excel o texto — máx. 10 MB</div>
-                  </button>
-                ) : (
-                  <div className="p-4 rounded-[12px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>
-                    <div className="w-9 h-9 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "#FDECEA" }}>
-                      <FileText className="w-4 h-4" style={{ color: "#C0392B" }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>{pdfFile.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{(pdfFile.size / 1024).toFixed(0)} KB</div>
-                    </div>
-                    <button onClick={() => { setPdfFile(null); set({ parsedItinerary: null }); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
-                      <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    </button>
-                  </div>
-                )}
-
-                {pdfFile && !data.parsedItinerary && (
-                  <button onClick={handleParsePdf} disabled={isParsing}
-                    className="w-full py-2.5 rounded-[8px] text-[13px] font-medium transition-colors"
-                    style={{ background: "#C4793A", color: "#FAF2EB", opacity: isParsing ? 0.7 : 1 }}>
-                    {isParsing ? "Analizando con IA…" : "Analizar con IA"}
-                  </button>
-                )}
-
-                {data.parsedItinerary && (
-                  <div className="p-4 rounded-[12px] border border-border" style={{ background: "#E4F3EC" }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Check className="w-4 h-4" style={{ color: "#2E7D5A" }} />
-                      <span className="text-[13px] font-medium" style={{ color: "#2E7D5A" }}>Estructura extraída</span>
-                    </div>
-                    <div className="text-[12px]" style={{ color: "#2D1F0E" }}>
-                      <strong>{data.parsedItinerary.name}</strong> · {data.parsedItinerary.numDays} días
-                      {data.parsedItinerary.countries?.length ? ` · ${data.parsedItinerary.countries.join(", ")}` : ""}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mt-1">
-                      {data.parsedItinerary.days.length} días procesados
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ItineraryUploadPanel
+                fileInputRef={itineraryImport.fileInputRef}
+                pdfFile={itineraryImport.pdfFile}
+                isParsing={itineraryImport.isParsing}
+                parsedItinerary={data.parsedItinerary}
+                onFileChange={handleFileChange}
+                onClearFile={() => { itineraryImport.clearFile(); set({ parsedItinerary: null }); }}
+                onParse={handleParsePdf}
+              />
             )}
           </div>
         );
@@ -927,8 +681,8 @@ export default function TripWizard() {
                   const dayActs = (data.dayActivities[day.dayNumber] ?? [])
                     .map(id => activities?.find(a => a.id === id))
                     .filter((a): a is NonNullable<typeof a> => Boolean(a));
-                  const isHotelOpen = inlineHotelDay === day.dayNumber;
-                  const isActOpen = inlineActivityDay === day.dayNumber;
+                  const isHotelOpen = hotelAssignment.inlineDay === day.dayNumber;
+                  const isActOpen = activityAssignment.inlineDay === day.dayNumber;
                   const assignedHotel = data.dayHotels[day.dayNumber];
                   const originalTransit = data.origin === "existing"
                     ? !!existingDays?.find(d => d.dayNumber === day.dayNumber)?.isTransitNight
@@ -1018,11 +772,9 @@ export default function TripWizard() {
                             className="flex-shrink-0 text-[11px] font-medium flex items-center gap-0.5 px-2 py-1 rounded-[6px] transition-colors"
                             style={{ color: "#C4793A", background: isHotelOpen ? "#FAEEE4" : "transparent" }}
                             onClick={() => {
-                              setInlineHotelDay(isHotelOpen ? null : day.dayNumber);
-                              setInlineActivityDay(null);
-                              setHotelSearchQ("");
-                              setHotelLookupResults([]);
-                              setNewHotelForm({ name: "", city: day.cityTo ?? day.cityFrom ?? "", country: "", address: "", phone: "", website: "" });
+                              if (isHotelOpen) { hotelAssignment.close(); return; }
+                              activityAssignment.close();
+                              hotelAssignment.open(day.dayNumber, { city: day.cityTo ?? day.cityFrom ?? "" });
                             }}>
                             <Plus className="w-3 h-3" />{isHotelOpen ? "Cerrar" : "Nuevo"}
                           </button>
@@ -1039,7 +791,7 @@ export default function TripWizard() {
                               dayTransitNights: { ...data.dayTransitNights, [day.dayNumber]: next },
                               ...(next ? { dayHotels: { ...data.dayHotels, [day.dayNumber]: "" } } : {}),
                             });
-                            if (next && isHotelOpen) setInlineHotelDay(null);
+                            if (next && isHotelOpen) hotelAssignment.close();
                           }}>
                           <Plane className="w-3 h-3" />
                           Noche en transporte
@@ -1065,10 +817,9 @@ export default function TripWizard() {
                             className="text-[11px] font-medium flex items-center gap-0.5 px-2 py-0.5 rounded-full transition-colors"
                             style={{ color: "#3D2F6B", background: isActOpen ? "#EDE9F8" : "#F5F3FB" }}
                             onClick={() => {
-                              setInlineActivityDay(isActOpen ? null : day.dayNumber);
-                              setInlineHotelDay(null);
-                              setActivitySearchQ("");
-                              setNewActivityMode(false);
+                              if (isActOpen) { activityAssignment.close(); return; }
+                              hotelAssignment.close();
+                              activityAssignment.open(day.dayNumber);
                             }}>
                             <Plus className="w-3 h-3" /> Actividad
                           </button>
@@ -1077,202 +828,51 @@ export default function TripWizard() {
 
                       {/* ── Inline hotel creation panel ─────────────────────── */}
                       {isHotelOpen && (
-                        <div className="border-t border-border p-3 space-y-3" style={{ background: "#FAF8F5" }}>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#C4793A" }}>
-                            Buscar o crear hotel
-                          </div>
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder="Nombre del hotel…"
-                              value={hotelSearchQ}
-                              onChange={e => setHotelSearchQ(e.target.value)}
-                              onKeyDown={e => e.key === "Enter" && handleHotelLookup()}
-                              className="h-8 text-[12px] flex-1"
-                            />
-                            <Button type="button" size="sm" className="h-8 text-[11px] gap-1 flex-shrink-0"
-                              style={{ background: "#C4793A", color: "white" }}
-                              onClick={handleHotelLookup}
-                              disabled={hotelLookupLoading || !hotelSearchQ.trim()}>
-                              <Search className="w-3 h-3" />
-                              {hotelLookupLoading ? "Buscando…" : "Buscar"}
-                            </Button>
-                          </div>
-                          {hotelSearchDone && hotelLookupResults.length === 0 && (
-                            <div className="text-[12px] py-1.5 px-2 rounded-[8px] text-center" style={{ background: "#FFF3E0", color: "#8B4420" }}>
-                              Sin resultados — rellena el formulario manualmente o prueba otro nombre
-                            </div>
-                          )}
-                          {hotelLookupResults.length > 0 && (
-                            <div className="space-y-1">
-                              <div className="text-[11px]" style={{ color: "#9C7A58" }}>Selecciona para pre-rellenar el formulario:</div>
-                              {hotelLookupResults.map((r, i) => (
-                                <button key={i}
-                                  onClick={() => setNewHotelForm({ name: r.name, city: r.city, country: r.country, address: r.address, phone: r.phone, website: r.website })}
-                                  className="w-full text-left p-2 rounded-[8px] border border-border hover:border-[#C4793A] text-[12px] transition-colors">
-                                  <div className="font-medium" style={{ color: "#2D1F0E" }}>{r.name}</div>
-                                  <div style={{ color: "#9C7A58" }}>{r.city}{r.country ? `, ${r.country}` : ""}</div>
-                                  {r.address && <div className="text-[11px] truncate" style={{ color: "#9C7A58" }}>{r.address}</div>}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                          <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Datos del hotel</div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input placeholder="Nombre *" value={newHotelForm.name} onChange={e => setNewHotelForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Ciudad *" value={newHotelForm.city} onChange={e => setNewHotelForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                            <CountrySelectSmall value={newHotelForm.country} onChange={v => setNewHotelForm(f => ({ ...f, country: v }))} placeholder="País *" />
-                            <Input placeholder="Dirección" value={newHotelForm.address} onChange={e => setNewHotelForm(f => ({ ...f, address: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Teléfono" value={newHotelForm.phone} onChange={e => setNewHotelForm(f => ({ ...f, phone: e.target.value }))} className="h-7 text-[12px]" />
-                            <Input placeholder="Web" value={newHotelForm.website} onChange={e => setNewHotelForm(f => ({ ...f, website: e.target.value }))} className="h-7 text-[12px]" />
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button type="button" variant="ghost" size="sm" className="h-7 text-[12px]"
-                              onClick={() => setInlineHotelDay(null)}>Cancelar</Button>
-                            <Button type="button" size="sm" className="h-7 text-[12px]"
-                              style={{ background: "#C4793A", color: "white" }}
-                              disabled={!newHotelForm.name || !newHotelForm.city || !newHotelForm.country || creatingHotel}
-                              onClick={() => handleCreateHotel(day.dayNumber)}>
-                              {creatingHotel ? "Guardando…" : "Guardar hotel"}
-                            </Button>
-                          </div>
-                        </div>
+                        <HotelInlineCreatePanel
+                          dayNumber={day.dayNumber}
+                          catalog={[]}
+                          catalogSearchQ=""
+                          onCatalogSearchQChange={() => {}}
+                          onPickExisting={() => {}}
+                          searchQ={hotelAssignment.searchQ}
+                          onSearchQChange={hotelAssignment.setSearchQ}
+                          lookupLoading={hotelAssignment.lookupLoading}
+                          lookupDone={hotelAssignment.lookupDone}
+                          lookupResults={hotelAssignment.lookupResults}
+                          onLookup={hotelAssignment.lookup}
+                          onApplyResult={hotelAssignment.applyResult}
+                          form={hotelAssignment.form}
+                          onFormChange={hotelAssignment.setForm}
+                          creating={hotelAssignment.creating}
+                          onCancel={hotelAssignment.close}
+                          onCreate={hotelAssignment.create}
+                        />
                       )}
 
                       {/* ── Inline activity picker panel ────────────────────── */}
                       {isActOpen && (
-                        <div className="border-t border-border p-3 space-y-2" style={{ background: "#F8F6FC" }}>
-                          <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#3D2F6B" }}>
-                            Añadir actividad
-                          </div>
-                          <Input
-                            placeholder="Buscar en el catálogo…"
-                            value={activitySearchQ}
-                            onChange={e => setActivitySearchQ(e.target.value)}
-                            className="h-7 text-[12px]"
-                          />
-                          {(() => {
-                            const catalogue = activities ?? [];
-                            const alreadyAdded = data.dayActivities[day.dayNumber] ?? [];
-                            const filtered = catalogue
-                              .filter(a => !activitySearchQ || a.name.toLowerCase().includes(activitySearchQ.toLowerCase()))
-                              .filter(a => !alreadyAdded.includes(a.id))
-                              .slice(0, 12);
-                            if (catalogue.length === 0) {
-                              return (
-                                <div className="text-[12px] py-2 text-center rounded-[8px]" style={{ background: "#EDE9F8", color: "#3D2F6B" }}>
-                                  Tu catálogo está vacío — crea una nueva actividad abajo
-                                </div>
-                              );
-                            }
-                            if (filtered.length === 0) {
-                              return (
-                                <div className="text-[11px] py-2 text-center" style={{ color: "#9C7A58" }}>
-                                  {activitySearchQ ? `Sin coincidencias para "${activitySearchQ}"` : "Todas las actividades ya están añadidas"}
-                                </div>
-                              );
-                            }
-                            return (
-                              <div className="max-h-36 overflow-y-auto space-y-0.5">
-                                {filtered.map(a => (
-                                  <button key={a.id}
-                                    className="w-full text-left px-2 py-1.5 rounded-[6px] hover:bg-[#EDE9F8] text-[12px] transition-colors"
-                                    style={{ color: "#2D1F0E" }}
-                                    onClick={() => {
-                                      set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...alreadyAdded, a.id] } });
-                                    }}>
-                                    {a.name}{a.city ? <span style={{ color: "#9C7A58" }}> · {a.city}</span> : null}
-                                  </button>
-                                ))}
-                              </div>
-                            );
-                          })()}
-                          {!newActivityMode ? (
-                            <button className="w-full text-[11px] font-medium py-1 rounded-[6px] flex items-center justify-center gap-1 transition-colors"
-                              style={{ color: "#3D2F6B", background: "#EDE9F8" }}
-                              onClick={() => setNewActivityMode(true)}>
-                              <Plus className="w-3 h-3" /> Nueva actividad
-                            </button>
-                          ) : (
-                            <div className="space-y-2 pt-2 border-t border-border">
-                              <div className="text-[11px] font-medium" style={{ color: "#9C7A58" }}>Nueva actividad</div>
-                              {/* Web search */}
-                              <div className="flex gap-1.5">
-                                <Input
-                                  placeholder="Buscar en internet…"
-                                  value={activityLookupQ}
-                                  onChange={e => setActivityLookupQ(e.target.value)}
-                                  onKeyDown={e => e.key === "Enter" && handleActivityLookup()}
-                                  className="h-7 text-[12px] flex-1"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleActivityLookup}
-                                  disabled={!activityLookupQ.trim() || activityLookupLoading}
-                                  className="h-7 px-2 rounded-[6px] text-[11px] font-medium disabled:opacity-40 inline-flex items-center gap-1"
-                                  style={{ background: "#3D2F6B", color: "white" }}>
-                                  {activityLookupLoading ? "…" : <Search className="w-3 h-3" />}
-                                </button>
-                              </div>
-                              {activityLookupResults.length > 0 && (
-                                <div className="rounded-[6px] border border-border bg-card overflow-hidden divide-y divide-border/60 max-h-32 overflow-y-auto">
-                                  {activityLookupResults.map((r, i) => (
-                                    <button key={i} type="button"
-                                      onClick={() => {
-                                        setNewActivityForm(f => ({ ...f, name: r.name, city: r.city, country: r.country }));
-                                        setActivityLookupResults([]); setActivityLookupQ(""); setActivityLookupDone(false);
-                                      }}
-                                      className="w-full text-left px-2.5 py-1.5 hover:bg-muted/50 transition-colors">
-                                      <p className="text-[11px] font-medium truncate" style={{ color: "#2D1F0E" }}>{r.name}</p>
-                                      {(r.city || r.country) && <p className="text-[10px] text-muted-foreground truncate">{[r.city, r.country].filter(Boolean).join(", ")}</p>}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                              {activityLookupDone && activityLookupResults.length === 0 && (
-                                <p className="text-[10px] text-muted-foreground">Sin resultados. Rellena manualmente.</p>
-                              )}
-                              {/* Manual fields */}
-                              <Input placeholder="Nombre *" value={newActivityForm.name}
-                                onChange={e => setNewActivityForm(f => ({ ...f, name: e.target.value }))} className="h-7 text-[12px]" />
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input placeholder="Ciudad" value={newActivityForm.city}
-                                  onChange={e => setNewActivityForm(f => ({ ...f, city: e.target.value }))} className="h-7 text-[12px]" />
-                                <CountrySelectSmall value={newActivityForm.country} onChange={v => setNewActivityForm(f => ({ ...f, country: v }))} placeholder="País" />
-                              </div>
-                              <Select value={newActivityForm.category || "none"}
-                                onValueChange={v => setNewActivityForm(f => ({ ...f, category: v === "none" ? "" : v }))}>
-                                <SelectTrigger className="h-7 text-[12px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Sin categoría</SelectItem>
-                                  <SelectItem value="cultural">Cultural</SelectItem>
-                                  <SelectItem value="gastronomic">Gastronómica</SelectItem>
-                                  <SelectItem value="adventure">Aventura</SelectItem>
-                                  <SelectItem value="nature">Naturaleza</SelectItem>
-                                  <SelectItem value="beach">Playa</SelectItem>
-                                  <SelectItem value="city">Ciudad</SelectItem>
-                                  <SelectItem value="excursion">Excursión</SelectItem>
-                                  <SelectItem value="other">Otra</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="flex justify-end gap-2">
-                                <Button type="button" variant="ghost" size="sm" className="h-6 text-[11px]"
-                                  onClick={() => {
-                                    setNewActivityMode(false);
-                                    setNewActivityForm({ name: "", category: "", city: "", country: "" });
-                                    setActivityLookupQ(""); setActivityLookupResults([]); setActivityLookupDone(false);
-                                  }}>
-                                  Cancelar
-                                </Button>
-                                <Button type="button" size="sm" className="h-6 text-[11px]"
-                                  style={{ background: "#3D2F6B", color: "white" }}
-                                  disabled={!newActivityForm.name || creatingActivity}
-                                  onClick={() => handleCreateActivity(day.dayNumber)}>
-                                  {creatingActivity ? "…" : "Crear"}
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <ActivityInlineAddPanel
+                          dayNumber={day.dayNumber}
+                          catalog={activities ?? []}
+                          alreadyAddedIds={data.dayActivities[day.dayNumber] ?? []}
+                          catalogSearchQ={activityAssignment.catalogSearchQ}
+                          onCatalogSearchQChange={activityAssignment.setCatalogSearchQ}
+                          onPickExisting={activityId => set({ dayActivities: { ...data.dayActivities, [day.dayNumber]: [...(data.dayActivities[day.dayNumber] ?? []), activityId] } })}
+                          creatingMode={activityAssignment.creatingMode}
+                          onStartCreate={() => activityAssignment.setCreatingMode(true)}
+                          lookupQ={activityAssignment.lookupQ}
+                          onLookupQChange={activityAssignment.setLookupQ}
+                          lookupLoading={activityAssignment.lookupLoading}
+                          lookupDone={activityAssignment.lookupDone}
+                          lookupResults={activityAssignment.lookupResults}
+                          onLookup={activityAssignment.lookup}
+                          onApplyResult={activityAssignment.applyResult}
+                          form={activityAssignment.form}
+                          onFormChange={activityAssignment.setForm}
+                          creating={activityAssignment.creating}
+                          onCancel={activityAssignment.resetCreateForm}
+                          onCreate={activityAssignment.create}
+                        />
                       )}
                     </div>
                     {idx < days.length - 1 && (
@@ -1355,7 +955,7 @@ export default function TripWizard() {
       <p className="text-sm text-muted-foreground mb-6">Sigue los pasos para configurar el viaje completo.</p>
 
       <div className="bg-card border border-border rounded-[14px] shadow-sm p-6">
-        <Stepper step={step} />
+        <WizardStepper labels={STEP_LABELS} current={step} />
 
         <div className="min-h-[260px]">
           {renderStep()}

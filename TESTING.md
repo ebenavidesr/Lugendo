@@ -6,6 +6,21 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #142 — Unificar el alta de viaje de agencia/admin con el wizard del viajero (2026-08-01)
+- [x] Investigación previa: el precedente citado en la ficha de Notion (tarea #134, "reutilizar UI de subida de itinerarios") solo compartía un módulo de utilidades puras (`lib/pdf-day-autofill.ts`) y el endpoint `POST /itineraries/parse-pdf`, no un componente de wizard — no había precedente real de componente compartido en este código
+- [x] Decisión de arquitectura confirmada con Quique: extraer piezas compartidas (`components/trip-itinerary-wizard/`: `wizard-stepper.tsx`, `itinerary-upload-panel.tsx` + `use-itinerary-import.ts`, `hotel-inline-panel.tsx`/`activity-inline-panel.tsx` + `use-day-assignment.ts`, `types.ts`) en vez de fusionar en un único componente — `trip-wizard.tsx` (1397→997 líneas) y `traveler-trip-wizard.tsx` (1261→859 líneas) siguen siendo dos páginas separadas, ahora compuestas a partir de las piezas compartidas, sin duplicación real de UI/lógica
+- [x] Efecto colateral corregido: el alta inline de hotel ahora expone teléfono/web en ambos contextos (antes solo en agencia) y el alta inline de actividad ahora expone categoría en ambos contextos (antes solo en agencia) — mismo formulario compartido
+- [x] `pnpm run typecheck` limpio (monorepo completo) y `pnpm --filter @workspace/lugendo-app run build` exitoso
+- [ ] **No verificado manualmente en el navegador** — sin credenciales de login funcionales en local para ningún rol (ver gotcha de `CLAUDE.md` sobre `admin@lugendo.io`) y el registro de una cuenta nueva de prueba queda `pending` por el sistema de aprobación manual (#126), sin forma de aprobarla desde este entorno. Pendiente de que Quique valide en producción:
+- [ ] Agencia (admin/manager/agent): crear viaje desde itinerario de catálogo existente
+- [ ] Agencia: crear viaje desde cero (scratch) y por importación PDF/DOCX/XLSX — auto-match de hotel/actividad correcto
+- [ ] Agencia: paso Vuelos y paso Invitaciones sin cambios de comportamiento
+- [ ] Viajero: crear viaje manual (scratch) y por importación PDF/DOCX/XLSX
+- [ ] Viajero: unirse con código y usar foto compartida sin cambios de comportamiento (incluye el colapso visual del Stepper a 2 pasos)
+- [ ] Toggle de noche en tránsito sin regresión en ambos wizards
+- [ ] Smoke-test de los 2 puntos de importación PDF no tocados (`itinerary-wizard.tsx`, `itinerary-detail.tsx`) — no deberían tener regresión al no haberse modificado su código, pero conviene confirmarlo
+- [ ] Validar en producción tras desplegar
+
 ### #153 (Notion) — Documentos y Notas: origen agencia vs propios, compartición selectiva y salida del destinatario (2026-07-31)
 - [x] Investigación previa (evitó trabajo duplicado y corrigió el alcance): `trip_documents`/`trip_notes` ya tenían `userId` como autor; el origen agencia/propio ya se derivaba sin campo paralelo en `GET /me/trips/:tripId/documents` (`uploaderRole` vía join con `users.role`) — se reutilizó el mismo patrón para notas. `verifyTripAccessCore`/`listTripMembers` (`trips.ts`) ya existían y ya excluían invitados — se exportaron y reutilizaron en vez de reimplementar el chequeo de acceso
 - [x] **Hallazgo no anticipado en la tarjeta**: los documentos **no tenían ninguna privacidad** — cualquier viajero con acceso al viaje veía y descargaba los documentos de cualquier otro viajero (`GET`/`download` sin filtro por autor). Esta tarea introduce la privacidad desde cero, no solo la compartición selectiva
