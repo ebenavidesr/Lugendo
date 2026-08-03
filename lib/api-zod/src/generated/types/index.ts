@@ -107,7 +107,6 @@ export * from './travelerTagCatalogEntry';
 export * from './travelerTagCatalogEntryAxis';
 export * from './travelerTagCatalogEntryFamily';
 export * from './travelerTagConflict';
-export * from './travelerTagConflictAxis';
 export * from './travelerTagConflictError';
 export * from './travelerTagFamily';
 export * from './travelerTagInput';

@@ -11,5 +11,4 @@ export type TravelerTagConflictError = typeof TravelerTagConflictError[keyof typ
 
 export const TravelerTagConflictError = {
   AlreadyTagged: 'AlreadyTagged',
-  LimitExceeded: 'LimitExceeded',
 } as const;

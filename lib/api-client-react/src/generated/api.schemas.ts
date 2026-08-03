@@ -1470,21 +1470,10 @@ export type TravelerTagConflictError = typeof TravelerTagConflictError[keyof typ
 
 export const TravelerTagConflictError = {
   AlreadyTagged: 'AlreadyTagged',
-  LimitExceeded: 'LimitExceeded',
-} as const;
-
-export type TravelerTagConflictAxis = typeof TravelerTagConflictAxis[keyof typeof TravelerTagConflictAxis];
-
-
-export const TravelerTagConflictAxis = {
-  estilo: 'estilo',
-  intereses: 'intereses',
 } as const;
 
 export interface TravelerTagConflict {
   error: TravelerTagConflictError;
-  axis?: TravelerTagConflictAxis;
-  limit?: number;
 }
 
 export interface MyTravelProfile {

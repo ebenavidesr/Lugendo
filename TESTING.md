@@ -7,8 +7,7 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 ## Sprint actual
 
 ### #155 — Perfil de viajero compartible: etiquetas, foto y privacidad (2026-08-03)
-- [x] Un viajero puede seleccionar hasta 2 etiquetas de estilo; la tercera se rechaza en backend, no solo en la interfaz — verificado con `curl` directo contra el endpoint (3ª etiqueta de estilo → 409 `LimitExceeded`)
-- [x] Un viajero puede seleccionar hasta 8 intereses; el noveno se rechaza en backend — verificado igual (409 `LimitExceeded`)
+- [x] **Cambio de alcance (2026-08-03, pedido por Quique):** se elimina el límite de 2 etiquetas de estilo / 8 de intereses. Un viajero puede seleccionar cualquier número de etiquetas de cada eje; solo se rechaza (409 `AlreadyTagged`) volver a añadir una etiqueta ya seleccionada. La sección "Perfil compartible" del perfil del viajero pasa a ser colapsable (cerrada por defecto, con resumen "X de 4 activados" en la cabecera)
 - [x] Las 38 etiquetas del catálogo aparecen con su descripción en el selector — verificado en navegador (9 estilo + 29 intereses agrupadas en 4 familias visuales: Naturaleza y aire libre, Cultura e historia, Ciudad y ocio, Enfoque personal)
 - [x] Un compañero de viaje ve el perfil según los tres interruptores del dueño — verificado con dos cuentas desechables compartiendo un viaje: el compañero vio países visitados y etiquetas (activados) pero no países deseados (desactivado)
 - [x] Al desactivar "países visitados", ese bloque desaparece para todos los observadores de inmediato — la resolución de visibilidad ocurre en cada petición, sin caché

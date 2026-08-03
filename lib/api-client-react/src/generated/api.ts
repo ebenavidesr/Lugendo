@@ -8926,7 +8926,7 @@ export const getAddMyTravelerTagUrl = () => {
 }
 
 /**
- * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ * @summary Add a tag to the traveler's profile -- no cap on how many tags per axis
  */
 export const addMyTravelerTag = async (travelerTagInput: TravelerTagInput, options?: RequestInit): Promise<TravelerTag[]> => {
 
@@ -8975,7 +8975,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type AddMyTravelerTagMutationError = ErrorType<void | TravelerTagConflict>
 
     /**
- * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ * @summary Add a tag to the traveler's profile -- no cap on how many tags per axis
  */
 export const useAddMyTravelerTag = <TError = ErrorType<void | TravelerTagConflict>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyTravelerTag>>, TError,{data: BodyType<TravelerTagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}

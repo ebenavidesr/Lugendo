@@ -40,13 +40,8 @@ const avatarUpload = multer({
 // ahead of time so this endpoint needs no changes once that role ships.
 const AGENCY_TAG_VIEWER_ROLES = ["admin", "manager", "agent", "local_guide"];
 
-const TAG_AXIS_LIMITS: Record<string, number> = { estilo: 2, intereses: 8 };
-
 class TagAlreadyAddedError extends Error {
   constructor() { super("AlreadyTagged"); }
-}
-class TagLimitExceededError extends Error {
-  constructor(public axis: string, public limit: number) { super("LimitExceeded"); }
 }
 
 // Every trip a user is a member of: owner, accepted invitation, or accepted share. Mirrors
@@ -243,22 +238,16 @@ router.post("/me/travel-profile/tags", requireRoles("traveler"), validate(Travel
 
   try {
     await db.transaction(async (tx) => {
-      const existing = await tx.select({ tagId: travelerTagsTable.tagId })
+      const [existing] = await tx.select({ tagId: travelerTagsTable.tagId })
         .from(travelerTagsTable)
-        .innerJoin(travelerTagCatalogTable, eq(travelerTagCatalogTable.id, travelerTagsTable.tagId))
-        .where(and(eq(travelerTagsTable.userId, userId), eq(travelerTagCatalogTable.axis, tag.axis)));
+        .where(and(eq(travelerTagsTable.userId, userId), eq(travelerTagsTable.tagId, tagId)));
 
-      if (existing.some(e => e.tagId === tagId)) throw new TagAlreadyAddedError();
-      if (existing.length >= TAG_AXIS_LIMITS[tag.axis]) throw new TagLimitExceededError(tag.axis, TAG_AXIS_LIMITS[tag.axis]);
+      if (existing) throw new TagAlreadyAddedError();
 
       await tx.insert(travelerTagsTable).values({ userId, tagId });
     });
   } catch (err) {
     if (err instanceof TagAlreadyAddedError) { res.status(409).json({ error: "AlreadyTagged" }); return; }
-    if (err instanceof TagLimitExceededError) {
-      res.status(409).json({ error: "LimitExceeded", axis: err.axis, limit: err.limit });
-      return;
-    }
     // Defensive fallback against the unique(userId, tagId) constraint for a genuine race
     // between two concurrent requests (the transaction check above isn't itself locking).
     if (err instanceof Error && "code" in err && (err as { code?: string }).code === "23505") {

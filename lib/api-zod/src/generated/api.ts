@@ -2809,7 +2809,7 @@ export const ListMyTravelerTagsResponse = zod.array(ListMyTravelerTagsResponseIt
 
 
 /**
- * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ * @summary Add a tag to the traveler's profile -- no cap on how many tags per axis
  */
 export const AddMyTravelerTagBody = zod.object({
   "tagId": zod.number()

@@ -2657,7 +2657,7 @@ paths:
     post:
       operationId: addMyTravelerTag
       tags: [traveler]
-      summary: Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+      summary: Add a tag to the traveler's profile -- no cap on how many tags per axis
       requestBody:
         required: true
         content:
@@ -2676,7 +2676,7 @@ paths:
         "404":
           description: Tag not found in the catalog
         "409":
-          description: Tag already added, or the axis limit (2 estilo / 8 intereses) was reached
+          description: Tag already added
           content:
             application/json:
               schema:
@@ -5068,12 +5068,7 @@ components:
       properties:
         error:
           type: string
-          enum: [AlreadyTagged, LimitExceeded]
-        axis:
-          type: string
-          enum: [estilo, intereses]
-        limit:
-          type: integer
+          enum: [AlreadyTagged]
 
     MyTravelProfile:
       type: object

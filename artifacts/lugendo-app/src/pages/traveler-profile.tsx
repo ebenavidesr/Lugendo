@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useGetMyProfile, useGetMyTravelProfile, useUpdateMyTravelProfile } from "@workspace/api-client-react";
-import { Globe, Luggage, Calendar, ArrowLeft, Users } from "lucide-react";
+import { Globe, Luggage, Calendar, ArrowLeft, Users, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { MyCountriesSection } from "@/components/my-countries-section";
 import { MyCountriesMap } from "@/components/my-countries-map";
 import { TravelerAvatarEditor } from "@/components/traveler-avatar-editor";
 import { TravelerTagSelector } from "@/components/traveler-tag-selector";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 function avatarColor(name: string): string {
   const colors = [
@@ -59,59 +61,80 @@ function VisibilityRow({
 
 function ShareableProfileSection() {
   const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
   const { data: travelProfile, isLoading } = useGetMyTravelProfile();
   const updateProfile = useUpdateMyTravelProfile({
     mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: ["/api/me/travel-profile"] }) },
   });
 
   if (isLoading || !travelProfile) {
-    return <div className="h-56 bg-card border border-border rounded-[14px] animate-pulse" />;
+    return <div className="h-14 bg-card border border-border rounded-[14px] animate-pulse" />;
   }
 
   const patch = (data: Parameters<typeof updateProfile.mutate>[0]["data"]) => {
     updateProfile.mutate({ data });
   };
 
+  const activeCount = [
+    travelProfile.showVisitedCountries, travelProfile.showWantedCountries,
+    travelProfile.showTags, travelProfile.agencyTagsConsent,
+  ].filter(Boolean).length;
+
   return (
-    <div className="bg-card border border-border rounded-[14px] p-4 space-y-1">
-      <div className="flex items-center gap-2 mb-1">
-        <Users className="w-4 h-4 text-muted-foreground" />
-        <h2 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Perfil compartible</h2>
-      </div>
-      <p className="text-[12px] text-muted-foreground pb-2">
-        Solo lo ven tus compañeros de viaje. Todo empieza desactivado — actívalo bloque a bloque.
-      </p>
+    <div className="bg-card border border-border rounded-[14px] overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between gap-2 p-4 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <span className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Perfil compartible</span>
+        </span>
+        <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          {activeCount > 0 ? `${activeCount} de 4 activados` : "Todo desactivado"}
+          <ChevronDown className={cn("w-4 h-4 transition-transform", open && "rotate-180")} />
+        </span>
+      </button>
 
-      <div className="divide-y divide-border">
-        <VisibilityRow
-          label="Países visitados"
-          description="Tu lista de países visitados, visible para tus compañeros"
-          checked={travelProfile.showVisitedCountries}
-          onChange={v => patch({ showVisitedCountries: v })}
-        />
-        <VisibilityRow
-          label="Países que quiero visitar"
-          description="Tu lista de países objetivo, visible para tus compañeros"
-          checked={travelProfile.showWantedCountries}
-          onChange={v => patch({ showWantedCountries: v })}
-        />
-        <VisibilityRow
-          label="Etiquetas de tipo de viajero"
-          description="Tu estilo de viaje e intereses, visibles para tus compañeros"
-          checked={travelProfile.showTags}
-          onChange={v => patch({ showTags: v })}
-        />
-        <VisibilityRow
-          label="Compartir etiquetas con mi agencia"
-          description="Permite que el equipo de tu agencia vea tus etiquetas individuales"
-          checked={travelProfile.agencyTagsConsent}
-          onChange={v => patch({ agencyTagsConsent: v })}
-        />
-      </div>
+      {open && (
+        <div className="px-4 pb-4 space-y-1">
+          <p className="text-[12px] text-muted-foreground pb-2">
+            Solo lo ven tus compañeros de viaje. Todo empieza desactivado — actívalo bloque a bloque.
+          </p>
 
-      <div className="pt-3">
-        <TravelerTagSelector />
-      </div>
+          <div className="divide-y divide-border">
+            <VisibilityRow
+              label="Países visitados"
+              description="Tu lista de países visitados, visible para tus compañeros"
+              checked={travelProfile.showVisitedCountries}
+              onChange={v => patch({ showVisitedCountries: v })}
+            />
+            <VisibilityRow
+              label="Países que quiero visitar"
+              description="Tu lista de países objetivo, visible para tus compañeros"
+              checked={travelProfile.showWantedCountries}
+              onChange={v => patch({ showWantedCountries: v })}
+            />
+            <VisibilityRow
+              label="Etiquetas de tipo de viajero"
+              description="Tu estilo de viaje e intereses, visibles para tus compañeros"
+              checked={travelProfile.showTags}
+              onChange={v => patch({ showTags: v })}
+            />
+            <VisibilityRow
+              label="Compartir etiquetas con mi agencia"
+              description="Permite que el equipo de tu agencia vea tus etiquetas individuales"
+              checked={travelProfile.agencyTagsConsent}
+              onChange={v => patch({ agencyTagsConsent: v })}
+            />
+          </div>
+
+          <div className="pt-3">
+            <TravelerTagSelector />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,11 +5,8 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { TravelerTagConflictAxis } from './travelerTagConflictAxis';
 import type { TravelerTagConflictError } from './travelerTagConflictError';
 
 export interface TravelerTagConflict {
   error: TravelerTagConflictError;
-  axis?: TravelerTagConflictAxis;
-  limit?: number;
 }
