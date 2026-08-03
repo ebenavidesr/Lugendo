@@ -168,6 +168,20 @@ export class ObjectStorageService {
     return `${folder}/${objectId}${extension}`;
   }
 
+  // Direct server-side upload of an already-validated buffer straight into private storage
+  // (mirrors uploadPublicBuffer, but under PRIVATE_PREFIX). Used for assets whose visibility
+  // must be enforced per-request by the backend (e.g. traveler avatars, #155) rather than by
+  // an unguessable public URL. Returns the same "/objects/{entityId}" path format expected by
+  // GET /storage/objects/*path and by getObjectEntityFile.
+  async uploadPrivateBuffer(buffer: Buffer, folder: string, extension: string, contentType: string): Promise<string> {
+    const objectId = randomUUID();
+    const key = `${PRIVATE_PREFIX}/${folder}/${objectId}${extension}`;
+    await objectStorageClient.send(
+      new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: buffer, ContentType: contentType })
+    );
+    return `/objects/${folder}/${objectId}${extension}`;
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<ObjectHandle> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

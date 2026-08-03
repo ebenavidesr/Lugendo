@@ -28,6 +28,7 @@ import TravelerTrip from "@/pages/traveler-trip";
 import TravelerTripWizard from "@/pages/traveler-trip-wizard";
 import TravelerTripEdit from "@/pages/traveler-trip-edit";
 import TravelerProfile from "@/pages/traveler-profile";
+import TravelerCompanionProfile from "@/pages/traveler-companion-profile";
 import Agencies from "@/pages/agencies";
 import AgencyDetail from "@/pages/agency-detail";
 import AgencySettings from "@/pages/agency-settings";
@@ -122,6 +123,11 @@ function Router() {
       {/* Traveler Portal */}
       <Route path="/traveler/profile">
         <ProtectedTraveler><TravelerProfile /></ProtectedTraveler>
+      </Route>
+      <Route path="/traveler/travelers/:id">
+        {() => (
+          <ProtectedTraveler><TravelerCompanionProfile /></ProtectedTraveler>
+        )}
       </Route>
       <Route path="/traveler/trips/new">
         <ProtectedTraveler><TravelerTripWizard /></ProtectedTraveler>

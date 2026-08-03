@@ -2693,6 +2693,190 @@ export const RemoveMyCountryParams = zod.object({
 
 
 /**
+ * @summary Closed catalog of traveler tags (#155) -- 9 "estilo" + 29 "intereses", each with a short description for the selector
+ */
+export const ListTravelerTagCatalogResponseItem = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish().describe('Visual grouping for \"intereses\" tags only (UI layout, no meaning in the data model). Always null for \"estilo\" tags.'),
+  "label": zod.string(),
+  "description": zod.string(),
+  "sortOrder": zod.number()
+})
+export const ListTravelerTagCatalogResponse = zod.array(ListTravelerTagCatalogResponseItem)
+
+
+/**
+ * @summary The logged-in traveler's own shareable profile (unfiltered -- always includes all blocks regardless of the visibility switches)
+ */
+export const GetMyTravelProfileResponse = zod.object({
+  "avatarUrl": zod.string().nullable(),
+  "showVisitedCountries": zod.boolean(),
+  "showWantedCountries": zod.boolean(),
+  "showTags": zod.boolean(),
+  "agencyTagsConsent": zod.boolean().describe('Separate switch, off by default -- gates visibility to the traveler\'s own agency back office, not to companions'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update visibility switches (visited countries, wanted countries, tags) and/or agency tag consent -- all default false, opt-in
+ */
+export const UpdateMyTravelProfileBody = zod.object({
+  "showVisitedCountries": zod.boolean().optional(),
+  "showWantedCountries": zod.boolean().optional(),
+  "showTags": zod.boolean().optional(),
+  "agencyTagsConsent": zod.boolean().optional()
+})
+
+export const UpdateMyTravelProfileResponse = zod.object({
+  "avatarUrl": zod.string().nullable(),
+  "showVisitedCountries": zod.boolean(),
+  "showWantedCountries": zod.boolean(),
+  "showTags": zod.boolean(),
+  "agencyTagsConsent": zod.boolean().describe('Separate switch, off by default -- gates visibility to the traveler\'s own agency back office, not to companions'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
+ * @summary Upload a profile photo (JPG/PNG/WebP, max 5MB, square-cropped client-side, resized server-side). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const UploadMyTravelProfileAvatarResponse = zod.object({
+  "avatarUrl": zod.string().nullable(),
+  "showVisitedCountries": zod.boolean(),
+  "showWantedCountries": zod.boolean(),
+  "showTags": zod.boolean(),
+  "agencyTagsConsent": zod.boolean().describe('Separate switch, off by default -- gates visibility to the traveler\'s own agency back office, not to companions'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
+ * @summary Remove the traveler's uploaded profile photo (falls back to initials)
+ */
+export const DeleteMyTravelProfileAvatarResponse = zod.object({
+  "avatarUrl": zod.string().nullable(),
+  "showVisitedCountries": zod.boolean(),
+  "showWantedCountries": zod.boolean(),
+  "showTags": zod.boolean(),
+  "agencyTagsConsent": zod.boolean().describe('Separate switch, off by default -- gates visibility to the traveler\'s own agency back office, not to companions'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
+ * @summary The logged-in traveler's own selected tags
+ */
+export const ListMyTravelerTagsResponseItem = zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+})
+export const ListMyTravelerTagsResponse = zod.array(ListMyTravelerTagsResponseItem)
+
+
+/**
+ * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ */
+export const AddMyTravelerTagBody = zod.object({
+  "tagId": zod.number()
+})
+
+
+/**
+ * @summary Remove a tag from the traveler's profile
+ */
+export const RemoveMyTravelerTagParams = zod.object({
+  "tagId": zod.coerce.number()
+})
+
+
+/**
+ * @summary A companion's shareable profile, filtered by their visibility switches. Only visible to travel companions (share at least one non-cancelled trip) or the traveler themself -- 403 otherwise
+ */
+export const GetTravelerTravelProfileParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const GetTravelerTravelProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullable(),
+  "visitedCountries": zod.array(zod.string()).optional().describe('Present only when the owner\'s showVisitedCountries switch is on'),
+  "wantedCountries": zod.array(zod.string()).optional().describe('Present only when the owner\'s showWantedCountries switch is on'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+})).optional().describe('Present only when the owner\'s showTags switch is on')
+})
+
+
+/**
+ * @summary Stream a companion's profile photo. Same access check as GET /travelers/{userId}/travel-profile, re-verified on every request
+ */
+export const GetTravelerTravelProfileAvatarParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Back-office view of a traveler's individual tags (admin/manager/agent/local_guide of an agency that shares a trip with the traveler). Empty unless the traveler gave explicit, separate consent
+ */
+export const GetAgencyTravelerTagsParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+export const GetAgencyTravelerTagsResponse = zod.object({
+  "consent": zod.boolean().describe('Whether the traveler gave explicit consent to show tags to the agency. When false, tags is always empty.'),
+  "tags": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "axis": zod.enum(['estilo', 'intereses']),
+  "family": zod.enum(['naturaleza', 'cultura', 'ciudad', 'personal']).nullish(),
+  "label": zod.string(),
+  "description": zod.string()
+}))
+})
+
+
+/**
  * @summary Countries derived from a trip's itinerary that the traveler hasn't classified yet (for the post-create/join modal)
  */
 export const GetMyTripCountriesParams = zod.object({

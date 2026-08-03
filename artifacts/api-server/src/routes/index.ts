@@ -13,6 +13,7 @@ import dashboardRouter from "./dashboard";
 import destinationsRouter from "./destinations";
 import storageRouter from "./storage";
 import checklistTemplatesRouter from "./checklist-templates";
+import travelerProfilesRouter from "./traveler-profiles";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(dashboardRouter);
 router.use(destinationsRouter);
 router.use(storageRouter);
 router.use(checklistTemplatesRouter);
+router.use(travelerProfilesRouter);
 
 export default router;

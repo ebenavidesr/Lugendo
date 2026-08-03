@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { TripDetailHeader, type Tab as ActiveTab } from "@/components/trip-detail-header";
 import { TripDayCard, type DayEditData } from "@/components/trip-day-card";
 import { TripTravelersTab } from "@/components/trip-travelers-tab";
+import { TripCompanionsList } from "@/components/trip-companions-list";
 import { TripSafetyTab } from "@/components/trip-safety-tab";
 import { TripDocumentsTab } from "@/components/trip-documents-tab";
 import { TripChecklistTab } from "@/components/trip-checklist-tab";
@@ -451,7 +452,10 @@ export default function TravelerTrip() {
       )}
 
       {activeTab === "travelers" && (
-        <TripTravelersTab tripId={tripId} isOwner={isOwner} canEdit={canEdit} />
+        <div className="space-y-4">
+          <TripCompanionsList tripId={tripId} />
+          <TripTravelersTab tripId={tripId} isOwner={isOwner} canEdit={canEdit} />
+        </div>
       )}
 
       {activeTab === "safety" && (

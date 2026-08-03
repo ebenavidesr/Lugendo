@@ -2564,6 +2564,206 @@ paths:
         "404":
           description: Country not classified for this traveler
 
+  /traveler-tag-catalog:
+    get:
+      operationId: listTravelerTagCatalog
+      tags: [traveler]
+      summary: Closed catalog of traveler tags (#155) -- 9 "estilo" + 29 "intereses", each with a short description for the selector
+      responses:
+        "200":
+          description: Full tag catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TravelerTagCatalogEntry"
+
+  /me/travel-profile:
+    get:
+      operationId: getMyTravelProfile
+      tags: [traveler]
+      summary: The logged-in traveler's own shareable profile (unfiltered -- always includes all blocks regardless of the visibility switches)
+      responses:
+        "200":
+          description: Own travel profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyTravelProfile"
+    patch:
+      operationId: updateMyTravelProfile
+      tags: [traveler]
+      summary: Update visibility switches (visited countries, wanted countries, tags) and/or agency tag consent -- all default false, opt-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TravelProfileVisibilityUpdate"
+      responses:
+        "200":
+          description: Updated travel profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyTravelProfile"
+        "400":
+          description: Validation error
+
+  /me/travel-profile/avatar:
+    post:
+      operationId: uploadMyTravelProfileAvatar
+      tags: [traveler]
+      summary: Upload a profile photo (JPG/PNG/WebP, max 5MB, square-cropped client-side, resized server-side). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+      # No requestBody schema: same convention as POST /agencies/{agencyId}/logo -- a
+      # `format: binary` field here would make orval emit a File/Blob-typed zod schema,
+      # which fails to compile in lib/api-zod (no DOM lib).
+      responses:
+        "200":
+          description: Updated travel profile with the new avatarUrl
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyTravelProfile"
+        "400":
+          description: Invalid file (format not allowed, over 5MB, or unreadable image)
+    delete:
+      operationId: deleteMyTravelProfileAvatar
+      tags: [traveler]
+      summary: Remove the traveler's uploaded profile photo (falls back to initials)
+      responses:
+        "200":
+          description: Updated travel profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyTravelProfile"
+
+  /me/travel-profile/tags:
+    get:
+      operationId: listMyTravelerTags
+      tags: [traveler]
+      summary: The logged-in traveler's own selected tags
+      responses:
+        "200":
+          description: Own tags
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TravelerTag"
+    post:
+      operationId: addMyTravelerTag
+      tags: [traveler]
+      summary: Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TravelerTagInput"
+      responses:
+        "201":
+          description: Tag added
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TravelerTag"
+        "404":
+          description: Tag not found in the catalog
+        "409":
+          description: Tag already added, or the axis limit (2 estilo / 8 intereses) was reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelerTagConflict"
+
+  /me/travel-profile/tags/{tagId}:
+    delete:
+      operationId: removeMyTravelerTag
+      tags: [traveler]
+      summary: Remove a tag from the traveler's profile
+      parameters:
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Tag removed
+        "404":
+          description: Tag not set for this traveler
+
+  /travelers/{userId}/travel-profile:
+    get:
+      operationId: getTravelerTravelProfile
+      tags: [traveler]
+      summary: A companion's shareable profile, filtered by their visibility switches. Only visible to travel companions (share at least one non-cancelled trip) or the traveler themself -- 403 otherwise
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Filtered travel profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TravelProfileView"
+        "403":
+          description: Not a travel companion of this traveler
+        "404":
+          description: Traveler not found
+
+  /travelers/{userId}/travel-profile/avatar:
+    get:
+      operationId: getTravelerTravelProfileAvatar
+      tags: [traveler]
+      summary: Stream a companion's profile photo. Same access check as GET /travelers/{userId}/travel-profile, re-verified on every request
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Avatar binary content
+        "403":
+          description: Not a travel companion of this traveler
+        "404":
+          description: Traveler has no avatar
+
+  /agency/travelers/{userId}/tags:
+    get:
+      operationId: getAgencyTravelerTags
+      tags: [traveler]
+      summary: Back-office view of a traveler's individual tags (admin/manager/agent/local_guide of an agency that shares a trip with the traveler). Empty unless the traveler gave explicit, separate consent
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Consent flag and tags (tags always empty when consent is false)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyTravelerTags"
+        "403":
+          description: Forbidden -- traveler has no trip with the staff member's agency
+        "404":
+          description: Not found
+
   /me/trips/{tripId}/countries:
     get:
       operationId: getMyTripCountries
@@ -4811,6 +5011,141 @@ components:
           type: string
           enum: [visitado, objetivo]
           description: The status the country is already classified under
+
+    TravelerTagCatalogEntry:
+      type: object
+      required: [id, slug, axis, label, description, sortOrder]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        axis:
+          type: string
+          enum: [estilo, intereses]
+        family:
+          type: string
+          nullable: true
+          enum: [naturaleza, cultura, ciudad, personal]
+          description: Visual grouping for "intereses" tags only (UI layout, no meaning in the data model). Always null for "estilo" tags.
+        label:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+
+    TravelerTag:
+      type: object
+      required: [id, slug, axis, label, description]
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        axis:
+          type: string
+          enum: [estilo, intereses]
+        family:
+          type: string
+          nullable: true
+          enum: [naturaleza, cultura, ciudad, personal]
+        label:
+          type: string
+        description:
+          type: string
+
+    TravelerTagInput:
+      type: object
+      required: [tagId]
+      properties:
+        tagId:
+          type: integer
+
+    TravelerTagConflict:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          enum: [AlreadyTagged, LimitExceeded]
+        axis:
+          type: string
+          enum: [estilo, intereses]
+        limit:
+          type: integer
+
+    MyTravelProfile:
+      type: object
+      required: [avatarUrl, showVisitedCountries, showWantedCountries, showTags, agencyTagsConsent, tags]
+      properties:
+        avatarUrl:
+          type: string
+          nullable: true
+        showVisitedCountries:
+          type: boolean
+        showWantedCountries:
+          type: boolean
+        showTags:
+          type: boolean
+        agencyTagsConsent:
+          type: boolean
+          description: Separate switch, off by default -- gates visibility to the traveler's own agency back office, not to companions
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TravelerTag"
+
+    TravelProfileVisibilityUpdate:
+      type: object
+      properties:
+        showVisitedCountries:
+          type: boolean
+        showWantedCountries:
+          type: boolean
+        showTags:
+          type: boolean
+        agencyTagsConsent:
+          type: boolean
+
+    TravelProfileView:
+      type: object
+      required: [id, name, avatarUrl]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        visitedCountries:
+          type: array
+          items:
+            type: string
+          description: Present only when the owner's showVisitedCountries switch is on
+        wantedCountries:
+          type: array
+          items:
+            type: string
+          description: Present only when the owner's showWantedCountries switch is on
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TravelerTag"
+          description: Present only when the owner's showTags switch is on
+
+    AgencyTravelerTags:
+      type: object
+      required: [consent, tags]
+      properties:
+        consent:
+          type: boolean
+          description: Whether the traveler gave explicit consent to show tags to the agency. When false, tags is always empty.
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/TravelerTag"
 
     TripCountryCandidate:
       type: object

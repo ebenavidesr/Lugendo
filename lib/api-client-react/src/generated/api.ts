@@ -29,6 +29,7 @@ import type {
   AddTripNoteShares201,
   Agency,
   AgencyInput,
+  AgencyTravelerTags,
   AgencyUpdate,
   AuthUser,
   ChecklistTemplate,
@@ -66,6 +67,7 @@ import type {
   ItineraryUpdate,
   ListTripMembers200,
   LoginInput,
+  MyTravelProfile,
   ParsePdfInput,
   ParsedItinerary,
   PersonalTripDayInput,
@@ -77,7 +79,13 @@ import type {
   SharedTripEntry,
   SuggestDayDescriptionInput,
   SuggestDayDescriptionResult,
+  TravelProfileView,
+  TravelProfileVisibilityUpdate,
   TravelerProfile,
+  TravelerTag,
+  TravelerTagCatalogEntry,
+  TravelerTagConflict,
+  TravelerTagInput,
   TravelerTrip,
   TravelerTripDetail,
   Trip,
@@ -8466,6 +8474,820 @@ export const useRemoveMyCountry = <TError = ErrorType<void>,
       > => {
       return useMutation(getRemoveMyCountryMutationOptions(options));
     }
+
+export const getListTravelerTagCatalogUrl = () => {
+
+
+
+
+  return `/api/traveler-tag-catalog`
+}
+
+/**
+ * @summary Closed catalog of traveler tags (#155) -- 9 "estilo" + 29 "intereses", each with a short description for the selector
+ */
+export const listTravelerTagCatalog = async ( options?: RequestInit): Promise<TravelerTagCatalogEntry[]> => {
+
+  return customFetch<TravelerTagCatalogEntry[]>(getListTravelerTagCatalogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTravelerTagCatalogQueryKey = () => {
+    return [
+    `/api/traveler-tag-catalog`
+    ] as const;
+    }
+
+
+export const getListTravelerTagCatalogQueryOptions = <TData = Awaited<ReturnType<typeof listTravelerTagCatalog>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTravelerTagCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTravelerTagCatalogQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTravelerTagCatalog>>> = ({ signal }) => listTravelerTagCatalog({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTravelerTagCatalog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTravelerTagCatalogQueryResult = NonNullable<Awaited<ReturnType<typeof listTravelerTagCatalog>>>
+export type ListTravelerTagCatalogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Closed catalog of traveler tags (#155) -- 9 "estilo" + 29 "intereses", each with a short description for the selector
+ */
+
+export function useListTravelerTagCatalog<TData = Awaited<ReturnType<typeof listTravelerTagCatalog>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTravelerTagCatalog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTravelerTagCatalogQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMyTravelProfileUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile`
+}
+
+/**
+ * @summary The logged-in traveler's own shareable profile (unfiltered -- always includes all blocks regardless of the visibility switches)
+ */
+export const getMyTravelProfile = async ( options?: RequestInit): Promise<MyTravelProfile> => {
+
+  return customFetch<MyTravelProfile>(getGetMyTravelProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyTravelProfileQueryKey = () => {
+    return [
+    `/api/me/travel-profile`
+    ] as const;
+    }
+
+
+export const getGetMyTravelProfileQueryOptions = <TData = Awaited<ReturnType<typeof getMyTravelProfile>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTravelProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyTravelProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTravelProfile>>> = ({ signal }) => getMyTravelProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyTravelProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyTravelProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getMyTravelProfile>>>
+export type GetMyTravelProfileQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The logged-in traveler's own shareable profile (unfiltered -- always includes all blocks regardless of the visibility switches)
+ */
+
+export function useGetMyTravelProfile<TData = Awaited<ReturnType<typeof getMyTravelProfile>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyTravelProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyTravelProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateMyTravelProfileUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile`
+}
+
+/**
+ * @summary Update visibility switches (visited countries, wanted countries, tags) and/or agency tag consent -- all default false, opt-in
+ */
+export const updateMyTravelProfile = async (travelProfileVisibilityUpdate: TravelProfileVisibilityUpdate, options?: RequestInit): Promise<MyTravelProfile> => {
+
+  return customFetch<MyTravelProfile>(getUpdateMyTravelProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      travelProfileVisibilityUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateMyTravelProfileMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTravelProfile>>, TError,{data: BodyType<TravelProfileVisibilityUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyTravelProfile>>, TError,{data: BodyType<TravelProfileVisibilityUpdate>}, TContext> => {
+
+const mutationKey = ['updateMyTravelProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyTravelProfile>>, {data: BodyType<TravelProfileVisibilityUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMyTravelProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyTravelProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyTravelProfile>>>
+    export type UpdateMyTravelProfileMutationBody = BodyType<TravelProfileVisibilityUpdate>
+    export type UpdateMyTravelProfileMutationError = ErrorType<void>
+
+    /**
+ * @summary Update visibility switches (visited countries, wanted countries, tags) and/or agency tag consent -- all default false, opt-in
+ */
+export const useUpdateMyTravelProfile = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyTravelProfile>>, TError,{data: BodyType<TravelProfileVisibilityUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyTravelProfile>>,
+        TError,
+        {data: BodyType<TravelProfileVisibilityUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyTravelProfileMutationOptions(options));
+    }
+
+export const getUploadMyTravelProfileAvatarUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile/avatar`
+}
+
+/**
+ * @summary Upload a profile photo (JPG/PNG/WebP, max 5MB, square-cropped client-side, resized server-side). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const uploadMyTravelProfileAvatar = async ( options?: RequestInit): Promise<MyTravelProfile> => {
+
+  return customFetch<MyTravelProfile>(getUploadMyTravelProfileAvatarUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUploadMyTravelProfileAvatarMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>, TError,void, TContext> => {
+
+const mutationKey = ['uploadMyTravelProfileAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>, void> = () => {
+
+
+          return  uploadMyTravelProfileAvatar(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadMyTravelProfileAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>>
+
+    export type UploadMyTravelProfileAvatarMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a profile photo (JPG/PNG/WebP, max 5MB, square-cropped client-side, resized server-side). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const useUploadMyTravelProfileAvatar = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadMyTravelProfileAvatar>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getUploadMyTravelProfileAvatarMutationOptions(options));
+    }
+
+export const getDeleteMyTravelProfileAvatarUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile/avatar`
+}
+
+/**
+ * @summary Remove the traveler's uploaded profile photo (falls back to initials)
+ */
+export const deleteMyTravelProfileAvatar = async ( options?: RequestInit): Promise<MyTravelProfile> => {
+
+  return customFetch<MyTravelProfile>(getDeleteMyTravelProfileAvatarUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMyTravelProfileAvatarMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteMyTravelProfileAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>, void> = () => {
+
+
+          return  deleteMyTravelProfileAvatar(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMyTravelProfileAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>>
+
+    export type DeleteMyTravelProfileAvatarMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove the traveler's uploaded profile photo (falls back to initials)
+ */
+export const useDeleteMyTravelProfileAvatar = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMyTravelProfileAvatar>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteMyTravelProfileAvatarMutationOptions(options));
+    }
+
+export const getListMyTravelerTagsUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile/tags`
+}
+
+/**
+ * @summary The logged-in traveler's own selected tags
+ */
+export const listMyTravelerTags = async ( options?: RequestInit): Promise<TravelerTag[]> => {
+
+  return customFetch<TravelerTag[]>(getListMyTravelerTagsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyTravelerTagsQueryKey = () => {
+    return [
+    `/api/me/travel-profile/tags`
+    ] as const;
+    }
+
+
+export const getListMyTravelerTagsQueryOptions = <TData = Awaited<ReturnType<typeof listMyTravelerTags>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTravelerTags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyTravelerTagsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyTravelerTags>>> = ({ signal }) => listMyTravelerTags({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyTravelerTags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyTravelerTagsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyTravelerTags>>>
+export type ListMyTravelerTagsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The logged-in traveler's own selected tags
+ */
+
+export function useListMyTravelerTags<TData = Awaited<ReturnType<typeof listMyTravelerTags>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyTravelerTags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyTravelerTagsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddMyTravelerTagUrl = () => {
+
+
+
+
+  return `/api/me/travel-profile/tags`
+}
+
+/**
+ * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ */
+export const addMyTravelerTag = async (travelerTagInput: TravelerTagInput, options?: RequestInit): Promise<TravelerTag[]> => {
+
+  return customFetch<TravelerTag[]>(getAddMyTravelerTagUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      travelerTagInput,)
+  }
+);}
+
+
+
+
+export const getAddMyTravelerTagMutationOptions = <TError = ErrorType<void | TravelerTagConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyTravelerTag>>, TError,{data: BodyType<TravelerTagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addMyTravelerTag>>, TError,{data: BodyType<TravelerTagInput>}, TContext> => {
+
+const mutationKey = ['addMyTravelerTag'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addMyTravelerTag>>, {data: BodyType<TravelerTagInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addMyTravelerTag(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddMyTravelerTagMutationResult = NonNullable<Awaited<ReturnType<typeof addMyTravelerTag>>>
+    export type AddMyTravelerTagMutationBody = BodyType<TravelerTagInput>
+    export type AddMyTravelerTagMutationError = ErrorType<void | TravelerTagConflict>
+
+    /**
+ * @summary Add a tag to the traveler's profile -- backend rejects a 3rd "estilo" or a 9th "intereses" tag regardless of what the form allowed
+ */
+export const useAddMyTravelerTag = <TError = ErrorType<void | TravelerTagConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addMyTravelerTag>>, TError,{data: BodyType<TravelerTagInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addMyTravelerTag>>,
+        TError,
+        {data: BodyType<TravelerTagInput>},
+        TContext
+      > => {
+      return useMutation(getAddMyTravelerTagMutationOptions(options));
+    }
+
+export const getRemoveMyTravelerTagUrl = (tagId: number,) => {
+
+
+
+
+  return `/api/me/travel-profile/tags/${tagId}`
+}
+
+/**
+ * @summary Remove a tag from the traveler's profile
+ */
+export const removeMyTravelerTag = async (tagId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveMyTravelerTagUrl(tagId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveMyTravelerTagMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyTravelerTag>>, TError,{tagId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeMyTravelerTag>>, TError,{tagId: number}, TContext> => {
+
+const mutationKey = ['removeMyTravelerTag'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeMyTravelerTag>>, {tagId: number}> = (props) => {
+          const {tagId} = props ?? {};
+
+          return  removeMyTravelerTag(tagId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveMyTravelerTagMutationResult = NonNullable<Awaited<ReturnType<typeof removeMyTravelerTag>>>
+
+    export type RemoveMyTravelerTagMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a tag from the traveler's profile
+ */
+export const useRemoveMyTravelerTag = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeMyTravelerTag>>, TError,{tagId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeMyTravelerTag>>,
+        TError,
+        {tagId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveMyTravelerTagMutationOptions(options));
+    }
+
+export const getGetTravelerTravelProfileUrl = (userId: number,) => {
+
+
+
+
+  return `/api/travelers/${userId}/travel-profile`
+}
+
+/**
+ * @summary A companion's shareable profile, filtered by their visibility switches. Only visible to travel companions (share at least one non-cancelled trip) or the traveler themself -- 403 otherwise
+ */
+export const getTravelerTravelProfile = async (userId: number, options?: RequestInit): Promise<TravelProfileView> => {
+
+  return customFetch<TravelProfileView>(getGetTravelerTravelProfileUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTravelerTravelProfileQueryKey = (userId: number,) => {
+    return [
+    `/api/travelers/${userId}/travel-profile`
+    ] as const;
+    }
+
+
+export const getGetTravelerTravelProfileQueryOptions = <TData = Awaited<ReturnType<typeof getTravelerTravelProfile>>, TError = ErrorType<void>>(userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTravelerTravelProfileQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTravelerTravelProfile>>> = ({ signal }) => getTravelerTravelProfile(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTravelerTravelProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getTravelerTravelProfile>>>
+export type GetTravelerTravelProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary A companion's shareable profile, filtered by their visibility switches. Only visible to travel companions (share at least one non-cancelled trip) or the traveler themself -- 403 otherwise
+ */
+
+export function useGetTravelerTravelProfile<TData = Awaited<ReturnType<typeof getTravelerTravelProfile>>, TError = ErrorType<void>>(
+ userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTravelerTravelProfileQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTravelerTravelProfileAvatarUrl = (userId: number,) => {
+
+
+
+
+  return `/api/travelers/${userId}/travel-profile/avatar`
+}
+
+/**
+ * @summary Stream a companion's profile photo. Same access check as GET /travelers/{userId}/travel-profile, re-verified on every request
+ */
+export const getTravelerTravelProfileAvatar = async (userId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getGetTravelerTravelProfileAvatarUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTravelerTravelProfileAvatarQueryKey = (userId: number,) => {
+    return [
+    `/api/travelers/${userId}/travel-profile/avatar`
+    ] as const;
+    }
+
+
+export const getGetTravelerTravelProfileAvatarQueryOptions = <TData = Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>, TError = ErrorType<void>>(userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTravelerTravelProfileAvatarQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>> = ({ signal }) => getTravelerTravelProfileAvatar(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTravelerTravelProfileAvatarQueryResult = NonNullable<Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>>
+export type GetTravelerTravelProfileAvatarQueryError = ErrorType<void>
+
+
+/**
+ * @summary Stream a companion's profile photo. Same access check as GET /travelers/{userId}/travel-profile, re-verified on every request
+ */
+
+export function useGetTravelerTravelProfileAvatar<TData = Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>, TError = ErrorType<void>>(
+ userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTravelerTravelProfileAvatar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTravelerTravelProfileAvatarQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetAgencyTravelerTagsUrl = (userId: number,) => {
+
+
+
+
+  return `/api/agency/travelers/${userId}/tags`
+}
+
+/**
+ * @summary Back-office view of a traveler's individual tags (admin/manager/agent/local_guide of an agency that shares a trip with the traveler). Empty unless the traveler gave explicit, separate consent
+ */
+export const getAgencyTravelerTags = async (userId: number, options?: RequestInit): Promise<AgencyTravelerTags> => {
+
+  return customFetch<AgencyTravelerTags>(getGetAgencyTravelerTagsUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAgencyTravelerTagsQueryKey = (userId: number,) => {
+    return [
+    `/api/agency/travelers/${userId}/tags`
+    ] as const;
+    }
+
+
+export const getGetAgencyTravelerTagsQueryOptions = <TData = Awaited<ReturnType<typeof getAgencyTravelerTags>>, TError = ErrorType<void>>(userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyTravelerTags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAgencyTravelerTagsQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAgencyTravelerTags>>> = ({ signal }) => getAgencyTravelerTags(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(userId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAgencyTravelerTags>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAgencyTravelerTagsQueryResult = NonNullable<Awaited<ReturnType<typeof getAgencyTravelerTags>>>
+export type GetAgencyTravelerTagsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Back-office view of a traveler's individual tags (admin/manager/agent/local_guide of an agency that shares a trip with the traveler). Empty unless the traveler gave explicit, separate consent
+ */
+
+export function useGetAgencyTravelerTags<TData = Awaited<ReturnType<typeof getAgencyTravelerTags>>, TError = ErrorType<void>>(
+ userId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAgencyTravelerTags>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAgencyTravelerTagsQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetMyTripCountriesUrl = (tripId: number,) => {
 

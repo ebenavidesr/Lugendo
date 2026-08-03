@@ -513,3 +513,16 @@ export const UserCountryStatusUpdateSchema = z.object({
 export const TripClassificationUpdateSchema = z.object({
   classification: z.enum(["programado", "realizado", "compartido"]),
 });
+
+// ─── Traveler profile (#155) ───────────────────────────────────────────────
+
+export const TravelProfileVisibilityUpdateSchema = z.object({
+  showVisitedCountries: z.boolean().optional(),
+  showWantedCountries: z.boolean().optional(),
+  showTags: z.boolean().optional(),
+  agencyTagsConsent: z.boolean().optional(),
+}).refine(data => Object.keys(data).length > 0, "Nada que actualizar");
+
+export const TravelerTagInputSchema = z.object({
+  tagId: z.number().int().positive(),
+});

@@ -15,3 +15,6 @@ export * from "./travel-advisories";
 export * from "./user-countries";
 export * from "./trip_classifications";
 export * from "./email-log";
+export * from "./traveler-profiles";
+export * from "./traveler-tag-catalog";
+export * from "./traveler-tags";

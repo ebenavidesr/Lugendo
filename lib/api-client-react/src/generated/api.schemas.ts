@@ -1402,6 +1402,126 @@ export interface UserCountryConflict {
   status: UserCountryConflictStatus;
 }
 
+export type TravelerTagCatalogEntryAxis = typeof TravelerTagCatalogEntryAxis[keyof typeof TravelerTagCatalogEntryAxis];
+
+
+export const TravelerTagCatalogEntryAxis = {
+  estilo: 'estilo',
+  intereses: 'intereses',
+} as const;
+
+/**
+ * Visual grouping for "intereses" tags only (UI layout, no meaning in the data model). Always null for "estilo" tags.
+ */
+export type TravelerTagCatalogEntryFamily = typeof TravelerTagCatalogEntryFamily[keyof typeof TravelerTagCatalogEntryFamily] | null;
+
+
+export const TravelerTagCatalogEntryFamily = {
+  naturaleza: 'naturaleza',
+  cultura: 'cultura',
+  ciudad: 'ciudad',
+  personal: 'personal',
+} as const;
+
+export interface TravelerTagCatalogEntry {
+  id: number;
+  slug: string;
+  axis: TravelerTagCatalogEntryAxis;
+  /** Visual grouping for "intereses" tags only (UI layout, no meaning in the data model). Always null for "estilo" tags. */
+  family?: TravelerTagCatalogEntryFamily;
+  label: string;
+  description: string;
+  sortOrder: number;
+}
+
+export type TravelerTagAxis = typeof TravelerTagAxis[keyof typeof TravelerTagAxis];
+
+
+export const TravelerTagAxis = {
+  estilo: 'estilo',
+  intereses: 'intereses',
+} as const;
+
+export type TravelerTagFamily = typeof TravelerTagFamily[keyof typeof TravelerTagFamily] | null;
+
+
+export const TravelerTagFamily = {
+  naturaleza: 'naturaleza',
+  cultura: 'cultura',
+  ciudad: 'ciudad',
+  personal: 'personal',
+} as const;
+
+export interface TravelerTag {
+  id: number;
+  slug: string;
+  axis: TravelerTagAxis;
+  family?: TravelerTagFamily;
+  label: string;
+  description: string;
+}
+
+export interface TravelerTagInput {
+  tagId: number;
+}
+
+export type TravelerTagConflictError = typeof TravelerTagConflictError[keyof typeof TravelerTagConflictError];
+
+
+export const TravelerTagConflictError = {
+  AlreadyTagged: 'AlreadyTagged',
+  LimitExceeded: 'LimitExceeded',
+} as const;
+
+export type TravelerTagConflictAxis = typeof TravelerTagConflictAxis[keyof typeof TravelerTagConflictAxis];
+
+
+export const TravelerTagConflictAxis = {
+  estilo: 'estilo',
+  intereses: 'intereses',
+} as const;
+
+export interface TravelerTagConflict {
+  error: TravelerTagConflictError;
+  axis?: TravelerTagConflictAxis;
+  limit?: number;
+}
+
+export interface MyTravelProfile {
+  avatarUrl: string | null;
+  showVisitedCountries: boolean;
+  showWantedCountries: boolean;
+  showTags: boolean;
+  /** Separate switch, off by default -- gates visibility to the traveler's own agency back office, not to companions */
+  agencyTagsConsent: boolean;
+  tags: TravelerTag[];
+}
+
+export interface TravelProfileVisibilityUpdate {
+  showVisitedCountries?: boolean;
+  showWantedCountries?: boolean;
+  showTags?: boolean;
+  agencyTagsConsent?: boolean;
+}
+
+export interface TravelProfileView {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  /** Present only when the owner's showVisitedCountries switch is on */
+  visitedCountries?: string[];
+  /** Present only when the owner's showWantedCountries switch is on */
+  wantedCountries?: string[];
+  /** Present only when the owner's showTags switch is on */
+  tags?: TravelerTag[];
+}
+
+export interface AgencyTravelerTags {
+  /** Whether the traveler gave explicit consent to show tags to the agency. When false, tags is always empty. */
+  consent: boolean;
+  tags: TravelerTag[];
+}
+
 export interface TripCountryCandidate {
   countryCode: string;
   countryName: string;

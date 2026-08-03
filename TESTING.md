@@ -6,6 +6,25 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #155 — Perfil de viajero compartible: etiquetas, foto y privacidad (2026-08-03)
+- [x] Un viajero puede seleccionar hasta 2 etiquetas de estilo; la tercera se rechaza en backend, no solo en la interfaz — verificado con `curl` directo contra el endpoint (3ª etiqueta de estilo → 409 `LimitExceeded`)
+- [x] Un viajero puede seleccionar hasta 8 intereses; el noveno se rechaza en backend — verificado igual (409 `LimitExceeded`)
+- [x] Las 38 etiquetas del catálogo aparecen con su descripción en el selector — verificado en navegador (9 estilo + 29 intereses agrupadas en 4 familias visuales: Naturaleza y aire libre, Cultura e historia, Ciudad y ocio, Enfoque personal)
+- [x] Un compañero de viaje ve el perfil según los tres interruptores del dueño — verificado con dos cuentas desechables compartiendo un viaje: el compañero vio países visitados y etiquetas (activados) pero no países deseados (desactivado)
+- [x] Al desactivar "países visitados", ese bloque desaparece para todos los observadores de inmediato — la resolución de visibilidad ocurre en cada petición, sin caché
+- [x] Un viajero sin viaje en común y sin relación de favorito recibe 403 al pedir el perfil por URL directa — verificado con una tercera cuenta sin viaje compartido
+- [x] La foto se ve siempre que se ve el perfil, sin interruptor propio — verificado subiendo una foto real (sharp la redimensionó a 512×512 JPEG) y descargándola como el compañero
+- [x] Sin foto subida, se muestran las iniciales — verificado en navegador
+- [x] Sin consentimiento a la agencia, el back office no ve ninguna etiqueta del viajero — verificado como admin y como manager
+- [x] Con consentimiento, agente y guía local ven las etiquetas individuales — verificado como manager de la misma agencia que el viaje del viajero (con un viaje de otra agencia, correctamente denegado con 403 hasta que hay un viaje que coincide)
+- [x] La agencia no ve países visitados ni deseados en ningún caso — estructuralmente garantizado, el endpoint de agencia solo devuelve etiquetas
+- [ ] La foto para Seguidores (#141) no incluye ningún dato de perfil de ningún viajero — no se tocó el código de #141 en esta tarea, se asume intacto por no haberlo modificado; sin verificación visual explícita
+- [x] Al revocar el consentimiento, la agencia deja de ver las etiquetas de inmediato — verificado con `curl`
+- [ ] Al eliminar un viajero de un viaje, deja de ver los perfiles de los demás si no le queda ningún viaje en común — lógica implementada (companions se recalculan en cada petición, no se cachean), pero no probado con el flujo real de "eliminar viajero de un viaje"
+- [x] Toda la resolución de visibilidad ocurre en la query del backend; el frontend nunca recibe datos que deba ocultar — los campos ausentes (`visitedCountries`, `wantedCountries`, `tags`) directamente no vienen en la respuesta cuando el interruptor está desactivado
+- [x] `pnpm run typecheck` y `pnpm run build` limpios (api-server + lugendo-app; el fallo de `mockup-sandbox` es preexistente y no relacionado, requiere `PORT` en su `vite.config.ts`)
+- [x] Verificado en navegador contra la base real con cuentas y viajes desechables (creados y eliminados por SQL directo, sin dejar rastro): toggles, selector de etiquetas, subida de foto con recorte, perfil de compañero, columna "Etiquetas" en back office
+
 ### #152 — Crear un viaje propio a partir de un viaje compartido (2026-08-01)
 - [x] Investigación previa: reutiliza `buildTripPhotoSnapshot`/`materializeTripFromSnapshot` (`traveler.ts`, tarea #141) sin escribir un segundo copiador — se llaman directamente desde el nuevo endpoint en el mismo archivo, sin necesidad de moverlas a un módulo aparte (ya comparten dependencias con otros endpoints del mismo archivo)
 - [x] Acceso resuelto reutilizando `verifyTripAccessCore` (`routes/trips.ts`), que ya devolvía `memberType` ("member"/"guest"/null) — sin escribir un helper paralelo

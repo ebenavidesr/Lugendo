@@ -20,6 +20,7 @@ import { DayPhotoZone } from "@/components/day-photo-editor";
 import { AgencyTripDocuments } from "@/components/agency-trip-documents";
 import { AgencyTripNotes } from "@/components/agency-trip-notes";
 import { TripSafetyAdvisories } from "@/components/trip-safety-advisories";
+import { AgencyTravelerTagsBadge } from "@/components/agency-traveler-tags-badge";
 import { InlineField } from "@/components/inline-field";
 import { FlightEditPanel } from "@/components/flight-edit-panel";
 import type { FlightLeg } from "@/components/flight-edit-panel";
@@ -842,7 +843,7 @@ export default function TripDetail() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Email", "Viajero", "Código", "Estado", "Aceptado"].map(h => (
+                {["Email", "Viajero", "Código", "Estado", "Aceptado", "Etiquetas"].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -862,6 +863,13 @@ export default function TripDetail() {
                     </td>
                     <td className="px-5 py-3 text-muted-foreground">
                       {inv.acceptedAt ? fmt(inv.acceptedAt) : "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      {inv.status === "accepted" && inv.travelerId ? (
+                        <AgencyTravelerTagsBadge travelerId={inv.travelerId} />
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
                     </td>
                   </tr>
                 );
