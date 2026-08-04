@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Campo Contraseña bloqueado en Safari de iPhone en /login y /register (2026-08-04)
+- [x] Diagnóstico: los campos de Contraseña (login), Contraseña y Confirmar contraseña (registro) seguían siendo inputs controlados por react-hook-form (`{...field}` con `value={field.value}`) — el mismo patrón ya diagnosticado y corregido para el campo Email el 2026-07-29 (commit `9c147dd`), pero nunca aplicado a los de contraseña. En Safari, el autofill/Keychain escribe en el DOM sin disparar el evento `input`, así que el `value` controlado revierte el campo y bloquea el tecleo posterior
+- [x] Aplicado el mismo fix que en Email: los 3 campos pasan a no controlados (`defaultValue` + `onChange`/`onBlur` manuales), conservando `name` para que `syncDomValueIntoForm` los siga sincronizando al enviar el formulario
+- [x] `pnpm run typecheck` limpio
+- [ ] Validado por Quique en Safari de iPhone/iPad: escribir la contraseña en `/login` funciona a la primera tecla
+- [ ] Validado por Quique en Safari de iPhone/iPad: escribir Contraseña y Confirmar contraseña en `/register` funciona igual
+- [ ] Sin regresión en Chrome de escritorio/móvil ni en Safari de escritorio (mostrar/ocultar contraseña, pegar, Llavero)
+- [ ] Login y registro completan correctamente de principio a fin, con la contraseña introducida conservada
+
 ### #155 — Perfil de viajero compartible: etiquetas, foto y privacidad (2026-08-03)
 - [x] **Cambio de alcance (2026-08-03, pedido por Quique):** se elimina el límite de 2 etiquetas de estilo / 8 de intereses. Un viajero puede seleccionar cualquier número de etiquetas de cada eje; solo se rechaza (409 `AlreadyTagged`) volver a añadir una etiqueta ya seleccionada. La sección "Perfil compartible" del perfil del viajero pasa a ser colapsable (cerrada por defecto, con resumen "X de 4 activados" en la cabecera)
 - [x] Las 38 etiquetas del catálogo aparecen con su descripción en el selector — verificado en navegador (9 estilo + 29 intereses agrupadas en 4 familias visuales: Naturaleza y aire libre, Cultura e historia, Ciudad y ocio, Enfoque personal)

@@ -280,11 +280,19 @@ export function Login() {
                         </div>
                         <FormControl>
                           <div className="relative">
+                            {/* Mismo bug recurrente que el campo Email (ver comentario arriba): campo no controlado para que el autofill/Keychain de Safari no lo bloquee al escribir. */}
                             <Input
                               type={showRegPassword ? "text" : "password"}
                               autoComplete="new-password"
                               className="pr-10"
-                              {...field}
+                              ref={field.ref}
+                              defaultValue={field.value}
+                              onChange={field.onChange}
+                              onBlur={(e) => {
+                                field.onChange(e.target.value);
+                                field.onBlur();
+                              }}
+                              name={field.name}
                               data-testid="input-register-password"
                             />
                             <button type="button" tabIndex={-1} onClick={() => setShowRegPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
@@ -310,7 +318,14 @@ export function Login() {
                               type={showRegConfirm ? "text" : "password"}
                               autoComplete="new-password"
                               className="pr-10"
-                              {...field}
+                              ref={field.ref}
+                              defaultValue={field.value}
+                              onChange={field.onChange}
+                              onBlur={(e) => {
+                                field.onChange(e.target.value);
+                                field.onBlur();
+                              }}
+                              name={field.name}
                               data-testid="input-register-confirm-password"
                             />
                             <button type="button" tabIndex={-1} onClick={() => setShowRegConfirm(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showRegConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}>
@@ -444,11 +459,19 @@ export function Login() {
                         </div>
                         <FormControl>
                           <div className="relative">
+                            {/* Mismo bug recurrente que el campo Email (ver comentario arriba): campo no controlado para que el autofill/Keychain de Safari no lo bloquee al escribir. */}
                             <Input
                               type={showLoginPassword ? "text" : "password"}
                               autoComplete="current-password"
                               className="pr-10"
-                              {...field}
+                              ref={field.ref}
+                              defaultValue={field.value}
+                              onChange={field.onChange}
+                              onBlur={(e) => {
+                                field.onChange(e.target.value);
+                                field.onBlur();
+                              }}
+                              name={field.name}
                               data-testid="input-login-password"
                             />
                             <button type="button" tabIndex={-1} onClick={() => setShowLoginPassword(v => !v)} className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors" aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
