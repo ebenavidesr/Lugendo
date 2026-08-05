@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (location.startsWith("/foto/")) return;
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
-      const isPublicRoute = isAuthRoute || location === "/forgot-password" || location === "/reset-password";
+      const isPublicRoute = isAuthRoute || location === "/forgot-password" || location.startsWith("/reset-password");
       const isPendingRoute = location === "/pending";
       const isVerifyEmailRoute = location === "/verify-email";
       if (!user && !isPublicRoute) {

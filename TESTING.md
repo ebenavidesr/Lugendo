@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Enlace de "restablecer contraseña" llevaba a login en vez de al formulario de reset (2026-08-05)
+- [x] **Diagnóstico** (reportado por un usuario): el fix del 2026-07-30 (commit `0b67a34`) cambió el enlace de reset de query-string (`/reset-password?token=...`) a segmento de ruta (`/reset-password/:token`) para evitar que Resend/Gmail corrompieran el `=` en tránsito. El router (`App.tsx`) y la página (`reset-password.tsx`) se actualizaron, pero **dos sitios se quedaron sin migrar**:
+  1. `use-auth.tsx`: el guard de rutas públicas comparaba `location === "/reset-password"` por igualdad exacta, así que nunca reconocía `/reset-password/<token>` como pública — el usuario deslogueado que pulsa el enlace es redirigido a `/login` antes de que la página de reset llegue a renderizar (el síntoma exacto reportado)
+  2. `users.ts` (email de alta de usuario de agencia, `sendAgencyOnboardingEmail`): seguía generando el formato antiguo `/reset-password?token=...`, que con el router actual resuelve a un token vacío y muestra "Este enlace no es válido"
+- [x] Fix 1: `use-auth.tsx` — `isPublicRoute` pasa a comparar por prefijo (`location.startsWith("/reset-password")`), igual que ya se hacía para `/foto/` y `/traveler`
+- [x] Fix 2: `users.ts` — `activateUrl` usa el mismo formato de ruta que `auth.ts` (`/reset-password/${passwordResetToken}`)
+- [x] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar en vivo en este contenedor** — no hay `.env` configurado (`DATABASE_URL`/`SESSION_SECRET`) para levantar `api-server` localmente aquí; verificado solo por lectura de código y trazado del flujo completo (enlace generado en backend → ruta del router → guard de `use-auth.tsx` → página `reset-password.tsx`)
+- [ ] Validar en producción tras desplegar: solicitar "Olvidé mi contraseña", pulsar el enlace del email real (incluido en Safari de iPhone, que es donde se reportó el bug), confirmar que se queda en el formulario de nueva contraseña sin pasar por login, y que el login posterior funciona con la contraseña nueva
+- [ ] Validar el flujo de alta de usuario de agencia (Equipo → Crear usuario con rol no-viajero): el email de activación lleva al mismo formulario de nueva contraseña correctamente
+
 ### Fix — Campo Contraseña bloqueado en Safari de iPhone en /login y /register (2026-08-04)
 - [x] Diagnóstico: los campos de Contraseña (login), Contraseña y Confirmar contraseña (registro) seguían siendo inputs controlados por react-hook-form (`{...field}` con `value={field.value}`) — el mismo patrón ya diagnosticado y corregido para el campo Email el 2026-07-29 (commit `9c147dd`), pero nunca aplicado a los de contraseña. En Safari, el autofill/Keychain escribe en el DOM sin disparar el evento `input`, así que el `value` controlado revierte el campo y bloquea el tecleo posterior
 - [x] Aplicado el mismo fix que en Email: los 3 campos pasan a no controlados (`defaultValue` + `onChange`/`onBlur` manuales), conservando `name` para que `syncDomValueIntoForm` los siga sincronizando al enviar el formulario

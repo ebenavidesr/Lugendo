@@ -61,7 +61,7 @@ router.post("/users", requireRoles("admin", "manager"), validate(UserInputSchema
         to: user.email,
         name: user.name,
         agencyName: agency.name,
-        activateUrl: `${PUBLIC_APP_URL}/reset-password?token=${passwordResetToken}`,
+        activateUrl: `${PUBLIC_APP_URL}/reset-password/${passwordResetToken}`,
       }).catch((err) => req.log.error({ err }, "Failed to send agency onboarding email"));
     }
   }
