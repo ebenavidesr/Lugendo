@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Mejora — Opción "Compartir con todos" al elegir destinatarios de notas y documentos (2026-08-05)
+- [x] El selector de destinatarios (`resource-share-panel.tsx`, compartido por Notas y Documentos del viajero) ya aceptaba un array de `travelerIds` de punta a punta (prop `onAdd`, mutaciones `addShares` y endpoint backend, que ya filtra IDs válidos y excluye al propio dueño) — solo el picker de un solo click por viajero, sin opción de bulk
+- [x] Se añade "Compartir con todos (N)" como primera opción del desplegable, visible solo cuando quedan 2+ viajeros disponibles por añadir; añade a todos los que faltan en una sola llamada
+- [x] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar en vivo en este contenedor** — no hay `.env` configurado para levantar los servidores aquí; verificado por lectura de código y typecheck
+- [ ] Validar en producción: en un viaje con varios viajeros, abrir el selector de destinatarios de una nota o de un documento propio y confirmar que "Compartir con todos" añade a todos los que faltan de una vez
+- [ ] Con solo 1 viajero disponible para añadir, la opción "Compartir con todos" no aparece (queda solo el ítem individual)
+- [ ] Añadir individualmente después de usar "Compartir con todos" sigue funcionando igual (sin duplicados, sin errores)
+
 ### Fix — Nombre de la actividad no era editable en el panel rápido de día (2026-08-05)
 - [x] **Diagnóstico**: el panel de detalle/edición de actividad (`activity-detail-sheet.tsx`, usado desde el detalle de viaje y de itinerario) permitía editar dirección, duración, horario, notas, etc., pero el nombre de la actividad se mostraba como texto estático en la cabecera — sin campo para cambiarlo. El backend ya soportaba renombrar en ambos casos (`ActivityUpdate.name` para actividades de catálogo — ya usado por este mismo panel para dirección/duración —, y `TripDayActivityUpdate.activityTitle` para actividades "Por libre" del viajero, ya validado en el backend aunque no expuesto en el frontend)
 - [x] Actividades de catálogo (agencia/itinerario): campo "Nombre" en la sección "Datos generales de la actividad", guarda vía `PATCH /activities/:id` — cambia el nombre en el catálogo compartido (mismo alcance que ya tenían dirección/duración ahí)

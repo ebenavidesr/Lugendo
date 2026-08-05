@@ -7,6 +7,7 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useListTripMembers, getListTripMembersQueryKey } from "@workspace/api-client-react";
@@ -94,6 +95,21 @@ export function ResourceSharePanel({
               <CommandEmpty>
                 {membersQuery.isLoading ? "Cargando…" : "No hay más viajeros disponibles."}
               </CommandEmpty>
+              {availableMembers.length > 1 && (
+                <>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__share_with_all__"
+                      onSelect={() => { onAdd(availableMembers.map(m => m.id)); setPickerOpen(false); }}
+                      className="font-medium"
+                    >
+                      <Users className="mr-2 h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                      Compartir con todos ({availableMembers.length})
+                    </CommandItem>
+                  </CommandGroup>
+                  <CommandSeparator />
+                </>
+              )}
               <CommandGroup>
                 {availableMembers.map(m => (
                   <CommandItem
