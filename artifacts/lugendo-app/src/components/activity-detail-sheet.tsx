@@ -86,9 +86,11 @@ export function ActivityDetailSheet({
   const [address, setAddress] = useState("");
   const [durationHours, setDurationHours] = useState("");
   const [selectedDayId, setSelectedDayId] = useState(dayId);
+  const [name, setName] = useState("");
 
   useEffect(() => {
     if (open && activity) {
+      setName(activity.activityName ?? "");
       setStartTime(activity.startTime ?? "");
       setEndTime(activity.endTime ?? "");
       setNotes(activity.notes ?? "");
@@ -143,6 +145,7 @@ export function ActivityDetailSheet({
 
   const handleSave = async () => {
     const catalogChanged = !isAdHoc && (
+      name.trim() !== (activity.activityName ?? "") ||
       address !== (activity.address ?? "") ||
       durationHours !== (activity.durationHours != null ? String(activity.durationHours) : "")
     );
@@ -154,6 +157,7 @@ export function ActivityDetailSheet({
             {
               activityId: activity.activityId!,
               data: {
+                ...(name.trim() !== (activity.activityName ?? "") ? { name: name.trim() || undefined } : {}),
                 ...(address !== (activity.address ?? "") ? { address: address || undefined } : {}),
                 ...(durationHours !== (activity.durationHours != null ? String(activity.durationHours) : "")
                   ? { durationHours: durationHours ? parseFloat(durationHours) : undefined }
@@ -201,6 +205,7 @@ export function ActivityDetailSheet({
                 addressOverride: addressOverride || null,
                 included,
                 transportMode: (transportMode || null) as import("@workspace/api-client-react").DayActivityInput["transportMode"],
+                ...(isAdHoc && name.trim() !== (activity.activityName ?? "") ? { activityTitle: name.trim() || undefined } : {}),
                 ...(isPorLibre ? { costAmount: costAmount ? parseFloat(costAmount) : null } : {}),
               },
             },
@@ -288,6 +293,18 @@ export function ActivityDetailSheet({
                   </p>
                   <div>
                     <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                      Nombre
+                    </label>
+                    <Input
+                      placeholder="Nombre de la actividad"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      className="h-9 text-[13px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
                       <MapPin className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
                       Dirección (catálogo)
                     </label>
@@ -321,6 +338,21 @@ export function ActivityDetailSheet({
                 <p className="text-[10px] font-semibold uppercase tracking-wider opacity-50" style={{ color: "var(--noche)" }}>
                   Detalles para este día
                 </p>
+
+                {isAdHoc && (
+                  <div>
+                    <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
+                      <Pencil className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
+                      Nombre
+                    </label>
+                    <Input
+                      placeholder="Nombre de la actividad"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
+                      className="h-9 text-[13px]"
+                    />
+                  </div>
+                )}
 
                 {days.length > 1 && (
                   <div>

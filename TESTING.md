@@ -6,6 +6,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Nombre de la actividad no era editable en el panel rápido de día (2026-08-05)
+- [x] **Diagnóstico**: el panel de detalle/edición de actividad (`activity-detail-sheet.tsx`, usado desde el detalle de viaje y de itinerario) permitía editar dirección, duración, horario, notas, etc., pero el nombre de la actividad se mostraba como texto estático en la cabecera — sin campo para cambiarlo. El backend ya soportaba renombrar en ambos casos (`ActivityUpdate.name` para actividades de catálogo — ya usado por este mismo panel para dirección/duración —, y `TripDayActivityUpdate.activityTitle` para actividades "Por libre" del viajero, ya validado en el backend aunque no expuesto en el frontend)
+- [x] Actividades de catálogo (agencia/itinerario): campo "Nombre" en la sección "Datos generales de la actividad", guarda vía `PATCH /activities/:id` — cambia el nombre en el catálogo compartido (mismo alcance que ya tenían dirección/duración ahí)
+- [x] Actividades "Por libre" del viajero (sin vínculo a catálogo): campo "Nombre" en "Detalles para este día", guarda vía `PATCH` del enlace día-actividad del viaje (`activityTitle`, por viaje, no afecta a otros viajes)
+- [x] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar en vivo en este contenedor** — no hay `.env` configurado para levantar los servidores aquí; verificado por lectura de código y typecheck
+- [ ] Validar en producción: renombrar una actividad de catálogo desde el panel de un viaje y confirmar que el nuevo nombre aparece en todos los viajes/itinerarios que la usan
+- [ ] Validar en producción: renombrar una actividad "Por libre" añadida por un viajero y confirmar que solo cambia en ese viaje
+- [ ] Sin regresión en el resto de campos del panel (dirección, duración, horario, notas, participantes, coste)
+
 ### Fix — Enlace de "restablecer contraseña" llevaba a login en vez de al formulario de reset (2026-08-05)
 - [x] **Diagnóstico** (reportado por un usuario): el fix del 2026-07-30 (commit `0b67a34`) cambió el enlace de reset de query-string (`/reset-password?token=...`) a segmento de ruta (`/reset-password/:token`) para evitar que Resend/Gmail corrompieran el `=` en tránsito. El router (`App.tsx`) y la página (`reset-password.tsx`) se actualizaron, pero **dos sitios se quedaron sin migrar**:
   1. `use-auth.tsx`: el guard de rutas públicas comparaba `location === "/reset-password"` por igualdad exacta, así que nunca reconocía `/reset-password/<token>` como pública — el usuario deslogueado que pulsa el enlace es redirigido a `/login` antes de que la página de reset llegue a renderizar (el síntoma exacto reportado)
