@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import {
-  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X, ExternalLink,
+  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X, ExternalLink, Users,
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
   useAddTripDocumentShares, useRemoveTripDocumentShare,
+  useListTripMembers, getListTripMembersQueryKey,
   getTripDocumentDownloadUrl,
 } from "@workspace/api-client-react";
 import type { TripDocument, TravelerTripDetail } from "@workspace/api-client-react";
@@ -17,6 +18,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { ResourceSharePanel } from "@/components/resource-share-panel";
 
@@ -98,12 +100,17 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [previewingId, setPreviewingId] = useState<number | null>(null);
   const [preview, setPreview] = useState<PreviewState | null>(null);
+  const [showShareAllDialog, setShowShareAllDialog] = useState(false);
+  const [isSharingAll, setIsSharingAll] = useState(false);
 
   const { data: documents, isLoading } = useListTripDocuments(tripId);
   const createDoc = useCreateTripDocument();
   const deleteDoc = useDeleteTripDocument();
   const addShares = useAddTripDocumentShares();
   const removeShare = useRemoveTripDocumentShare();
+  const membersQuery = useListTripMembers(tripId, {
+    query: { queryKey: getListTripMembersQueryKey(tripId) },
+  });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/documents`] });
 
@@ -232,6 +239,35 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const agencyDocs = documents?.filter((d: TripDocument) => isAgencyUpload(d)) ?? [];
   const travelerDocs = documents?.filter((d: TripDocument) => !isAgencyUpload(d)) ?? [];
 
+  // "Compartir todos" (#155 follow-up): only fills gaps -- documents where the owner deliberately
+  // left someone out are left untouched, matching the per-document picker's semantics.
+  const otherMembers = (membersQuery.data?.members ?? []).filter(m => m.id !== user?.id);
+  const ownDocs = (documents as TripDocument[] | undefined)?.filter(d => d.userId === user?.id) ?? [];
+  const docGaps = ownDocs
+    .map(doc => ({
+      doc,
+      missing: otherMembers.filter(m => !(doc.sharedWith ?? []).some(s => s.id === m.id)),
+    }))
+    .filter(g => g.missing.length > 0);
+  const affectedTravelerCount = new Set(docGaps.flatMap(g => g.missing.map(m => m.id))).size;
+  const canShareAll = ownDocs.length > 0 && otherMembers.length > 0;
+
+  const handleShareAll = async () => {
+    setIsSharingAll(true);
+    try {
+      await Promise.all(docGaps.map(g => addShares.mutateAsync({
+        tripId, documentId: g.doc.id, data: { travelerIds: g.missing.map(m => m.id) },
+      })));
+      invalidate();
+      toast({ title: "Documentos compartidos" });
+      setShowShareAllDialog(false);
+    } catch {
+      toast({ variant: "destructive", title: "No se pudieron compartir todos los documentos" });
+    } finally {
+      setIsSharingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {hasFlightInfo && (
@@ -335,16 +371,30 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
             Mis documentos
           </p>
-          <Button
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            style={{ background: "var(--terra)", color: "#fff" }}
-            className="h-8 gap-1.5 text-[12px]"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            {isUploading ? "Subiendo…" : "Subir archivo"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {canShareAll && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowShareAllDialog(true)}
+                className="h-8 gap-1.5 text-[12px]"
+                style={{ borderColor: "var(--indigo)", color: "var(--indigo)" }}
+              >
+                <Users className="w-3.5 h-3.5" />
+                Compartir todos
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              style={{ background: "var(--terra)", color: "#fff" }}
+              className="h-8 gap-1.5 text-[12px]"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {isUploading ? "Subiendo…" : "Subir archivo"}
+            </Button>
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -353,6 +403,38 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
             onChange={handleFileChange}
           />
         </div>
+
+        <Dialog open={showShareAllDialog} onOpenChange={setShowShareAllDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle style={{ color: "var(--noche)" }}>Compartir todos tus documentos</DialogTitle>
+            </DialogHeader>
+            <p className="text-[13px] text-muted-foreground">
+              {docGaps.length === 0
+                ? "Ya has compartido todos tus documentos con todos los viajeros de este viaje."
+                : `Vas a compartir ${docGaps.length} documento${docGaps.length === 1 ? "" : "s"} con ${affectedTravelerCount} viajero${affectedTravelerCount === 1 ? "" : "s"} que aún no ${affectedTravelerCount === 1 ? "tiene" : "tienen"} acceso a alguno de ellos. No se quitará a nadie de los documentos ya compartidos.`}
+            </p>
+            <DialogFooter>
+              {docGaps.length === 0 ? (
+                <Button size="sm" onClick={() => setShowShareAllDialog(false)}>Entendido</Button>
+              ) : (
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setShowShareAllDialog(false)} disabled={isSharingAll}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleShareAll}
+                    disabled={isSharingAll}
+                    style={{ background: "var(--terra)", color: "#fff" }}
+                  >
+                    {isSharingAll ? "Compartiendo…" : "Compartir"}
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {isLoading ? (
           <div className="space-y-2">

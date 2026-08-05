@@ -6,6 +6,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Mejora — Botón "Compartir todas/todos" para notas y documentos propios del viajero (2026-08-05)
+- [x] Nuevo botón "Compartir todas" (Notas) / "Compartir todos" (Documentos), en índigo, junto a "Nueva nota"/"Subir archivo" — comparte de una vez todas las notas/documentos propios del viajero con los viajeros del mismo viaje que aún no tienen acceso
+- [x] Solo rellena huecos: nunca quita a nadie ni comparte más allá de lo ya compartido — si el dueño excluyó a alguien a propósito en un elemento concreto, esta acción no lo vuelve a añadir ahí
+- [x] Diálogo de confirmación antes de ejecutar, con el recuento real de elementos y viajeros afectados; si ya está todo compartido, muestra un mensaje informativo en vez de la confirmación
+- [x] Se oculta cuando no aplica: sin notas/documentos propios, o si el viaje solo tiene 1 viajero
+- [x] `pnpm run typecheck` limpio
+- [ ] **No se pudo probar en vivo en este contenedor** — no hay `.env` configurado para levantar los servidores aquí; verificado por lectura de código y typecheck
+- [ ] Validar en producción: en un viaje con varios viajeros y varias notas/documentos propios sin compartir del todo, pulsar "Compartir todas/todos", confirmar el recuento mostrado y verificar que tras confirmar todos los viajeros ganan acceso a los elementos que les faltaban
+- [ ] Confirmar que una nota/documento donde ya excluiste a alguien a propósito no lo vuelve a compartir con esa persona tras usar el botón bulk
+- [ ] Con todo ya compartido, el botón sigue visible pero el diálogo muestra "ya está todo compartido" sin acción de confirmar
+- [ ] Con un solo viajero en el viaje (o sin notas/documentos propios), el botón no aparece
+
 ### Mejora — Opción "Compartir con todos" al elegir destinatarios de notas y documentos (2026-08-05)
 - [x] El selector de destinatarios (`resource-share-panel.tsx`, compartido por Notas y Documentos del viajero) ya aceptaba un array de `travelerIds` de punta a punta (prop `onAdd`, mutaciones `addShares` y endpoint backend, que ya filtra IDs válidos y excluye al propio dueño) — solo el picker de un solo click por viajero, sin opción de bulk
 - [x] Se añade "Compartir con todos (N)" como primera opción del desplegable, visible solo cuando quedan 2+ viajeros disponibles por añadir; añade a todos los que faltan en una sola llamada

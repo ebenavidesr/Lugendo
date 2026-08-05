@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { StickyNote, Plus, Pencil, Trash2, Check, X, Building2 } from "lucide-react";
+import { StickyNote, Plus, Pencil, Trash2, Check, X, Building2, Users } from "lucide-react";
 import {
   useListMyTripNotes, useCreateTripNote, useUpdateTripNote, useDeleteTripNote,
-  useAddTripNoteShares, useRemoveTripNoteShare,
+  useAddTripNoteShares, useRemoveTripNoteShare, useListTripMembers, getListTripMembersQueryKey,
 } from "@workspace/api-client-react";
 import type { TripNote, TravelerTripDetail } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,9 @@ import { ResourceSharePanel } from "@/components/resource-share-panel";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 
 const AGENCY_ROLES = new Set(["admin", "manager", "agent"]);
 
@@ -46,6 +49,9 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   const deleteNote = useDeleteTripNote();
   const addShares = useAddTripNoteShares();
   const removeShare = useRemoveTripNoteShare();
+  const membersQuery = useListTripMembers(tripId, {
+    query: { queryKey: getListTripMembersQueryKey(tripId) },
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState("");
@@ -53,6 +59,8 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   const [endDayNumber, setEndDayNumber] = useState<string>("none");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [showShareAllDialog, setShowShareAllDialog] = useState(false);
+  const [isSharingAll, setIsSharingAll] = useState(false);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/notes`] });
 
@@ -140,24 +148,99 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
   const agencyNotes = allNotes.filter(isAgencyNote);
   const myNotes = allNotes.filter(n => !isAgencyNote(n));
 
+  // "Compartir todas" (#155 follow-up): only fills gaps -- notes where the owner deliberately
+  // left someone out are left untouched, matching the per-note picker's semantics.
+  const otherMembers = (membersQuery.data?.members ?? []).filter(m => m.id !== user?.id);
+  const ownNotes = allNotes.filter(n => n.userId === user?.id);
+  const noteGaps = ownNotes
+    .map(note => ({
+      note,
+      missing: otherMembers.filter(m => !(note.sharedWith ?? []).some(s => s.id === m.id)),
+    }))
+    .filter(g => g.missing.length > 0);
+  const affectedTravelerCount = new Set(noteGaps.flatMap(g => g.missing.map(m => m.id))).size;
+  const canShareAll = ownNotes.length > 0 && otherMembers.length > 0;
+
+  const handleShareAll = async () => {
+    setIsSharingAll(true);
+    try {
+      await Promise.all(noteGaps.map(g => addShares.mutateAsync({
+        tripId, noteId: g.note.id, data: { travelerIds: g.missing.map(m => m.id) },
+      })));
+      invalidate();
+      toast({ title: "Notas compartidas" });
+      setShowShareAllDialog(false);
+    } catch {
+      toast({ variant: "destructive", title: "No se pudieron compartir todas las notas" });
+    } finally {
+      setIsSharingAll(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-medium" style={{ color: "var(--noche)" }}>
           Mis notas
         </p>
-        {!showForm && (
-          <Button
-            size="sm"
-            onClick={() => setShowForm(true)}
-            style={{ background: "var(--terra)", color: "#fff" }}
-            className="h-8 gap-1.5 text-[12px]"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Nueva nota
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {canShareAll && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowShareAllDialog(true)}
+              className="h-8 gap-1.5 text-[12px]"
+              style={{ borderColor: "var(--indigo)", color: "var(--indigo)" }}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Compartir todas
+            </Button>
+          )}
+          {!showForm && (
+            <Button
+              size="sm"
+              onClick={() => setShowForm(true)}
+              style={{ background: "var(--terra)", color: "#fff" }}
+              className="h-8 gap-1.5 text-[12px]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Nueva nota
+            </Button>
+          )}
+        </div>
       </div>
+
+      <Dialog open={showShareAllDialog} onOpenChange={setShowShareAllDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle style={{ color: "var(--noche)" }}>Compartir todas tus notas</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] text-muted-foreground">
+            {noteGaps.length === 0
+              ? "Ya has compartido todas tus notas con todos los viajeros de este viaje."
+              : `Vas a compartir ${noteGaps.length} nota${noteGaps.length === 1 ? "" : "s"} con ${affectedTravelerCount} viajero${affectedTravelerCount === 1 ? "" : "s"} que aún no ${affectedTravelerCount === 1 ? "tiene" : "tienen"} acceso a alguna de ellas. No se quitará a nadie de las notas ya compartidas.`}
+          </p>
+          <DialogFooter>
+            {noteGaps.length === 0 ? (
+              <Button size="sm" onClick={() => setShowShareAllDialog(false)}>Entendido</Button>
+            ) : (
+              <>
+                <Button size="sm" variant="outline" onClick={() => setShowShareAllDialog(false)} disabled={isSharingAll}>
+                  Cancelar
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleShareAll}
+                  disabled={isSharingAll}
+                  style={{ background: "var(--terra)", color: "#fff" }}
+                >
+                  {isSharingAll ? "Compartiendo…" : "Compartir"}
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {showForm && (
         <div className="bg-card border border-border rounded-[14px] p-4 space-y-3">
