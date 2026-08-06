@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — Botón de editar día no respondía en iPhone Safari (2026-08-06)
+- [x] **Diagnóstico**: el lapicero de "Editar día" (`trip-day-card.tsx`) se renderiza superpuesto sobre la foto del día dentro de `DayPhotoZone` (`day-photo-editor.tsx`) — un contenedor con su propio `onClick` (expande/colapsa la tarjeta) que contiene una `<img>` de fondo a pantalla completa sin `pointer-events-none`. En iOS Safari, el touch-to-click se resuelve por `elementFromPoint` en el punto exacto del toque, y las imágenes tienen su propio manejo táctil nativo (arrastre/callout) que puede ganarle la resolución del toque al botón superpuesto — algo que no ocurre con clics de ratón en escritorio, de ahí que solo fallara en iPhone
+- [x] Fix: `pointer-events-none` en la `<img>` (y en el icono de cámara del estado sin foto) — la imagen es puramente decorativa y nunca necesita recibir el toque, así que queda fuera del hit-testing y el toque siempre resuelve al botón o al contenedor
+- [x] `DayPhotoZone` es un componente compartido (viajero, back office de un viaje, constructor de itinerarios de agencia) — un solo cambio cubre las tres superficies
+- [x] `pnpm run typecheck` y `pnpm run build` limpios
+- [ ] **No se pudo probar en un iPhone real en este contenedor** — verificado por lectura de código y diagnóstico del patrón, no en dispositivo. Validar tras desplegar: en un viaje propio del viajero, con "Editar" activado, tocar el lapicero sobre la foto de un día expandido en Safari de iPhone y confirmar que abre el formulario de edición del día (antes no pasaba nada)
+- [ ] Confirmar que tocar el resto de la foto sigue colapsando/expandiendo la tarjeta con normalidad
+- [ ] Repetir la prueba en el detalle de un viaje de agencia (back office) y en una plantilla de Itinerarios, ambos también usan `DayPhotoZone`
+
 ### Mejora — "Compartir con todos" incluye a futuros viajeros del viaje (Notas, Documentos, Enlaces, Actividades) (2026-08-06)
 - [x] **Diagnóstico**: "Compartir con todos" era un snapshot de una sola vez — insertaba filas de compartición solo para quien ya fuera miembro del viaje en ese momento. Confirmado también que aceptar una invitación o compartición no hacía ningún backfill de contenido ya compartido. Actividades ("por libre", #151) no tenía ni siquiera la opción de compartir en bloque — se añade como funcionalidad nueva con la misma lógica desde el principio
 - [x] Nueva columna `shared_with_all` (boolean, default false) en `trip_notes`, `trip_documents`, `trip_links` y `trip_day_activities` — marca la intención "compartir con todos, incluidos quienes se unan después"

@@ -268,9 +268,14 @@ export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, onClick
       onClick={onClick}
     >
       {photoUrl ? (
-        <img src={photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        // pointer-events-none: a full-bleed <img> left hit-testable absorbs the tap on iOS
+        // Safari before it reaches the buttons layered on top (edit pencil, day badge actions) --
+        // iOS resolves touch-to-click via elementFromPoint at the exact point and images have
+        // their own native touch handling (drag-out/callout) that can win that resolution, unlike
+        // desktop's mouse-based click model. Purely decorative here, so it never needs the pointer.
+        <img src={photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
       ) : (
-        <Camera className="w-8 h-8 opacity-30" style={{ color: "var(--noche)" }} />
+        <Camera className="w-8 h-8 opacity-30 pointer-events-none" style={{ color: "var(--noche)" }} />
       )}
 
       {children}
