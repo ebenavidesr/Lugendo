@@ -56,6 +56,8 @@ export interface DayActivity {
   /** Solo presente en la vista de viajero -- creador o participante de esta actividad por libre. */
   isMine?: boolean;
   participants?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity's creator. */
+  sharedWithAll?: boolean;
   /** Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida). */
   warning?: string;
 }

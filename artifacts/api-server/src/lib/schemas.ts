@@ -450,6 +450,10 @@ export const TripDocumentRenameSchema = z.object({
 
 export const TripResourceSharesInputSchema = z.object({
   travelerIds: z.array(z.number().int().positive()).min(1),
+  // When true, the resource is also flagged "shared with all" so travelers who join the trip
+  // *after* this call are auto-backfilled a share row (see backfillSharedWithAll), instead of
+  // "share with all" only covering whoever happened to be a member at the time of the click.
+  shareWithAll: z.boolean().optional(),
 });
 
 // "Enlaces" (links) -- independent feature reusing the trip_documents ownership/visibility

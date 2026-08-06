@@ -21,7 +21,10 @@ interface ResourceSharePanelProps {
   isOwner: boolean;
   isRecipient: boolean;
   sharedWith: { id: number; name?: string | null }[];
-  onAdd: (travelerIds: number[]) => void;
+  // When true, travelers who join the trip later are auto-shared this resource too -- not just
+  // whoever was already a trip member when "Compartir con todos" was clicked.
+  sharedWithAll?: boolean;
+  onAdd: (travelerIds: number[], shareWithAll?: boolean) => void;
   onRemove: (travelerId: number) => void;
   isAdding?: boolean;
   isRemoving?: boolean;
@@ -29,7 +32,7 @@ interface ResourceSharePanelProps {
 }
 
 export function ResourceSharePanel({
-  tripId, isOwner, isRecipient, sharedWith, onAdd, onRemove, isAdding, isRemoving, currentUserId,
+  tripId, isOwner, isRecipient, sharedWith, sharedWithAll, onAdd, onRemove, isAdding, isRemoving, currentUserId,
 }: ResourceSharePanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const membersQuery = useListTripMembers(tripId, {
@@ -57,6 +60,16 @@ export function ResourceSharePanel({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {sharedWithAll && (
+        <span
+          className="inline-flex items-center gap-1 text-[11px] font-medium pl-2 pr-2 py-0.5 rounded-full"
+          style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+          title="Compartido con todos los viajeros del viaje, incluidos quienes se unan más adelante"
+        >
+          <Users className="w-2.5 h-2.5" />
+          Todos (futuros incl.)
+        </span>
+      )}
       {sharedWith.map(s => (
         <span
           key={s.id}
@@ -100,7 +113,7 @@ export function ResourceSharePanel({
                   <CommandGroup>
                     <CommandItem
                       value="__share_with_all__"
-                      onSelect={() => { onAdd(availableMembers.map(m => m.id)); setPickerOpen(false); }}
+                      onSelect={() => { onAdd(availableMembers.map(m => m.id), true); setPickerOpen(false); }}
                       className="font-medium"
                     >
                       <Users className="mr-2 h-3.5 w-3.5" style={{ color: "var(--terra)" }} />

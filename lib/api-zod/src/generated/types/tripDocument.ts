@@ -19,4 +19,6 @@ export interface TripDocument {
   uploaderRole: string;
   /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document's creator. */
+  sharedWithAll?: boolean;
 }

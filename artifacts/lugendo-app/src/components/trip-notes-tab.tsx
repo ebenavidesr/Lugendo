@@ -123,9 +123,9 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
     );
   };
 
-  const handleAddShares = (note: TripNote, travelerIds: number[]) => {
+  const handleAddShares = (note: TripNote, travelerIds: number[], shareWithAll?: boolean) => {
     addShares.mutate(
-      { tripId, noteId: note.id, data: { travelerIds } },
+      { tripId, noteId: note.id, data: { travelerIds, shareWithAll } },
       {
         onSuccess: invalidate,
         onError: () => toast({ variant: "destructive", title: "No se pudo compartir la nota" }),
@@ -165,7 +165,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
     setIsSharingAll(true);
     try {
       await Promise.all(noteGaps.map(g => addShares.mutateAsync({
-        tripId, noteId: g.note.id, data: { travelerIds: g.missing.map(m => m.id) },
+        tripId, noteId: g.note.id, data: { travelerIds: g.missing.map(m => m.id), shareWithAll: true },
       })));
       invalidate();
       toast({ title: "Notas compartidas" });
@@ -370,7 +370,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
                     isSaving={updateNote.isPending}
                     onDelete={() => handleDelete(note.id)}
                     isDeleting={deleteNote.isPending}
-                    onAddShares={(travelerIds) => handleAddShares(note, travelerIds)}
+                    onAddShares={(travelerIds, shareWithAll) => handleAddShares(note, travelerIds, shareWithAll)}
                     onRemoveShare={(travelerId) => handleRemoveShare(note, travelerId)}
                     isAddingShare={addShares.isPending}
                     isRemovingShare={removeShare.isPending}
@@ -402,7 +402,7 @@ export function TripNotesTab({ tripId, trip }: TripNotesTabProps) {
                     isSaving={updateNote.isPending}
                     onDelete={() => handleDelete(note.id)}
                     isDeleting={deleteNote.isPending}
-                    onAddShares={(travelerIds) => handleAddShares(note, travelerIds)}
+                    onAddShares={(travelerIds, shareWithAll) => handleAddShares(note, travelerIds, shareWithAll)}
                     onRemoveShare={(travelerId) => handleRemoveShare(note, travelerId)}
                     isAddingShare={addShares.isPending}
                     isRemovingShare={removeShare.isPending}
@@ -431,7 +431,7 @@ interface NoteCardProps {
   isSaving: boolean;
   onDelete: () => void;
   isDeleting: boolean;
-  onAddShares: (travelerIds: number[]) => void;
+  onAddShares: (travelerIds: number[], shareWithAll?: boolean) => void;
   onRemoveShare: (travelerId: number) => void;
   isAddingShare: boolean;
   isRemovingShare: boolean;
@@ -530,6 +530,7 @@ function NoteCard({
                 isOwner={isOwn}
                 isRecipient={!isOwn}
                 sharedWith={note.sharedWith ?? []}
+                sharedWithAll={note.sharedWithAll}
                 currentUserId={currentUserId}
                 isAdding={isAddingShare}
                 isRemoving={isRemovingShare}

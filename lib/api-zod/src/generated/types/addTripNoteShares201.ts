@@ -9,4 +9,6 @@ import type { ActivityParticipant } from './activityParticipant';
 
 export type AddTripNoteShares201 = {
   sharedWith: ActivityParticipant[];
+  /** Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+  sharedWithAll?: boolean;
 };

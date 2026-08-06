@@ -1251,6 +1251,7 @@ export const ListTripDayActivitiesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity\'s creator.'),
   "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 export const ListTripDayActivitiesResponse = zod.array(ListTripDayActivitiesResponseItem)
@@ -1330,6 +1331,7 @@ export const UpdateTripDayActivityResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity\'s creator.'),
   "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 
@@ -1355,6 +1357,21 @@ export const AddActivityParticipantParams = zod.object({
 
 export const AddActivityParticipantBody = zod.object({
   "travelerId": zod.number()
+})
+
+
+/**
+ * @summary Add multiple participants to a por-libre activity at once, optionally flagging "shared with all" (creator only)
+ */
+export const AddActivityParticipantsParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "dayId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+export const AddActivityParticipantsBody = zod.object({
+  "travelerIds": zod.array(zod.number()),
+  "shareWithAll": zod.boolean().optional().describe('When true, also flags the resource \"shared with all\" so travelers who join the trip afterwards are auto-included, not just current members.')
 })
 
 
@@ -1482,7 +1499,8 @@ export const ListTripDocumentsAdminResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document\'s creator.')
 })
 export const ListTripDocumentsAdminResponse = zod.array(ListTripDocumentsAdminResponseItem)
 
@@ -1525,7 +1543,8 @@ export const RenameTripDocumentAdminResponse = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document\'s creator.')
 })
 
 
@@ -1569,7 +1588,8 @@ export const ListTripLinksAdminResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.')
+})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this link too, not just current members. Only present when the caller is the link\'s creator.')
 })
 export const ListTripLinksAdminResponse = zod.array(ListTripLinksAdminResponseItem)
 
@@ -1616,7 +1636,8 @@ export const ListTripNotesAdminResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note\'s creator.')
 })
 export const ListTripNotesAdminResponse = zod.array(ListTripNotesAdminResponseItem)
 
@@ -1662,7 +1683,8 @@ export const UpdateTripNoteAdminResponse = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note\'s creator.')
 })
 
 
@@ -2176,7 +2198,8 @@ export const ListMyTripNotesResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note\'s creator.')
 })
 export const ListMyTripNotesResponse = zod.array(ListMyTripNotesResponseItem)
 
@@ -2222,7 +2245,8 @@ export const UpdateTripNoteResponse = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).')
+})).optional().describe('Recipients this note has been shared with. Only present when the caller is the note\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note\'s creator.')
 })
 
 
@@ -2244,7 +2268,8 @@ export const AddTripNoteSharesParams = zod.object({
 })
 
 export const AddTripNoteSharesBody = zod.object({
-  "travelerIds": zod.array(zod.number())
+  "travelerIds": zod.array(zod.number()),
+  "shareWithAll": zod.boolean().optional().describe('When true, also flags the resource \"shared with all\" so travelers who join the trip afterwards are auto-included, not just current members.')
 })
 
 
@@ -2426,7 +2451,8 @@ export const ListTripDocumentsResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).')
+})).optional().describe('Recipients this document has been shared with. Only present when the caller is the document\'s creator (#153).'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document\'s creator.')
 })
 export const ListTripDocumentsResponse = zod.array(ListTripDocumentsResponseItem)
 
@@ -2463,7 +2489,8 @@ export const AddTripDocumentSharesParams = zod.object({
 })
 
 export const AddTripDocumentSharesBody = zod.object({
-  "travelerIds": zod.array(zod.number())
+  "travelerIds": zod.array(zod.number()),
+  "shareWithAll": zod.boolean().optional().describe('When true, also flags the resource \"shared with all\" so travelers who join the trip afterwards are auto-included, not just current members.')
 })
 
 
@@ -2495,7 +2522,8 @@ export const ListTripLinksResponseItem = zod.object({
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
-})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.')
+})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.'),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-shared this link too, not just current members. Only present when the caller is the link\'s creator.')
 })
 export const ListTripLinksResponse = zod.array(ListTripLinksResponseItem)
 
@@ -2531,7 +2559,8 @@ export const AddTripLinkSharesParams = zod.object({
 })
 
 export const AddTripLinkSharesBody = zod.object({
-  "travelerIds": zod.array(zod.number())
+  "travelerIds": zod.array(zod.number()),
+  "shareWithAll": zod.boolean().optional().describe('When true, also flags the resource \"shared with all\" so travelers who join the trip afterwards are auto-included, not just current members.')
 })
 
 
@@ -3268,6 +3297,7 @@ export const ListDayActivitiesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity\'s creator.'),
   "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 export const ListDayActivitiesResponse = zod.array(ListDayActivitiesResponseItem)
@@ -3340,6 +3370,7 @@ export const UpdateItineraryDayActivityResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
+  "sharedWithAll": zod.boolean().optional().describe('When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity\'s creator.'),
   "warning": zod.string().optional().describe('Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).')
 })
 

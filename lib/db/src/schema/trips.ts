@@ -94,6 +94,11 @@ export const tripDayActivitiesTable = pgTable("trip_day_activities", {
   // en ningún otro sitio -- pero vive en columna propia para que la #136 no necesite migrar.
   costAmount: numeric("cost_amount", { precision: 10, scale: 2 }),
   costCurrency: text("cost_currency").default("EUR"),
+  // Set by the "Compartir con todos" bulk action on a por-libre activity's participant picker:
+  // travelers who join the trip *after* this was set are auto-backfilled a participant row (see
+  // backfillSharedWithAll in the api-server), instead of a one-time snapshot of current members.
+  // Meaningless for included (agency) activities, which are already visible to everyone.
+  sharedWithAll: boolean("shared_with_all").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [index("tda_day_idx").on(t.dayId)]);
 

@@ -6,6 +6,21 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Mejora — "Compartir con todos" incluye a futuros viajeros del viaje (Notas, Documentos, Enlaces, Actividades) (2026-08-06)
+- [x] **Diagnóstico**: "Compartir con todos" era un snapshot de una sola vez — insertaba filas de compartición solo para quien ya fuera miembro del viaje en ese momento. Confirmado también que aceptar una invitación o compartición no hacía ningún backfill de contenido ya compartido. Actividades ("por libre", #151) no tenía ni siquiera la opción de compartir en bloque — se añade como funcionalidad nueva con la misma lógica desde el principio
+- [x] Nueva columna `shared_with_all` (boolean, default false) en `trip_notes`, `trip_documents`, `trip_links` y `trip_day_activities` — marca la intención "compartir con todos, incluidos quienes se unan después"
+- [x] Enfoque elegido: marca + backfill al unirse (no visibilidad dinámica por flag) — preserva exactamente el comportamiento actual: la lista de "compartido con" sigue mostrando destinatarios reales, y "salir" individual sigue funcionando igual, tanto para quien se unió antes como después
+- [x] Al aceptar una invitación de agencia (`POST /invitations/:code/accept`) o una compartición de viajero tipo "member" (`POST /me/shares/:shareCode/accept`, excluye "guest" — mismo criterio que ya excluye a los invitados de `listTripMembers` en todos los pickers) se ejecuta `backfillSharedWithAll`: inserta la fila de compartición/participante en todo lo marcado `shared_with_all` de ese viaje, para el nuevo miembro
+- [x] El botón "Compartir con todos (N)" del selector de destinatarios (notas/documentos/enlaces) y el nuevo botón equivalente en el picker de participantes de actividades por libre marcan `shared_with_all = true` además de compartir con los miembros actuales; se ve un chip "Todos (futuros incl.)" cuando está activo
+- [x] El botón "Compartir todas/todos" (bulk cross-elemento de notas/documentos, ver entrada anterior) también marca cada elemento como `shared_with_all` al rellenar sus huecos
+- [x] Migración SQL generada (`0027_absurd_power_man.sql`, 4 `ALTER TABLE ... ADD COLUMN` con `DEFAULT false NOT NULL`, aditiva, sin tocar columnas existentes)
+- [x] `pnpm run typecheck` y `pnpm run build` (frontend + backend) limpios en todo el monorepo
+- [ ] **No se pudo probar en vivo en este contenedor** — sin `.env` no se pudo levantar el servidor contra la base real; verificado por lectura de código, typecheck y build
+- [ ] Validar tras desplegar: compartir una nota/documento/enlace/actividad "con todos", invitar a un viajero nuevo al viaje, aceptar la invitación desde su cuenta y confirmar que ya ve ese contenido sin que nadie lo comparta manualmente
+- [ ] Confirmar que un "Invitado" (guest, acceso de solo inspiración) que acepta una compartición NO recibe el backfill — sigue excluido igual que del resto de pickers
+- [ ] Confirmar que quitar a alguien individualmente de un elemento marcado "compartido con todos" sigue funcionando (no se le vuelve a añadir automáticamente salvo que vuelva a unirse al viaje)
+- [ ] En el picker de participantes de una actividad por libre, probar "Compartir con todos (N)" y confirmar que aparece el chip "Todos (futuros incl.)"
+
 ### Nueva funcionalidad — "Enlaces" dentro de Documentos (2026-08-05)
 - [x] Nuevas tablas `trip_links` y `trip_link_shares`, replicando exactamente el patrón de ownership/cascade de `trip_documents`/`trip_document_shares` (#153) — sin tocar esas tablas ni su código. A diferencia del `autor_tipo` propuesto originalmente, el rol del creador se resuelve por join a `users.role` en tiempo de lectura (igual que `uploaderRole` en Documentos), evitando un campo redundante que pueda quedar desincronizado
 - [x] Reglas de visibilidad idénticas a Documentos: enlace de agencia visible para todo el viaje; enlace de viajero privado salvo compartición explícita; compartido aparece en "Mis enlaces"; destinatario puede abandonar libremente (sin coste asociado). Resolución siempre en el backend (`GET /me/trips/:tripId/links`), nunca filtrada en el cliente

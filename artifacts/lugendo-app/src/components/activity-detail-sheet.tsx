@@ -16,12 +16,13 @@ import {
   CommandGroup,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   useUpdateTripDayActivity, useUpdateItineraryDayActivity, useUpdateActivity,
   useListTripMembers, useAddActivityParticipant, useRemoveActivityParticipant,
-  getListTripMembersQueryKey,
+  useAddActivityParticipants, getListTripMembersQueryKey,
 } from "@workspace/api-client-react";
 import type { DayActivity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,6 +69,7 @@ export function ActivityDetailSheet({
   const updateItinLink = useUpdateItineraryDayActivity();
   const updateActivity = useUpdateActivity();
   const addParticipant = useAddActivityParticipant();
+  const addParticipants = useAddActivityParticipants();
   const removeParticipant = useRemoveActivityParticipant();
 
   const isItinerary = entityType === "itinerary";
@@ -82,6 +84,7 @@ export function ActivityDetailSheet({
   const [costAmount, setCostAmount] = useState("");
   const [participants, setParticipants] = useState<{ id: number; name: string }[]>([]);
   const [participantPickerOpen, setParticipantPickerOpen] = useState(false);
+  const [sharedWithAll, setSharedWithAll] = useState(false);
 
   const [address, setAddress] = useState("");
   const [durationHours, setDurationHours] = useState("");
@@ -103,6 +106,7 @@ export function ActivityDetailSheet({
       setSelectedDayId(dayId);
       setCostAmount(activity.costAmount != null ? String(activity.costAmount) : "");
       setParticipants(activity.participants ?? []);
+      setSharedWithAll(activity.sharedWithAll ?? false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, activity?.id]);
@@ -129,6 +133,20 @@ export function ActivityDetailSheet({
       {
         onSuccess: (res) => { setParticipants(res.participants); invalidateActivities(); },
         onError: () => toast({ variant: "destructive", title: "No se pudo añadir el participante" }),
+      },
+    );
+  };
+
+  const handleAddAllParticipants = () => {
+    addParticipants.mutate(
+      { tripId: entityId, dayId, linkId: activity.id, data: { travelerIds: availableMembers.map(m => m.id), shareWithAll: true } },
+      {
+        onSuccess: (res) => {
+          setParticipants(res.participants);
+          setSharedWithAll(res.sharedWithAll ?? true);
+          invalidateActivities();
+        },
+        onError: () => toast({ variant: "destructive", title: "No se pudo compartir con todos" }),
       },
     );
   };
@@ -495,7 +513,17 @@ export function ActivityDetailSheet({
                             Participantes
                           </label>
                           <div className="flex flex-wrap gap-1.5 mb-2">
-                            {participants.length === 0 && (
+                            {sharedWithAll && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[11px] font-medium pl-2 pr-2 py-1 rounded-full"
+                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+                                title="Compartido con todos los viajeros del viaje, incluidos quienes se unan más adelante"
+                              >
+                                <Users className="w-3 h-3" />
+                                Todos (futuros incl.)
+                              </span>
+                            )}
+                            {participants.length === 0 && !sharedWithAll && (
                               <p className="text-[12px]" style={{ color: "var(--text-ter)" }}>Nadie más, de momento</p>
                             )}
                             {participants.map(p => (
@@ -531,6 +559,21 @@ export function ActivityDetailSheet({
                                   <CommandEmpty>
                                     {membersQuery.isLoading ? "Cargando…" : "No hay más viajeros disponibles."}
                                   </CommandEmpty>
+                                  {availableMembers.length > 1 && (
+                                    <>
+                                      <CommandGroup>
+                                        <CommandItem
+                                          value="__share_with_all__"
+                                          onSelect={() => { handleAddAllParticipants(); setParticipantPickerOpen(false); }}
+                                          className="font-medium"
+                                        >
+                                          <Users className="mr-2 h-3.5 w-3.5" style={{ color: "var(--terra)" }} />
+                                          Compartir con todos ({availableMembers.length})
+                                        </CommandItem>
+                                      </CommandGroup>
+                                      <CommandSeparator />
+                                    </>
+                                  )}
                                   <CommandGroup>
                                     {availableMembers.map(m => (
                                       <CommandItem

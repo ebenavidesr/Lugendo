@@ -1183,6 +1183,8 @@ export interface TripDocument {
   uploaderRole: string;
   /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document's creator. */
+  sharedWithAll?: boolean;
 }
 
 export interface TripDocumentInput {
@@ -1206,6 +1208,8 @@ export interface TripLink {
   uploaderRole: string;
   /** Recipients this link has been shared with. Only present when the caller is the link's creator. */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this link too, not just current members. Only present when the caller is the link's creator. */
+  sharedWithAll?: boolean;
 }
 
 export interface TripLinkInput {
@@ -1582,6 +1586,8 @@ export interface TripNote {
   uploaderRole?: string;
   /** Recipients this note has been shared with. Only present when the caller is the note's creator (#153). */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note's creator. */
+  sharedWithAll?: boolean;
 }
 
 export interface TripNoteInput {
@@ -1960,6 +1966,8 @@ export interface DayActivity {
   /** Solo presente en la vista de viajero -- creador o participante de esta actividad por libre. */
   isMine?: boolean;
   participants?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity's creator. */
+  sharedWithAll?: boolean;
   /** Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida). */
   warning?: string;
 }
@@ -2023,6 +2031,8 @@ export interface ActivityParticipantInput {
 
 export interface TripResourceSharesInput {
   travelerIds: number[];
+  /** When true, also flags the resource "shared with all" so travelers who join the trip afterwards are auto-included, not just current members. */
+  shareWithAll?: boolean;
 }
 
 export type DashboardSummaryTripsByStatus = {
@@ -2064,6 +2074,12 @@ export type AddActivityParticipant201 = {
   participants: ActivityParticipant[];
 };
 
+export type AddActivityParticipants201 = {
+  participants: ActivityParticipant[];
+  /** Whether the activity is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+  sharedWithAll?: boolean;
+};
+
 export type RemoveActivityParticipant200 = {
   participants: ActivityParticipant[];
 };
@@ -2083,14 +2099,20 @@ export type GetMyTripMap200 = {
 
 export type AddTripNoteShares201 = {
   sharedWith: ActivityParticipant[];
+  /** Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+  sharedWithAll?: boolean;
 };
 
 export type AddTripDocumentShares201 = {
   sharedWith: ActivityParticipant[];
+  /** Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+  sharedWithAll?: boolean;
 };
 
 export type AddTripLinkShares201 = {
   sharedWith: ActivityParticipant[];
+  /** Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+  sharedWithAll?: boolean;
 };
 
 export type GetTripDocumentDownloadUrl200 = {

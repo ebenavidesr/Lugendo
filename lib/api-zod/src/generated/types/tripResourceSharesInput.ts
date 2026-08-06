@@ -8,4 +8,6 @@
 
 export interface TripResourceSharesInput {
   travelerIds: number[];
+  /** When true, also flags the resource "shared with all" so travelers who join the trip afterwards are auto-included, not just current members. */
+  shareWithAll?: boolean;
 }

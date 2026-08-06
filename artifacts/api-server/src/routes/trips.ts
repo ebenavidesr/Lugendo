@@ -15,6 +15,7 @@ import {
   DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
   TripNoteInputSchema, TripNoteUpdateSchema, TripLinkInputSchema,
+  TripResourceSharesInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { sendDocumentUploadedEmail, sendTripUpdatedEmail } from "../lib/email";
@@ -276,6 +277,7 @@ function serializeDayActivity(r: {
   costCurrency?: string | null;
   createdByName?: string | null;
   participants?: { id: number; name: string }[];
+  sharedWithAll?: boolean;
   warning?: string | null;
 }) {
   return {
@@ -300,6 +302,7 @@ function serializeDayActivity(r: {
     costCurrency: r.costCurrency ?? null,
     createdByName: r.createdByName ?? null,
     participants: r.participants ?? [],
+    ...(r.sharedWithAll != null ? { sharedWithAll: r.sharedWithAll } : {}),
     ...(r.warning ? { warning: r.warning } : {}),
   };
 }
@@ -758,7 +761,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
       a.name AS activity_name, a.category AS activity_category,
       tda.sort_order, tda.start_time, tda.end_time, tda.notes,
       tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
-      tda.created_by_user_id, tda.cost_amount, tda.cost_currency,
+      tda.created_by_user_id, tda.cost_amount, tda.cost_currency, tda.shared_with_all,
       cb.name AS created_by_name,
       a.address AS activity_address, a.duration_hours AS activity_duration_hours,
       tda.created_at,
@@ -809,6 +812,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
       costCurrency: r.cost_currency as string | null,
       createdByName: r.created_by_name as string | null,
       participants: r.participants as { id: number; name: string }[],
+      sharedWithAll: Boolean(r.shared_with_all),
     });
   }));
 });
@@ -1188,6 +1192,57 @@ router.post("/trips/:tripId/days/:dayId/activities/:linkId/participants", requir
     .onConflictDoNothing();
 
   res.status(201).json({ participants: await getActivityParticipants(linkId) });
+});
+
+// Bulk "Compartir con todos" for a por-libre activity's participants -- same gating as the
+// single-add route above, plus an optional shareWithAll flag so travelers who join the trip
+// afterwards get auto-added too (see backfillSharedWithAll), not just current members.
+router.post("/trips/:tripId/days/:dayId/activities/:linkId/participants/bulk", requireAuth, validate(TripResourceSharesInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const currentUserId = req.session.userId!;
+  const role = req.session.role;
+  const { travelerIds, shareWithAll } = req.body as { travelerIds: number[]; shareWithAll?: boolean };
+
+  const access = await verifyTripDayAccess(tripId, dayId, currentUserId, req.session.agencyId, role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+  const trip = access.trip!;
+  const session = { userId: currentUserId, role, agencyId: req.session.agencyId };
+
+  const [existing] = await db
+    .select({
+      id: tripDayActivitiesTable.id, createdByUserId: tripDayActivitiesTable.createdByUserId,
+      included: tripDayActivitiesTable.included, sharedWithAll: tripDayActivitiesTable.sharedWithAll,
+    })
+    .from(tripDayActivitiesTable)
+    .innerJoin(tripDaysTable, eq(tripDayActivitiesTable.dayId, tripDaysTable.id))
+    .where(and(
+      eq(tripDayActivitiesTable.id, linkId),
+      eq(tripDayActivitiesTable.dayId, dayId),
+      eq(tripDaysTable.tripId, tripId),
+    ));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  if (existing.included || !canManageActivity(trip, { included: existing.included, createdByUserId: existing.createdByUserId }, session)) {
+    res.status(403).json({ error: "Solo el creador de la actividad puede gestionar sus participantes" });
+    return;
+  }
+
+  const members = await listTripMembers(tripId);
+  const memberIds = new Set(members.map(m => m.id));
+  const validTravelerIds = travelerIds.filter(id => memberIds.has(id) && id !== existing.createdByUserId);
+  if (validTravelerIds.length === 0) { res.status(400).json({ error: "Ningún viajero válido para compartir" }); return; }
+
+  await db.insert(tripDayActivityParticipantsTable)
+    .values(validTravelerIds.map(travelerId => ({ activityLinkId: linkId, travelerId })))
+    .onConflictDoNothing();
+
+  if (shareWithAll) {
+    await db.update(tripDayActivitiesTable).set({ sharedWithAll: true }).where(eq(tripDayActivitiesTable.id, linkId));
+  }
+
+  res.status(201).json({ participants: await getActivityParticipants(linkId), sharedWithAll: !!shareWithAll || existing.sharedWithAll });
 });
 
 router.delete("/trips/:tripId/days/:dayId/activities/:linkId/participants/:travelerId", requireAuth, async (req, res): Promise<void> => {

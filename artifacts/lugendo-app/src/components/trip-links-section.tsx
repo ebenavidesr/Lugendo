@@ -70,9 +70,9 @@ export function TripLinksSection({ tripId }: TripLinksSectionProps) {
     );
   };
 
-  const handleAddShares = (link: TripLink, travelerIds: number[]) => {
+  const handleAddShares = (link: TripLink, travelerIds: number[], shareWithAll?: boolean) => {
     addShares.mutate(
-      { tripId, linkId: link.id, data: { travelerIds } },
+      { tripId, linkId: link.id, data: { travelerIds, shareWithAll } },
       {
         onSuccess: invalidate,
         onError: () => toast({ variant: "destructive", title: "No se pudo compartir el enlace" }),
@@ -212,7 +212,7 @@ export function TripLinksSection({ tripId }: TripLinksSectionProps) {
                     tripId={tripId}
                     onDelete={() => handleDelete(link)}
                     isDeleting={deleteLink.isPending}
-                    onAddShares={(travelerIds) => handleAddShares(link, travelerIds)}
+                    onAddShares={(travelerIds, shareWithAll) => handleAddShares(link, travelerIds, shareWithAll)}
                     onRemoveShare={(travelerId) => handleRemoveShare(link, travelerId)}
                     isAddingShare={addShares.isPending}
                     isRemovingShare={removeShare.isPending}
@@ -234,7 +234,7 @@ interface LinkCardProps {
   tripId: number;
   onDelete?: () => void;
   isDeleting?: boolean;
-  onAddShares?: (travelerIds: number[]) => void;
+  onAddShares?: (travelerIds: number[], shareWithAll?: boolean) => void;
   onRemoveShare?: (travelerId: number) => void;
   isAddingShare?: boolean;
   isRemovingShare?: boolean;
@@ -305,6 +305,7 @@ function LinkCard({
             isOwner={isOwn}
             isRecipient={!isOwn}
             sharedWith={link.sharedWith ?? []}
+            sharedWithAll={link.sharedWithAll}
             currentUserId={currentUserId}
             isAdding={isAddingShare}
             isRemoving={isRemovingShare}

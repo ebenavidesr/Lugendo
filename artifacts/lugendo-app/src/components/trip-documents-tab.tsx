@@ -116,9 +116,9 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/documents`] });
 
-  const handleAddShares = (doc: TripDocument, travelerIds: number[]) => {
+  const handleAddShares = (doc: TripDocument, travelerIds: number[], shareWithAll?: boolean) => {
     addShares.mutate(
-      { tripId, documentId: doc.id, data: { travelerIds } },
+      { tripId, documentId: doc.id, data: { travelerIds, shareWithAll } },
       {
         onSuccess: invalidate,
         onError: () => toast({ variant: "destructive", title: "No se pudo compartir el documento" }),
@@ -258,7 +258,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     setIsSharingAll(true);
     try {
       await Promise.all(docGaps.map(g => addShares.mutateAsync({
-        tripId, documentId: g.doc.id, data: { travelerIds: g.missing.map(m => m.id) },
+        tripId, documentId: g.doc.id, data: { travelerIds: g.missing.map(m => m.id), shareWithAll: true },
       })));
       invalidate();
       toast({ title: "Documentos compartidos" });
@@ -549,10 +549,11 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
                     isOwner={isOwn}
                     isRecipient={!isOwn}
                     sharedWith={doc.sharedWith ?? []}
+                    sharedWithAll={doc.sharedWithAll}
                     currentUserId={user?.id}
                     isAdding={addShares.isPending}
                     isRemoving={removeShare.isPending}
-                    onAdd={(travelerIds) => handleAddShares(doc, travelerIds)}
+                    onAdd={(travelerIds, shareWithAll) => handleAddShares(doc, travelerIds, shareWithAll)}
                     onRemove={(travelerId) => handleRemoveShare(doc, travelerId)}
                   />
                 </div>

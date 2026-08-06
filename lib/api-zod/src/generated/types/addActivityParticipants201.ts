@@ -7,8 +7,8 @@
  */
 import type { ActivityParticipant } from './activityParticipant';
 
-export type AddTripLinkShares201 = {
-  sharedWith: ActivityParticipant[];
-  /** Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
+export type AddActivityParticipants201 = {
+  participants: ActivityParticipant[];
+  /** Whether the activity is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll). */
   sharedWithAll?: boolean;
 };

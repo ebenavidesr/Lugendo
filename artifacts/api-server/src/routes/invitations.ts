@@ -8,6 +8,7 @@ import { InvitationInputSchema, InvitationUpdateSchema } from "../lib/schemas";
 import { sendInvitationEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
 import { ensureTripClassificationByDates } from "../lib/trip-classification";
+import { backfillSharedWithAll } from "../lib/shared-with-all-backfill";
 
 const router: IRouter = Router();
 
@@ -207,6 +208,7 @@ router.post("/invitations/:code/accept", requireAuth, async (req, res): Promise<
     .returning();
 
   await ensureTripClassificationByDates(req.session.userId!, invite.tripId);
+  await backfillSharedWithAll(invite.tripId, req.session.userId!);
 
   res.json(serialize(updated as unknown as InvRow));
 });

@@ -22,4 +22,6 @@ export interface TripNote {
   uploaderRole?: string;
   /** Recipients this note has been shared with. Only present when the caller is the note's creator (#153). */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note's creator. */
+  sharedWithAll?: boolean;
 }

@@ -18,4 +18,6 @@ export interface TripLink {
   uploaderRole: string;
   /** Recipients this link has been shared with. Only present when the caller is the link's creator. */
   sharedWith?: ActivityParticipant[];
+  /** When true, travelers who join the trip afterwards are auto-shared this link too, not just current members. Only present when the caller is the link's creator. */
+  sharedWithAll?: boolean;
 }

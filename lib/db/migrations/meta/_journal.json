@@ -190,6 +190,13 @@
       "when": 1785982111962,
       "tag": "0026_early_king_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785984227963,
+      "tag": "0027_absurd_power_man",
+      "breakpoints": true
     }
   ]
 }

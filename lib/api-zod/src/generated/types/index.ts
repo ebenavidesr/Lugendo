@@ -15,6 +15,7 @@ export * from './activityParticipantInput';
 export * from './activityUpdate';
 export * from './activityUpdateCategory';
 export * from './addActivityParticipant201';
+export * from './addActivityParticipants201';
 export * from './addTripDocumentShares201';
 export * from './addTripLinkShares201';
 export * from './addTripNoteShares201';

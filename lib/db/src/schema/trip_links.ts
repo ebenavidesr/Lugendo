@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tripsTable } from "./trips";
@@ -14,6 +14,10 @@ export const tripLinksTable = pgTable("trip_links", {
   userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   url: text("url").notNull(),
+  // Set by the "Compartir con todos" bulk action: travelers who join the trip *after* this was
+  // set are auto-backfilled a trip_link_shares row (see backfillSharedWithAll in the
+  // api-server), instead of "share with all" being a one-time snapshot of who was on the trip.
+  sharedWithAll: boolean("shared_with_all").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

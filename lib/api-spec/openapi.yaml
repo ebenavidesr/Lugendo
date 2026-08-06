@@ -1060,6 +1060,50 @@ paths:
                     items:
                       $ref: "#/components/schemas/ActivityParticipant"
 
+  /trips/{tripId}/days/{dayId}/activities/{linkId}/participants/bulk:
+    post:
+      operationId: addActivityParticipants
+      tags: [trips]
+      summary: Add multiple participants to a por-libre activity at once, optionally flagging "shared with all" (creator only)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripResourceSharesInput"
+      responses:
+        "201":
+          description: Participants added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [participants]
+                properties:
+                  participants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+                  sharedWithAll:
+                    type: boolean
+                    description: Whether the activity is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll).
+
   /trips/{tripId}/days/{dayId}/activities/{linkId}/participants/{travelerId}:
     delete:
       operationId: removeActivityParticipant
@@ -1914,6 +1958,9 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ActivityParticipant"
+                  sharedWithAll:
+                    type: boolean
+                    description: Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll).
 
   /me/trips/{tripId}/notes/{noteId}/shares/{travelerId}:
     delete:
@@ -2258,6 +2305,9 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ActivityParticipant"
+                  sharedWithAll:
+                    type: boolean
+                    description: Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll).
 
   /me/trips/{tripId}/documents/{documentId}/shares/{travelerId}:
     delete:
@@ -2385,6 +2435,9 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ActivityParticipant"
+                  sharedWithAll:
+                    type: boolean
+                    description: Whether the resource is now flagged "shared with all" (see TripResourceSharesInput.shareWithAll).
 
   /me/trips/{tripId}/links/{linkId}/shares/{travelerId}:
     delete:
@@ -4965,6 +5018,9 @@ components:
           description: Recipients this document has been shared with. Only present when the caller is the document's creator (#153).
           items:
             $ref: "#/components/schemas/ActivityParticipant"
+        sharedWithAll:
+          type: boolean
+          description: When true, travelers who join the trip afterwards are auto-shared this document too, not just current members. Only present when the caller is the document's creator.
 
     TripDocumentInput:
       type: object
@@ -5008,6 +5064,9 @@ components:
           description: Recipients this link has been shared with. Only present when the caller is the link's creator.
           items:
             $ref: "#/components/schemas/ActivityParticipant"
+        sharedWithAll:
+          type: boolean
+          description: When true, travelers who join the trip afterwards are auto-shared this link too, not just current members. Only present when the caller is the link's creator.
 
     TripLinkInput:
       type: object
@@ -5458,6 +5517,9 @@ components:
           description: Recipients this note has been shared with. Only present when the caller is the note's creator (#153).
           items:
             $ref: "#/components/schemas/ActivityParticipant"
+        sharedWithAll:
+          type: boolean
+          description: When true, travelers who join the trip afterwards are auto-shared this note too, not just current members. Only present when the caller is the note's creator.
 
     TripNoteInput:
       type: object
@@ -5863,6 +5925,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActivityParticipant"
+        sharedWithAll:
+          type: boolean
+          description: When true, travelers who join the trip afterwards are auto-added as participants too, not just current members. Only meaningful for por-libre activities; only present for the activity's creator.
         warning:
           type: string
           description: Aviso blando no bloqueante (p. ej. colisión de horario con una actividad incluida).
@@ -5958,6 +6023,9 @@ components:
           type: array
           items:
             type: integer
+        shareWithAll:
+          type: boolean
+          description: When true, also flags the resource "shared with all" so travelers who join the trip afterwards are auto-included, not just current members.
 
     # ─── DASHBOARD ───────────────────────────────────────────────────────────
     DashboardSummary:

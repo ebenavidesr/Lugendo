@@ -45,6 +45,7 @@ import {
 import { tripClassificationsTable } from "@workspace/db";
 import type { TripClassificationValue } from "@workspace/db";
 import { verifyTripAccessCore, listTripMembers } from "./trips";
+import { backfillSharedWithAll } from "../lib/shared-with-all-backfill";
 
 // Roles whose uploads/authoring count as "agency" origin (#153): derived from the author's role,
 // no parallel origin column on trip_documents/trip_notes.
@@ -184,6 +185,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
     included: boolean; transportMode: string | null; canEdit: boolean;
     costAmount: number | null; costCurrency: string | null;
     isMine: boolean; participants: { id: number; name: string }[];
+    sharedWithAll?: boolean;
   };
   if (dayIds.length === 0) return {} as Record<number, ActivityItem[]>;
   let rows: Awaited<ReturnType<typeof db.execute>>;
@@ -194,7 +196,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
       a.name AS activity_name, a.category AS activity_category,
       tda.sort_order, tda.start_time, tda.end_time, tda.notes,
       tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
-      tda.created_by_user_id, tda.cost_amount, tda.cost_currency,
+      tda.created_by_user_id, tda.cost_amount, tda.cost_currency, tda.shared_with_all,
       a.address AS activity_address, a.duration_hours AS activity_duration_hours,
       EXISTS(
         SELECT 1 FROM trip_day_activity_participants p
@@ -254,6 +256,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
       costCurrency: r.cost_currency as string | null,
       isMine: isCreator || isParticipant,
       participants: r.participants as { id: number; name: string }[],
+      sharedWithAll: isCreator ? Boolean(r.shared_with_all) : undefined,
     });
   }
   return map;
@@ -1004,6 +1007,7 @@ router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res)
       dayNumber: tripNotesTable.dayNumber,
       endDayNumber: tripNotesTable.endDayNumber,
       content: tripNotesTable.content,
+      sharedWithAll: tripNotesTable.sharedWithAll,
       createdAt: tripNotesTable.createdAt,
       updatedAt: tripNotesTable.updatedAt,
       uploaderRole: usersTable.role,
@@ -1037,6 +1041,7 @@ router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res)
     updatedAt: n.updatedAt.toISOString(),
     uploaderRole: n.uploaderRole ?? "traveler",
     sharedWith: n.userId === userId ? (sharedWithByNote[n.id] ?? []) : undefined,
+    sharedWithAll: n.userId === userId ? n.sharedWithAll : undefined,
   })));
 });
 
@@ -1091,7 +1096,7 @@ router.post("/me/trips/:tripId/notes/:noteId/shares", requireRoles("traveler"), 
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
-  const { travelerIds } = req.body as { travelerIds: number[] };
+  const { travelerIds, shareWithAll } = req.body as { travelerIds: number[]; shareWithAll?: boolean };
 
   const [note] = await db
     .select()
@@ -1108,12 +1113,18 @@ router.post("/me/trips/:tripId/notes/:noteId/shares", requireRoles("traveler"), 
     .values(validTravelerIds.map(travelerId => ({ noteId, travelerId })))
     .onConflictDoNothing();
 
+  // "Compartir con todos" (shareWithAll): future joiners get backfilled a share row too, see
+  // backfillSharedWithAll -- not just whoever happened to be a trip member at click time.
+  if (shareWithAll) {
+    await db.update(tripNotesTable).set({ sharedWithAll: true }).where(eq(tripNotesTable.id, noteId));
+  }
+
   const shareRows = await db
     .select({ id: usersTable.id, name: usersTable.name })
     .from(tripNoteSharesTable)
     .innerJoin(usersTable, eq(usersTable.id, tripNoteSharesTable.travelerId))
     .where(eq(tripNoteSharesTable.noteId, noteId));
-  res.status(201).json({ sharedWith: shareRows });
+  res.status(201).json({ sharedWith: shareRows, sharedWithAll: !!shareWithAll || note.sharedWithAll });
 });
 
 // Removes a recipient; the creator can remove anyone, a recipient can remove themselves (leave).
@@ -2010,6 +2021,9 @@ router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req
   // the owner. The traveler can still reclassify manually afterwards either way.
   if (share.memberType === "member") {
     await ensureTripClassificationByDates(userId, share.tripId);
+    // Guests are excluded from listTripMembers/every participant picker, so only a "member"
+    // acceptance backfills "compartir con todos" content -- matches the same exclusion elsewhere.
+    await backfillSharedWithAll(share.tripId, userId);
   } else {
     await ensureTripClassification(userId, share.tripId, "compartido");
   }
@@ -2247,6 +2261,7 @@ router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, 
       filename: tripDocumentsTable.filename,
       mimeType: tripDocumentsTable.mimeType,
       storageKey: tripDocumentsTable.storageKey,
+      sharedWithAll: tripDocumentsTable.sharedWithAll,
       createdAt: tripDocumentsTable.createdAt,
       uploaderRole: usersTable.role,
     })
@@ -2278,6 +2293,7 @@ router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, 
     createdAt: d.createdAt.toISOString(),
     uploaderRole: d.uploaderRole ?? "traveler",
     sharedWith: d.userId === userId ? (sharedWithByDoc[d.id] ?? []) : undefined,
+    sharedWithAll: d.userId === userId ? d.sharedWithAll : undefined,
   })));
 });
 
@@ -2335,7 +2351,7 @@ router.post("/me/trips/:tripId/documents/:documentId/shares", requireRoles("trav
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
-  const { travelerIds } = req.body as { travelerIds: number[] };
+  const { travelerIds, shareWithAll } = req.body as { travelerIds: number[]; shareWithAll?: boolean };
 
   const [doc] = await db
     .select()
@@ -2352,12 +2368,18 @@ router.post("/me/trips/:tripId/documents/:documentId/shares", requireRoles("trav
     .values(validTravelerIds.map(travelerId => ({ documentId, travelerId })))
     .onConflictDoNothing();
 
+  // "Compartir con todos" (shareWithAll): future joiners get backfilled a share row too, see
+  // backfillSharedWithAll -- not just whoever happened to be a trip member at click time.
+  if (shareWithAll) {
+    await db.update(tripDocumentsTable).set({ sharedWithAll: true }).where(eq(tripDocumentsTable.id, documentId));
+  }
+
   const shareRows = await db
     .select({ id: usersTable.id, name: usersTable.name })
     .from(tripDocumentSharesTable)
     .innerJoin(usersTable, eq(usersTable.id, tripDocumentSharesTable.travelerId))
     .where(eq(tripDocumentSharesTable.documentId, documentId));
-  res.status(201).json({ sharedWith: shareRows });
+  res.status(201).json({ sharedWith: shareRows, sharedWithAll: !!shareWithAll || doc.sharedWithAll });
 });
 
 // Removes a recipient. The creator can remove anyone; a recipient can remove themselves (leave).
@@ -2441,6 +2463,7 @@ router.get("/me/trips/:tripId/links", requireRoles("traveler"), async (req, res)
       userId: tripLinksTable.userId,
       title: tripLinksTable.title,
       url: tripLinksTable.url,
+      sharedWithAll: tripLinksTable.sharedWithAll,
       createdAt: tripLinksTable.createdAt,
       uploaderRole: usersTable.role,
     })
@@ -2472,6 +2495,7 @@ router.get("/me/trips/:tripId/links", requireRoles("traveler"), async (req, res)
     createdAt: l.createdAt.toISOString(),
     uploaderRole: l.uploaderRole ?? "traveler",
     sharedWith: l.userId === userId ? (sharedWithByLink[l.id] ?? []) : undefined,
+    sharedWithAll: l.userId === userId ? l.sharedWithAll : undefined,
   })));
 });
 
@@ -2516,7 +2540,7 @@ router.post("/me/trips/:tripId/links/:linkId/shares", requireRoles("traveler"), 
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
-  const { travelerIds } = req.body as { travelerIds: number[] };
+  const { travelerIds, shareWithAll } = req.body as { travelerIds: number[]; shareWithAll?: boolean };
 
   const [link] = await db
     .select()
@@ -2533,12 +2557,18 @@ router.post("/me/trips/:tripId/links/:linkId/shares", requireRoles("traveler"), 
     .values(validTravelerIds.map(travelerId => ({ linkId, travelerId })))
     .onConflictDoNothing();
 
+  // "Compartir con todos" (shareWithAll): future joiners get backfilled a share row too, see
+  // backfillSharedWithAll -- not just whoever happened to be a trip member at click time.
+  if (shareWithAll) {
+    await db.update(tripLinksTable).set({ sharedWithAll: true }).where(eq(tripLinksTable.id, linkId));
+  }
+
   const shareRows = await db
     .select({ id: usersTable.id, name: usersTable.name })
     .from(tripLinkSharesTable)
     .innerJoin(usersTable, eq(usersTable.id, tripLinkSharesTable.travelerId))
     .where(eq(tripLinkSharesTable.linkId, linkId));
-  res.status(201).json({ sharedWith: shareRows });
+  res.status(201).json({ sharedWith: shareRows, sharedWithAll: !!shareWithAll || link.sharedWithAll });
 });
 
 // Removes a recipient. The creator can remove anyone; a recipient can remove themselves (leave),

@@ -25,6 +25,7 @@ import type {
   ActivityParticipantInput,
   ActivityUpdate,
   AddActivityParticipant201,
+  AddActivityParticipants201,
   AddTripDocumentShares201,
   AddTripLinkShares201,
   AddTripNoteShares201,
@@ -3819,6 +3820,82 @@ export const useAddActivityParticipant = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddActivityParticipantMutationOptions(options));
+    }
+
+export const getAddActivityParticipantsUrl = (tripId: number,
+    dayId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/days/${dayId}/activities/${linkId}/participants/bulk`
+}
+
+/**
+ * @summary Add multiple participants to a por-libre activity at once, optionally flagging "shared with all" (creator only)
+ */
+export const addActivityParticipants = async (tripId: number,
+    dayId: number,
+    linkId: number,
+    tripResourceSharesInput: TripResourceSharesInput, options?: RequestInit): Promise<AddActivityParticipants201> => {
+
+  return customFetch<AddActivityParticipants201>(getAddActivityParticipantsUrl(tripId,dayId,linkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripResourceSharesInput,)
+  }
+);}
+
+
+
+
+export const getAddActivityParticipantsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipants>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipants>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext> => {
+
+const mutationKey = ['addActivityParticipants'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addActivityParticipants>>, {tripId: number;dayId: number;linkId: number;data: BodyType<TripResourceSharesInput>}> = (props) => {
+          const {tripId,dayId,linkId,data} = props ?? {};
+
+          return  addActivityParticipants(tripId,dayId,linkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddActivityParticipantsMutationResult = NonNullable<Awaited<ReturnType<typeof addActivityParticipants>>>
+    export type AddActivityParticipantsMutationBody = BodyType<TripResourceSharesInput>
+    export type AddActivityParticipantsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add multiple participants to a por-libre activity at once, optionally flagging "shared with all" (creator only)
+ */
+export const useAddActivityParticipants = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addActivityParticipants>>, TError,{tripId: number;dayId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addActivityParticipants>>,
+        TError,
+        {tripId: number;dayId: number;linkId: number;data: BodyType<TripResourceSharesInput>},
+        TContext
+      > => {
+      return useMutation(getAddActivityParticipantsMutationOptions(options));
     }
 
 export const getRemoveActivityParticipantUrl = (tripId: number,

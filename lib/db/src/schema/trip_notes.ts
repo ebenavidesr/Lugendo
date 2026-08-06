@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tripsTable } from "./trips";
@@ -13,6 +13,10 @@ export const tripNotesTable = pgTable("trip_notes", {
   // specific day at all, when dayNumber is also null) -- single-day behavior is unchanged.
   endDayNumber: integer("end_day_number"),
   content: text("content").notNull(),
+  // Set by the "Compartir con todos" bulk action: travelers who join the trip *after* this was
+  // set are auto-backfilled a trip_note_shares row (see backfillSharedWithAll in the api-server),
+  // instead of "share with all" being a one-time snapshot of whoever was on the trip at the time.
+  sharedWithAll: boolean("shared_with_all").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
