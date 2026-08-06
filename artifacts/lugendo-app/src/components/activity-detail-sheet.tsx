@@ -559,7 +559,7 @@ export function ActivityDetailSheet({
                                   <CommandEmpty>
                                     {membersQuery.isLoading ? "Cargando…" : "No hay más viajeros disponibles."}
                                   </CommandEmpty>
-                                  {availableMembers.length > 1 && (
+                                  {availableMembers.length > 0 && (
                                     <>
                                       <CommandGroup>
                                         <CommandItem
