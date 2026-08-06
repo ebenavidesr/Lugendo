@@ -11,6 +11,7 @@ import {
   tripChecklistItemsTable, checklistTemplatesTable,
   userCountriesTable, tripPhotoSharesTable,
   tripDocumentSharesTable, tripNoteSharesTable,
+  tripLinksTable, tripLinkSharesTable,
 } from "@workspace/db";
 import type { TripPhotoSnapshot, TripPhotoSnapshotDay } from "@workspace/db";
 import { COUNTRY_NAME_BY_CODE, COUNTRY_CODE_BY_NAME } from "@workspace/db/countries";
@@ -21,7 +22,7 @@ import {
   PersonalTripDayInputSchema, PersonalTripDayUpdateSchema,
   TripNoteInputSchema, TripNoteUpdateSchema,
   ShareTripInputSchema, UpdateShareInputSchema,
-  TripDocumentInputSchema, TripResourceSharesInputSchema,
+  TripDocumentInputSchema, TripResourceSharesInputSchema, TripLinkInputSchema,
   CreateTripChecklistInputSchema, TripChecklistItemInputSchema, TripChecklistItemUpdateSchema,
   TripPackingItemInputSchema, TripPackingItemUpdateSchema,
   UserCountryInputSchema, UserCountryStatusUpdateSchema,
@@ -2419,6 +2420,146 @@ router.get("/me/trips/:tripId/documents/:documentId/download", requireRoles("tra
     req.log.error({ err }, "Error generating signed download URL");
     res.status(500).json({ error: "Failed to generate download URL" });
   }
+});
+
+// ─── Trip Links ("Enlaces") ────────────────────────────────────────────────────
+// Independent feature reusing trip_documents' ownership/visibility pattern exactly (#153):
+// agency-authored links are visible to every trip member; a traveler's own link is visible only
+// to its creator plus whoever it's been explicitly shared with via trip_link_shares. Always
+// resolved here in the backend query, never filtered client-side.
+router.get("/me/trips/:tripId/links", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+
+  const links = await db
+    .select({
+      id: tripLinksTable.id,
+      tripId: tripLinksTable.tripId,
+      userId: tripLinksTable.userId,
+      title: tripLinksTable.title,
+      url: tripLinksTable.url,
+      createdAt: tripLinksTable.createdAt,
+      uploaderRole: usersTable.role,
+    })
+    .from(tripLinksTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripLinksTable.userId))
+    .where(and(
+      eq(tripLinksTable.tripId, tripId),
+      or(
+        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        eq(tripLinksTable.userId, userId),
+        sql`EXISTS(SELECT 1 FROM trip_link_shares s WHERE s.link_id = ${tripLinksTable.id} AND s.traveler_id = ${userId})`,
+      ),
+    ))
+    .orderBy(tripLinksTable.createdAt);
+
+  const myLinkIds = links.filter(l => l.userId === userId).map(l => l.id);
+  const shareRows = myLinkIds.length > 0
+    ? await db
+        .select({ linkId: tripLinkSharesTable.linkId, id: usersTable.id, name: usersTable.name })
+        .from(tripLinkSharesTable)
+        .innerJoin(usersTable, eq(usersTable.id, tripLinkSharesTable.travelerId))
+        .where(inArray(tripLinkSharesTable.linkId, myLinkIds))
+    : [];
+  const sharedWithByLink: Record<number, { id: number; name: string | null }[]> = {};
+  for (const s of shareRows) (sharedWithByLink[s.linkId] ??= []).push({ id: s.id, name: s.name });
+
+  res.json(links.map(l => ({
+    ...l,
+    createdAt: l.createdAt.toISOString(),
+    uploaderRole: l.uploaderRole ?? "traveler",
+    sharedWith: l.userId === userId ? (sharedWithByLink[l.id] ?? []) : undefined,
+  })));
+});
+
+router.post("/me/trips/:tripId/links", requireRoles("traveler"), validate(TripLinkInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+
+  const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
+  if (!access.authorized) { res.status(403).json({ error: access.reason }); return; }
+  if (access.memberType === "guest") {
+    res.status(403).json({ error: "Los invitados no pueden crear enlaces propios" }); return;
+  }
+
+  const { title, url } = req.body as { title: string; url: string };
+
+  const [link] = await db
+    .insert(tripLinksTable)
+    .values({ tripId, userId, title, url })
+    .returning();
+  res.status(201).json({ ...link, createdAt: link.createdAt.toISOString(), uploaderRole: "traveler", sharedWith: [] });
+});
+
+router.delete("/me/trips/:tripId/links/:linkId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+
+  const [link] = await db
+    .select()
+    .from(tripLinksTable)
+    .where(and(eq(tripLinksTable.id, linkId), eq(tripLinksTable.userId, userId)));
+
+  if (!link) { res.status(404).json({ error: "Not found" }); return; }
+
+  await db.delete(tripLinksTable).where(eq(tripLinksTable.id, linkId));
+  res.sendStatus(204);
+});
+
+// Creator adds recipients to their own link. Recipients must be trip members with member
+// access (not guests) -- validated against the same listTripMembers used by the #151 participant
+// picker rather than the agency invitation table.
+router.post("/me/trips/:tripId/links/:linkId/shares", requireRoles("traveler"), validate(TripResourceSharesInputSchema), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const { travelerIds } = req.body as { travelerIds: number[] };
+
+  const [link] = await db
+    .select()
+    .from(tripLinksTable)
+    .where(and(eq(tripLinksTable.id, linkId), eq(tripLinksTable.tripId, tripId), eq(tripLinksTable.userId, userId)));
+  if (!link) { res.status(404).json({ error: "Not found" }); return; }
+
+  const members = await listTripMembers(tripId);
+  const memberIds = new Set(members.map(m => m.id));
+  const validTravelerIds = travelerIds.filter(id => memberIds.has(id) && id !== userId);
+  if (validTravelerIds.length === 0) { res.status(400).json({ error: "Ningún viajero válido para compartir" }); return; }
+
+  await db.insert(tripLinkSharesTable)
+    .values(validTravelerIds.map(travelerId => ({ linkId, travelerId })))
+    .onConflictDoNothing();
+
+  const shareRows = await db
+    .select({ id: usersTable.id, name: usersTable.name })
+    .from(tripLinkSharesTable)
+    .innerJoin(usersTable, eq(usersTable.id, tripLinkSharesTable.travelerId))
+    .where(eq(tripLinkSharesTable.linkId, linkId));
+  res.status(201).json({ sharedWith: shareRows });
+});
+
+// Removes a recipient. The creator can remove anyone; a recipient can remove themselves (leave),
+// with no cost or side effect -- same "leave freely" semantics as documents/notes (#153).
+router.delete("/me/trips/:tripId/links/:linkId/shares/:travelerId", requireRoles("traveler"), async (req, res): Promise<void> => {
+  const userId = req.session.userId!;
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const travelerId = parseInt(Array.isArray(req.params.travelerId) ? req.params.travelerId[0] : req.params.travelerId, 10);
+
+  const [link] = await db.select().from(tripLinksTable).where(eq(tripLinksTable.id, linkId));
+  if (!link) { res.status(404).json({ error: "Not found" }); return; }
+
+  const isCreator = link.userId === userId;
+  const isSelfRemoval = travelerId === userId;
+  if (!isCreator && !isSelfRemoval) { res.status(403).json({ error: "Forbidden" }); return; }
+
+  await db.delete(tripLinkSharesTable).where(and(
+    eq(tripLinkSharesTable.linkId, linkId),
+    eq(tripLinkSharesTable.travelerId, travelerId),
+  ));
+  res.sendStatus(204);
 });
 
 export default router;

@@ -1361,6 +1361,82 @@ paths:
         "404":
           description: Not found
 
+  /trips/{tripId}/links:
+    get:
+      operationId: listTripLinksAdmin
+      tags: [trips]
+      summary: List all links for a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripLink"
+        "403":
+          description: Forbidden
+        "404":
+          description: Trip not found
+    post:
+      operationId: createTripLinkAdmin
+      tags: [trips]
+      summary: Create a link for a trip (back-office), visible to every trip member
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripLinkInput"
+      responses:
+        "201":
+          description: Link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripLink"
+        "400":
+          description: Validation error
+        "403":
+          description: Forbidden
+
+  /trips/{tripId}/links/{linkId}:
+    delete:
+      operationId: deleteTripLinkAdmin
+      tags: [trips]
+      summary: Delete a link from a trip (back-office)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+
   /trips/{tripId}/notes:
     get:
       operationId: listTripNotesAdmin
@@ -2195,6 +2271,133 @@ paths:
           schema:
             type: integer
         - name: documentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: travelerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
+  /me/trips/{tripId}/links:
+    get:
+      operationId: listTripLinks
+      tags: [traveler]
+      summary: List all links for a trip accessible to the traveler (own links + agency-created links)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripLink"
+    post:
+      operationId: createTripLink
+      tags: [traveler]
+      summary: Create a personal link for a trip
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripLinkInput"
+      responses:
+        "201":
+          description: Link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripLink"
+        "400":
+          description: Validation error
+
+  /me/trips/{tripId}/links/{linkId}:
+    delete:
+      operationId: deleteTripLink
+      tags: [traveler]
+      summary: Delete a link (must be the creator)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /me/trips/{tripId}/links/{linkId}/shares:
+    post:
+      operationId: addTripLinkShares
+      tags: [traveler]
+      summary: Share a personal link with other trip members (creator only)
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripResourceSharesInput"
+      responses:
+        "201":
+          description: Recipients added
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sharedWith]
+                properties:
+                  sharedWith:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActivityParticipant"
+
+  /me/trips/{tripId}/links/{linkId}/shares/{travelerId}:
+    delete:
+      operationId: removeTripLinkShare
+      tags: [traveler]
+      summary: Remove a recipient from a personal link, or leave one you were shared
+      parameters:
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: linkId
           in: path
           required: true
           schema:
@@ -4779,6 +4982,40 @@ components:
       required: [filename]
       properties:
         filename:
+          type: string
+
+    TripLink:
+      type: object
+      required: [id, tripId, userId, title, url, createdAt, uploaderRole]
+      properties:
+        id:
+          type: integer
+        tripId:
+          type: integer
+        userId:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+        createdAt:
+          type: string
+        uploaderRole:
+          type: string
+          description: Role of the user who created the link (admin, manager, agent, traveler)
+        sharedWith:
+          type: array
+          description: Recipients this link has been shared with. Only present when the caller is the link's creator.
+          items:
+            $ref: "#/components/schemas/ActivityParticipant"
+
+    TripLinkInput:
+      type: object
+      required: [title, url]
+      properties:
+        title:
+          type: string
+        url:
           type: string
 
     ChecklistTemplate:

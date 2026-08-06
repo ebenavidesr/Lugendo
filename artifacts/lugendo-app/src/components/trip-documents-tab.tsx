@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import {
-  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X, ExternalLink, Users,
+  FileText, FileImage, File, Upload, Trash2, Download, Plane, Building2, Eye, X, ExternalLink, Users, Link2,
 } from "lucide-react";
 import {
   useListTripDocuments, useCreateTripDocument, useDeleteTripDocument,
@@ -21,6 +21,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ResourceSharePanel } from "@/components/resource-share-panel";
+import { TripLinksSection } from "@/components/trip-links-section";
 
 function getMimeIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
@@ -102,6 +103,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [showShareAllDialog, setShowShareAllDialog] = useState(false);
   const [isSharingAll, setIsSharingAll] = useState(false);
+  const [subTab, setSubTab] = useState<"documents" | "links">("documents");
 
   const { data: documents, isLoading } = useListTripDocuments(tripId);
   const createDoc = useCreateTripDocument();
@@ -270,6 +272,28 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-1 p-1 rounded-[10px] w-fit" style={{ background: "var(--arena)" }}>
+        {([
+          { key: "documents", label: "Documentos", icon: FileText },
+          { key: "links", label: "Enlaces", icon: Link2 },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors"
+            style={subTab === t.key
+              ? { background: "var(--card)", color: "var(--noche)" }
+              : { color: "var(--noche)", opacity: 0.6 }}
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "links" && <TripLinksSection tripId={tripId} />}
+
+      {subTab === "documents" && <>
       {hasFlightInfo && (
         <div className="space-y-2">
           <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
@@ -621,6 +645,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
           </div>
         </DialogContent>
       </Dialog>
+      </>}
     </div>
   );
 }

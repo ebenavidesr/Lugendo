@@ -9,6 +9,7 @@ export * from "./trip_notes";
 export * from "./trip_shares";
 export * from "./trip_photo_shares";
 export * from "./trip_documents";
+export * from "./trip_links";
 export * from "./checklists";
 export * from "./packing-lists";
 export * from "./travel-advisories";

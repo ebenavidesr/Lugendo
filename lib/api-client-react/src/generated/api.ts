@@ -26,6 +26,7 @@ import type {
   ActivityUpdate,
   AddActivityParticipant201,
   AddTripDocumentShares201,
+  AddTripLinkShares201,
   AddTripNoteShares201,
   Agency,
   AgencyInput,
@@ -103,6 +104,8 @@ import type {
   TripDocumentInput,
   TripDocumentRename,
   TripInput,
+  TripLink,
+  TripLinkInput,
   TripNote,
   TripNoteInput,
   TripNoteUpdate,
@@ -4643,6 +4646,227 @@ export function useGetTripDocumentDownloadUrlAdmin<TData = Awaited<ReturnType<ty
 
 
 
+export const getListTripLinksAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/links`
+}
+
+/**
+ * @summary List all links for a trip (back-office)
+ */
+export const listTripLinksAdmin = async (tripId: number, options?: RequestInit): Promise<TripLink[]> => {
+
+  return customFetch<TripLink[]>(getListTripLinksAdminUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripLinksAdminQueryKey = (tripId: number,) => {
+    return [
+    `/api/trips/${tripId}/links`
+    ] as const;
+    }
+
+
+export const getListTripLinksAdminQueryOptions = <TData = Awaited<ReturnType<typeof listTripLinksAdmin>>, TError = ErrorType<void>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripLinksAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripLinksAdminQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripLinksAdmin>>> = ({ signal }) => listTripLinksAdmin(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripLinksAdmin>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripLinksAdminQueryResult = NonNullable<Awaited<ReturnType<typeof listTripLinksAdmin>>>
+export type ListTripLinksAdminQueryError = ErrorType<void>
+
+
+/**
+ * @summary List all links for a trip (back-office)
+ */
+
+export function useListTripLinksAdmin<TData = Awaited<ReturnType<typeof listTripLinksAdmin>>, TError = ErrorType<void>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripLinksAdmin>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripLinksAdminQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripLinkAdminUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/links`
+}
+
+/**
+ * @summary Create a link for a trip (back-office), visible to every trip member
+ */
+export const createTripLinkAdmin = async (tripId: number,
+    tripLinkInput: TripLinkInput, options?: RequestInit): Promise<TripLink> => {
+
+  return customFetch<TripLink>(getCreateTripLinkAdminUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripLinkInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripLinkAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripLinkAdmin>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripLinkAdmin>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext> => {
+
+const mutationKey = ['createTripLinkAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripLinkAdmin>>, {tripId: number;data: BodyType<TripLinkInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripLinkAdmin(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripLinkAdminMutationResult = NonNullable<Awaited<ReturnType<typeof createTripLinkAdmin>>>
+    export type CreateTripLinkAdminMutationBody = BodyType<TripLinkInput>
+    export type CreateTripLinkAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a link for a trip (back-office), visible to every trip member
+ */
+export const useCreateTripLinkAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripLinkAdmin>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripLinkAdmin>>,
+        TError,
+        {tripId: number;data: BodyType<TripLinkInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripLinkAdminMutationOptions(options));
+    }
+
+export const getDeleteTripLinkAdminUrl = (tripId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/trips/${tripId}/links/${linkId}`
+}
+
+/**
+ * @summary Delete a link from a trip (back-office)
+ */
+export const deleteTripLinkAdmin = async (tripId: number,
+    linkId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripLinkAdminUrl(tripId,linkId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripLinkAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripLinkAdmin>>, TError,{tripId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripLinkAdmin>>, TError,{tripId: number;linkId: number}, TContext> => {
+
+const mutationKey = ['deleteTripLinkAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripLinkAdmin>>, {tripId: number;linkId: number}> = (props) => {
+          const {tripId,linkId} = props ?? {};
+
+          return  deleteTripLinkAdmin(tripId,linkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripLinkAdminMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripLinkAdmin>>>
+
+    export type DeleteTripLinkAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a link from a trip (back-office)
+ */
+export const useDeleteTripLinkAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripLinkAdmin>>, TError,{tripId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripLinkAdmin>>,
+        TError,
+        {tripId: number;linkId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripLinkAdminMutationOptions(options));
+    }
+
 export const getListTripNotesAdminUrl = (tripId: number,) => {
 
 
@@ -7290,6 +7514,375 @@ export const useRemoveTripDocumentShare = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRemoveTripDocumentShareMutationOptions(options));
+    }
+
+export const getListTripLinksUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/links`
+}
+
+/**
+ * @summary List all links for a trip accessible to the traveler (own links + agency-created links)
+ */
+export const listTripLinks = async (tripId: number, options?: RequestInit): Promise<TripLink[]> => {
+
+  return customFetch<TripLink[]>(getListTripLinksUrl(tripId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTripLinksQueryKey = (tripId: number,) => {
+    return [
+    `/api/me/trips/${tripId}/links`
+    ] as const;
+    }
+
+
+export const getListTripLinksQueryOptions = <TData = Awaited<ReturnType<typeof listTripLinks>>, TError = ErrorType<unknown>>(tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTripLinksQueryKey(tripId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTripLinks>>> = ({ signal }) => listTripLinks(tripId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(tripId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTripLinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTripLinksQueryResult = NonNullable<Awaited<ReturnType<typeof listTripLinks>>>
+export type ListTripLinksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all links for a trip accessible to the traveler (own links + agency-created links)
+ */
+
+export function useListTripLinks<TData = Awaited<ReturnType<typeof listTripLinks>>, TError = ErrorType<unknown>>(
+ tripId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTripLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTripLinksQueryOptions(tripId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateTripLinkUrl = (tripId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/links`
+}
+
+/**
+ * @summary Create a personal link for a trip
+ */
+export const createTripLink = async (tripId: number,
+    tripLinkInput: TripLinkInput, options?: RequestInit): Promise<TripLink> => {
+
+  return customFetch<TripLink>(getCreateTripLinkUrl(tripId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripLinkInput,)
+  }
+);}
+
+
+
+
+export const getCreateTripLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripLink>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTripLink>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext> => {
+
+const mutationKey = ['createTripLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTripLink>>, {tripId: number;data: BodyType<TripLinkInput>}> = (props) => {
+          const {tripId,data} = props ?? {};
+
+          return  createTripLink(tripId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTripLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createTripLink>>>
+    export type CreateTripLinkMutationBody = BodyType<TripLinkInput>
+    export type CreateTripLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a personal link for a trip
+ */
+export const useCreateTripLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTripLink>>, TError,{tripId: number;data: BodyType<TripLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTripLink>>,
+        TError,
+        {tripId: number;data: BodyType<TripLinkInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTripLinkMutationOptions(options));
+    }
+
+export const getDeleteTripLinkUrl = (tripId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/links/${linkId}`
+}
+
+/**
+ * @summary Delete a link (must be the creator)
+ */
+export const deleteTripLink = async (tripId: number,
+    linkId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteTripLinkUrl(tripId,linkId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteTripLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripLink>>, TError,{tripId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTripLink>>, TError,{tripId: number;linkId: number}, TContext> => {
+
+const mutationKey = ['deleteTripLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTripLink>>, {tripId: number;linkId: number}> = (props) => {
+          const {tripId,linkId} = props ?? {};
+
+          return  deleteTripLink(tripId,linkId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTripLinkMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTripLink>>>
+
+    export type DeleteTripLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a link (must be the creator)
+ */
+export const useDeleteTripLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTripLink>>, TError,{tripId: number;linkId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTripLink>>,
+        TError,
+        {tripId: number;linkId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteTripLinkMutationOptions(options));
+    }
+
+export const getAddTripLinkSharesUrl = (tripId: number,
+    linkId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/links/${linkId}/shares`
+}
+
+/**
+ * @summary Share a personal link with other trip members (creator only)
+ */
+export const addTripLinkShares = async (tripId: number,
+    linkId: number,
+    tripResourceSharesInput: TripResourceSharesInput, options?: RequestInit): Promise<AddTripLinkShares201> => {
+
+  return customFetch<AddTripLinkShares201>(getAddTripLinkSharesUrl(tripId,linkId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tripResourceSharesInput,)
+  }
+);}
+
+
+
+
+export const getAddTripLinkSharesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripLinkShares>>, TError,{tripId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addTripLinkShares>>, TError,{tripId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext> => {
+
+const mutationKey = ['addTripLinkShares'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addTripLinkShares>>, {tripId: number;linkId: number;data: BodyType<TripResourceSharesInput>}> = (props) => {
+          const {tripId,linkId,data} = props ?? {};
+
+          return  addTripLinkShares(tripId,linkId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddTripLinkSharesMutationResult = NonNullable<Awaited<ReturnType<typeof addTripLinkShares>>>
+    export type AddTripLinkSharesMutationBody = BodyType<TripResourceSharesInput>
+    export type AddTripLinkSharesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Share a personal link with other trip members (creator only)
+ */
+export const useAddTripLinkShares = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addTripLinkShares>>, TError,{tripId: number;linkId: number;data: BodyType<TripResourceSharesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addTripLinkShares>>,
+        TError,
+        {tripId: number;linkId: number;data: BodyType<TripResourceSharesInput>},
+        TContext
+      > => {
+      return useMutation(getAddTripLinkSharesMutationOptions(options));
+    }
+
+export const getRemoveTripLinkShareUrl = (tripId: number,
+    linkId: number,
+    travelerId: number,) => {
+
+
+
+
+  return `/api/me/trips/${tripId}/links/${linkId}/shares/${travelerId}`
+}
+
+/**
+ * @summary Remove a recipient from a personal link, or leave one you were shared
+ */
+export const removeTripLinkShare = async (tripId: number,
+    linkId: number,
+    travelerId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveTripLinkShareUrl(tripId,linkId,travelerId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveTripLinkShareMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripLinkShare>>, TError,{tripId: number;linkId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeTripLinkShare>>, TError,{tripId: number;linkId: number;travelerId: number}, TContext> => {
+
+const mutationKey = ['removeTripLinkShare'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeTripLinkShare>>, {tripId: number;linkId: number;travelerId: number}> = (props) => {
+          const {tripId,linkId,travelerId} = props ?? {};
+
+          return  removeTripLinkShare(tripId,linkId,travelerId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveTripLinkShareMutationResult = NonNullable<Awaited<ReturnType<typeof removeTripLinkShare>>>
+
+    export type RemoveTripLinkShareMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove a recipient from a personal link, or leave one you were shared
+ */
+export const useRemoveTripLinkShare = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeTripLinkShare>>, TError,{tripId: number;linkId: number;travelerId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeTripLinkShare>>,
+        TError,
+        {tripId: number;linkId: number;travelerId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveTripLinkShareMutationOptions(options));
     }
 
 export const getGetMyTripChecklistUrl = (tripId: number,) => {

@@ -6,7 +6,7 @@ import {
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
   hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
   usersTable, tripDocumentsTable, countryAdvisoriesTable, tripDayActivityParticipantsTable,
-  tripNotesTable,
+  tripNotesTable, tripLinksTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -14,7 +14,7 @@ import {
   TripInputSchema, TripUpdateSchema, TripDayUpdateSchema,
   DayHotelInputSchema, DayActivityInputSchema, TripDayActivityUpdateSchema,
   TripDocumentInputSchema, TripDocumentRenameSchema, PersonalTripDayInputSchema,
-  TripNoteInputSchema, TripNoteUpdateSchema,
+  TripNoteInputSchema, TripNoteUpdateSchema, TripLinkInputSchema,
 } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { sendDocumentUploadedEmail, sendTripUpdatedEmail } from "../lib/email";
@@ -1523,6 +1523,80 @@ router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin"
     req.log.error({ err }, "Error generating signed download URL");
     res.status(500).json({ error: "Failed to generate download URL" });
   }
+});
+
+// ─── Back-office link endpoints ("Enlaces") ───────────────────────────────────
+// Independent feature reusing trip_documents' ownership/visibility pattern exactly (#153):
+// the back office never sees a traveler's own links, by any route -- only what the agency
+// itself created. Filtering by uploader role, not a parallel origin column.
+router.get("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const links = await db
+    .select({
+      id: tripLinksTable.id,
+      tripId: tripLinksTable.tripId,
+      userId: tripLinksTable.userId,
+      title: tripLinksTable.title,
+      url: tripLinksTable.url,
+      createdAt: tripLinksTable.createdAt,
+      uploaderRole: usersTable.role,
+    })
+    .from(tripLinksTable)
+    .innerJoin(usersTable, eq(usersTable.id, tripLinksTable.userId))
+    .where(and(eq(tripLinksTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
+    .orderBy(tripLinksTable.createdAt);
+  res.json(links.map(l => ({ ...l, createdAt: l.createdAt.toISOString(), uploaderRole: l.uploaderRole ?? "traveler" })));
+});
+
+router.post("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), validate(TripLinkInputSchema), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const { title, url } = req.body as { title: string; url: string };
+
+  const [link] = await db
+    .insert(tripLinksTable)
+    .values({ tripId, userId: userId!, title, url })
+    .returning();
+  res.status(201).json({ ...link, createdAt: link.createdAt.toISOString(), uploaderRole: role! });
+});
+
+router.delete("/trips/:tripId/links/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+  const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
+  const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
+  const { userId, agencyId, role } = req.session;
+
+  if (!await verifyTripAccess(tripId, userId!, agencyId, role)) {
+    res.status(403).json({ error: "Forbidden" }); return;
+  }
+
+  const [link] = await db
+    .select({ id: tripLinksTable.id, userId: tripLinksTable.userId, uploaderRole: usersTable.role })
+    .from(tripLinksTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripLinksTable.userId))
+    .where(and(eq(tripLinksTable.id, linkId), eq(tripLinksTable.tripId, tripId)));
+
+  if (!link || !link.uploaderRole || !["admin", "manager", "agent"].includes(link.uploaderRole)) {
+    res.status(404).json({ error: "Not found" }); return;
+  }
+
+  // Agents can only delete links they created
+  if (role === "agent" && link.userId !== userId) {
+    res.status(403).json({ error: "Agents can only delete their own links" }); return;
+  }
+
+  await db.delete(tripLinksTable).where(eq(tripLinksTable.id, linkId));
+  res.sendStatus(204);
 });
 
 // ─── Back-office note endpoints (#153) ────────────────────────────────────────

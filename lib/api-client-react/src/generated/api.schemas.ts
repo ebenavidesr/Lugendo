@@ -1195,6 +1195,24 @@ export interface TripDocumentRename {
   filename: string;
 }
 
+export interface TripLink {
+  id: number;
+  tripId: number;
+  userId: number;
+  title: string;
+  url: string;
+  createdAt: string;
+  /** Role of the user who created the link (admin, manager, agent, traveler) */
+  uploaderRole: string;
+  /** Recipients this link has been shared with. Only present when the caller is the link's creator. */
+  sharedWith?: ActivityParticipant[];
+}
+
+export interface TripLinkInput {
+  title: string;
+  url: string;
+}
+
 export interface ChecklistTemplate {
   id: number;
   agencyId: number;
@@ -2068,6 +2086,10 @@ export type AddTripNoteShares201 = {
 };
 
 export type AddTripDocumentShares201 = {
+  sharedWith: ActivityParticipant[];
+};
+
+export type AddTripLinkShares201 = {
   sharedWith: ActivityParticipant[];
 };
 

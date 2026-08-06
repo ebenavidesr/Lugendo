@@ -1552,6 +1552,51 @@ export const GetTripDocumentDownloadUrlAdminResponse = zod.object({
 
 
 /**
+ * @summary List all links for a trip (back-office)
+ */
+export const ListTripLinksAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripLinksAdminResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "url": zod.string(),
+  "createdAt": zod.string(),
+  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.')
+})
+export const ListTripLinksAdminResponse = zod.array(ListTripLinksAdminResponseItem)
+
+
+/**
+ * @summary Create a link for a trip (back-office), visible to every trip member
+ */
+export const CreateTripLinkAdminParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripLinkAdminBody = zod.object({
+  "title": zod.string(),
+  "url": zod.string()
+})
+
+
+/**
+ * @summary Delete a link from a trip (back-office)
+ */
+export const DeleteTripLinkAdminParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+
+/**
  * @summary List agency-authored notes for a trip (back-office,
  */
 export const ListTripNotesAdminParams = zod.object({
@@ -2428,6 +2473,74 @@ export const AddTripDocumentSharesBody = zod.object({
 export const RemoveTripDocumentShareParams = zod.object({
   "tripId": zod.coerce.number(),
   "documentId": zod.coerce.number(),
+  "travelerId": zod.coerce.number()
+})
+
+
+/**
+ * @summary List all links for a trip accessible to the traveler (own links + agency-created links)
+ */
+export const ListTripLinksParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const ListTripLinksResponseItem = zod.object({
+  "id": zod.number(),
+  "tripId": zod.number(),
+  "userId": zod.number(),
+  "title": zod.string(),
+  "url": zod.string(),
+  "createdAt": zod.string(),
+  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, traveler)'),
+  "sharedWith": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional().describe('Recipients this link has been shared with. Only present when the caller is the link\'s creator.')
+})
+export const ListTripLinksResponse = zod.array(ListTripLinksResponseItem)
+
+
+/**
+ * @summary Create a personal link for a trip
+ */
+export const CreateTripLinkParams = zod.object({
+  "tripId": zod.coerce.number()
+})
+
+export const CreateTripLinkBody = zod.object({
+  "title": zod.string(),
+  "url": zod.string()
+})
+
+
+/**
+ * @summary Delete a link (must be the creator)
+ */
+export const DeleteTripLinkParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Share a personal link with other trip members (creator only)
+ */
+export const AddTripLinkSharesParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "linkId": zod.coerce.number()
+})
+
+export const AddTripLinkSharesBody = zod.object({
+  "travelerIds": zod.array(zod.number())
+})
+
+
+/**
+ * @summary Remove a recipient from a personal link, or leave one you were shared
+ */
+export const RemoveTripLinkShareParams = zod.object({
+  "tripId": zod.coerce.number(),
+  "linkId": zod.coerce.number(),
   "travelerId": zod.coerce.number()
 })
 

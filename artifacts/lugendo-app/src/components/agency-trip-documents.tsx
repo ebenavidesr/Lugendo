@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { FileText, FileImage, File, Upload, Trash2, Download, Pencil, Check, X } from "lucide-react";
+import { FileText, FileImage, File, Upload, Trash2, Download, Pencil, Check, X, Link2 } from "lucide-react";
 import {
   useListTripDocumentsAdmin,
   useCreateTripDocumentAdmin,
@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { AgencyTripLinks } from "@/components/agency-trip-links";
 
 function getMimeIcon(mimeType: string) {
   if (mimeType.startsWith("image/")) return FileImage;
@@ -49,6 +50,7 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [subTab, setSubTab] = useState<"documents" | "links">("documents");
 
   const { data: documents, isLoading } = useListTripDocumentsAdmin(tripId);
   const createDoc = useCreateTripDocumentAdmin();
@@ -177,7 +179,29 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
   };
 
   return (
-    <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+    <div className="space-y-3">
+      <div className="flex items-center gap-1 p-1 rounded-[10px] w-fit" style={{ background: "var(--arena)" }}>
+        {([
+          { key: "documents", label: "Documentos", icon: FileText },
+          { key: "links", label: "Enlaces", icon: Link2 },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setSubTab(t.key)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-medium transition-colors"
+            style={subTab === t.key
+              ? { background: "var(--card)", color: "var(--noche)" }
+              : { color: "var(--noche)", opacity: 0.6 }}
+          >
+            <t.icon className="w-3.5 h-3.5" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {subTab === "links" && <AgencyTripLinks tripId={tripId} readOnly={readOnly} />}
+
+      {subTab === "documents" && <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
         <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
           Documentos ({documents?.length ?? 0})
@@ -316,6 +340,7 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
           })}
         </ul>
       )}
+      </div>}
     </div>
   );
 }

@@ -452,6 +452,20 @@ export const TripResourceSharesInputSchema = z.object({
   travelerIds: z.array(z.number().int().positive()).min(1),
 });
 
+// "Enlaces" (links) -- independent feature reusing the trip_documents ownership/visibility
+// pattern (see lib/db/src/schema/trip_links.ts). URLs without a scheme are treated as https://
+// before validation, so "youtube.com/..." pasted without a protocol still parses -- but always
+// re-normalized/validated server-side, never trusting whatever the client already prepended.
+function normalizeLinkUrl(url: string): string {
+  const trimmed = url.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+export const TripLinkInputSchema = z.object({
+  title: z.string().trim().min(1),
+  url: z.string().trim().min(1).transform(normalizeLinkUrl).pipe(z.string().url()),
+});
+
 // ─── Checklists ───────────────────────────────────────────────────────────────
 
 export const ChecklistTemplateInputSchema = z.object({

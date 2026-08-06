@@ -6,6 +6,22 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Nueva funcionalidad — "Enlaces" dentro de Documentos (2026-08-05)
+- [x] Nuevas tablas `trip_links` y `trip_link_shares`, replicando exactamente el patrón de ownership/cascade de `trip_documents`/`trip_document_shares` (#153) — sin tocar esas tablas ni su código. A diferencia del `autor_tipo` propuesto originalmente, el rol del creador se resuelve por join a `users.role` en tiempo de lectura (igual que `uploaderRole` en Documentos), evitando un campo redundante que pueda quedar desincronizado
+- [x] Reglas de visibilidad idénticas a Documentos: enlace de agencia visible para todo el viaje; enlace de viajero privado salvo compartición explícita; compartido aparece en "Mis enlaces"; destinatario puede abandonar libremente (sin coste asociado). Resolución siempre en el backend (`GET /me/trips/:tripId/links`), nunca filtrada en el cliente
+- [x] Back office (`agency-trip-documents.tsx`) nunca ve enlaces privados/compartidos de un viajero — mismo filtro por rol que ya usa Documentos, no una columna de origen paralela
+- [x] La "foto" pública para Seguidores (#141, `buildTripPhotoSnapshot`) no se tocó y no incluye documentos ni enlaces — ya no los incluía antes de esta tarea, así que la regla se cumple sin cambios
+- [x] UI: pestaña "Documentos" del viajero y del back office ahora tienen un selector "Documentos" / "Enlaces". Formulario de alta: Título (obligatorio) + URL (obligatoria, normalizada a `https://` si falta el esquema y validada en el backend). La URL en crudo nunca se muestra, solo el título (enlace clicable, abre en pestaña nueva)
+- [x] Icono por plataforma derivado del hostname en tiempo de lectura (`lib/link-platform.ts`), sin persistir campo tipo/plataforma: YouTube (youtube.com/youtu.be), Google Drive (drive.google.com), Instagram (instagram.com), resto → icono genérico
+- [x] `pnpm run typecheck` y `pnpm run build` (frontend + backend) limpios en todo el monorepo
+- [ ] **Pendiente ejecutar `pnpm --filter @workspace/db run generate` y `migrate` con acceso real a la base de datos** — este contenedor no tiene `.env`/`DATABASE_URL`, así que no se pudo generar la migración SQL ni aplicarla; el esquema Drizzle está listo pero las tablas no existen todavía en la base real
+- [ ] **No se pudo probar en vivo en este contenedor** — sin `.env` no se pudo levantar el servidor contra la base real; verificado por lectura de código, typecheck y build
+- [ ] Validar en producción tras aplicar la migración: crear un enlace propio como viajero, confirmar que aparece en "Mis enlaces" con icono genérico, compartirlo con otro viajero y confirmar que aparece en su vista
+- [ ] Crear un enlace de YouTube/Google Drive/Instagram y confirmar que se muestra el icono correcto
+- [ ] Como agencia (admin/manager/agent), crear un enlace y confirmar que es visible para todos los viajeros del viaje, y que el viajero no puede editarlo/eliminarlo
+- [ ] Confirmar que un viajero nunca ve el back office con sus enlaces privados, y que el JSON de "la foto" para Seguidores no incluye documentos ni enlaces
+- [ ] Pegar una URL sin `https://` (p. ej. `youtube.com/watch?v=abc`) y confirmar que se guarda correctamente con el esquema añadido; probar una URL inválida y confirmar que el formulario la rechaza
+
 ### Mejora — Botón "Compartir todas/todos" para notas y documentos propios del viajero (2026-08-05)
 - [x] Nuevo botón "Compartir todas" (Notas) / "Compartir todos" (Documentos), en índigo, junto a "Nueva nota"/"Subir archivo" — comparte de una vez todas las notas/documentos propios del viajero con los viajeros del mismo viaje que aún no tienen acceso
 - [x] Solo rellena huecos: nunca quita a nadie ni comparte más allá de lo ya compartido — si el dueño excluyó a alguien a propósito en un elemento concreto, esta acción no lo vuelve a añadir ahí
