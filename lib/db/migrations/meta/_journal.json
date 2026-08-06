@@ -183,6 +183,13 @@
       "when": 1785732943523,
       "tag": "0025_omniscient_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785982111962,
+      "tag": "0026_early_king_bedlam",
+      "breakpoints": true
     }
   ]
 }
