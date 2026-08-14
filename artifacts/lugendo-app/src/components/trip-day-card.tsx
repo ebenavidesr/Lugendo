@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Hotel, ChevronRight, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import type { TripDay, TripDayActivityItem, DayActivity } from "@workspace/api-client-react";
 import { useRemoveTripDayActivity, COUNTRIES } from "@workspace/api-client-react";
@@ -88,6 +88,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const [editTransport, setEditTransport] = useState(isValidTransport(day.transport) ? (day.transport ?? "") : "");
   const [editDescription, setEditDescription] = useState(day.description ?? "");
   const [savingDay, setSavingDay] = useState(false);
+  const dayEditFormRef = useRef<HTMLDivElement>(null);
 
   const openDayEdit = () => {
     setEditCityFrom(day.cityFrom ?? "");
@@ -98,6 +99,12 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
     setEditDescription(day.description ?? "");
     setDayEditOpen(true);
   };
+
+  // The form renders after the day's full activity list, which can push it well off-screen on
+  // mobile -- tapping the edit pencil near the photo otherwise looks like it does nothing.
+  useEffect(() => {
+    if (dayEditOpen) dayEditFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [dayEditOpen]);
 
   const handleSaveDay = async () => {
     if (!onSaveDay) return;
@@ -410,7 +417,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
 
       {/* Inline day edit form */}
       {canEditDay && dayEditOpen && (
-        <div className="mx-4 mt-3 border border-[var(--indigo)]/30 rounded-[12px] overflow-hidden">
+        <div ref={dayEditFormRef} className="mx-4 mt-3 border border-[var(--indigo)]/30 rounded-[12px] overflow-hidden">
           <button
             onClick={() => setDayEditOpen(false)}
             className="w-full flex items-center justify-between px-3 py-2 text-[12px] font-medium border-b border-border/60"
