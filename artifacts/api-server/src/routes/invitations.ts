@@ -191,8 +191,8 @@ router.post("/invitations/:code/accept", requireAuth, async (req, res): Promise<
     .from(invitationsTable)
     .where(eq(invitationsTable.inviteCode, code));
 
-  if (!invite) { res.status(404).json({ error: "Invitation not found" }); return; }
-  if (invite.status === "accepted") { res.status(409).json({ error: "Already accepted" }); return; }
+  if (!invite) { res.status(404).json({ error: "Código no encontrado" }); return; }
+  if (invite.status === "accepted") { res.status(409).json({ error: "Este código ya fue usado" }); return; }
 
   // Security: logged-in user's email must match the invitation email
   const [user] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, req.session.userId!));

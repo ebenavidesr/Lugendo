@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Fix — El error al usar un código de invitación/compartición era siempre genérico (2026-08-14)
+- [x] **Origen**: reporte de un código de invitación de agencia que "no funciona" para amaiaar84@hotmail.com en un viaje a Sri Lanka — sin acceso a la base de datos real desde aquí no se pudo ver la fila real, pero se encontró que `handleJoin` (`traveler-trip-wizard.tsx`, pantalla "¿Te han invitado a un viaje?") ocultaba siempre el motivo real del fallo: probaba el código primero como invitación de agencia y, si fallaba por CUALQUIER motivo (código ya usado, email de la cuenta no coincide con el invitado, etc.), lo intentaba de nuevo como código de compartición personal — que también fallaba (normalmente con 404, al no ser ese tipo de código) — y mostraba siempre el mismo mensaje genérico "Código no válido o ya utilizado", sin importar cuál de los dos motivos reales hubiera sido
+- [x] Fix: solo se reintenta como compartición personal cuando el primer intento falla con 404 (código no encontrado como invitación de agencia). Si el código SÍ existe como invitación pero falla por otro motivo (ya aceptado, email no coincide), se muestra ese motivo específico directamente, usando el `{error: "..."}` que ya devuelve el backend (mismo patrón `getApiErrorMessage` que ya usa el resto de la app)
+- [x] De paso, se localizan a español dos mensajes de error del backend que quedaban en inglés (`invitations.ts`: "Invitation not found" → "Código no encontrado", "Already accepted" → "Este código ya fue usado") — antes no se veían nunca porque el frontend los descartaba; ahora si se ven
+- [x] `pnpm run typecheck` y `pnpm run build` (frontend + backend) limpios
+- [ ] **Pendiente**: no se pudo confirmar la causa real del caso de Amaia sin acceso a la base de datos — validar tras desplegar pidiéndole que reintente el código y reportando el mensaje de error específico que aparece ahora
+- [ ] Probar los tres motivos de fallo por separado: código inexistente, código ya aceptado, código de invitación válido pero con una cuenta logueada con otro email
+- [ ] Confirmar que un código de compartición personal (no de agencia) sigue funcionando igual que antes
+
 ### Fix — Botón de editar día "no respondía" en iPhone (2026-08-06)
 - [x] **Diagnóstico real** (confirmado en dispositivo con el usuario, tras descartar un primer diagnóstico equivocado sobre `pointer-events` en iOS Safari): el lapicero sí abre el formulario de edición del día — el problema es que ese formulario inline se renderiza en `trip-day-card.tsx` **después de toda la lista de actividades del día**, mientras que el botón está arriba, sobre la foto. En un día con varias actividades esto lo empuja fuera de la pantalla en móvil sin ningún scroll automático, así que tocar el lápiz parecía no hacer nada
 - [x] Fix de UX: al abrirse el formulario (`dayEditOpen`), un `useEffect` hace `scrollIntoView({ behavior: "smooth", block: "nearest" })` sobre él, llevando al usuario hasta el formulario en vez de dejarlo enterrado fuera de vista

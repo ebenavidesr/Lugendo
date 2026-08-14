@@ -15,6 +15,7 @@ import {
   useAddItineraryDayHotel,
   useAcceptTripShare,
   useUseTripPhotoAsTemplate,
+  ApiError,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -167,8 +168,16 @@ export default function TravelerTripWizard() {
       toast({ title: "¡Te has unido al viaje correctamente!" });
       setPendingClaim({ tripId: invitation.tripId, navigateTo: "/traveler" });
       return;
-    } catch {
-      // If not found as agency invitation, try personal trip share
+    } catch (err) {
+      // A match was found but rejected for a specific reason (already accepted, wrong email,
+      // ...) -- surface that instead of silently falling through to the personal-share attempt,
+      // which would just fail with an unrelated 404 and mask the real cause.
+      if (!(err instanceof ApiError) || err.status !== 404) {
+        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo usar el código") });
+        setIsJoining(false);
+        return;
+      }
+      // Not found as an agency invitation -- try personal trip share next.
     }
     try {
       const share = await acceptShare.mutateAsync({ shareCode: code });
@@ -176,8 +185,8 @@ export default function TravelerTripWizard() {
       qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
       toast({ title: "¡Viaje compartido añadido correctamente!" });
       setPendingClaim({ tripId: share.tripId, navigateTo: "/traveler" });
-    } catch {
-      toast({ variant: "destructive", title: "Código no válido o ya utilizado" });
+    } catch (err) {
+      toast({ variant: "destructive", title: getApiErrorMessage(err, "Código no válido o ya utilizado") });
     } finally {
       setIsJoining(false);
     }
