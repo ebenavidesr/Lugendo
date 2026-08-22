@@ -307,7 +307,7 @@ function CompactDayRow({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors text-left border-b border-border/40 last:border-0"
+      className="w-full flex items-center gap-4 px-5 py-3 hover:bg-muted/30 transition-colors text-left"
     >
       <div className="flex flex-col items-center justify-center min-w-[48px] h-10 rounded-lg bg-muted/40 border border-border/50">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase leading-none mb-0.5">Día</span>
@@ -588,8 +588,8 @@ export default function TripDetail() {
 
       {/* Days */}
       {trip.days && (
-        <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
+        <div className="space-y-3">
+          <div className="bg-card border border-border rounded-[14px] shadow-sm px-5 py-3.5 flex items-center justify-between">
             <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
               Días del itinerario ({trip.days.length})
             </span>
@@ -653,7 +653,7 @@ export default function TripDetail() {
             </div>
           </div>
           {hotelBulkOpen && trip.days.length > 0 && (
-            <div className="border-b border-border px-5 py-4 animate-in fade-in slide-in-from-top-2 duration-200" style={{ background: "#FEFAF7" }}>
+            <div className="bg-card border border-border rounded-[14px] shadow-sm px-5 py-4 animate-in fade-in slide-in-from-top-2 duration-200" style={{ background: "#FEFAF7" }}>
               <p className="text-[11px] font-medium uppercase tracking-wide mb-3" style={{ color: "#9C7A58" }}>
                 Gestión de hoteles por día
               </p>
@@ -687,18 +687,18 @@ export default function TripDetail() {
           )}
 
           {trip.days.length === 0 ? (
-            <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+            <div className="bg-card border border-border rounded-[14px] shadow-sm px-5 py-8 text-center text-sm text-muted-foreground">
               No hay días en este itinerario. Haz clic en "Añadir día" para empezar.
             </div>
           ) : (
-            <div className="divide-y divide-border/60">
+            <div className="space-y-4">
               {trip.days.map(day => {
                 const isExpanded = expandedDays.has(day.id);
                 const isEditingThisDay = editingDayId === day.id;
 
                 if (viewMode === "summary" && !isExpanded) {
                   return (
-                    <div key={day.id} className="animate-in fade-in duration-200">
+                    <div key={day.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in duration-200">
                       <CompactDayRow
                         day={day}
                         startDate={trip.startDate}
@@ -710,8 +710,8 @@ export default function TripDetail() {
                 }
 
                 return (
-                  <div key={day.id} className="animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-3">
+                  <div key={day.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-4">
                       <DayPhotoZone
                         photoUrl={day.photoUrl}
                         editable={false}
