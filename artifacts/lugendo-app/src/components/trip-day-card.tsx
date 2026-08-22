@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Hotel, ChevronRight, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
+import { Hotel, ChevronRight, ChevronUp, X, Plus, Pencil, Trash2, Loader2, ChevronDown } from "lucide-react";
 import type { TripDay, TripDayActivityItem, DayActivity } from "@workspace/api-client-react";
 import { useRemoveTripDayActivity, COUNTRIES } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -209,14 +209,24 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
-              Día {day.dayNumber}
-            </span>
-            <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
-              {dayDateStr && `· ${dayDateStr} `}
-              {(day.cityTo ?? day.cityFrom) && `· ${day.cityTo ?? day.cityFrom}`}
-            </span>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
+                Día {day.dayNumber}
+              </span>
+              <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
+                {dayDateStr && `· ${dayDateStr} `}
+                {(day.cityTo ?? day.cityFrom) && `· ${day.cityTo ?? day.cityFrom}`}
+              </span>
+            </div>
+            <button
+              onClick={onToggle}
+              className="shrink-0 p-1.5 -m-1.5 rounded-[8px] opacity-70 hover:opacity-100 hover:bg-muted/40 transition-all"
+              style={{ color: "var(--ocre)" }}
+              title="Colapsar día"
+            >
+              <ChevronUp className="w-4 h-4" />
+            </button>
           </div>
           <h3 className="text-[17px] font-medium mt-1" style={{ color: "var(--noche)" }}>
             {dayTitle(day)}
