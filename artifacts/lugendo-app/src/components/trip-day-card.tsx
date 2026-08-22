@@ -10,21 +10,6 @@ import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
 import { DayPhotoZone } from "@/components/day-photo-editor";
 
-const categoryEmoji: Record<string, string> = {
-  cultural:    "🏛️",
-  gastronomic: "🍽️",
-  adventure:   "🧗",
-  nature:      "🌿",
-  beach:       "🏖️",
-  city:        "🏙️",
-  excursion:   "🚌",
-  other:       "⭐",
-};
-
-function getCategoryEmoji(category: string | null | undefined): string {
-  return categoryEmoji[category ?? ""] ?? "⭐";
-}
-
 function dayTitle(day: TripDay): string {
   if (day.cityFrom && day.cityTo) return `${day.cityFrom} → ${day.cityTo}`;
   return day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`;
@@ -201,7 +186,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   return (
     <div className="bg-card border border-border rounded-[18px] overflow-hidden">
       {/* Day row: square photo + header, side by side on desktop, stacked on mobile */}
-      <div className="flex flex-col sm:flex-row gap-3 p-3">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 p-4">
         <div className="relative shrink-0">
           <DayPhotoZone
             photoUrl={day.photoUrl}
@@ -209,7 +194,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             onSave={photoUrl => onSavePhoto!(photoUrl)}
             square={140}
             onClick={onToggle}
-            className="rounded-[12px]"
+            className="rounded-[10px]"
           />
           {canEditDay && (
             <button
@@ -223,16 +208,21 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
           )}
         </div>
 
-        <div className="flex-1 min-w-0 pt-0.5">
-          <p className="text-[12px] font-semibold" style={{ color: "var(--indigo)" }}>
-            Día {day.dayNumber}
-            {dayDateStr && <span className="font-normal opacity-70"> · {dayDateStr}</span>}
-          </p>
-          <h3 className="text-[16px] font-medium mt-0.5" style={{ color: "var(--noche)" }}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
+              Día {day.dayNumber}
+            </span>
+            <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
+              {dayDateStr && `· ${dayDateStr} `}
+              {(day.cityTo ?? day.cityFrom) && `· ${day.cityTo ?? day.cityFrom}`}
+            </span>
+          </div>
+          <h3 className="text-[17px] font-medium mt-1" style={{ color: "var(--noche)" }}>
             {dayTitle(day)}
           </h3>
           {day.description && (
-            <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--text-sec)" }}>
+            <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--noche)" }}>
               {day.description}
             </p>
           )}
@@ -261,156 +251,129 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
         </div>
       )}
 
-      {/* Activities timeline */}
+      {/* Activities */}
       {activities.length > 0 && (
-        <div className="mt-3 px-4">
-          <div
-            className="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-50"
-            style={{ color: "var(--noche)" }}
-          >
-            Actividades
-          </div>
-          <div className="relative">
-            {/* Vertical connector line */}
-            <div
-              className="absolute left-[13px] top-4 bottom-4 w-[1.5px]"
-              style={{ background: "var(--duna)" }}
-            />
+        <div className="mt-1 px-4">
+          <ul className="list-none m-0 p-0">
+            {activities.map((activity, idx) => {
+              const timeRange = formatTimeRange(activity.startTime, activity.endTime);
+              const isFree = !activity.included;
+              const transportOpt = getTransportOption(activity.transportMode);
+              const canDelete = activity.canEdit && tripId != null;
+              const canEdit = activity.canEdit && tripId != null;
+              const isOpen = openActivityIds.has(activity.id);
+              const address = activity.addressOverride ?? activity.address;
+              const hasDetail = !!(activity.description || activity.companyContact || address || activity.notes || (isFree && activity.costAmount != null));
 
-            <div className="space-y-0">
-              {activities.map((activity, idx) => {
-                const emoji = getCategoryEmoji(activity.activityCategory);
-                const timeRange = formatTimeRange(activity.startTime, activity.endTime);
-                const isFree = !activity.included;
-                const transportOpt = getTransportOption(activity.transportMode);
-                const canDelete = activity.canEdit && tripId != null;
-                const canEdit = activity.canEdit && tripId != null;
-                const isOpen = openActivityIds.has(activity.id);
-                const hasDetail = !!(activity.description || activity.companyContact || (activity.addressOverride ?? activity.address) || activity.notes || (isFree && activity.costAmount != null));
-
-                return (
-                  <div key={activity.id}>
-                    {/* Transport separator before this activity (skip first) */}
-                    {idx > 0 && transportOpt && (
-                      <div className="flex items-center gap-2 py-1.5 ml-8">
-                        <span className="text-[13px]">{transportOpt.icon}</span>
-                        <span className="text-[11px]" style={{ color: "var(--text-ter)" }}>
-                          {transportOpt.label}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Activity row -- collapsed to one line, expands individually on click */}
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => hasDetail && toggleActivity(activity.id)}
-                      onKeyDown={e => { if (hasDetail && (e.key === "Enter" || e.key === " ")) toggleActivity(activity.id); }}
-                      className="flex items-center gap-2.5 py-2"
-                      style={{ minHeight: 44, cursor: hasDetail ? "pointer" : "default" }}
-                    >
-                      {/* Node dot with emoji */}
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 text-[13px]"
-                        style={{ background: "var(--arena)", border: "1.5px solid var(--duna)" }}
-                      >
-                        {emoji}
-                      </div>
-
-                      <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-                        {activity.included && (
-                          <span
-                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                            style={{ background: "#EAE6F5", color: "#3D2F6B" }}
-                          >
-                            Incluída
-                          </span>
-                        )}
-                        {isFree && (
-                          <span
-                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                            style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}
-                          >
-                            {activity.isMine ? "Mi actividad" : "Por libre"}
-                          </span>
-                        )}
-                        {timeRange ? (
-                          <span className="text-[11px] font-medium tabular-nums shrink-0" style={{ color: "var(--terra)" }}>
-                            {timeRange}
-                          </span>
-                        ) : (
-                          <span className="text-[11px] shrink-0" style={{ color: "var(--text-ter)" }}>
-                            Hora por confirmar
-                          </span>
-                        )}
-                        <span className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
-                          {activity.activityName}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        {canEdit && (
-                          <button
-                            onClick={e => { e.stopPropagation(); setEditActivity(activity); setEditSheetOpen(true); }}
-                            className="p-0.5 text-muted-foreground hover:text-[var(--indigo)] transition-colors"
-                            title="Editar actividad"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {canDelete && (
-                          <button
-                            onClick={e => { e.stopPropagation(); handleRemoveActivity(activity.id); }}
-                            className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
-                            title="Eliminar actividad"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        {hasDetail && (
-                          <ChevronDown
-                            className="w-3.5 h-3.5 text-muted-foreground transition-transform"
-                            style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
-                          />
-                        )}
-                      </div>
+              return (
+                <li key={activity.id} className={idx > 0 ? "border-t" : ""} style={{ borderColor: "var(--arena)" }}>
+                  {/* Transport separator before this activity (skip first) */}
+                  {idx > 0 && transportOpt && (
+                    <div className="flex items-center gap-2 py-1.5">
+                      <span className="text-[13px]">{transportOpt.icon}</span>
+                      <span className="text-[11px]" style={{ color: "var(--text-ter)" }}>
+                        {transportOpt.label}
+                      </span>
                     </div>
+                  )}
 
-                    {/* Expanded detail */}
-                    {isOpen && hasDetail && (
-                      <div className="pl-9 pb-2 space-y-0.5 animate-in fade-in duration-150">
-                        {activity.description && (
-                          <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-sec)" }}>
-                            {activity.description}
-                          </p>
-                        )}
-                        {isFree && activity.costAmount != null && (
-                          <p className="text-[11px] font-medium" style={{ color: "var(--terra)" }}>
-                            💶 {activity.costAmount.toFixed(2)} {activity.costCurrency ?? "EUR"} por persona
-                          </p>
-                        )}
-                        {activity.companyContact && (
-                          <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
-                            🏢 {activity.companyContact}
-                          </p>
-                        )}
-                        {(activity.addressOverride ?? activity.address) && (
-                          <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
-                            📍 {activity.addressOverride ?? activity.address}
-                          </p>
-                        )}
-                        {activity.notes && (
-                          <p className="text-[11px] italic" style={{ color: "var(--text-ter)" }}>
-                            {activity.notes}
-                          </p>
-                        )}
-                      </div>
+                  {/* Activity row -- collapsed to one line, expands individually on click */}
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => hasDetail && toggleActivity(activity.id)}
+                    onKeyDown={e => { if (hasDetail && (e.key === "Enter" || e.key === " ")) toggleActivity(activity.id); }}
+                    className="flex items-center gap-2.5 py-2.5"
+                    style={{ minHeight: 44, cursor: hasDetail ? "pointer" : "default" }}
+                  >
+                    {activity.included ? (
+                      <span
+                        className="shrink-0 text-[10px] font-medium uppercase tracking-[0.4px] px-[7px] py-[3px] rounded-[5px]"
+                        style={{ background: "var(--indigo)", color: "var(--arena)" }}
+                      >
+                        Incluída
+                      </span>
+                    ) : (
+                      <span
+                        className="shrink-0 text-[10px] font-medium uppercase tracking-[0.4px] px-[7px] py-[3px] rounded-[5px]"
+                        style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}
+                      >
+                        {activity.isMine ? "Mi actividad" : "Por libre"}
+                      </span>
+                    )}
+                    <span className="shrink-0 text-[13px] tabular-nums" style={{ color: "var(--ocre)", width: 38 }}>
+                      {timeRange || "—"}
+                    </span>
+                    <span className="flex-1 min-w-0 truncate text-[13.5px]" style={{ color: "var(--noche)" }}>
+                      {activity.activityName}
+                    </span>
+                    {canEdit && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setEditActivity(activity); setEditSheetOpen(true); }}
+                        className="shrink-0 p-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                        style={{ color: "var(--ocre)" }}
+                        title="Editar actividad"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleRemoveActivity(activity.id); }}
+                        className="shrink-0 p-0.5 opacity-60 hover:opacity-100 hover:text-red-500 transition-colors"
+                        style={{ color: "var(--ocre)" }}
+                        title="Eliminar actividad"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {hasDetail && (
+                      <ChevronDown
+                        className="shrink-0 w-3.5 h-3.5 transition-transform"
+                        style={{ color: "var(--ocre)", transform: isOpen ? "rotate(180deg)" : undefined }}
+                      />
                     )}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+
+                  {/* Expanded detail */}
+                  {isOpen && hasDetail && (
+                    <div className="pb-4 pl-0 sm:pl-12 animate-in fade-in duration-150">
+                      {activity.description && (
+                        <p className="text-[13px] leading-relaxed mb-3" style={{ color: "var(--noche)" }}>
+                          {activity.description}
+                        </p>
+                      )}
+                      <div className="flex flex-col gap-2">
+                        {address && (
+                          <div className="flex gap-2 text-[12.5px]">
+                            <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Dirección</span>
+                            <span style={{ color: "var(--noche)" }}>{address}</span>
+                          </div>
+                        )}
+                        {isFree && activity.costAmount != null && (
+                          <div className="flex gap-2 text-[12.5px]">
+                            <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Coste</span>
+                            <span style={{ color: "var(--noche)" }}>{activity.costAmount.toFixed(2)} {activity.costCurrency ?? "EUR"} por persona</span>
+                          </div>
+                        )}
+                        {activity.companyContact && (
+                          <div className="flex gap-2 text-[12.5px]">
+                            <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Contacto</span>
+                            <span style={{ color: "var(--noche)" }}>{activity.companyContact}</span>
+                          </div>
+                        )}
+                      </div>
+                      {activity.notes && (
+                        <div className="mt-2.5 px-2.5 py-2 rounded-[7px] text-[12px] leading-relaxed" style={{ background: "var(--arena)", color: "var(--ocre)" }}>
+                          {activity.notes}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 

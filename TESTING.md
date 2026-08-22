@@ -20,8 +20,9 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Sin regresión en la lógica de permisos, participantes ni visibilidad de #151 (cambio puramente de presentación; la rama `isItinerary` de `day-activities-panel.tsx` quedó intacta)
 - [ ] Sin regresión en el toggle "Incluida"/"Por libre" del sheet de edición de actividad
 - [x] La vista de itinerarios (plantillas sin fechas) no se ve afectada por este cambio — `day-activities-panel.tsx` mantiene una rama separada sin acordeón para `isItinerary`
-- [ ] Validar en dispositivo móvil real (solo verificado por breakpoint `sm:` en escritorio/DOM, no en viewport táctil real)
-- [ ] Confirmar visualmente el color exacto del pill "Por libre" (verificado por valor de variables CSS, no por captura visual — herramienta de screenshot inestable en esta sesión)
+- [ ] Validar en dispositivo móvil real (solo verificado por breakpoint `sm:` y `resize_window` a 375px en navegador, no en un dispositivo táctil real)
+
+**Corrección de fidelidad al mockup (2026-08-22, segunda pasada):** la primera implementación no incluía el prototipo HTML de la tarjeta (se añadió después). Al comparar contra `lugendo-itinerario-prototipo-v2.html`, se corrigió: badges como chips rectangulares (radio 5px) en mayúsculas —"Incluída" en Índigo sólido con texto Arena, ya no un pill con fondo claro—; se eliminó el punto circular con emoji de categoría y la línea de timeline vertical, sustituidos por una lista plana con borde superior sutil entre actividades; hora en color Ocre (antes Terracota) y chevron en Ocre (antes gris); el detalle expandido pasó de líneas con emoji (📍🏢💶) a filas "Etiqueta: valor" (Dirección → Coste → Contacto, en ese orden) sin iconos, con las notas en una caja destacada aparte (fondo Arena); la cabecera del día pasó a "DÍA N" en Terracota mayúsculas + fecha y ubicación en Ocre en una sola línea (antes el back office usaba un badge cuadrado de número). Verificado en navegador contra datos reales (Sri Lanka) en escritorio y a 375px de ancho.
 
 **Nota técnica:** se añadió el campo `description` (descripción del catálogo de actividades) a `TripDayActivityItem`/`DayActivity`, que no se exponía antes en la API pese a existir ya en la tabla `activities` — sin migración de schema, solo openapi.yaml + codegen + `trips.ts` + `traveler.ts`.
 

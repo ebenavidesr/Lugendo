@@ -720,19 +720,17 @@ export default function TripDetail() {
                         className="rounded-[12px]"
                       />
                       <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
-                      <div className="flex flex-col items-center gap-0.5 shrink-0">
-                        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-medium"
-                          style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                          {day.dayNumber}
-                        </div>
-                        {formatDayDate(trip.startDate, day.dayNumber) && (
-                          <span className="text-[9px] text-muted-foreground text-center leading-tight" style={{ maxWidth: 42 }}>
-                            {formatDayDate(trip.startDate, day.dayNumber)}
-                          </span>
-                        )}
-                      </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
+                            Día {day.dayNumber}
+                          </span>
+                          <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
+                            {formatDayDate(trip.startDate, day.dayNumber) && `· ${formatDayDate(trip.startDate, day.dayNumber)} `}
+                            {(day.cityTo ?? day.cityFrom) && `· ${day.cityTo ?? day.cityFrom}`}
+                          </span>
+                        </div>
+                        <p className="text-[14px] font-medium mt-1" style={{ color: "#2D1F0E" }}>
                           {day.cityFrom && day.cityTo
                             ? `${day.cityFrom} → ${day.cityTo}`
                             : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}

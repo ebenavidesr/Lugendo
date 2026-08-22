@@ -275,15 +275,8 @@ export function DayActivitiesPanel({
       ) : (
         <>
           {dayActivities && dayActivities.length > 0 && (
-            <div className="mb-3 relative">
-              {/* Vertical connector line for timeline */}
-              {!isItinerary && (
-                <div
-                  className="absolute left-[13px] top-3 bottom-3 w-[1.5px]"
-                  style={{ background: "var(--duna, #ECD5B8)" }}
-                />
-              )}
-              <div className="space-y-0">
+            <div className="mb-3">
+              <ul className="list-none m-0 p-0">
                 {dayActivities.map((a, idx) => {
                   const meta = categoryMeta[a.activityCategory ?? ""] ?? categoryMeta.other;
                   const timeRange = formatTimeRange(a.startTime, a.endTime ?? undefined);
@@ -293,7 +286,7 @@ export function DayActivitiesPanel({
                   // ── Itinerary/template rows: unchanged, no accordion, no #159 fields ──
                   if (isItinerary) {
                     return (
-                      <div key={a.id}>
+                      <li key={a.id}>
                         <div className="flex items-start gap-2 px-2.5 py-2 rounded-[8px] border border-border/60 bg-card">
                           <span className="text-base leading-none mt-0.5">{meta.emoji}</span>
                           <div className="flex-1 min-w-0">
@@ -341,20 +334,21 @@ export function DayActivitiesPanel({
                             )}
                           </div>
                         </div>
-                      </div>
+                      </li>
                     );
                   }
 
-                  // ── Trip rows (#159): collapsed to one line, expands individually on click ──
+                  // ── Trip rows (#159): flat list, collapsed to one line, expands individually on click ──
                   const transportOpt = getTransportOption(a.transportMode ?? undefined);
                   const isOpen = openActivityIds.has(a.id);
-                  const hasDetail = !!(a.description || a.companyContact || (a.addressOverride ?? a.address) || a.notes || (isFree && a.costAmount != null));
+                  const address = a.addressOverride ?? a.address;
+                  const hasDetail = !!(a.description || a.companyContact || address || a.notes || (isFree && a.costAmount != null));
 
                   return (
-                    <div key={a.id}>
+                    <li key={a.id} className={idx > 0 ? "border-t" : ""} style={{ borderColor: "var(--arena)" }}>
                       {/* Transport separator before activity (skip first) */}
                       {idx > 0 && transportOpt && (
-                        <div className="flex items-center gap-2 py-1 ml-8">
+                        <div className="flex items-center gap-2 py-1">
                           <span className="text-[12px]">{transportOpt.icon}</span>
                           <span className="text-[10px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
                             {transportOpt.label}
@@ -367,101 +361,99 @@ export function DayActivitiesPanel({
                         tabIndex={0}
                         onClick={() => hasDetail && toggleActivity(a.id)}
                         onKeyDown={e => { if (hasDetail && (e.key === "Enter" || e.key === " ")) toggleActivity(a.id); }}
-                        className="flex items-center gap-2 py-1.5"
+                        className="flex items-center gap-2.5 py-2"
                         style={{ cursor: hasDetail ? "pointer" : "default" }}
                       >
-                        <div
-                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 text-[12px]"
-                          style={{ background: "var(--arena, #FAF2EB)", border: "1.5px solid var(--duna, #ECD5B8)" }}
-                        >
-                          {meta.emoji}
-                        </div>
-
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
-                          {a.included && (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                              style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
-                              Incluída
-                            </span>
-                          )}
-                          {isFree && (
-                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-                              style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}>
-                              {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
-                            </span>
-                          )}
-                          {timeRange ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#C4793A" }}>
-                              <Clock className="w-3 h-3" />{timeRange}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: "var(--text-ter, #9C7A58)" }}>
-                              <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
-                            </span>
-                          )}
-                          <p className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
-                        </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          {canEdit && (
-                            <button
-                              onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
-                              className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
-                              title="Editar actividad">
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {!canEdit && (
-                            <button
-                              onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
-                              className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
-                              title="Ver actividad">
-                              <Pencil className="w-3.5 h-3.5 opacity-40" />
-                            </button>
-                          )}
-                          {canEdit && (
-                            <button onClick={e => { e.stopPropagation(); doRemove(a.id); }}
-                              className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          {hasDetail && (
-                            <ChevronDown
-                              className="w-3.5 h-3.5 text-muted-foreground transition-transform"
-                              style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
-                            />
-                          )}
-                        </div>
+                        {a.included ? (
+                          <span
+                            className="shrink-0 text-[10px] font-medium uppercase tracking-[0.4px] px-[7px] py-[3px] rounded-[5px]"
+                            style={{ background: "var(--indigo)", color: "var(--arena)" }}
+                          >
+                            Incluída
+                          </span>
+                        ) : (
+                          <span
+                            className="shrink-0 text-[10px] font-medium uppercase tracking-[0.4px] px-[7px] py-[3px] rounded-[5px]"
+                            style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}
+                          >
+                            {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
+                          </span>
+                        )}
+                        <span className="shrink-0 text-[12.5px] tabular-nums" style={{ color: "var(--ocre)" }}>
+                          {timeRange || "—"}
+                        </span>
+                        <span className="flex-1 min-w-0 truncate text-[12.5px]" style={{ color: "#2D1F0E" }}>
+                          {a.activityName}
+                        </span>
+                        {canEdit && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                            className="shrink-0 p-0.5 opacity-60 hover:opacity-100 transition-opacity"
+                            style={{ color: "var(--ocre)" }}
+                            title="Editar actividad">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {!canEdit && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                            className="shrink-0 p-0.5 opacity-30"
+                            style={{ color: "var(--ocre)" }}
+                            title="Ver actividad">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button onClick={e => { e.stopPropagation(); doRemove(a.id); }}
+                            className="shrink-0 p-0.5 opacity-60 hover:opacity-100 hover:text-red-500 transition-colors"
+                            style={{ color: "var(--ocre)" }}>
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {hasDetail && (
+                          <ChevronDown
+                            className="shrink-0 w-3.5 h-3.5 transition-transform"
+                            style={{ color: "var(--ocre)", transform: isOpen ? "rotate(180deg)" : undefined }}
+                          />
+                        )}
                       </div>
 
                       {isOpen && hasDetail && (
-                        <div className="pl-9 pb-1.5 space-y-0.5 animate-in fade-in duration-150">
+                        <div className="pb-3 pl-0 sm:pl-12 animate-in fade-in duration-150">
                           {a.description && (
-                            <p className="text-[11px] leading-relaxed text-muted-foreground">{a.description}</p>
+                            <p className="text-[12.5px] leading-relaxed mb-2.5" style={{ color: "#2D1F0E" }}>{a.description}</p>
                           )}
-                          {isFree && a.costAmount != null && (
-                            <p className="text-[11px] font-medium" style={{ color: "#C4793A" }}>
-                              💶 {a.costAmount.toFixed(2)} {a.costCurrency ?? "EUR"} por persona
-                            </p>
-                          )}
-                          {a.companyContact && (
-                            <p className="text-[11px] text-muted-foreground">🏢 {a.companyContact}</p>
-                          )}
-                          {(a.addressOverride ?? a.address) && (
-                            <p className="text-[11px] text-muted-foreground">📍 {a.addressOverride ?? a.address}</p>
-                          )}
+                          <div className="flex flex-col gap-1.5">
+                            {address && (
+                              <div className="flex gap-2 text-[12px]">
+                                <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Dirección</span>
+                                <span style={{ color: "#2D1F0E" }}>{address}</span>
+                              </div>
+                            )}
+                            {isFree && a.costAmount != null && (
+                              <div className="flex gap-2 text-[12px]">
+                                <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Coste</span>
+                                <span style={{ color: "#2D1F0E" }}>{a.costAmount.toFixed(2)} {a.costCurrency ?? "EUR"} por persona</span>
+                              </div>
+                            )}
+                            {a.companyContact && (
+                              <div className="flex gap-2 text-[12px]">
+                                <span className="shrink-0" style={{ color: "var(--ocre)", minWidth: 68 }}>Contacto</span>
+                                <span style={{ color: "#2D1F0E" }}>{a.companyContact}</span>
+                              </div>
+                            )}
+                          </div>
                           {a.notes && (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground italic">
-                              <StickyNote className="w-3 h-3" />
+                            <div className="mt-2 px-2.5 py-2 rounded-[7px] text-[11.5px] leading-relaxed" style={{ background: "var(--arena)", color: "var(--ocre)" }}>
                               {a.notes}
-                            </span>
+                            </div>
                           )}
                         </div>
                       )}
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </div>
           )}
 
