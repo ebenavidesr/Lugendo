@@ -379,7 +379,7 @@ export function DayActivitiesPanel({
                             {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
                           </span>
                         )}
-                        <span className="shrink-0 text-[12.5px] tabular-nums" style={{ color: "var(--ocre)" }}>
+                        <span className="shrink-0 whitespace-nowrap text-[12.5px] tabular-nums" style={{ color: "var(--ocre)" }}>
                           {timeRange || "—"}
                         </span>
                         <span className="flex-1 min-w-0 truncate text-[12.5px]" style={{ color: "#2D1F0E" }}>
