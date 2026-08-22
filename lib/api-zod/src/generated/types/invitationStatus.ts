@@ -12,5 +12,5 @@ export type InvitationStatus = typeof InvitationStatus[keyof typeof InvitationSt
 export const InvitationStatus = {
   pending: 'pending',
   accepted: 'accepted',
-  declined: 'declined',
+  rejected: 'rejected',
 } as const;

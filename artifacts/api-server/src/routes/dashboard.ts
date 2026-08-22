@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { eq, and, sql, gte } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  tripsTable, invitationsTable, itinerariesTable, usersTable,
+  tripsTable, tripSharesTable, itinerariesTable, usersTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
 
@@ -33,8 +33,9 @@ router.get("/dashboard/summary", requireRoles("admin", "manager", "agent"), asyn
   }
 
   const [travelerCount] = await db
-    .select({ count: sql<number>`count(distinct traveler_id)::int` })
-    .from(invitationsTable);
+    .select({ count: sql<number>`count(distinct shared_with_user_id)::int` })
+    .from(tripSharesTable)
+    .where(eq(tripSharesTable.origin, "agency"));
   const totalTravelers = travelerCount?.count ?? 0;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -55,12 +56,13 @@ router.get("/dashboard/summary", requireRoles("admin", "manager", "agent"), asyn
 
   const invCounts = await db
     .select({
-      tripId: invitationsTable.tripId,
+      tripId: tripSharesTable.tripId,
       invited: sql<number>`count(*)::int`,
       accepted: sql<number>`sum(case when status = 'accepted' then 1 else 0 end)::int`,
     })
-    .from(invitationsTable)
-    .groupBy(invitationsTable.tripId);
+    .from(tripSharesTable)
+    .where(eq(tripSharesTable.origin, "agency"))
+    .groupBy(tripSharesTable.tripId);
   const invMap: Record<number, { invited: number; accepted: number }> = {};
   for (const r of invCounts) {
     if (r.tripId) invMap[r.tripId] = { invited: r.invited, accepted: r.accepted };
@@ -81,9 +83,19 @@ router.get("/dashboard/summary", requireRoles("admin", "manager", "agent"), asyn
   });
 
   const recentInvitations = await db
-    .select()
-    .from(invitationsTable)
-    .orderBy(sql`${invitationsTable.createdAt} desc`)
+    .select({
+      id: tripSharesTable.id,
+      tripId: tripSharesTable.tripId,
+      email: tripSharesTable.sharedWithEmail,
+      status: tripSharesTable.status,
+      segment: tripSharesTable.segment,
+      travelerId: tripSharesTable.sharedWithUserId,
+      createdAt: tripSharesTable.createdAt,
+      acceptedAt: tripSharesTable.acceptedAt,
+    })
+    .from(tripSharesTable)
+    .where(eq(tripSharesTable.origin, "agency"))
+    .orderBy(sql`${tripSharesTable.createdAt} desc`)
     .limit(10);
 
   res.json({
@@ -92,6 +104,7 @@ router.get("/dashboard/summary", requireRoles("admin", "manager", "agent"), asyn
     upcomingTrips: upcomingWithCounts,
     recentInvitations: recentInvitations.map(i => ({
       ...i,
+      segment: i.segment ?? null,
       travelerName: null,
       createdAt: i.createdAt.toISOString(),
       acceptedAt: i.acceptedAt?.toISOString() ?? null,

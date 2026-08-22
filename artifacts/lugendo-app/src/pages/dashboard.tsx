@@ -136,13 +136,13 @@ export default function Dashboard() {
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0 ${
                     inv.status === "accepted"
                       ? "text-[#2E7D5A]"
-                      : inv.status === "declined"
+                      : inv.status === "rejected"
                       ? "text-[#C0392B]"
                       : "text-[#3D2F6B]"
                   }`} style={{
-                    background: inv.status === "accepted" ? "#E4F3EC" : inv.status === "declined" ? "#FDECEA" : "#EAE6F5"
+                    background: inv.status === "accepted" ? "#E4F3EC" : inv.status === "rejected" ? "#FDECEA" : "#EAE6F5"
                   }}>
-                    {inv.status === "accepted" ? "Aceptada" : inv.status === "declined" ? "Rechazada" : "Pendiente"}
+                    {inv.status === "accepted" ? "Aceptada" : inv.status === "rejected" ? "Rechazada" : "Pendiente"}
                   </span>
                 </li>
               ))}

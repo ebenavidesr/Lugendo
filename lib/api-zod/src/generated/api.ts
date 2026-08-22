@@ -76,7 +76,6 @@ export const RegisterBody = zod.object({
   "email": zod.string(),
   "password": zod.string().min(registerBodyPasswordMin),
   "name": zod.string(),
-  "inviteCode": zod.string().optional(),
   "acceptTerms": zod.boolean()
 })
 
@@ -995,8 +994,7 @@ export const GetTripResponse = zod.object({
   "id": zod.number(),
   "tripId": zod.number(),
   "email": zod.string(),
-  "inviteCode": zod.string(),
-  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
@@ -1423,8 +1421,7 @@ export const ListInvitationsResponseItem = zod.object({
   "id": zod.number(),
   "tripId": zod.number(),
   "email": zod.string(),
-  "inviteCode": zod.string(),
-  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
@@ -1465,8 +1462,7 @@ export const UpdateInvitationResponse = zod.object({
   "id": zod.number(),
   "tripId": zod.number(),
   "email": zod.string(),
-  "inviteCode": zod.string(),
-  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),
@@ -1698,27 +1694,6 @@ export const UpdateTripNoteAdminResponse = zod.object({
 export const DeleteTripNoteAdminParams = zod.object({
   "tripId": zod.coerce.number(),
   "noteId": zod.coerce.number()
-})
-
-
-/**
- * @summary Accept an invitation using the unique code
- */
-export const AcceptInvitationParams = zod.object({
-  "code": zod.coerce.string()
-})
-
-export const AcceptInvitationResponse = zod.object({
-  "id": zod.number(),
-  "tripId": zod.number(),
-  "email": zod.string(),
-  "inviteCode": zod.string(),
-  "status": zod.enum(['pending', 'accepted', 'declined']),
-  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
-  "travelerId": zod.number().nullish(),
-  "travelerName": zod.string().nullish(),
-  "createdAt": zod.string(),
-  "acceptedAt": zod.string().nullish()
 })
 
 
@@ -2303,11 +2278,15 @@ export const ListTripSharesResponseItem = zod.object({
   "ownerId": zod.number(),
   "sharedWithEmail": zod.string(),
   "sharedWithUserId": zod.number().nullish(),
-  "shareCode": zod.string(),
+  "inviteToken": zod.string(),
+  "tokenExpiresAt": zod.string().nullish(),
   "permission": zod.enum(['full', 'read']),
   "memberType": zod.enum(['member', 'guest']),
+  "origin": zod.enum(['agency', 'traveler']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "acceptedAt": zod.string().nullish()
 })
 export const ListTripSharesResponse = zod.array(ListTripSharesResponseItem)
 
@@ -2347,11 +2326,15 @@ export const UpdateTripShareResponse = zod.object({
   "ownerId": zod.number(),
   "sharedWithEmail": zod.string(),
   "sharedWithUserId": zod.number().nullish(),
-  "shareCode": zod.string(),
+  "inviteToken": zod.string(),
+  "tokenExpiresAt": zod.string().nullish(),
   "permission": zod.enum(['full', 'read']),
   "memberType": zod.enum(['member', 'guest']),
+  "origin": zod.enum(['agency', 'traveler']),
+  "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "status": zod.enum(['pending', 'accepted', 'rejected']),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "acceptedAt": zod.string().nullish()
 })
 
 
@@ -2402,33 +2385,6 @@ export const RevokeTripPhotoShareParams = zod.object({
 export const UseSharedTripAsTemplateParams = zod.object({
   "tripId": zod.coerce.number()
 })
-
-
-/**
- * @summary List trips shared with the current traveler (all statuses)
- */
-export const ListSharedWithMeResponseItem = zod.object({
-  "shareId": zod.number(),
-  "shareCode": zod.string(),
-  "permission": zod.enum(['full', 'read']),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
-  "createdAt": zod.string(),
-  "trip": zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
-  "startDate": zod.string(),
-  "endDate": zod.string().nullish(),
-  "isPersonal": zod.boolean(),
-  "ownerId": zod.number().nullish().describe('ID of the trip owner (null for agency trips)'),
-  "agencyName": zod.string().nullish(),
-  "agencyLogoUrl": zod.string().nullish(),
-  "countries": zod.array(zod.string()).optional(),
-  "classification": zod.enum(['programado', 'realizado', 'compartido']).describe('Traveler-editable classification shown as the 3 tabs in the traveler\'s trip list (task #140). Defaults from trip dates (programado\/realizado) or \"compartido\" for shares, but the traveler can override it at any time.\n'),
-  "createdAt": zod.string()
-})
-})
-export const ListSharedWithMeResponse = zod.array(ListSharedWithMeResponseItem)
 
 
 /**
@@ -3140,27 +3096,6 @@ export const DismissTripParams = zod.object({
 
 
 /**
- * @summary Accept a trip share by code
- */
-export const AcceptTripShareParams = zod.object({
-  "shareCode": zod.coerce.string()
-})
-
-export const AcceptTripShareResponse = zod.object({
-  "id": zod.number(),
-  "tripId": zod.number(),
-  "ownerId": zod.number(),
-  "sharedWithEmail": zod.string(),
-  "sharedWithUserId": zod.number().nullish(),
-  "shareCode": zod.string(),
-  "permission": zod.enum(['full', 'read']),
-  "memberType": zod.enum(['member', 'guest']),
-  "status": zod.enum(['pending', 'accepted', 'rejected']),
-  "createdAt": zod.string()
-})
-
-
-/**
  * @summary View a shared trip photo (public, no auth — accessed via link/code)
  */
 export const GetTripPhotoParams = zod.object({
@@ -3564,8 +3499,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "id": zod.number(),
   "tripId": zod.number(),
   "email": zod.string(),
-  "inviteCode": zod.string(),
-  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "status": zod.enum(['pending', 'accepted', 'rejected']),
   "segment": zod.union([zod.literal('basic'),zod.literal('standard'),zod.literal('premium'),zod.literal(null)]).nullish(),
   "travelerId": zod.number().nullish(),
   "travelerName": zod.string().nullish(),

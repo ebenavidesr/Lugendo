@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation, useSearch, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -44,7 +44,6 @@ const registerSchema = z
     email:           z.string().email("Email inválido"),
     password:        strongPassword,
     confirmPassword: z.string().min(1, "Confirma tu contraseña"),
-    inviteCode:      z.string().optional(),
     acceptTerms:     z.literal(true, { message: "Debes aceptar los términos y condiciones para registrarte" }),
   })
   .refine((d) => d.password === d.confirmPassword, {
@@ -98,9 +97,14 @@ function PasswordRequirements({ password }: { password: string }) {
 
 export function Login() {
   const [location, setLocation] = useLocation();
+  const search = useSearch();
   const isRegister = location === "/register";
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Coming from an invitation email (task #161): the email is pre-filled and locked, so the
+  // account created here is guaranteed to match the invited address.
+  const invitedEmail = new URLSearchParams(search).get("email") ?? "";
 
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
@@ -116,7 +120,7 @@ export function Login() {
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", password: "", confirmPassword: "", inviteCode: "", acceptTerms: false as unknown as true },
+    defaultValues: { firstName: "", lastName: "", email: invitedEmail, password: "", confirmPassword: "", acceptTerms: false as unknown as true },
   });
 
   const watchedPassword = registerForm.watch("password");
@@ -246,9 +250,15 @@ export function Login() {
                             autoComplete="off"
                             data-lpignore="true"
                             data-1p-ignore="true"
+                            // Locked when coming from an invitation link (task #161) — the
+                            // account created here must match the invited email exactly.
+                            disabled={!!invitedEmail}
                             data-testid="input-register-email"
                           />
                         </FormControl>
+                        {invitedEmail && (
+                          <p className="text-[12px] text-muted-foreground">Este email viene de tu invitación y no se puede cambiar.</p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -332,24 +342,6 @@ export function Login() {
                               {showRegConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Código de invitación */}
-                  <FormField
-                    control={registerForm.control}
-                    name="inviteCode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Código de invitación{" "}
-                          <span className="text-muted-foreground font-normal">(opcional)</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input placeholder="ABCDEF" autoComplete="off" {...field} data-testid="input-register-invite" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

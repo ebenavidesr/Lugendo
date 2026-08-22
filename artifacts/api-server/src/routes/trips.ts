@@ -4,7 +4,7 @@ import { db } from "@workspace/db";
 import {
   tripsTable, tripDaysTable, tripDayHotelsTable, tripDayActivitiesTable,
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
-  hotelsTable, invitationsTable, agenciesTable, tripSharesTable, activitiesTable,
+  hotelsTable, agenciesTable, tripSharesTable, activitiesTable,
   usersTable, tripDocumentsTable, countryAdvisoriesTable, tripDayActivityParticipantsTable,
   tripNotesTable, tripLinksTable,
 } from "@workspace/db";
@@ -48,10 +48,14 @@ async function notifyTripUpdated(tripId: number, changeDescription: string, onEr
     if (!agency) return;
 
     const accepted = await db
-      .select({ email: invitationsTable.email, name: usersTable.name })
-      .from(invitationsTable)
-      .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
-      .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
+      .select({ email: tripSharesTable.sharedWithEmail, name: usersTable.name })
+      .from(tripSharesTable)
+      .leftJoin(usersTable, eq(usersTable.id, tripSharesTable.sharedWithUserId))
+      .where(and(
+        eq(tripSharesTable.tripId, tripId),
+        eq(tripSharesTable.origin, "agency"),
+        eq(tripSharesTable.status, "accepted"),
+      ));
 
     // Wouter uses plain paths, not hash-routing, and this goes to travelers (not back-office
     // staff) — /trips/:id is the agency route and would be blocked by role, and "/#/" resolves
@@ -80,9 +84,13 @@ export interface TripDayAccessResult {
   trip?: { agencyId: number | null; ownerId: number | null };
   // How a traveler's access was granted, when relevant to finer-grained permission checks
   // downstream (e.g. can this traveler create a por-libre activity?). "member"/"guest" only
-  // when access came via an accepted trip_shares row; null for owner/staff/agency-invitation
-  // access, which is never guest-restricted.
+  // when access came via an accepted trip_shares row; null for owner/staff access, which is
+  // never guest-restricted.
   memberType?: "member" | "guest" | null;
+  // "agency" (official invite) vs "traveler" (task #141 personal share) -- only set alongside
+  // memberType, for the rare check that needs to tell the two trip_shares origins apart
+  // (e.g. "use as template" only makes sense for a personal share, task #161).
+  origin?: "agency" | "traveler" | null;
 }
 
 /**
@@ -112,30 +120,20 @@ export async function verifyTripAccessCore(
     return { authorized: true, reason: "", trip: tripInfo, memberType: null };
   }
 
-  // Traveler: trip owner OR accepted invitation OR accepted share
+  // Traveler: trip owner OR accepted share (agency invite or #141 personal share)
   if (role === "traveler") {
     // Owner of the trip (personal trips created via POST /me/trips)
     if (trip.ownerId === userId) return { authorized: true, reason: "", trip: tripInfo, memberType: null };
 
-    const [inv] = await db
-      .select({ id: invitationsTable.id })
-      .from(invitationsTable)
-      .where(and(
-        eq(invitationsTable.tripId, tripId),
-        eq(invitationsTable.travelerId, userId),
-        eq(invitationsTable.status, "accepted"),
-      ));
-    if (inv) return { authorized: true, reason: "", trip: tripInfo, memberType: null };
-
     const [share] = await db
-      .select({ id: tripSharesTable.id, memberType: tripSharesTable.memberType })
+      .select({ id: tripSharesTable.id, memberType: tripSharesTable.memberType, origin: tripSharesTable.origin })
       .from(tripSharesTable)
       .where(and(
         eq(tripSharesTable.tripId, tripId),
         eq(tripSharesTable.sharedWithUserId, userId),
         eq(tripSharesTable.status, "accepted"),
       ));
-    if (share) return { authorized: true, reason: "", trip: tripInfo, memberType: share.memberType };
+    if (share) return { authorized: true, reason: "", trip: tripInfo, memberType: share.memberType, origin: share.origin };
   }
 
   return { authorized: false, reason: "Not authorized for this trip" };
@@ -320,16 +318,11 @@ async function getActivityParticipants(activityLinkId: number): Promise<{ id: nu
 
 // Every user with accepted access to a trip, as a real traveler ({userId, name}) rather than
 // just an email -- needed for the por-libre participant picker (#151). Guests (member_type =
-// "guest") are deliberately excluded: they can't be added as participants. Mirrors the
-// owner+invitations+shares union already used by GET /trips/:tripId/usage, but resolves identity.
+// "guest") are deliberately excluded: they can't be added as participants -- covers both
+// origins (agency invite and #141 personal share, task #161), since both are always
+// memberType "member" or "guest" in the same table now.
 export async function listTripMembers(tripId: number): Promise<{ id: number; name: string }[]> {
   const [trip] = await db.select({ ownerId: tripsTable.ownerId }).from(tripsTable).where(eq(tripsTable.id, tripId));
-
-  const invited = await db
-    .select({ id: usersTable.id, name: usersTable.name })
-    .from(invitationsTable)
-    .innerJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
-    .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
 
   const members = await db
     .select({ id: usersTable.id, name: usersTable.name })
@@ -347,7 +340,7 @@ export async function listTripMembers(tripId: number): Promise<{ id: number; nam
 
   const seen = new Set<number>();
   const result: { id: number; name: string }[] = [];
-  for (const u of [...owner, ...invited, ...members]) {
+  for (const u of [...owner, ...members]) {
     if (seen.has(u.id)) continue;
     seen.add(u.id);
     result.push(u);
@@ -396,12 +389,13 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
 
   const invCounts = await db
     .select({
-      tripId: invitationsTable.tripId,
+      tripId: tripSharesTable.tripId,
       invited: sql<number>`count(*)::int`,
       accepted: sql<number>`sum(case when status = 'accepted' then 1 else 0 end)::int`,
     })
-    .from(invitationsTable)
-    .groupBy(invitationsTable.tripId);
+    .from(tripSharesTable)
+    .where(eq(tripSharesTable.origin, "agency"))
+    .groupBy(tripSharesTable.tripId);
   const countMap: Record<number, { invited: number; accepted: number }> = {};
   for (const r of invCounts) {
     if (r.tripId) countMap[r.tripId] = { invited: r.invited, accepted: r.accepted };
@@ -422,15 +416,16 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
   if (tripIds.length > 0) {
     const accepted = await db
       .select({
-        tripId: invitationsTable.tripId,
-        email: invitationsTable.email,
+        tripId: tripSharesTable.tripId,
+        email: tripSharesTable.sharedWithEmail,
         travelerName: usersTable.name,
       })
-      .from(invitationsTable)
-      .leftJoin(usersTable, eq(invitationsTable.travelerId, usersTable.id))
+      .from(tripSharesTable)
+      .leftJoin(usersTable, eq(tripSharesTable.sharedWithUserId, usersTable.id))
       .where(and(
-        inArray(invitationsTable.tripId, tripIds),
-        eq(invitationsTable.status, "accepted"),
+        inArray(tripSharesTable.tripId, tripIds),
+        eq(tripSharesTable.origin, "agency"),
+        eq(tripSharesTable.status, "accepted"),
       ));
     for (const row of accepted) {
       if (row.tripId != null) {
@@ -566,18 +561,17 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 
   const invitations = await db
     .select({
-      id: invitationsTable.id,
-      tripId: invitationsTable.tripId,
-      email: invitationsTable.email,
-      inviteCode: invitationsTable.inviteCode,
-      status: invitationsTable.status,
-      segment: invitationsTable.segment,
-      travelerId: invitationsTable.travelerId,
-      createdAt: invitationsTable.createdAt,
-      acceptedAt: invitationsTable.acceptedAt,
+      id: tripSharesTable.id,
+      tripId: tripSharesTable.tripId,
+      email: tripSharesTable.sharedWithEmail,
+      status: tripSharesTable.status,
+      segment: tripSharesTable.segment,
+      travelerId: tripSharesTable.sharedWithUserId,
+      createdAt: tripSharesTable.createdAt,
+      acceptedAt: tripSharesTable.acceptedAt,
     })
-    .from(invitationsTable)
-    .where(eq(invitationsTable.tripId, id));
+    .from(tripSharesTable)
+    .where(and(eq(tripSharesTable.tripId, id), eq(tripSharesTable.origin, "agency")));
 
   res.json({
     ...serializeTrip({ ...row.t, itineraryName: row.itineraryName }),
@@ -1306,17 +1300,10 @@ router.get("/trips/:tripId/members", requireAuth, async (req, res): Promise<void
 router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const shares = await db
-    .select({ id: tripSharesTable.id, email: tripSharesTable.sharedWithEmail, status: tripSharesTable.status })
+    .select({ id: tripSharesTable.id, email: tripSharesTable.sharedWithEmail, origin: tripSharesTable.origin })
     .from(tripSharesTable)
     .where(and(eq(tripSharesTable.tripId, id), eq(tripSharesTable.status, "accepted")));
-  const invites = await db
-    .select({ id: invitationsTable.id, email: invitationsTable.email, status: invitationsTable.status })
-    .from(invitationsTable)
-    .where(and(eq(invitationsTable.tripId, id), eq(invitationsTable.status, "accepted")));
-  const travelers = [
-    ...shares.map(s => ({ id: s.id, email: s.email, status: "share" })),
-    ...invites.map(i => ({ id: i.id, email: i.email, status: "invited" })),
-  ];
+  const travelers = shares.map(s => ({ id: s.id, email: s.email, status: s.origin === "agency" ? "invited" : "share" }));
   res.json({ travelers });
 });
 
@@ -1458,15 +1445,16 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
 
       const accepted = await db
         .select({
-          email: invitationsTable.email,
+          email: tripSharesTable.sharedWithEmail,
           name: usersTable.name,
         })
-        .from(invitationsTable)
-        .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
+        .from(tripSharesTable)
+        .leftJoin(usersTable, eq(usersTable.id, tripSharesTable.sharedWithUserId))
         .where(
           and(
-            eq(invitationsTable.tripId, tripId),
-            eq(invitationsTable.status, "accepted"),
+            eq(tripSharesTable.tripId, tripId),
+            eq(tripSharesTable.origin, "agency"),
+            eq(tripSharesTable.status, "accepted"),
           ),
         );
 
@@ -1786,16 +1774,12 @@ router.delete("/trips/:tripId", requireAuth, async (req, res): Promise<void> => 
     res.status(403).json({ error: "Forbidden" }); return;
   }
 
-  // Count accepted travelers (invitations + shares)
-  const [inviteCount] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(invitationsTable)
-    .where(and(eq(invitationsTable.tripId, id), eq(invitationsTable.status, "accepted")));
+  // Count accepted travelers (agency invites + personal shares)
   const [shareCount] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(tripSharesTable)
     .where(and(eq(tripSharesTable.tripId, id), eq(tripSharesTable.status, "accepted")));
-  const travelersAffected = (inviteCount?.count ?? 0) + (shareCount?.count ?? 0);
+  const travelersAffected = shareCount?.count ?? 0;
 
   if (travelersAffected > 0) {
     await db.update(tripsTable).set({ status: "cancelled" }).where(eq(tripsTable.id, id));

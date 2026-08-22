@@ -11,6 +11,5 @@ export interface RegisterInput {
   /** @minLength 8 */
   password: string;
   name: string;
-  inviteCode?: string;
   acceptTerms: boolean;
 }

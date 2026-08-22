@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import {
-  db, tripsTable, invitationsTable, usersTable,
+  db, tripsTable, tripSharesTable, usersTable,
   tripChecklistItemsTable, tripPackingItemsTable, emailSendLogTable,
 } from "@workspace/db";
 import { logger } from "./logger";
@@ -27,10 +27,14 @@ async function sendRemindersForMilestone(daysUntil: 7 | 3, targetDateISO: string
   const tripIds = trips.map(t => t.id);
 
   const accepted = await db
-    .select({ tripId: invitationsTable.tripId, email: invitationsTable.email, travelerId: invitationsTable.travelerId, name: usersTable.name })
-    .from(invitationsTable)
-    .leftJoin(usersTable, eq(usersTable.id, invitationsTable.travelerId))
-    .where(and(inArray(invitationsTable.tripId, tripIds), eq(invitationsTable.status, "accepted")));
+    .select({ tripId: tripSharesTable.tripId, email: tripSharesTable.sharedWithEmail, travelerId: tripSharesTable.sharedWithUserId, name: usersTable.name })
+    .from(tripSharesTable)
+    .leftJoin(usersTable, eq(usersTable.id, tripSharesTable.sharedWithUserId))
+    .where(and(
+      inArray(tripSharesTable.tripId, tripIds),
+      eq(tripSharesTable.origin, "agency"),
+      eq(tripSharesTable.status, "accepted"),
+    ));
 
   if (accepted.length === 0) return;
 

@@ -3,7 +3,7 @@ import { eq, and, inArray, or, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "@workspace/db";
 import {
-  tripsTable, tripDaysTable, invitationsTable,
+  tripsTable, tripDaysTable,
   agenciesTable, hotelsTable, tripNotesTable, itinerariesTable,
   itineraryDaysTable, tripDayHotelsTable, itineraryDayHotelsTable,
   tripDayActivitiesTable, itineraryDayActivitiesTable,
@@ -66,6 +66,15 @@ const SUGGESTED_CHECKLIST_ITEMS = [
 function makeShareCode(): string {
   return randomBytes(6).toString("base64url").toUpperCase();
 }
+
+// Long single-use token for trip_shares invites (task #161) — unlike makeShareCode above
+// (still used for trip-photo "snapshot" links, out of scope for #161), this is never meant
+// to be typed by a human, only embedded in an email link.
+function makeInviteToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+const COLD_INVITE_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const router: IRouter = Router();
 
@@ -359,11 +368,6 @@ router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<vo
     .from(tripsTable)
     .where(eq(tripsTable.ownerId, userId))).map(r => r.id);
 
-  const invitedTripIds = (await db
-    .select({ tripId: invitationsTable.tripId })
-    .from(invitationsTable)
-    .where(and(eq(invitationsTable.email, me.email), eq(invitationsTable.status, "accepted")))).map(r => r.tripId);
-
   const sharedTripIds = (await db
     .select({ tripId: tripSharesTable.tripId })
     .from(tripSharesTable)
@@ -372,7 +376,7 @@ router.get("/me/profile", requireRoles("traveler"), async (req, res): Promise<vo
       eq(tripSharesTable.status, "accepted"),
     ))).map(r => r.tripId);
 
-  const allTripIds = [...new Set([...ownedTripIds, ...invitedTripIds, ...sharedTripIds])];
+  const allTripIds = [...new Set([...ownedTripIds, ...sharedTripIds])];
   const tripCount = allTripIds.length;
 
   // "Países visitados" is a manual list (userCountriesTable), not auto-derived from trips —
@@ -460,15 +464,7 @@ router.delete("/me/countries/:countryCode", requireRoles("traveler"), async (req
 router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void> => {
   const userId = req.session.userId!;
 
-  // 1. Agency trips via accepted invitations
-  const invites = await db
-    .select({ tripId: invitationsTable.tripId })
-    .from(invitationsTable)
-    .where(and(eq(invitationsTable.travelerId, userId), eq(invitationsTable.status, "accepted")));
-
-  const invitedIds = invites.map(i => i.tripId).filter((id): id is number => id !== null);
-
-  // 2. Personal trips (ownerId = userId)
+  // 1. Personal trips (ownerId = userId)
   const personalRows = await db
     .select({
       id: tripsTable.id,
@@ -497,6 +493,7 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
       agencyLogoUrl: sql<string | null>`COALESCE(${agenciesTable.logoFileUrl}, ${agenciesTable.logoUrl})`,
       countries: itinerariesTable.countries,
       ownerId: tripsTable.ownerId,
+      memberType: tripSharesTable.memberType,
       createdAt: tripsTable.createdAt,
     })
     .from(tripSharesTable)
@@ -519,36 +516,6 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
 
   const trips = [];
 
-  // Add invited agency trips
-  for (const tripId of invitedIds) {
-    const [row] = await db
-      .select({
-        id: tripsTable.id,
-        name: tripsTable.name,
-        status: tripsTable.status,
-        startDate: tripsTable.startDate,
-        endDate: tripsTable.endDate,
-        agencyName: agenciesTable.name,
-        agencyLogoUrl: sql<string | null>`COALESCE(${agenciesTable.logoFileUrl}, ${agenciesTable.logoUrl})`,
-        countries: itinerariesTable.countries,
-        createdAt: tripsTable.createdAt,
-      })
-      .from(tripsTable)
-      .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
-      .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
-      .where(eq(tripsTable.id, tripId));
-    if (row) trips.push({
-      ...row,
-      isPersonal: false,
-      ownerId: null,
-      countries: row.countries ?? [],
-      agencyName: row.agencyName ?? null,
-      agencyLogoUrl: row.agencyLogoUrl ?? null,
-      classification: classificationByTripId.get(row.id) ?? defaultDateBasedClassification(row.startDate, row.endDate),
-      createdAt: row.createdAt.toISOString(),
-    });
-  }
-
   // Add personal trips (owned)
   for (const row of personalRows) {
     trips.push({
@@ -563,17 +530,21 @@ router.get("/me/trips", requireRoles("traveler"), async (req, res): Promise<void
     });
   }
 
-  // Add shared trips
+  // Add invited (agency) + shared (traveler-to-traveler) trips
   const seenIds = new Set(trips.map(t => t.id));
-  for (const row of sharedRows) {
-    if (seenIds.has(row.id)) continue; // avoid duplicates with owned/invited trips
+  for (const { memberType, ...row } of sharedRows) {
+    if (seenIds.has(row.id)) continue; // avoid duplicates with owned trips
     trips.push({
       ...row,
       isPersonal: row.ownerId != null && row.agencyName == null,
+      ownerId: row.agencyName != null ? null : row.ownerId,
       countries: row.countries ?? [],
       agencyName: row.agencyName ?? null,
       agencyLogoUrl: row.agencyLogoUrl ?? null,
-      classification: classificationByTripId.get(row.id) ?? "compartido",
+      // A "member" share defaults to date-based classification if none was recorded yet
+      // (agency invite or #141 Miembro); a "guest" always defaults to "compartido" (#140).
+      classification: classificationByTripId.get(row.id)
+        ?? (memberType === "member" ? defaultDateBasedClassification(row.startDate, row.endDate) : "compartido"),
       createdAt: row.createdAt.toISOString(),
     });
   }
@@ -646,16 +617,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   const userId = req.session.userId!;
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
-  // Access allowed if: invited traveler OR trip owner OR accepted share
-  const [invite] = await db
-    .select({ id: invitationsTable.id })
-    .from(invitationsTable)
-    .where(and(
-      eq(invitationsTable.travelerId, userId),
-      eq(invitationsTable.tripId, tripId),
-      eq(invitationsTable.status, "accepted"),
-    ));
-
+  // Access allowed if: trip owner OR accepted share (agency invite or #141 personal share)
   const [ownedTrip] = await db
     .select({ id: tripsTable.id })
     .from(tripsTable)
@@ -676,7 +638,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
       eq(tripSharesTable.status, "accepted"),
     ));
 
-  if (!invite && !ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
+  if (!ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
 
   const myPermission: string | null = acceptedShare ? acceptedShare.permission : null;
   const myMemberType: string | null = acceptedShare ? acceptedShare.memberType : null;
@@ -733,9 +695,13 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   } else {
     // Agency trip: no personal "owner" — count accepted invited travelers.
     const acceptedInvitations = await db
-      .select({ id: invitationsTable.id })
-      .from(invitationsTable)
-      .where(and(eq(invitationsTable.tripId, tripId), eq(invitationsTable.status, "accepted")));
+      .select({ id: tripSharesTable.id })
+      .from(tripSharesTable)
+      .where(and(
+        eq(tripSharesTable.tripId, tripId),
+        eq(tripSharesTable.origin, "agency"),
+        eq(tripSharesTable.status, "accepted"),
+      ));
     travelerCount = acceptedInvitations.length;
   }
 
@@ -765,7 +731,7 @@ router.get("/me/trips/:tripId", requireRoles("traveler"), async (req, res): Prom
   }
 
   const classification = (await getTripClassification(userId, tripId))
-    ?? (ownedTrip || invite ? defaultDateBasedClassification(row.startDate, row.endDate) : "compartido");
+    ?? (ownedTrip || myMemberType === "member" ? defaultDateBasedClassification(row.startDate, row.endDate) : "compartido");
 
   res.json({
     ...row,
@@ -790,15 +756,7 @@ router.patch("/me/trips/:tripId/classification", requireRoles("traveler"), valid
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { classification } = req.body as { classification: TripClassificationValue };
 
-  // Access allowed if: invited traveler OR trip owner OR accepted share
-  const [invite] = await db
-    .select({ id: invitationsTable.id })
-    .from(invitationsTable)
-    .where(and(
-      eq(invitationsTable.travelerId, userId),
-      eq(invitationsTable.tripId, tripId),
-      eq(invitationsTable.status, "accepted"),
-    ));
+  // Access allowed if: trip owner OR accepted share (agency invite or #141 personal share)
   const [ownedTrip] = await db
     .select({ id: tripsTable.id })
     .from(tripsTable)
@@ -816,7 +774,7 @@ router.patch("/me/trips/:tripId/classification", requireRoles("traveler"), valid
       eq(tripSharesTable.status, "accepted"),
     ));
 
-  if (!invite && !ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
+  if (!ownedTrip && !acceptedShare) { res.status(404).json({ error: "Not found" }); return; }
 
   await db
     .insert(tripClassificationsTable)
@@ -1169,15 +1127,6 @@ async function getTripChecklistAccess(tripId: number, userId: number): Promise<n
     .where(and(eq(tripsTable.id, tripId), eq(tripsTable.ownerId, userId)));
   if (ownedTrip) return ownedTrip.agencyId ?? null;
 
-  const [invite] = await db
-    .select({ id: invitationsTable.id })
-    .from(invitationsTable)
-    .where(and(
-      eq(invitationsTable.travelerId, userId),
-      eq(invitationsTable.tripId, tripId),
-      eq(invitationsTable.status, "accepted"),
-    ));
-
   const [me] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = me?.email ?? "";
 
@@ -1193,7 +1142,7 @@ async function getTripChecklistAccess(tripId: number, userId: number): Promise<n
       eq(tripSharesTable.status, "accepted"),
     ));
 
-  if (!invite && !acceptedShare) return false;
+  if (!acceptedShare) return false;
 
   const [trip] = await db.select({ agencyId: tripsTable.agencyId }).from(tripsTable).where(eq(tripsTable.id, tripId));
   return trip ? (trip.agencyId ?? null) : false;
@@ -1596,25 +1545,32 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
   const [recipient] = await db.select({ id: usersTable.id }).from(usersTable)
     .where(eq(usersTable.email, email.toLowerCase()));
 
-  let shareCode: string;
-  let attempts = 0;
-  do {
-    shareCode = makeShareCode();
-    attempts++;
-  } while (attempts < 5);
-
+  // task #161: no manual accept step. A recipient who already has an account is linked
+  // instantly; a cold email gets a single-use token that expires in 7 days and is
+  // resolved automatically once they verify their new account.
   const [share] = await db.insert(tripSharesTable).values({
     tripId,
     ownerId: userId,
     sharedWithEmail: email.toLowerCase(),
     sharedWithUserId: recipient?.id ?? null,
-    shareCode,
+    inviteToken: makeInviteToken(),
+    tokenExpiresAt: recipient ? null : new Date(Date.now() + COLD_INVITE_TOKEN_TTL_MS),
     permission,
     memberType,
-    status: "pending",
+    status: recipient ? "accepted" : "pending",
+    acceptedAt: recipient ? new Date() : null,
   }).returning();
 
   res.status(201).json({ ...share, createdAt: share.createdAt.toISOString() });
+
+  if (recipient) {
+    if (memberType === "member") {
+      await ensureTripClassificationByDates(recipient.id, tripId);
+      await backfillSharedWithAll(tripId, recipient.id);
+    } else {
+      await ensureTripClassification(recipient.id, tripId, "compartido");
+    }
+  }
 
   const [owner] = await db.select({ name: usersTable.name }).from(usersTable).where(eq(usersTable.id, userId));
   const [trip] = await db.select({ name: tripsTable.name }).from(tripsTable).where(eq(tripsTable.id, tripId));
@@ -1623,13 +1579,10 @@ router.post("/me/trips/:tripId/shares", requireRoles("traveler"), validate(Share
       to: share.sharedWithEmail,
       ownerName: owner.name,
       tripName: trip.name,
-      shareCode,
-      // The recipient may already have a Lugendo account (in which case the pending
-      // share already shows up on their traveler home once they log in) or not yet.
       ctaText: recipient ? "Iniciar sesión" : "Crear mi cuenta",
       // Wouter uses plain paths, not hash-routing — no "/#/" prefix (see TESTING.md for
       // the 2026-07-30 bug where this landed on a blank page for every recipient).
-      ctaUrl: `${PUBLIC_APP_URL}/${recipient ? "login" : "register"}`,
+      ctaUrl: `${PUBLIC_APP_URL}/${recipient ? "login" : `register?email=${encodeURIComponent(share.sharedWithEmail)}`}`,
       tripId,
     }).catch((err) => req.log.error({ err }, "Failed to send trip share invitation email"));
   }
@@ -1686,74 +1639,6 @@ router.delete("/me/trips/:tripId/shares/:shareId", requireRoles("traveler"), asy
   res.sendStatus(204);
 });
 
-// ─── List trips shared WITH me (pending invitations to accept) ──────────────
-// Accepted shares are no longer listed here — they show up in /me/trips instead,
-// classified as "compartido" by default (task #140).
-router.get("/me/shared-trips", requireRoles("traveler"), async (req, res): Promise<void> => {
-  const userId = req.session.userId!;
-  const me = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
-  const myEmail = me[0]?.email;
-
-  const emailFilter = and(
-    or(
-      eq(tripSharesTable.sharedWithUserId, userId),
-      eq(tripSharesTable.sharedWithEmail, myEmail ?? ""),
-    ),
-    eq(tripSharesTable.status, "pending"),
-  );
-
-  const shares = await db.select().from(tripSharesTable).where(emailFilter);
-
-  const result = [];
-  for (const share of shares) {
-    const [row] = await db
-      .select({
-        id: tripsTable.id,
-        name: tripsTable.name,
-        status: tripsTable.status,
-        startDate: tripsTable.startDate,
-        endDate: tripsTable.endDate,
-        agencyName: agenciesTable.name,
-        agencyLogoUrl: sql<string | null>`COALESCE(${agenciesTable.logoFileUrl}, ${agenciesTable.logoUrl})`,
-        countries: itinerariesTable.countries,
-        ownerId: tripsTable.ownerId,
-        createdAt: tripsTable.createdAt,
-      })
-      .from(tripsTable)
-      .leftJoin(agenciesTable, eq(tripsTable.agencyId, agenciesTable.id))
-      .leftJoin(itinerariesTable, eq(tripsTable.itineraryId, itinerariesTable.id))
-      .where(eq(tripsTable.id, share.tripId));
-
-    if (!row) continue;
-
-    result.push({
-      shareId: share.id,
-      shareCode: share.shareCode,
-      permission: share.permission,
-      status: share.status,
-      createdAt: share.createdAt.toISOString(),
-      trip: {
-        id: row.id,
-        name: row.name,
-        status: row.status,
-        startDate: row.startDate,
-        endDate: row.endDate ?? null,
-        isPersonal: row.ownerId != null && row.agencyName == null,
-        agencyName: row.agencyName ?? null,
-        agencyLogoUrl: row.agencyLogoUrl ?? null,
-        countries: row.countries ?? [],
-        // Preview only — pending shares aren't accepted yet, so there's no real
-        // classification row. It'll default to "compartido" once accepted (#140).
-        classification: "compartido" as const,
-        createdAt: row.createdAt.toISOString(),
-      },
-    });
-  }
-
-  res.json(result);
-});
-
-// ─── Accept a share by code ───────────────────────────────────────────────────
 // ─── Trip Day management (personal trips) ────────────────────────────────────
 
 /**
@@ -1947,14 +1832,7 @@ router.delete("/me/trips/:tripId/leave", requireRoles("traveler"), async (req, r
   const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = meRow?.email ?? "";
 
-  // Remove accepted invitation
-  await db.delete(invitationsTable).where(and(
-    eq(invitationsTable.tripId, tripId),
-    eq(invitationsTable.travelerId, userId),
-    eq(invitationsTable.status, "accepted"),
-  ));
-
-  // Remove accepted share
+  // Remove accepted share (agency invite or #141 personal share)
   await db.delete(tripSharesTable).where(and(
     eq(tripSharesTable.tripId, tripId),
     or(
@@ -1980,12 +1858,6 @@ router.delete("/me/trips/:tripId/dismiss", requireRoles("traveler"), async (req,
   const [meRow] = await db.select({ email: usersTable.email }).from(usersTable).where(eq(usersTable.id, userId));
   const myEmail = meRow?.email ?? "";
 
-  // Remove invitation (any status)
-  await db.delete(invitationsTable).where(and(
-    eq(invitationsTable.tripId, tripId),
-    eq(invitationsTable.travelerId, userId),
-  ));
-
   // Remove share (any status)
   await db.delete(tripSharesTable).where(and(
     eq(tripSharesTable.tripId, tripId),
@@ -2001,36 +1873,6 @@ router.delete("/me/trips/:tripId/dismiss", requireRoles("traveler"), async (req,
   ));
 
   res.sendStatus(204);
-});
-
-router.post("/me/shares/:shareCode/accept", requireRoles("traveler"), async (req, res): Promise<void> => {
-  const userId = req.session.userId!;
-  const shareCode = Array.isArray(req.params.shareCode) ? req.params.shareCode[0] : req.params.shareCode;
-
-  const [share] = await db.select().from(tripSharesTable)
-    .where(eq(tripSharesTable.shareCode, shareCode));
-
-  if (!share) { res.status(404).json({ error: "Código no encontrado" }); return; }
-  if (share.status !== "pending") { res.status(400).json({ error: "Este código ya fue usado" }); return; }
-
-  const [updated] = await db.update(tripSharesTable)
-    .set({ status: "accepted", sharedWithUserId: userId })
-    .where(eq(tripSharesTable.id, share.id))
-    .returning();
-
-  // A "guest" share always defaults to "compartido" (task #140 decisions); a "member"
-  // share (task #141 Miembro/Invitado) is a real co-traveler, classified by dates like
-  // the owner. The traveler can still reclassify manually afterwards either way.
-  if (share.memberType === "member") {
-    await ensureTripClassificationByDates(userId, share.tripId);
-    // Guests are excluded from listTripMembers/every participant picker, so only a "member"
-    // acceptance backfills "compartir con todos" content -- matches the same exclusion elsewhere.
-    await backfillSharedWithAll(share.tripId, userId);
-  } else {
-    await ensureTripClassification(userId, share.tripId, "compartido");
-  }
-
-  res.json({ ...updated, createdAt: updated.createdAt.toISOString() });
 });
 
 // ─── Trip photo shares: frozen snapshot for an external contact without an
@@ -2230,9 +2072,12 @@ router.post("/me/trips/:tripId/use-as-template", requireRoles("traveler"), async
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
 
   const access = await verifyTripAccessCore(tripId, userId, req.session.agencyId, req.session.role);
-  // Only meaningful when access came via an accepted trip_shares row (member or guest) --
-  // owners/staff/invited travelers already have their own real trip, nothing to copy here.
-  if (!access.authorized || !access.memberType) { res.status(403).json({ error: "Not a shared trip for this traveler" }); return; }
+  // Only meaningful for an accepted personal (#141) trip_shares row (member or guest) --
+  // owners/staff/agency-invited travelers already have their own real trip, nothing to
+  // copy here (task #161: agency invites now live in the same table, distinguished by origin).
+  if (!access.authorized || !access.memberType || access.origin !== "traveler") {
+    res.status(403).json({ error: "Not a shared trip for this traveler" }); return;
+  }
 
   const snapshot = await buildTripPhotoSnapshot(tripId, userId);
   if (!snapshot) { res.status(404).json({ error: "Trip not found" }); return; }

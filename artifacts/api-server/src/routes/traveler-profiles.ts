@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { eq, and, or, ne, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
-  usersTable, tripsTable, invitationsTable, tripSharesTable,
+  usersTable, tripsTable, tripSharesTable,
   travelerProfilesTable, travelerTagCatalogTable, travelerTagsTable,
   userCountriesTable,
 } from "@workspace/db";
@@ -48,14 +48,12 @@ class TagAlreadyAddedError extends Error {
 // the union already computed ad hoc in traveler.ts's GET /me/profile.
 async function getUserTripIds(userId: number, userEmail: string): Promise<number[]> {
   const owned = (await db.select({ id: tripsTable.id }).from(tripsTable).where(eq(tripsTable.ownerId, userId))).map(r => r.id);
-  const invited = (await db.select({ tripId: invitationsTable.tripId }).from(invitationsTable)
-    .where(and(eq(invitationsTable.email, userEmail), eq(invitationsTable.status, "accepted")))).map(r => r.tripId);
   const shared = (await db.select({ tripId: tripSharesTable.tripId }).from(tripSharesTable)
     .where(and(
       or(eq(tripSharesTable.sharedWithUserId, userId), eq(tripSharesTable.sharedWithEmail, userEmail)),
       eq(tripSharesTable.status, "accepted"),
     ))).map(r => r.tripId);
-  return [...new Set([...owned, ...invited, ...shared])];
+  return [...new Set([...owned, ...shared])];
 }
 
 // "Compañeros de viaje" (#155, decision 4): travelers who share at least one non-cancelled

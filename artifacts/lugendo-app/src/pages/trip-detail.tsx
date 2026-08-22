@@ -46,7 +46,7 @@ const statusBadge: Record<TripDetailStatus, { bg: string; color: string; label: 
 const invStatusBadge: Record<InvitationStatus, { bg: string; color: string; label: string }> = {
   pending:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Pendiente" },
   accepted: { bg: "#E4F3EC", color: "#2E7D5A", label: "Aceptada" },
-  declined: { bg: "#FDECEA", color: "#C0392B", label: "Rechazada" },
+  rejected: { bg: "#FDECEA", color: "#C0392B", label: "Rechazada" },
 };
 
 function fmt(date: string) {
@@ -850,7 +850,7 @@ export default function TripDetail() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Email", "Viajero", "Código", "Estado", "Aceptado", "Etiquetas"].map(h => (
+                {["Email", "Viajero", "Estado", "Aceptado", "Etiquetas"].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -863,7 +863,6 @@ export default function TripDetail() {
                   <tr key={inv.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20">
                     <td className="px-5 py-3 text-muted-foreground">{inv.email}</td>
                     <td className="px-5 py-3" style={{ color: "#2D1F0E" }}>{inv.travelerName ?? "—"}</td>
-                    <td className="px-5 py-3 font-mono text-[12px] text-muted-foreground">{inv.inviteCode}</td>
                     <td className="px-5 py-3">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
                         style={{ background: is.bg, color: is.color }}>{is.label}</span>

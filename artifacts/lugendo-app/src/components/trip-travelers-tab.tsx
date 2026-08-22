@@ -175,7 +175,6 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
   const revokeShare = useRevokeTripShare();
   const updateShare = useUpdateTripShare();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
 
   const invalidate = () => qc.invalidateQueries({ queryKey: [`/api/me/trips/${tripId}/shares`] });
 
@@ -208,12 +207,6 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
         onError: () => toast({ variant: "destructive", title: "Error al actualizar el tipo de acceso" }),
       }
     );
-  };
-
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopied(code);
-    setTimeout(() => setCopied(null), 2000);
   };
 
   if (isLoading) {
@@ -318,16 +311,6 @@ export function TripTravelersTab({ tripId, isOwner, canEdit, ownerLabel }: TripT
                       >
                         {pm.label}
                       </span>
-                      {s.status === "pending" && (
-                        <button
-                          onClick={() => copyCode(s.shareCode)}
-                          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          {copied === s.shareCode
-                            ? <><Check className="w-3 h-3" /> Copiado</>
-                            : <><Copy className="w-3 h-3" /> {s.shareCode}</>}
-                        </button>
-                      )}
                     </div>
                   </div>
                   {canEdit && (

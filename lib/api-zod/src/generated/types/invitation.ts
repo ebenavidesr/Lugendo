@@ -12,7 +12,6 @@ export interface Invitation {
   id: number;
   tripId: number;
   email: string;
-  inviteCode: string;
   status: InvitationStatus;
   segment?: SegmentValue | null;
   /** @nullable */

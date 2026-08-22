@@ -52,7 +52,6 @@ export interface RegisterInput {
   /** @minLength 8 */
   password: string;
   name: string;
-  inviteCode?: string;
   acceptTerms: boolean;
 }
 
@@ -752,14 +751,13 @@ export type InvitationStatus = typeof InvitationStatus[keyof typeof InvitationSt
 export const InvitationStatus = {
   pending: 'pending',
   accepted: 'accepted',
-  declined: 'declined',
+  rejected: 'rejected',
 } as const;
 
 export interface Invitation {
   id: number;
   tripId: number;
   email: string;
-  inviteCode: string;
   status: InvitationStatus;
   segment?: SegmentValue | null;
   /** @nullable */
@@ -1627,6 +1625,14 @@ export const TripShareMemberType = {
   guest: 'guest',
 } as const;
 
+export type TripShareOrigin = typeof TripShareOrigin[keyof typeof TripShareOrigin];
+
+
+export const TripShareOrigin = {
+  agency: 'agency',
+  traveler: 'traveler',
+} as const;
+
 export type TripShareStatus = typeof TripShareStatus[keyof typeof TripShareStatus];
 
 
@@ -1643,11 +1649,17 @@ export interface TripShare {
   sharedWithEmail: string;
   /** @nullable */
   sharedWithUserId?: number | null;
-  shareCode: string;
+  inviteToken: string;
+  /** @nullable */
+  tokenExpiresAt?: string | null;
   permission: TripSharePermission;
   memberType: TripShareMemberType;
+  origin: TripShareOrigin;
+  segment?: SegmentValue | null;
   status: TripShareStatus;
   createdAt: string;
+  /** @nullable */
+  acceptedAt?: string | null;
 }
 
 export interface TripPhotoShare {
@@ -1757,32 +1769,6 @@ export const UpdateShareInputMemberType = {
 export interface UpdateShareInput {
   permission?: UpdateShareInputPermission;
   memberType?: UpdateShareInputMemberType;
-}
-
-export type SharedTripEntryPermission = typeof SharedTripEntryPermission[keyof typeof SharedTripEntryPermission];
-
-
-export const SharedTripEntryPermission = {
-  full: 'full',
-  read: 'read',
-} as const;
-
-export type SharedTripEntryStatus = typeof SharedTripEntryStatus[keyof typeof SharedTripEntryStatus];
-
-
-export const SharedTripEntryStatus = {
-  pending: 'pending',
-  accepted: 'accepted',
-  rejected: 'rejected',
-} as const;
-
-export interface SharedTripEntry {
-  shareId: number;
-  shareCode: string;
-  permission: SharedTripEntryPermission;
-  status: SharedTripEntryStatus;
-  createdAt: string;
-  trip: TravelerTrip;
 }
 
 export type SuggestDayDescriptionInputWritingTone = typeof SuggestDayDescriptionInputWritingTone[keyof typeof SuggestDayDescriptionInputWritingTone];

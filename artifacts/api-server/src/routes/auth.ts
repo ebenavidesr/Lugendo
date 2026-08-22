@@ -1,15 +1,15 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, pool } from "@workspace/db";
-import { usersTable, agenciesTable, invitationsTable } from "@workspace/db";
+import { usersTable, agenciesTable } from "@workspace/db";
 import { requireSession } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { LoginInputSchema, RegisterInputSchema, ForgotPasswordInputSchema, ResetPasswordInputSchema } from "../lib/schemas";
 import { sendApprovalRequestEmail, sendEmailVerificationEmail, sendPasswordResetEmail } from "../lib/email";
 import { PUBLIC_APP_URL } from "../lib/publicUrl";
-import { ensureTripClassificationByDates } from "../lib/trip-classification";
+import { resolvePendingTripSharesForUser } from "../lib/trip-share-resolution";
 
 const router: IRouter = Router();
 const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || "ebenavidesr@gmail.com";
@@ -105,19 +105,9 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
   req.session.status = user.status;
   req.session.emailVerified = user.emailVerified;
 
-  // Auto-accept any pending invitations for this email
-  const newlyAcceptedInvites = await db
-    .update(invitationsTable)
-    .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })
-    .where(and(
-      eq(invitationsTable.email, user.email),
-      eq(invitationsTable.status, "pending"),
-    ))
-    .returning({ tripId: invitationsTable.tripId });
-
-  for (const invite of newlyAcceptedInvites) {
-    if (invite.tripId != null) await ensureTripClassificationByDates(user.id, invite.tripId);
-  }
+  // Link any pending trip invitations/shares for this email (task #161) — safety net for
+  // an account created through another path since the invite was sent.
+  await resolvePendingTripSharesForUser(user.id, user.email);
 
   res.json({
     id: user.id,
@@ -132,7 +122,7 @@ router.post("/auth/login", validate(LoginInputSchema), async (req, res): Promise
 });
 
 router.post("/auth/register", validate(RegisterInputSchema), async (req, res): Promise<void> => {
-  const { email, password, name, inviteCode } = req.body;
+  const { email, password, name } = req.body;
 
   const [existing] = await db
     .select({ id: usersTable.id })
@@ -162,21 +152,6 @@ router.post("/auth/register", validate(RegisterInputSchema), async (req, res): P
       emailVerificationExpiresAt: new Date(Date.now() + EMAIL_VERIFICATION_TTL_MS),
     })
     .returning();
-
-  if (inviteCode && user) {
-    const { invitationsTable } = await import("@workspace/db");
-    const [invite] = await db
-      .select()
-      .from(invitationsTable)
-      .where(eq(invitationsTable.inviteCode, inviteCode));
-    if (invite && invite.status === "pending" && invite.email.toLowerCase() === user.email.toLowerCase()) {
-      await db
-        .update(invitationsTable)
-        .set({ status: "accepted", travelerId: user.id, acceptedAt: new Date() })
-        .where(eq(invitationsTable.id, invite.id));
-      await ensureTripClassificationByDates(user.id, invite.tripId);
-    }
-  }
 
   req.session.userId = user.id;
   req.session.role = user.role;
@@ -261,6 +236,7 @@ router.get("/auth/verify-email/:token", async (req, res): Promise<void> => {
     .select({
       id: usersTable.id,
       name: usersTable.name,
+      email: usersTable.email,
       emailVerificationExpiresAt: usersTable.emailVerificationExpiresAt,
     })
     .from(usersTable)
@@ -278,6 +254,10 @@ router.get("/auth/verify-email/:token", async (req, res): Promise<void> => {
     .update(usersTable)
     .set({ emailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
     .where(eq(usersTable.id, user.id));
+
+  // Link any trip invitation this account was pending on (task #161) — the invite
+  // sent to a cold email is resolved automatically the moment its account is verified.
+  await resolvePendingTripSharesForUser(user.id, user.email);
 
   // If this link is opened in the same browser/session that registered, unblock it
   // immediately without requiring a fresh login.

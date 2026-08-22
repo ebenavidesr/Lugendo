@@ -78,7 +78,6 @@ import type {
   RemoveActivityParticipant200,
   ResetPasswordInput,
   ShareTripInput,
-  SharedTripEntry,
   SuggestDayDescriptionInput,
   SuggestDayDescriptionResult,
   TravelProfileView,
@@ -5239,76 +5238,6 @@ export const useDeleteTripNoteAdmin = <TError = ErrorType<unknown>,
       return useMutation(getDeleteTripNoteAdminMutationOptions(options));
     }
 
-export const getAcceptInvitationUrl = (code: string,) => {
-
-
-
-
-  return `/api/invitations/${code}/accept`
-}
-
-/**
- * @summary Accept an invitation using the unique code
- */
-export const acceptInvitation = async (code: string, options?: RequestInit): Promise<Invitation> => {
-
-  return customFetch<Invitation>(getAcceptInvitationUrl(code),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-export const getAcceptInvitationMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{code: string}, TContext> => {
-
-const mutationKey = ['acceptInvitation'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptInvitation>>, {code: string}> = (props) => {
-          const {code} = props ?? {};
-
-          return  acceptInvitation(code,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AcceptInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof acceptInvitation>>>
-
-    export type AcceptInvitationMutationError = ErrorType<void>
-
-    /**
- * @summary Accept an invitation using the unique code
- */
-export const useAcceptInvitation = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptInvitation>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof acceptInvitation>>,
-        TError,
-        {code: string},
-        TContext
-      > => {
-      return useMutation(getAcceptInvitationMutationOptions(options));
-    }
-
 export const getGetMyProfileUrl = () => {
 
 
@@ -7076,83 +7005,6 @@ export const useUseSharedTripAsTemplate = <TError = ErrorType<void>,
       > => {
       return useMutation(getUseSharedTripAsTemplateMutationOptions(options));
     }
-
-export const getListSharedWithMeUrl = () => {
-
-
-
-
-  return `/api/me/shared-trips`
-}
-
-/**
- * @summary List trips shared with the current traveler (all statuses)
- */
-export const listSharedWithMe = async ( options?: RequestInit): Promise<SharedTripEntry[]> => {
-
-  return customFetch<SharedTripEntry[]>(getListSharedWithMeUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getListSharedWithMeQueryKey = () => {
-    return [
-    `/api/me/shared-trips`
-    ] as const;
-    }
-
-
-export const getListSharedWithMeQueryOptions = <TData = Awaited<ReturnType<typeof listSharedWithMe>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSharedWithMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  queryOptions?.queryKey ?? getListSharedWithMeQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSharedWithMe>>> = ({ signal }) => listSharedWithMe({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSharedWithMe>>, TError, TData> & { queryKey: QueryKey }
-}
-
-export type ListSharedWithMeQueryResult = NonNullable<Awaited<ReturnType<typeof listSharedWithMe>>>
-export type ListSharedWithMeQueryError = ErrorType<unknown>
-
-
-/**
- * @summary List trips shared with the current traveler (all statuses)
- */
-
-export function useListSharedWithMe<TData = Awaited<ReturnType<typeof listSharedWithMe>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSharedWithMe>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
-
- ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-
-  const queryOptions = getListSharedWithMeQueryOptions(options)
-
-  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-
-
-
-
-
 
 export const getLeaveTripUrl = (tripId: number,) => {
 
@@ -10624,76 +10476,6 @@ export const useDismissTrip = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDismissTripMutationOptions(options));
-    }
-
-export const getAcceptTripShareUrl = (shareCode: string,) => {
-
-
-
-
-  return `/api/me/shares/${shareCode}/accept`
-}
-
-/**
- * @summary Accept a trip share by code
- */
-export const acceptTripShare = async (shareCode: string, options?: RequestInit): Promise<TripShare> => {
-
-  return customFetch<TripShare>(getAcceptTripShareUrl(shareCode),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-export const getAcceptTripShareMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptTripShare>>, TError,{shareCode: string}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof acceptTripShare>>, TError,{shareCode: string}, TContext> => {
-
-const mutationKey = ['acceptTripShare'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptTripShare>>, {shareCode: string}> = (props) => {
-          const {shareCode} = props ?? {};
-
-          return  acceptTripShare(shareCode,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type AcceptTripShareMutationResult = NonNullable<Awaited<ReturnType<typeof acceptTripShare>>>
-
-    export type AcceptTripShareMutationError = ErrorType<void>
-
-    /**
- * @summary Accept a trip share by code
- */
-export const useAcceptTripShare = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptTripShare>>, TError,{shareCode: string}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof acceptTripShare>>,
-        TError,
-        {shareCode: string},
-        TContext
-      > => {
-      return useMutation(getAcceptTripShareMutationOptions(options));
     }
 
 export const getGetTripPhotoUrl = (code: string,) => {

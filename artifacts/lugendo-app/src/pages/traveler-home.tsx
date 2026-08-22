@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
 import {
-  useListMyTrips, useListSharedWithMe, useAcceptTripShare,
+  useListMyTrips,
   useDeleteTrip, useLeaveTrip, useDismissTrip,
 } from "@workspace/api-client-react";
-import type { TravelerTrip, TravelerTripStatus, TravelerTripClassification, SharedTripEntry } from "@workspace/api-client-react";
-import { MapPin, ArrowRight, Plus, Users, Inbox, Check, Trash2, LogOut, AlertTriangle } from "lucide-react";
+import type { TravelerTrip, TravelerTripStatus, TravelerTripClassification } from "@workspace/api-client-react";
+import { MapPin, ArrowRight, Plus, Users, Trash2, LogOut, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
@@ -154,103 +153,6 @@ function TripCard({
   );
 }
 
-// ── Pending share invitations (shown inside the "Compartidos" tab) ───────────
-
-function PendingSharesPanel() {
-  const { data: pending, isLoading } = useListSharedWithMe();
-  const acceptShare = useAcceptTripShare();
-  const qc = useQueryClient();
-  const { toast } = useToast();
-  const [code, setCode] = useState("");
-
-  const handleAccept = (shareCode: string) => {
-    acceptShare.mutate(
-      { shareCode },
-      {
-        onSuccess: () => {
-          qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
-          qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-          toast({ title: "Viaje añadido a tus compartidos" });
-        },
-        onError: () => toast({ variant: "destructive", title: "No se pudo aceptar la invitación" }),
-      }
-    );
-  };
-
-  const handleCodeAccept = () => {
-    if (!code.trim()) return;
-    handleAccept(code.trim().toUpperCase());
-    setCode("");
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-card border border-border rounded-[14px] p-4">
-        <p className="text-[13px] font-medium mb-2" style={{ color: "#2D1F0E" }}>
-          ¿Tienes un código de invitación?
-        </p>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Ej. A3BX9K"
-            value={code}
-            onChange={e => setCode(e.target.value.toUpperCase())}
-            className="font-mono text-[13px] tracking-widest"
-            onKeyDown={e => e.key === "Enter" && handleCodeAccept()}
-          />
-          <Button
-            onClick={handleCodeAccept}
-            disabled={!code.trim() || acceptShare.isPending}
-            style={{ background: "#C4793A", color: "#fff" }}
-          >
-            <Check className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      {isLoading && (
-        <div className="h-20 bg-card border border-border rounded-[16px] animate-pulse" />
-      )}
-
-      {!isLoading && pending && pending.length > 0 && (
-        <div>
-          <h3 className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-            <Inbox className="w-3.5 h-3.5" /> Invitaciones pendientes ({pending.length})
-          </h3>
-          <div className="space-y-3">
-            {pending.map((entry: SharedTripEntry, idx) => (
-              <div key={entry.shareId}
-                className="bg-card border border-border rounded-[16px] overflow-hidden shadow-sm">
-                <div className="h-16 relative flex items-end px-5 pb-3"
-                  style={{ background: tripGradients[idx % tripGradients.length] }}>
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 60%)" }} />
-                  <h3 className="relative z-10 text-[16px] font-medium text-white">{entry.trip.name}</h3>
-                </div>
-                <div className="px-5 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-[13px] text-muted-foreground">
-                      {fmt(entry.trip.startDate)}{entry.trip.endDate ? ` — ${fmt(entry.trip.endDate)}` : ""}
-                    </p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "#C47A00" }}>
-                      Invitación pendiente · código {entry.shareCode}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleAccept(entry.shareCode)}
-                    disabled={acceptShare.isPending}
-                    style={{ background: "#2E7D5A", color: "#fff" }}
-                  >
-                    Aceptar
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
@@ -300,7 +202,6 @@ export default function TravelerHome() {
       leaveTrip.mutate({ tripId: trip.id }, {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-          qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
           toast({ title: "Te has dado de baja del viaje" });
           setPendingAction(null);
         },
@@ -310,7 +211,6 @@ export default function TravelerHome() {
       dismissTrip.mutate({ tripId: trip.id }, {
         onSuccess: () => {
           qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-          qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
           toast({ title: "Viaje eliminado de tu lista" });
           setPendingAction(null);
         },
@@ -379,8 +279,6 @@ export default function TravelerHome() {
           </button>
         ))}
       </div>
-
-      {tab === "compartido" && <PendingSharesPanel />}
 
       {isLoading && (
         <div className="space-y-4">

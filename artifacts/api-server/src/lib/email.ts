@@ -124,15 +124,19 @@ export async function sendPasswordResetEmail(opts: {
   });
 }
 
+// Agency-driven invitation to an official trip (task #161 — replaces the old inviteCode
+// box). `hasAccount` picks the copy and CTA: an already-registered recipient is linked to
+// the trip instantly (no accept step), so the email is just a heads-up with a login link; a
+// brand-new recipient is sent to registration, where the invited email is pre-filled/locked.
 export async function sendInvitationEmail(opts: {
   to: string;
   agencyName: string;
   tripName: string;
-  inviteCode: string;
-  registerUrl: string;
+  hasAccount: boolean;
+  ctaUrl: string;
   tripId?: number;
 }): Promise<void> {
-  const { to, agencyName, tripName, inviteCode, registerUrl, tripId } = opts;
+  const { to, agencyName, tripName, hasAccount, ctaUrl, tripId } = opts;
   await sendEmail({
     to,
     type: "trip_invitation",
@@ -146,31 +150,32 @@ export async function sendInvitationEmail(opts: {
           <p style="margin:0 0 4px;font-size:13px;color:#9C7A58;text-transform:uppercase;letter-spacing:.05em">Viaje</p>
           <p style="margin:0;font-size:18px;font-weight:500;color:#2D1F0E">${tripName}</p>
         </div>
-        <div style="background:#ECD5B8;border-radius:12px;padding:16px 24px;margin-bottom:20px;text-align:center">
-          <p style="margin:0 0 4px;font-size:12px;color:#6B5744;text-transform:uppercase;letter-spacing:.08em">Tu código de acceso</p>
-          <p style="margin:0;font-size:28px;font-weight:500;letter-spacing:.2em;color:#3D2F6B">${inviteCode}</p>
-        </div>
-        <p style="margin:0;font-size:13px;color:#6B5744">Si ya tienes cuenta, inicia sesión e introduce el código. Si no, regístrate con este email.</p>
+        <p style="margin:0;font-size:13px;color:#6B5744">${
+          hasAccount
+            ? "Ya puedes ver este viaje en tu cuenta de Lugendo."
+            : "Regístrate con este mismo email para acceder al viaje."
+        }</p>
       `,
-      ctaText: "Unirme al viaje",
-      ctaUrl: registerUrl,
+      ctaText: hasAccount ? "Iniciar sesión" : "Crear mi cuenta",
+      ctaUrl,
     }),
   });
 }
 
-// Traveler-to-traveler share (trip_shares table) — distinct from the agency-driven
-// invitation above (invitations table). The recipient may or may not have a Lugendo
-// account yet; ctaUrl/ctaText are chosen by the caller accordingly (login vs. register).
+// Traveler-to-traveler share (trip_shares table, task #141 origin "traveler") — distinct
+// from the agency-driven invitation above (same table, origin "agency"). The recipient may
+// or may not have a Lugendo account yet; ctaUrl/ctaText are chosen by the caller accordingly
+// (login vs. register). No code box (task #161): an already-registered recipient is linked
+// instantly, and a new recipient is linked automatically once they verify their email.
 export async function sendTripShareInvitationEmail(opts: {
   to: string;
   ownerName: string;
   tripName: string;
-  shareCode: string;
   ctaText: string;
   ctaUrl: string;
   tripId?: number;
 }): Promise<void> {
-  const { to, ownerName, tripName, shareCode, ctaText, ctaUrl, tripId } = opts;
+  const { to, ownerName, tripName, ctaText, ctaUrl, tripId } = opts;
   await sendEmail({
     to,
     type: "trip_share_invitation",
@@ -184,11 +189,11 @@ export async function sendTripShareInvitationEmail(opts: {
           <p style="margin:0 0 4px;font-size:13px;color:#9C7A58;text-transform:uppercase;letter-spacing:.05em">Viaje</p>
           <p style="margin:0;font-size:18px;font-weight:500;color:#2D1F0E">${tripName}</p>
         </div>
-        <div style="background:#ECD5B8;border-radius:12px;padding:16px 24px;margin-bottom:20px;text-align:center">
-          <p style="margin:0 0 4px;font-size:12px;color:#6B5744;text-transform:uppercase;letter-spacing:.08em">Código de invitación</p>
-          <p style="margin:0;font-size:28px;font-weight:500;letter-spacing:.2em;color:#3D2F6B">${shareCode}</p>
-        </div>
-        <p style="margin:0;font-size:13px;color:#6B5744">Entra a Lugendo e introduce este código desde "¿Tienes un código de invitación?" en tu pantalla de inicio para ver el viaje.</p>
+        <p style="margin:0;font-size:13px;color:#6B5744">${
+          ctaText === "Iniciar sesión"
+            ? "Ya puedes ver este viaje en tu cuenta de Lugendo."
+            : "Regístrate con este mismo email para ver el viaje."
+        }</p>
       `,
       ctaText,
       ctaUrl,

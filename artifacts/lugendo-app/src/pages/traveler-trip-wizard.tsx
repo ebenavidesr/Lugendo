@@ -2,20 +2,17 @@ import { useState, useEffect, Fragment } from "react";
 import { useLocation, useSearch } from "wouter";
 import {
   Check, Upload, X, Plane,
-  Hotel, ChevronRight, Zap, Plus, QrCode, Camera,
+  Hotel, ChevronRight, Zap, Plus, Camera,
 } from "lucide-react";
 import {
   useCreateMyTrip,
-  useAcceptInvitation,
   useCreateItinerary,
   useCreateItineraryDay,
   useListHotels,
   useListActivities,
   useAddDayActivity,
   useAddItineraryDayHotel,
-  useAcceptTripShare,
   useUseTripPhotoAsTemplate,
-  ApiError,
 } from "@workspace/api-client-react";
 import type { ParsedItinerary, ParsedDay } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -37,13 +34,12 @@ import { ActivityInlineAddPanel } from "@/components/trip-itinerary-wizard/activ
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type Origin = "join" | "create" | "photo";
+type Origin = "create" | "photo";
 type NewMode = "scratch" | "pdf";
 type Step = 1 | 2 | 3 | 4;
 
 interface WizardData {
   origin: Origin | null;
-  inviteCode: string;
   photoCode: string;
   newMode: NewMode | null;
   scratchName: string;
@@ -74,7 +70,6 @@ export default function TravelerTripWizard() {
   const [step, setStep] = useState<Step>(1);
   const [data, setData] = useState<WizardData>({
     origin: null,
-    inviteCode: "",
     photoCode: "",
     newMode: null,
     scratchName: "", scratchNumDays: "", scratchCountries: "", scratchDifficulty: "", scratchDescription: "",
@@ -83,7 +78,6 @@ export default function TravelerTripWizard() {
     tripName: "",
   });
   const [isCreating, setIsCreating] = useState(false);
-  const [isJoining, setIsJoining] = useState(false);
   const [isUsingPhoto, setIsUsingPhoto] = useState(false);
   const useAsTemplate = useUseTripPhotoAsTemplate();
 
@@ -105,8 +99,6 @@ export default function TravelerTripWizard() {
   const createItinerary = useCreateItinerary();
   const createDay = useCreateItineraryDay();
   const createMyTrip = useCreateMyTrip();
-  const acceptInvitation = useAcceptInvitation();
-  const acceptShare = useAcceptTripShare();
   const addDayActivity = useAddDayActivity();
   const addDayHotel = useAddItineraryDayHotel();
 
@@ -118,7 +110,7 @@ export default function TravelerTripWizard() {
     set({ dayActivities: { ...data.dayActivities, [dayNum]: [...(data.dayActivities[dayNum] ?? []), activityId] } })
   );
 
-  const joinMode = data.origin === "join" || data.origin === "photo";
+  const joinMode = data.origin === "photo";
 
   const getDays = (): ParsedDay[] => {
     if (data.parsedItinerary) return data.parsedItinerary.days;
@@ -154,42 +146,6 @@ export default function TravelerTripWizard() {
       ...(Object.keys(result.dayActivities).length ? { dayActivities: result.dayActivities } : {}),
       ...(Object.keys(result.dayHotels).length ? { dayHotels: result.dayHotels } : {}),
     });
-  };
-
-  // ── Handle join invitation ────────────────────────────────────────────────
-  const handleJoin = async () => {
-    const code = data.inviteCode.trim();
-    if (!code) return;
-    setIsJoining(true);
-    try {
-      // Try agency invitation first
-      const invitation = await acceptInvitation.mutateAsync({ code });
-      qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-      toast({ title: "¡Te has unido al viaje correctamente!" });
-      setPendingClaim({ tripId: invitation.tripId, navigateTo: "/traveler" });
-      return;
-    } catch (err) {
-      // A match was found but rejected for a specific reason (already accepted, wrong email,
-      // ...) -- surface that instead of silently falling through to the personal-share attempt,
-      // which would just fail with an unrelated 404 and mask the real cause.
-      if (!(err instanceof ApiError) || err.status !== 404) {
-        toast({ variant: "destructive", title: getApiErrorMessage(err, "No se pudo usar el código") });
-        setIsJoining(false);
-        return;
-      }
-      // Not found as an agency invitation -- try personal trip share next.
-    }
-    try {
-      const share = await acceptShare.mutateAsync({ shareCode: code });
-      qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-      qc.invalidateQueries({ queryKey: ["/api/me/shared-trips"] });
-      toast({ title: "¡Viaje compartido añadido correctamente!" });
-      setPendingClaim({ tripId: share.tripId, navigateTo: "/traveler" });
-    } catch (err) {
-      toast({ variant: "destructive", title: getApiErrorMessage(err, "Código no válido o ya utilizado") });
-    } finally {
-      setIsJoining(false);
-    }
   };
 
   // ── Handle "use shared photo as template" ─────────────────────────────────
@@ -323,23 +279,9 @@ export default function TravelerTripWizard() {
           <div className="space-y-4">
             <div>
               <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>¿Cómo quieres empezar?</h2>
-              <p className="text-[13px] text-muted-foreground">Únete a un viaje de agencia o crea tu propio viaje.</p>
+              <p className="text-[13px] text-muted-foreground">Crea tu propio viaje o usa una foto compartida como plantilla.</p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <button
-                onClick={() => { set({ origin: "join" }); nextStep(); }}
-                className="p-5 rounded-[14px] border-2 text-left transition-all hover:shadow-md"
-                style={{
-                  borderColor: data.origin === "join" ? "#3D2F6B" : "#E5D4BF",
-                  background: data.origin === "join" ? "#EAE6F5" : "white",
-                }}
-              >
-                <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-3" style={{ background: "#EAE6F5" }}>
-                  <QrCode className="w-5 h-5" style={{ color: "#3D2F6B" }} />
-                </div>
-                <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Unirse con código</div>
-                <div className="text-[12px] text-muted-foreground">Tienes un código de invitación de tu agencia o de otro viajero.</div>
-              </button>
               <button
                 onClick={() => { set({ origin: "create" }); nextStep(); }}
                 className="p-5 rounded-[14px] border-2 text-left transition-all hover:shadow-md"
@@ -356,7 +298,7 @@ export default function TravelerTripWizard() {
               </button>
               <button
                 onClick={() => { set({ origin: "photo" }); nextStep(); }}
-                className="p-5 rounded-[14px] border-2 text-left transition-all hover:shadow-md sm:col-span-2"
+                className="p-5 rounded-[14px] border-2 text-left transition-all hover:shadow-md"
                 style={{
                   borderColor: data.origin === "photo" ? "#8B4420" : "#E5D4BF",
                   background: data.origin === "photo" ? "#F3E6D8" : "white",
@@ -372,7 +314,7 @@ export default function TravelerTripWizard() {
           </div>
         );
 
-      // ── STEP 2: join → código / create → Programa / photo → código de foto ──
+      // ── STEP 2: create → Programa / photo → código de foto ──
       case 2:
         if (data.origin === "photo") {
           return (
@@ -405,44 +347,6 @@ export default function TravelerTripWizard() {
               <div className="p-4 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
                 <div className="text-[12px] text-muted-foreground">
                   ¿No tienes código?
-                  {" "}<button className="font-medium hover:underline" style={{ color: "#C4793A" }} onClick={() => { set({ origin: "create" }); }}>crea tu propio viaje</button>.
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        if (data.origin === "join") {
-          return (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Introduce el código de invitación</h2>
-                <p className="text-[13px] text-muted-foreground">Lo encontrarás en el email que te envió la agencia o el organizador.</p>
-              </div>
-              <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de invitación</label>
-                <Input
-                  placeholder="Ej. ABC123XYZ"
-                  value={data.inviteCode}
-                  onChange={e => set({ inviteCode: e.target.value.toUpperCase() })}
-                  className="text-[15px] font-mono tracking-widest"
-                  autoFocus
-                  onKeyDown={e => { if (e.key === "Enter" && data.inviteCode.trim()) handleJoin(); }}
-                />
-              </div>
-              <button
-                onClick={handleJoin}
-                disabled={!data.inviteCode.trim() || isJoining}
-                className="w-full py-2.5 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: "#3D2F6B", color: "white" }}
-              >
-                {isJoining ? "Uniéndose…" : (
-                  <><Check className="w-4 h-4" /> Unirse al viaje</>
-                )}
-              </button>
-              <div className="p-4 rounded-[12px] border border-border text-center" style={{ background: "#FAF2EB" }}>
-                <div className="text-[12px] text-muted-foreground">
-                  ¿No tienes código? Pide a tu agencia que te envíe una invitación o
                   {" "}<button className="font-medium hover:underline" style={{ color: "#C4793A" }} onClick={() => { set({ origin: "create" }); }}>crea tu propio viaje</button>.
                 </div>
               </div>
@@ -770,7 +674,7 @@ export default function TravelerTripWizard() {
     switch (step) {
       case 1: return !!data.origin;
       case 2:
-        if (data.origin === "join" || data.origin === "photo") return false;
+        if (data.origin === "photo") return false;
         if (data.newMode === "scratch") return !!data.scratchName && !!data.scratchNumDays;
         if (data.newMode === "pdf") return !!data.parsedItinerary;
         return false;
@@ -781,7 +685,7 @@ export default function TravelerTripWizard() {
   };
 
   const isLastStep = step === 4;
-  const isJoinStep = step === 2 && (data.origin === "join" || data.origin === "photo");
+  const isJoinStep = step === 2 && data.origin === "photo";
 
   return (
     <div className="p-6 max-w-2xl">
