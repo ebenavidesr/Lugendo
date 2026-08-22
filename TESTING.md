@@ -18,11 +18,19 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Un día con 6+ actividades no oculta ninguna actividad a nivel de lista; cada una se expande de forma independiente
 - [x] Varias actividades pueden estar expandidas a la vez sin romper el layout (estado independiente por `id` en un `Set`)
 - [x] Sin regresión en la lógica de permisos, participantes ni visibilidad de #151 (cambio puramente de presentación; la rama `isItinerary` de `day-activities-panel.tsx` quedó intacta)
-- [ ] Sin regresión en el toggle "Incluida"/"Por libre" del sheet de edición de actividad
+- [x] Sin regresión en el toggle "Incluida"/"Por libre" del sheet de edición de actividad — validado por Quique
 - [x] La vista de itinerarios (plantillas sin fechas) no se ve afectada por este cambio — `day-activities-panel.tsx` mantiene una rama separada sin acordeón para `isItinerary`
-- [ ] Validar en dispositivo móvil real (solo verificado por breakpoint `sm:` y `resize_window` a 375px en navegador, no en un dispositivo táctil real)
+- [x] Validado en dispositivo móvil real por Quique
 
 **Corrección de fidelidad al mockup (2026-08-22, segunda pasada):** la primera implementación no incluía el prototipo HTML de la tarjeta (se añadió después). Al comparar contra `lugendo-itinerario-prototipo-v2.html`, se corrigió: badges como chips rectangulares (radio 5px) en mayúsculas —"Incluída" en Índigo sólido con texto Arena, ya no un pill con fondo claro—; se eliminó el punto circular con emoji de categoría y la línea de timeline vertical, sustituidos por una lista plana con borde superior sutil entre actividades; hora en color Ocre (antes Terracota) y chevron en Ocre (antes gris); el detalle expandido pasó de líneas con emoji (📍🏢💶) a filas "Etiqueta: valor" (Dirección → Coste → Contacto, en ese orden) sin iconos, con las notas en una caja destacada aparte (fondo Arena); la cabecera del día pasó a "DÍA N" en Terracota mayúsculas + fecha y ubicación en Ocre en una sola línea (antes el back office usaba un badge cuadrado de número). Verificado en navegador contra datos reales (Sri Lanka) en escritorio y a 375px de ancho.
+
+**Correcciones tras validación real de Quique (2026-08-22, tercera pasada):**
+- Cada día en back office pasó de vivir en un único panel dividido (`divide-y`) a ser su propia tarjeta blanca con radio/sombra y separación, igual que en el mockup y que en la vista de viajero (que ya tenía este patrón).
+- El rango de horas ("16:00 – 17:30") se partía en 3 líneas por un ancho fijo de 38px pensado para una hora simple; corregido con ancho natural + `whitespace-nowrap`.
+- En el pasaporte del viajero, la foto cuadrada solo acompañaba a la cabecera (Día N + título) y las secciones de Hoteles/Actividades quedaban a ancho completo debajo, "huérfanas" de la foto — corregido para que la foto acompañe a todo el contenido del día, como ya hacía correctamente el back office.
+- Añadido un botón explícito de colapsar (chevron) junto a la cabecera del día en el pasaporte del viajero, ya que la foto cuadrada (a diferencia del banner ancho anterior) no sugiere que sea pulsable para colapsar.
+
+**Validado end-to-end por Quique en producción (2026-08-22).** Tarjeta de Notion movida a Completed.
 
 **Nota técnica:** se añadió el campo `description` (descripción del catálogo de actividades) a `TripDayActivityItem`/`DayActivity`, que no se exponía antes en la API pese a existir ya en la tabla `activities` — sin migración de schema, solo openapi.yaml + codegen + `trips.ts` + `traveler.ts`.
 
