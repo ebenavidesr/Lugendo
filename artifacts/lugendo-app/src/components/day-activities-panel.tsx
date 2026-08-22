@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Clock, StickyNote, Search, Loader2, Pencil } from "lucide-react";
+import { Plus, X, Clock, StickyNote, Search, Loader2, Pencil, ChevronDown } from "lucide-react";
 import {
   useListDayActivities,
   useAddDayActivity,
@@ -75,6 +75,14 @@ export function DayActivitiesPanel({
   const [mode, setMode] = useState<"idle" | "link" | "create">("idle");
   const [editActivity, setEditActivity] = useState<DayActivity | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [openActivityIds, setOpenActivityIds] = useState<Set<number>>(new Set());
+  const toggleActivity = (id: number) => {
+    setOpenActivityIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // link mode
   const [selectedActivityId, setSelectedActivityId] = useState<string>("");
@@ -281,12 +289,71 @@ export function DayActivitiesPanel({
                   const timeRange = formatTimeRange(a.startTime, a.endTime ?? undefined);
                   const isFree = !a.included;
                   const canEdit = a.canEdit !== false;
-                  const transportOpt = !isItinerary ? getTransportOption(a.transportMode ?? undefined) : null;
+
+                  // ── Itinerary/template rows: unchanged, no accordion, no #159 fields ──
+                  if (isItinerary) {
+                    return (
+                      <div key={a.id}>
+                        <div className="flex items-start gap-2 px-2.5 py-2 rounded-[8px] border border-border/60 bg-card">
+                          <span className="text-base leading-none mt-0.5">{meta.emoji}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
+                              {isFree && (
+                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                                  style={{ background: "#F0F4F0", color: "#4A6A4A" }}>
+                                  {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                              {timeRange ? (
+                                <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#C4793A" }}>
+                                  <Clock className="w-3 h-3" />{timeRange}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
+                                  <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
+                                </span>
+                              )}
+                              {a.notes && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                                  <StickyNote className="w-3 h-3" />
+                                  <span className="truncate max-w-[200px]">{a.notes}</span>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                            {canEdit && (
+                              <button
+                                onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                                className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
+                                title="Editar actividad">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {canEdit && (
+                              <button onClick={() => doRemove(a.id)}
+                                className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // ── Trip rows (#159): collapsed to one line, expands individually on click ──
+                  const transportOpt = getTransportOption(a.transportMode ?? undefined);
+                  const isOpen = openActivityIds.has(a.id);
+                  const hasDetail = !!(a.description || a.companyContact || (a.addressOverride ?? a.address) || a.notes || (isFree && a.costAmount != null));
 
                   return (
                     <div key={a.id}>
-                      {/* Transport separator before activity (skip for itinerary and first item) */}
-                      {!isItinerary && idx > 0 && transportOpt && (
+                      {/* Transport separator before activity (skip first) */}
+                      {idx > 0 && transportOpt && (
                         <div className="flex items-center gap-2 py-1 ml-8">
                           <span className="text-[12px]">{transportOpt.icon}</span>
                           <span className="text-[10px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
@@ -295,78 +362,102 @@ export function DayActivitiesPanel({
                         </div>
                       )}
 
-                      <div className={`flex items-start gap-2 ${isItinerary ? "px-2.5 py-2 rounded-[8px] border border-border/60 bg-card" : "py-1.5"}`}>
-                        {/* Node */}
-                        {!isItinerary ? (
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 text-[12px]"
-                            style={{ background: "var(--arena, #FAF2EB)", border: "1.5px solid var(--duna, #ECD5B8)" }}
-                          >
-                            {meta.emoji}
-                          </div>
-                        ) : (
-                          <span className="text-base leading-none mt-0.5">{meta.emoji}</span>
-                        )}
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <p className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
-                            {!isItinerary && a.included && (
-                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
-                                Incluída
-                              </span>
-                            )}
-                            {isFree && (
-                              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                style={{ background: "#F0F4F0", color: "#4A6A4A" }}>
-                                {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                            {timeRange ? (
-                              <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#C4793A" }}>
-                                <Clock className="w-3 h-3" />{timeRange}
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
-                                <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
-                              </span>
-                            )}
-                            {a.notes && (
-                              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <StickyNote className="w-3 h-3" />
-                                <span className="truncate max-w-[200px]">{a.notes}</span>
-                              </span>
-                            )}
-                          </div>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => hasDetail && toggleActivity(a.id)}
+                        onKeyDown={e => { if (hasDetail && (e.key === "Enter" || e.key === " ")) toggleActivity(a.id); }}
+                        className="flex items-center gap-2 py-1.5"
+                        style={{ cursor: hasDetail ? "pointer" : "default" }}
+                      >
+                        <div
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 text-[12px]"
+                          style={{ background: "var(--arena, #FAF2EB)", border: "1.5px solid var(--duna, #ECD5B8)" }}
+                        >
+                          {meta.emoji}
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 mt-0.5">
+
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+                          {a.included && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                              style={{ background: "#EAE6F5", color: "#3D2F6B" }}>
+                              Incluída
+                            </span>
+                          )}
+                          {isFree && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                              style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}>
+                              {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
+                            </span>
+                          )}
+                          {timeRange ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: "#C4793A" }}>
+                              <Clock className="w-3 h-3" />{timeRange}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] shrink-0" style={{ color: "var(--text-ter, #9C7A58)" }}>
+                              <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
+                            </span>
+                          )}
+                          <p className="text-[12px] font-medium truncate" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
                           {canEdit && (
                             <button
-                              onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                              onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
                               className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
                               title="Editar actividad">
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          {!isItinerary && !canEdit && (
+                          {!canEdit && (
                             <button
-                              onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
+                              onClick={e => { e.stopPropagation(); setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
                               className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
                               title="Ver actividad">
                               <Pencil className="w-3.5 h-3.5 opacity-40" />
                             </button>
                           )}
                           {canEdit && (
-                            <button onClick={() => doRemove(a.id)}
+                            <button onClick={e => { e.stopPropagation(); doRemove(a.id); }}
                               className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
                               <X className="w-3.5 h-3.5" />
                             </button>
                           )}
+                          {hasDetail && (
+                            <ChevronDown
+                              className="w-3.5 h-3.5 text-muted-foreground transition-transform"
+                              style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
+                            />
+                          )}
                         </div>
                       </div>
+
+                      {isOpen && hasDetail && (
+                        <div className="pl-9 pb-1.5 space-y-0.5 animate-in fade-in duration-150">
+                          {a.description && (
+                            <p className="text-[11px] leading-relaxed text-muted-foreground">{a.description}</p>
+                          )}
+                          {isFree && a.costAmount != null && (
+                            <p className="text-[11px] font-medium" style={{ color: "#C4793A" }}>
+                              💶 {a.costAmount.toFixed(2)} {a.costCurrency ?? "EUR"} por persona
+                            </p>
+                          )}
+                          {a.companyContact && (
+                            <p className="text-[11px] text-muted-foreground">🏢 {a.companyContact}</p>
+                          )}
+                          {(a.addressOverride ?? a.address) && (
+                            <p className="text-[11px] text-muted-foreground">📍 {a.addressOverride ?? a.address}</p>
+                          )}
+                          {a.notes && (
+                            <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground italic">
+                              <StickyNote className="w-3 h-3" />
+                              {a.notes}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

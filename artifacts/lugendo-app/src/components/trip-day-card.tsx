@@ -78,6 +78,14 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   const [freeSheetOpen, setFreeSheetOpen] = useState(false);
   const [editActivity, setEditActivity] = useState<TripDayActivityItem | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [openActivityIds, setOpenActivityIds] = useState<Set<number>>(new Set());
+  const toggleActivity = (id: number) => {
+    setOpenActivityIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const [dayEditOpen, setDayEditOpen] = useState(false);
   const [editCityFrom, setEditCityFrom] = useState(day.cityFrom ?? "");
@@ -192,46 +200,43 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
 
   return (
     <div className="bg-card border border-border rounded-[18px] overflow-hidden">
-      {/* Photo zone */}
-      <DayPhotoZone
-        photoUrl={day.photoUrl}
-        editable={canEditDay && !!onSavePhoto}
-        onSave={photoUrl => onSavePhoto!(photoUrl)}
-        height={134}
-        onClick={onToggle}
-      >
-        <div
-          className="absolute top-3 left-3 px-2.5 py-1 rounded-[8px] text-[12px] font-semibold shadow"
-          style={{ background: "var(--indigo)", color: "#FAF2EB" }}
-        >
-          Día {day.dayNumber}
-          {dayDateStr && (
-            <span className="text-[10px] font-normal ml-1.5 opacity-80">{dayDateStr}</span>
+      {/* Day row: square photo + header, side by side on desktop, stacked on mobile */}
+      <div className="flex flex-col sm:flex-row gap-3 p-3">
+        <div className="relative shrink-0">
+          <DayPhotoZone
+            photoUrl={day.photoUrl}
+            editable={canEditDay && !!onSavePhoto}
+            onSave={photoUrl => onSavePhoto!(photoUrl)}
+            square={140}
+            onClick={onToggle}
+            className="rounded-[12px]"
+          />
+          {canEditDay && (
+            <button
+              onClick={e => { e.stopPropagation(); openDayEdit(); }}
+              className="absolute top-1.5 right-1.5 p-1.5 rounded-[8px] transition-colors"
+              style={{ background: "rgba(0,0,0,0.45)", color: "#FAF2EB" }}
+              title="Editar día"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
           )}
         </div>
 
-        {canEditDay && (
-          <button
-            onClick={e => { e.stopPropagation(); openDayEdit(); }}
-            className="absolute top-3 right-3 p-1.5 rounded-[8px] transition-colors"
-            style={{ background: "rgba(255,255,255,0.2)", color: "#FAF2EB" }}
-            title="Editar día"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </DayPhotoZone>
-
-      {/* Day title + destination */}
-      <div className="px-4 pt-3 pb-0">
-        <h3 className="text-[16px] font-medium" style={{ color: "var(--noche)" }}>
-          {dayTitle(day)}
-        </h3>
-        {day.description && (
-          <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--text-sec)" }}>
-            {day.description}
+        <div className="flex-1 min-w-0 pt-0.5">
+          <p className="text-[12px] font-semibold" style={{ color: "var(--indigo)" }}>
+            Día {day.dayNumber}
+            {dayDateStr && <span className="font-normal opacity-70"> · {dayDateStr}</span>}
           </p>
-        )}
+          <h3 className="text-[16px] font-medium mt-0.5" style={{ color: "var(--noche)" }}>
+            {dayTitle(day)}
+          </h3>
+          {day.description && (
+            <p className="text-[12px] mt-1 leading-relaxed" style={{ color: "var(--text-sec)" }}>
+              {day.description}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Hotel section — always visible when tripId is set */}
@@ -276,11 +281,12 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
               {activities.map((activity, idx) => {
                 const emoji = getCategoryEmoji(activity.activityCategory);
                 const timeRange = formatTimeRange(activity.startTime, activity.endTime);
-                const isAdHoc = activity.activityId == null;
                 const isFree = !activity.included;
                 const transportOpt = getTransportOption(activity.transportMode);
                 const canDelete = activity.canEdit && tripId != null;
                 const canEdit = activity.canEdit && tripId != null;
+                const isOpen = openActivityIds.has(activity.id);
+                const hasDetail = !!(activity.description || activity.companyContact || (activity.addressOverride ?? activity.address) || activity.notes || (isFree && activity.costAmount != null));
 
                 return (
                   <div key={activity.id}>
@@ -294,8 +300,15 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                       </div>
                     )}
 
-                    {/* Activity row */}
-                    <div className="flex items-start gap-3 py-2">
+                    {/* Activity row -- collapsed to one line, expands individually on click */}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => hasDetail && toggleActivity(activity.id)}
+                      onKeyDown={e => { if (hasDetail && (e.key === "Enter" || e.key === " ")) toggleActivity(activity.id); }}
+                      className="flex items-center gap-2.5 py-2"
+                      style={{ minHeight: 44, cursor: hasDetail ? "pointer" : "default" }}
+                    >
                       {/* Node dot with emoji */}
                       <div
                         className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 relative z-10 text-[13px]"
@@ -304,88 +317,95 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
                         {emoji}
                       </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 pt-0.5">
-                        <div className="flex items-start gap-1.5 justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] font-medium leading-tight" style={{ color: "var(--noche)" }}>
-                              {activity.activityName}
-                            </p>
-                            {timeRange ? (
-                              <p className="text-[11px] mt-0.5 font-medium tabular-nums" style={{ color: "var(--terra)" }}>
-                                {timeRange}
-                              </p>
-                            ) : (
-                              <p className="text-[11px] mt-0.5" style={{ color: "var(--text-ter)" }}>
-                                Hora por confirmar
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {activity.included && (
-                              <span
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                style={{ background: "#EAE6F5", color: "#3D2F6B" }}
-                              >
-                                Incluída
-                              </span>
-                            )}
-                            {isFree && (
-                              <span
-                                className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                style={{ background: "#F0F4F0", color: "#4A6A4A" }}
-                              >
-                                {activity.isMine ? "Mi actividad" : "Por libre"}
-                              </span>
-                            )}
-                            {canEdit && (
-                              <button
-                                onClick={() => { setEditActivity(activity); setEditSheetOpen(true); }}
-                                className="p-0.5 text-muted-foreground hover:text-[var(--indigo)] transition-colors"
-                                title="Editar actividad"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button
-                                onClick={() => handleRemoveActivity(activity.id)}
-                                className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
-                                title="Eliminar actividad"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
+                        {activity.included && (
+                          <span
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                            style={{ background: "#EAE6F5", color: "#3D2F6B" }}
+                          >
+                            Incluída
+                          </span>
+                        )}
+                        {isFree && (
+                          <span
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                            style={{ background: "var(--arena)", color: "var(--ocre)", border: "1px solid var(--duna)" }}
+                          >
+                            {activity.isMine ? "Mi actividad" : "Por libre"}
+                          </span>
+                        )}
+                        {timeRange ? (
+                          <span className="text-[11px] font-medium tabular-nums shrink-0" style={{ color: "var(--terra)" }}>
+                            {timeRange}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] shrink-0" style={{ color: "var(--text-ter)" }}>
+                            Hora por confirmar
+                          </span>
+                        )}
+                        <span className="text-[13px] font-medium truncate" style={{ color: "var(--noche)" }}>
+                          {activity.activityName}
+                        </span>
+                      </div>
 
-                        {/* Extra details */}
-                        {(activity.companyContact || (activity.addressOverride ?? activity.address) || activity.notes || (isFree && activity.costAmount != null)) && (
-                          <div className="mt-1 space-y-0.5">
-                            {isFree && activity.costAmount != null && (
-                              <p className="text-[11px] font-medium" style={{ color: "var(--terra)" }}>
-                                💶 {activity.costAmount.toFixed(2)} {activity.costCurrency ?? "EUR"} por persona
-                              </p>
-                            )}
-                            {activity.companyContact && (
-                              <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
-                                🏢 {activity.companyContact}
-                              </p>
-                            )}
-                            {(activity.addressOverride ?? activity.address) && (
-                              <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
-                                📍 {activity.addressOverride ?? activity.address}
-                              </p>
-                            )}
-                            {activity.notes && (
-                              <p className="text-[11px] italic" style={{ color: "var(--text-ter)" }}>
-                                {activity.notes}
-                              </p>
-                            )}
-                          </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {canEdit && (
+                          <button
+                            onClick={e => { e.stopPropagation(); setEditActivity(activity); setEditSheetOpen(true); }}
+                            className="p-0.5 text-muted-foreground hover:text-[var(--indigo)] transition-colors"
+                            title="Editar actividad"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleRemoveActivity(activity.id); }}
+                            className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors"
+                            title="Eliminar actividad"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {hasDetail && (
+                          <ChevronDown
+                            className="w-3.5 h-3.5 text-muted-foreground transition-transform"
+                            style={{ transform: isOpen ? "rotate(180deg)" : undefined }}
+                          />
                         )}
                       </div>
                     </div>
+
+                    {/* Expanded detail */}
+                    {isOpen && hasDetail && (
+                      <div className="pl-9 pb-2 space-y-0.5 animate-in fade-in duration-150">
+                        {activity.description && (
+                          <p className="text-[11px] leading-relaxed" style={{ color: "var(--text-sec)" }}>
+                            {activity.description}
+                          </p>
+                        )}
+                        {isFree && activity.costAmount != null && (
+                          <p className="text-[11px] font-medium" style={{ color: "var(--terra)" }}>
+                            💶 {activity.costAmount.toFixed(2)} {activity.costCurrency ?? "EUR"} por persona
+                          </p>
+                        )}
+                        {activity.companyContact && (
+                          <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
+                            🏢 {activity.companyContact}
+                          </p>
+                        )}
+                        {(activity.addressOverride ?? activity.address) && (
+                          <p className="text-[11px]" style={{ color: "var(--text-sec)" }}>
+                            📍 {activity.addressOverride ?? activity.address}
+                          </p>
+                        )}
+                        {activity.notes && (
+                          <p className="text-[11px] italic" style={{ color: "var(--text-ter)" }}>
+                            {activity.notes}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

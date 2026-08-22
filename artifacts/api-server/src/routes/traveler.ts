@@ -181,6 +181,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
   type ActivityItem = {
     id: number; activityId: number | null; activityName: string; activityCategory: string | null;
     startTime: string | null; endTime: string | null; address: string | null; addressOverride: string | null;
+    description: string | null;
     durationHours: number | null; notes: string | null; companyContact: string | null;
     included: boolean; transportMode: string | null; canEdit: boolean;
     costAmount: number | null; costCurrency: string | null;
@@ -197,7 +198,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
       tda.sort_order, tda.start_time, tda.end_time, tda.notes,
       tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
       tda.created_by_user_id, tda.cost_amount, tda.cost_currency, tda.shared_with_all,
-      a.address AS activity_address, a.duration_hours AS activity_duration_hours,
+      a.address AS activity_address, a.description AS activity_description, a.duration_hours AS activity_duration_hours,
       EXISTS(
         SELECT 1 FROM trip_day_activity_participants p
         WHERE p.activity_link_id = tda.id AND p.traveler_id = ${currentUserId}
@@ -248,6 +249,7 @@ async function getTripDayActivityMap(dayIds: number[], currentUserId: number, tr
       companyContact: r.company_contact as string | null,
       addressOverride: r.address_override as string | null,
       address: (r.address_override as string | null) ?? (r.activity_address as string | null),
+      description: r.activity_description as string | null,
       durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
       included,
       transportMode: r.transport_mode as string | null,

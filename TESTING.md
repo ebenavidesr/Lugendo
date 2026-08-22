@@ -6,6 +6,25 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #159 (Notion) — Vista de itinerario: fila con foto cuadrada y actividades expandibles con detalle completo (2026-08-22)
+- [x] En escritorio, cada día se muestra como fila con foto cuadrada a la izquierda y contenido a la derecha (verificado en back office con datos reales — Sri Lanka, Kenya)
+- [x] En móvil, la foto cuadrada se alinea a la izquierda (no centrada) con el contenido debajo — `flex-col sm:flex-row` en `trip-day-card.tsx` y en la fila de día de `trip-detail.tsx`
+- [x] Cada día muestra su fecha concreta junto a "Día N", antes de la ubicación
+- [x] Cada actividad colapsada muestra etiqueta + hora + título en una sola línea, sin desbordar en móvil — confirmado en back office (Sri Lanka día 6: "Incluída 10:00–11:00 Fuerte de Sigiriya", "Por libre · Enrique Benavides 12:30–13:30 Masaje Ayurvédico")
+- [x] La etiqueta de cada actividad usa el copy y la lógica ya implementados (Incluída/Por libre/Mi actividad en vista viajero; Por libre·nombre en back office), sin etiquetas nuevas — no se tocó la lógica, solo el layout
+- [x] La etiqueta "Por libre" usa el nuevo estilo (fondo Arena, texto Ocre, borde Duna) en ambas vistas (viajero y back office)
+- [x] Al pulsar una actividad, se despliega su detalle: descripción, dirección, contacto y notas cuando existen
+- [x] El coste ("Precio por viajero") solo aparece en el detalle de actividades por libre, nunca en las incluidas
+- [x] Un día con 6+ actividades no oculta ninguna actividad a nivel de lista; cada una se expande de forma independiente
+- [x] Varias actividades pueden estar expandidas a la vez sin romper el layout (estado independiente por `id` en un `Set`)
+- [x] Sin regresión en la lógica de permisos, participantes ni visibilidad de #151 (cambio puramente de presentación; la rama `isItinerary` de `day-activities-panel.tsx` quedó intacta)
+- [ ] Sin regresión en el toggle "Incluida"/"Por libre" del sheet de edición de actividad
+- [x] La vista de itinerarios (plantillas sin fechas) no se ve afectada por este cambio — `day-activities-panel.tsx` mantiene una rama separada sin acordeón para `isItinerary`
+- [ ] Validar en dispositivo móvil real (solo verificado por breakpoint `sm:` en escritorio/DOM, no en viewport táctil real)
+- [ ] Confirmar visualmente el color exacto del pill "Por libre" (verificado por valor de variables CSS, no por captura visual — herramienta de screenshot inestable en esta sesión)
+
+**Nota técnica:** se añadió el campo `description` (descripción del catálogo de actividades) a `TripDayActivityItem`/`DayActivity`, que no se exponía antes en la API pese a existir ya en la tabla `activities` — sin migración de schema, solo openapi.yaml + codegen + `trips.ts` + `traveler.ts`.
+
 ### #158 — Corregir solape de horas en móvil y completar campos en el alta de actividades (2026-08-22)
 - [x] Investigación previa: el solape era el mismo patrón (`grid grid-cols-2 gap-3` sin variante responsive) en `activity-detail-sheet.tsx` y `free-activity-sheet.tsx`; `dayActivityInput.ts` ya soportaba `endTime`, `companyContact`, `addressOverride`, `included`, `transportMode`, `costAmount` — sin cambios de backend/OpenAPI
 - [x] En móvil (viewport ≤375px), los inputs de hora de inicio/fin no se solapan ni se recortan, en la ficha de edición y en la hoja de actividad libre — verificado en navegador contra un viaje real (`activity-detail-sheet.tsx`, midiendo `getBoundingClientRect()`: ambos inputs a 375px de ancho, mismo `x`, `y` distinto → apilados sin overlap). `free-activity-sheet.tsx` recibió el mismo cambio de clase (`grid-cols-1 sm:grid-cols-2`, patrón ya usado en `traveler-tag-selector.tsx`) pero no se pudo abrir esa hoja concreta en esta sesión por no tener cuenta de viajero válida en local — mismo patrón, sin verificación visual directa en ese componente

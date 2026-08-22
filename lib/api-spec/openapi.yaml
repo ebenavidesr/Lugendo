@@ -4221,6 +4221,9 @@ components:
           type: ["string", "null"]
         address:
           type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+          description: Descripción del catálogo de actividades (#159).
         durationHours:
           type: ["number", "null"]
         notes:
@@ -5893,6 +5896,9 @@ components:
           enum: [mañana, tarde, noche, null]
         address:
           type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+          description: Descripción del catálogo de actividades (#159).
         durationHours:
           type: ["number", "null"]
         notes:

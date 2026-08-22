@@ -238,12 +238,16 @@ interface DayPhotoZoneProps {
   /** Caps the banner height on very wide layouts. The box always keeps CROP_ASPECT so it
    * never gets re-cropped by object-cover beyond what the user already framed while editing. */
   height?: number;
+  /** Renders a fixed-size square thumbnail (1:1) instead of the full-width CROP_ASPECT banner --
+   * used for the day-row thumbnail (#159). The underlying photo is still stored/cropped at
+   * CROP_ASPECT; object-cover just shows a centered square slice of it here. */
+  square?: number;
   onClick?: () => void;
   children?: React.ReactNode;
   className?: string;
 }
 
-export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, onClick, children, className }: DayPhotoZoneProps) {
+export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, square, onClick, children, className }: DayPhotoZoneProps) {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -263,8 +267,10 @@ export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, onClick
 
   return (
     <div
-      className={`relative flex items-center justify-center overflow-hidden ${className ?? ""}`}
-      style={{ width: "100%", aspectRatio: CROP_ASPECT, maxHeight: height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
+      className={`relative flex items-center justify-center overflow-hidden shrink-0 ${className ?? ""}`}
+      style={square
+        ? { width: square, height: square, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }
+        : { width: "100%", aspectRatio: CROP_ASPECT, maxHeight: height, background: "var(--duna)", cursor: onClick ? "pointer" : undefined }}
       onClick={onClick}
     >
       {photoUrl ? (

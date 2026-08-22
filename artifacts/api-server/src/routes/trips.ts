@@ -270,6 +270,7 @@ function serializeDayActivity(r: {
   transportMode: string | null;
   createdByUserId: number | null;
   address: string | null;
+  description: string | null;
   durationHours: number | null;
   createdAt: string;
   canEdit: boolean;
@@ -295,6 +296,7 @@ function serializeDayActivity(r: {
     included: r.included,
     transportMode: r.transportMode ?? null,
     address: r.addressOverride ?? r.address ?? null,
+    description: r.description ?? null,
     durationHours: r.durationHours ?? null,
     createdAt: r.createdAt,
     canEdit: r.canEdit,
@@ -763,7 +765,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
       tda.company_contact, tda.address_override, tda.included, tda.transport_mode,
       tda.created_by_user_id, tda.cost_amount, tda.cost_currency, tda.shared_with_all,
       cb.name AS created_by_name,
-      a.address AS activity_address, a.duration_hours AS activity_duration_hours,
+      a.address AS activity_address, a.description AS activity_description, a.duration_hours AS activity_duration_hours,
       tda.created_at,
       COALESCE((
         SELECT json_agg(json_build_object('id', u.id, 'name', u.name))
@@ -805,6 +807,7 @@ router.get("/trips/:tripId/days/:dayId/activities", requireAuth, async (req, res
       transportMode: r.transport_mode as string | null,
       createdByUserId,
       address: r.activity_address as string | null,
+      description: r.activity_description as string | null,
       durationHours: r.activity_duration_hours != null ? parseFloat(r.activity_duration_hours as string) : null,
       createdAt: String(r.created_at),
       canEdit,
@@ -904,6 +907,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayAc
   let actName: string | null = null;
   let actCategory: string | null = null;
   let actAddress: string | null = null;
+  let actDescription: string | null = null;
   let actDurationHours: number | null = null;
 
   if (activityId) {
@@ -911,6 +915,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayAc
     actName = act?.name ?? null;
     actCategory = act?.category ?? null;
     actAddress = act?.address ?? null;
+    actDescription = act?.description ?? null;
     actDurationHours = act?.durationHours != null ? parseFloat(act.durationHours) : null;
   }
 
@@ -934,6 +939,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayAc
     transportMode: link.transport_mode as string | null,
     createdByUserId,
     address: actAddress,
+    description: actDescription,
     durationHours: actDurationHours,
     createdAt: String(link.created_at),
     canEdit,
@@ -1045,6 +1051,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
   let actName: string | null = null;
   let actCategory: string | null = null;
   let actAddress: string | null = null;
+  let actDescription: string | null = null;
   let actDurationHours: number | null = null;
 
   if (updated.activityId) {
@@ -1052,6 +1059,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     actName = act?.name ?? null;
     actCategory = act?.category ?? null;
     actAddress = act?.address ?? null;
+    actDescription = act?.description ?? null;
     actDurationHours = act?.durationHours != null ? parseFloat(act.durationHours) : null;
   }
 
@@ -1078,6 +1086,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     transportMode: updated.transportMode ?? null,
     createdByUserId: updated.createdByUserId ?? null,
     address: actAddress,
+    description: actDescription,
     durationHours: actDurationHours,
     createdAt: updated.createdAt.toISOString(),
     canEdit,

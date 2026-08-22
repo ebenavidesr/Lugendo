@@ -21,6 +21,11 @@ export interface TripDayActivityItem {
   endTime?: string | null;
   /** @nullable */
   address?: string | null;
+  /**
+     * Descripción del catálogo de actividades (#159).
+     * @nullable
+     */
+  description?: string | null;
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */

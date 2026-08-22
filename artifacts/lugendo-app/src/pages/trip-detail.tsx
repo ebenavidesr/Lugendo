@@ -711,7 +711,15 @@ export default function TripDetail() {
 
                 return (
                   <div key={day.id} className="animate-in fade-in slide-in-from-top-1 duration-200">
-                    <div className="flex items-start gap-4 px-5 py-3">
+                    <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-3">
+                      <DayPhotoZone
+                        photoUrl={day.photoUrl}
+                        editable={false}
+                        onSave={async () => {}}
+                        square={140}
+                        className="rounded-[12px]"
+                      />
+                      <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
                       <div className="flex flex-col items-center gap-0.5 shrink-0">
                         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center text-[13px] font-medium"
                           style={{ background: "#FAEEE4", color: "#C4793A" }}>
@@ -797,6 +805,7 @@ export default function TripDetail() {
                             ? <ChevronDown className="w-4 h-4" />
                             : <ChevronRight className="w-4 h-4" />}
                         </button>
+                      </div>
                       </div>
                     </div>
                   </div>

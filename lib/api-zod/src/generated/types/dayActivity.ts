@@ -26,6 +26,11 @@ export interface DayActivity {
   timeOfDay?: DayActivityTimeOfDay;
   /** @nullable */
   address?: string | null;
+  /**
+     * Descripción del catálogo de actividades (#159).
+     * @nullable
+     */
+  description?: string | null;
   /** @nullable */
   durationHours?: number | null;
   /** @nullable */
