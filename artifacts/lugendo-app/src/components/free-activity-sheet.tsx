@@ -92,7 +92,7 @@ export function FreeActivitySheet({ tripId, dayId, open, onOpenChange }: FreeAct
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-[12px] font-medium block mb-1.5" style={{ color: "var(--noche)" }}>
                 Hora de inicio

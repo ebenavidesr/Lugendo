@@ -10,7 +10,7 @@ import {
   useListActivities,
   useCreateActivity,
 } from "@workspace/api-client-react";
-import type { Activity, DayActivity } from "@workspace/api-client-react";
+import type { Activity, DayActivity, TransportMode } from "@workspace/api-client-react";
 import { ActivityDetailSheet } from "@/components/activity-detail-sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { CountrySelectSmall } from "@/components/country-select";
 import { Textarea } from "@/components/ui/textarea";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { getTransportOption } from "@/components/transport-select";
+import { getTransportOption, TransportSelect } from "@/components/transport-select";
 
 import { categoryMeta } from "@/components/activity-meta";
 export { categoryMeta } from "@/components/activity-meta";
@@ -87,6 +87,12 @@ export function DayActivitiesPanel({
   const [newCity, setNewCity] = useState("");
   const [newCountry, setNewCountry] = useState("");
   const [newStartTime, setNewStartTime] = useState("");
+  const [newEndTime, setNewEndTime] = useState("");
+  const [newCompanyContact, setNewCompanyContact] = useState("");
+  const [newAddressOverride, setNewAddressOverride] = useState("");
+  const [newTransportMode, setNewTransportMode] = useState("");
+  const [newIncluded, setNewIncluded] = useState(true);
+  const [newCostAmount, setNewCostAmount] = useState("");
   const [newNotes, setNewNotes] = useState("");
 
   // lookup
@@ -108,7 +114,8 @@ export function DayActivitiesPanel({
     setMode("idle");
     setSelectedActivityId(""); setStartTime(""); setNotes("");
     setNewName(""); setNewCategory(""); setNewCity(""); setNewCountry("");
-    setNewStartTime(""); setNewNotes("");
+    setNewStartTime(""); setNewEndTime(""); setNewCompanyContact(""); setNewAddressOverride("");
+    setNewTransportMode(""); setNewIncluded(true); setNewCostAmount(""); setNewNotes("");
     setLookupQ(""); setLookupResults([]); setLookupDone(false);
   };
 
@@ -182,6 +189,12 @@ export function DayActivitiesPanel({
     // Capture form state before any async operation to avoid stale closure issues
     const capturedStartTime = newStartTime;
     const capturedNotes = newNotes;
+    const capturedEndTime = newEndTime;
+    const capturedCompanyContact = newCompanyContact;
+    const capturedAddressOverride = newAddressOverride;
+    const capturedTransportMode = newTransportMode;
+    const capturedIncluded = newIncluded;
+    const capturedCostAmount = newCostAmount;
     try {
       const created = await createActivity.mutateAsync({
         data: {
@@ -196,6 +209,12 @@ export function DayActivitiesPanel({
         activityId: created.id,
         ...(capturedStartTime ? { startTime: capturedStartTime } : {}),
         ...(capturedNotes ? { notes: capturedNotes } : {}),
+        ...(!isItinerary ? { included: capturedIncluded } : {}),
+        ...(!isItinerary && capturedEndTime ? { endTime: capturedEndTime } : {}),
+        ...(!isItinerary && capturedCompanyContact ? { companyContact: capturedCompanyContact } : {}),
+        ...(!isItinerary && capturedAddressOverride ? { addressOverride: capturedAddressOverride } : {}),
+        ...(!isItinerary && capturedTransportMode ? { transportMode: capturedTransportMode as TransportMode } : {}),
+        ...(!isItinerary && !capturedIncluded && capturedCostAmount ? { costAmount: parseFloat(capturedCostAmount) } : {}),
       };
       if (isItinerary) {
         await addItin.mutateAsync({ itineraryId: entityId, dayId, data: addData });
@@ -474,10 +493,71 @@ export function DayActivitiesPanel({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-[11px] text-muted-foreground block mb-1">Hora de inicio (para este día)</label>
-                <Input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} className="h-8 text-[12px] w-36" />
+              <div className={isItinerary ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-2"}>
+                <div>
+                  <label className="text-[11px] text-muted-foreground block mb-1">Hora de inicio (para este día)</label>
+                  <Input type="time" value={newStartTime} onChange={e => setNewStartTime(e.target.value)} className="h-8 text-[12px]" />
+                </div>
+                {!isItinerary && (
+                  <div>
+                    <label className="text-[11px] text-muted-foreground block mb-1">Hora de fin</label>
+                    <Input type="time" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} className="h-8 text-[12px]" />
+                  </div>
+                )}
               </div>
+
+              {!isItinerary && (
+                <>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground block mb-1">Empresa / Contacto</label>
+                    <Input placeholder="Nombre del tour, empresa, teléfono…" value={newCompanyContact} onChange={e => setNewCompanyContact(e.target.value)} className="h-8 text-[12px]" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground block mb-1">Dirección (para este día)</label>
+                    <Input placeholder="Sobreescribe la dirección del catálogo…" value={newAddressOverride} onChange={e => setNewAddressOverride(e.target.value)} className="h-8 text-[12px]" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground block mb-1">Transporte para llegar</label>
+                    <TransportSelect value={newTransportMode} onChange={setNewTransportMode} placeholder="Sin transporte definido" className="h-8 text-[12px]" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-muted-foreground block mb-1">Tipo de actividad</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNewIncluded(true)}
+                        className="flex-1 h-8 rounded-[6px] text-[11px] font-medium border transition-colors"
+                        style={{
+                          background: newIncluded ? "var(--indigo)" : "transparent",
+                          color: newIncluded ? "#FAF2EB" : "var(--noche)",
+                          borderColor: newIncluded ? "var(--indigo)" : "var(--border)",
+                        }}
+                      >
+                        Incluida
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewIncluded(false)}
+                        className="flex-1 h-8 rounded-[6px] text-[11px] font-medium border transition-colors"
+                        style={{
+                          background: !newIncluded ? "#4A6A4A" : "transparent",
+                          color: !newIncluded ? "#fff" : "var(--noche)",
+                          borderColor: !newIncluded ? "#4A6A4A" : "var(--border)",
+                        }}
+                      >
+                        Por libre
+                      </button>
+                    </div>
+                  </div>
+                  {!newIncluded && (
+                    <div>
+                      <label className="text-[11px] text-muted-foreground block mb-1">Coste por persona (€)</label>
+                      <Input type="number" min="0" step="0.01" placeholder="0.00" value={newCostAmount} onChange={e => setNewCostAmount(e.target.value)} className="h-8 text-[12px] w-32" />
+                    </div>
+                  )}
+                </>
+              )}
+
               <div>
                 <label className="text-[11px] text-muted-foreground block mb-1">Notas del día</label>
                 <Textarea placeholder="Punto de encuentro, indicaciones especiales…" value={newNotes} onChange={e => setNewNotes(e.target.value)} rows={2} className="text-[12px] resize-none" />

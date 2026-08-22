@@ -390,7 +390,7 @@ export function ActivityDetailSheet({
                   </div>
                 )}
 
-                <div className={isItinerary ? "" : "grid grid-cols-2 gap-3"}>
+                <div className={isItinerary ? "" : "grid grid-cols-1 sm:grid-cols-2 gap-3"}>
                   <div>
                     <label className="text-[12px] font-medium flex items-center gap-1.5 mb-1.5" style={{ color: "var(--noche)" }}>
                       <Clock className="w-3.5 h-3.5" style={{ color: "var(--terra)" }} />
