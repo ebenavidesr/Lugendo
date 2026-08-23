@@ -463,9 +463,6 @@ export default function ItineraryDetail() {
               <span className="text-sm text-muted-foreground">{diffLabel[itinerary.difficulty] ?? itinerary.difficulty}</span>
             )}
           </div>
-          {itinerary.description && (
-            <p className="text-sm text-muted-foreground mt-2 max-w-xl">{itinerary.description}</p>
-          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {canManage && (
@@ -493,6 +490,12 @@ export default function ItineraryDetail() {
           )}
         </div>
       </div>
+
+      {itinerary.description && (
+        <div className="bg-card border border-border rounded-[14px] shadow-sm p-5">
+          <p className="text-sm text-muted-foreground">{itinerary.description}</p>
+        </div>
+      )}
 
       <PublicCatalogCard itinerary={itinerary} itineraryId={itineraryId} />
 
