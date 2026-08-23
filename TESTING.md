@@ -103,6 +103,10 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] Limpieza de los 3 itinerarios ya expuestos (`Iceland Ring Road Highlights 2017`, `Kenya Safari – 6 Nights 7 Days`, y el residuo de QA `Prueba QA #142 (4 pasos)`) — despublicados en la base real; verificado que `/buscar` en producción vuelve a devolver `[]` (ningún itinerario de catálogo deliberado publicado todavía, resultado correcto y honesto)
 - [x] La ficha de resultado ahora muestra siempre una línea de precio — "Desde X€/persona" o, si no hay precio informado, "Precio a consultar" — en vez de omitir la línea por completo; verificado visualmente en local (`/buscar`)
 
+**Publicación del catálogo real (2026-08-23):** Quique ya había revisado los 221 itinerarios importados por scraping de Kananga/Ambarviajes (#170) y dejado en `active: true` los aprobados (214). Pidió activar el toggle del buscador para todos esos y asignarles tipo de viaje.
+- [x] Los 214 itinerarios aprobados (`active: true`, `sourceUrl` no nulo) pasados a `publishedInSearch: true`, con `tripTypes` asignado manualmente revisando nombre/países/descripción de cada uno (1-3 categorías de las 8 disponibles) — no se tocó `priceFrom` (ya venía poblado por el propio scraping)
+- [x] Verificado por API contra producción: `/buscar` devuelve los 214, el filtro de destino y el de tipo de viaje funcionan sobre datos reales, y el de presupuesto máximo filtra correctamente por el precio real importado
+
 **Ajuste tras feedback de QA (2026-08-23, 2ª ronda):** `/buscar` no tenía ningún punto de acceso en la navegación — solo se llegaba escribiendo la URL. Se propuso mockup con dos opciones (entrada en el header del portal del viajero vs. banner en "Mis viajes"); Quique eligió la Opción B.
 - [x] Banner "Descubre itinerarios de otras agencias" en la cabecera de `/traveler` (Mis viajes), enlaza a `/buscar` — verificado por clic con una cuenta de viajero desechable (creada y eliminada en la misma sesión)
 
