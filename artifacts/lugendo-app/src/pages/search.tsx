@@ -2,11 +2,11 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useSearchItineraries, TripType } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { LugendoCompass } from "@/components/logo";
+import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContactAgencyDialog } from "@/components/contact-agency-dialog";
-import { MapPin, Search as SearchIcon } from "lucide-react";
+import { MapPin, Search as SearchIcon, ArrowLeft } from "lucide-react";
 
 const TRIP_TYPE_OPTIONS: { value: TripType; label: string }[] = [
   { value: "adventure", label: "Aventura" },
@@ -39,12 +39,28 @@ export default function SearchPage() {
   });
 
   return (
-    <div className="min-h-screen font-sans" style={{ background: "#FAF2EB" }}>
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <div className="flex flex-col items-center mb-8 text-center">
-          <LugendoCompass size={48} variant="light" className="mb-3" />
-          <h1 className="text-2xl font-serif" style={{ color: "#2D1F0E" }}>Explora viajes</h1>
-          <p className="text-[13px] text-muted-foreground mt-1 max-w-md">
+    <div className="min-h-screen bg-background text-foreground font-sans">
+      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 max-w-3xl w-full mx-auto">
+        <Link href="/traveler" className="flex items-center gap-2">
+          <LugendoCompass size={22} variant="light" />
+          <LugendoWordmark variant="light" size="sm" />
+        </Link>
+        {user ? (
+          <Link href="/traveler"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-sm font-sans transition-colors hover:bg-muted/40"
+            style={{ color: "#7A5C3A" }}>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="hidden sm:inline-block">Mis viajes</span>
+          </Link>
+        ) : (
+          <Link href="/login" className="text-sm font-medium" style={{ color: "#C4793A" }}>Iniciar sesión</Link>
+        )}
+      </header>
+
+      <main className="max-w-3xl w-full mx-auto px-4 py-8 font-sans">
+        <div className="mb-6">
+          <h1 className="text-2xl font-medium" style={{ color: "#2D1F0E" }}>Explora viajes</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Descubre itinerarios publicados por agencias de viajes en Lugendo. Sin necesidad de cuenta.
           </p>
         </div>
@@ -90,7 +106,7 @@ export default function SearchPage() {
             <p className="text-sm text-muted-foreground">No hay itinerarios que coincidan con tu búsqueda.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {results.map(it => (
               <div key={it.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden flex flex-col">
                 <div className="h-36 bg-muted" style={it.coverPhotoUrl ? { backgroundImage: `url(${it.coverPhotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: "#ECD5B8" }} />
@@ -118,7 +134,7 @@ export default function SearchPage() {
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       {contactTarget && (
         <ContactAgencyDialog
