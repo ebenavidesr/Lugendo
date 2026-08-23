@@ -4081,6 +4081,8 @@ components:
             $ref: "#/components/schemas/TripType"
         priceFrom:
           type: ["integer", "null"]
+        sourceUrl:
+          type: ["string", "null"]
         tripCount:
           type: integer
         createdByName:
@@ -4144,6 +4146,8 @@ components:
             $ref: "#/components/schemas/TripType"
         priceFrom:
           type: ["integer", "null"]
+        sourceUrl:
+          type: ["string", "null"]
         tripCount:
           type: integer
         createdAt:

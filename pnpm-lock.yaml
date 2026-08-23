@@ -759,10 +759,32 @@ importers:
         version: 19.2.14
 
   scripts:
+    dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.700.0
+        version: 3.1089.0
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
+      cheerio:
+        specifier: ^1.2.0
+        version: 1.2.0
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.45.2(@types/pg@8.20.0)(pg@8.20.0)
+      sanitize-html:
+        specifier: ^2.17.6
+        version: 2.17.6
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
         version: 25.6.2
+      '@types/sanitize-html':
+        specifier: ^2.16.1
+        version: 2.16.1
+      dotenv-cli:
+        specifier: ^8.0.0
+        version: 8.0.0
       tsx:
         specifier: 'catalog:'
         version: 4.21.0

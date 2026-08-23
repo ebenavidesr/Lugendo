@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, integer, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, integer, timestamp, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { agenciesTable } from "./agencies";
@@ -30,9 +30,13 @@ export const itinerariesTable = pgTable("itineraries", {
   publishedInSearch: boolean("published_in_search").notNull().default(true),
   tripTypes: text("trip_types").array().notNull().default([]),
   priceFrom: integer("price_from"),
+  // Origin URL for itineraries brought in via one-off scraping imports (tarea #170).
+  // Null for itineraries created normally in the back office. Unique so re-running an
+  // import script is idempotent (multiple NULLs are allowed by Postgres unique indexes).
+  sourceUrl: text("source_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (t) => [uniqueIndex("itineraries_source_url_idx").on(t.sourceUrl)]);
 
 export const itineraryDaysTable = pgTable("itinerary_days", {
   id: serial("id").primaryKey(),
