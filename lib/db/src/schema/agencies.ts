@@ -22,6 +22,9 @@ export const agenciesTable = pgTable("agencies", {
   // agency-level opt-in that must be explicitly enabled before that page becomes reachable.
   description: text("description"),
   publicProfileEnabled: boolean("public_profile_enabled").notNull().default(false),
+  // Carrusel de fotos del perfil público (tarea #162, mejora post-QA). Orden = orden de subida;
+  // cada URL apunta a un objeto público en R2 vía GET /storage/public-objects/*.
+  photoUrls: text("photo_urls").array().notNull().default([]),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

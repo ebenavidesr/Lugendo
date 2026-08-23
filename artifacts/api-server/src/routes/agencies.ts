@@ -32,6 +32,27 @@ const logoUpload = multer({
   },
 });
 
+// Carrusel de fotos del perfil público: sin SVG (no tiene sentido para fotografía) y con un
+// límite mayor que el logo, ya que aquí sí se esperan fotos reales.
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
+const PHOTO_EXT_BY_MIME: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+};
+
+const photoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_PHOTO_SIZE },
+  fileFilter: (_req, file, cb) => {
+    if (!(file.mimetype in PHOTO_EXT_BY_MIME)) {
+      cb(new Error("UNSUPPORTED_PHOTO_FORMAT"));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
 router.get("/agencies", requireRoles("admin"), async (req, res): Promise<void> => {
   const agencies = await db
     .select()
@@ -173,6 +194,60 @@ router.delete("/agencies/:agencyId/logo", requireRoles("admin", "manager", "advi
   const [agency] = await db.update(agenciesTable).set({ logoFileUrl: null }).where(eq(agenciesTable.id, id)).returning();
   if (!agency) { res.status(404).json({ error: "Not found" }); return; }
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
+});
+
+router.post("/agencies/:agencyId/photos", requireRoles("admin", "manager", "advisor"), (req, res, next) => {
+  photoUpload.single("photo")(req, res, (err: unknown) => {
+    if (!err) { next(); return; }
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      res.status(400).json({ error: "Ese archivo pesa demasiado. Prueba con uno de menos de 5 MB." });
+      return;
+    }
+    if (err instanceof Error && err.message === "UNSUPPORTED_PHOTO_FORMAT") {
+      res.status(400).json({ error: "Formato no soportado. Usa PNG, JPG o WebP." });
+      return;
+    }
+    res.status(400).json({ error: "Error al subir el archivo" });
+  });
+}, async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
+  const file = req.file;
+  if (!file) { res.status(400).json({ error: "No se recibió ningún archivo" }); return; }
+
+  const objectPath = await objectStorage.uploadPublicBuffer(file.buffer, "agency-photos", PHOTO_EXT_BY_MIME[file.mimetype], file.mimetype);
+  const photoUrl = `/api/storage/public-objects/${objectPath}`;
+
+  const [agency] = await db
+    .update(agenciesTable)
+    .set({ photoUrls: sql`array_append(${agenciesTable.photoUrls}, ${photoUrl})` })
+    .where(eq(agenciesTable.id, id))
+    .returning();
+  if (!agency) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
+});
+
+router.delete("/agencies/:agencyId/photos/:index", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
+  const index = parseInt(Array.isArray(req.params.index) ? req.params.index[0] : req.params.index, 10);
+
+  const [existing] = await db.select({ photoUrls: agenciesTable.photoUrls }).from(agenciesTable).where(eq(agenciesTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+  if (Number.isNaN(index) || index < 0 || index >= existing.photoUrls.length) {
+    res.status(404).json({ error: "Foto no encontrada" });
+    return;
+  }
+
+  const removedUrl = existing.photoUrls[index];
+  const nextPhotoUrls = existing.photoUrls.filter((_, i) => i !== index);
+
+  const prefix = "/api/storage/public-objects/";
+  if (removedUrl.startsWith(prefix)) {
+    // Best-effort: si el objeto ya no existe en R2 no debe bloquear que se quite de la lista.
+    await objectStorage.deletePublicObject(removedUrl.slice(prefix.length)).catch(() => {});
+  }
+
+  const [agency] = await db.update(agenciesTable).set({ photoUrls: nextPhotoUrls }).where(eq(agenciesTable.id, id)).returning();
+  res.json({ ...agency, createdAt: agency!.createdAt.toISOString() });
 });
 
 export default router;

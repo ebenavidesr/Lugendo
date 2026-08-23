@@ -474,6 +474,57 @@ paths:
         "404":
           description: Not found
 
+  /agencies/{agencyId}/photos:
+    post:
+      operationId: uploadAgencyPhoto
+      tags: [agencies]
+      summary: Upload a photo to an agency's public-profile gallery (PNG/JPG/WebP, max 5MB), appended to photoUrls. Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      # No requestBody schema: uploaded via raw fetch()/FormData on the client, same convention as
+      # POST /agencies/{agencyId}/logo.
+      responses:
+        "200":
+          description: Agency updated with the new photo appended to photoUrls
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+        "400":
+          description: Invalid file (format not allowed or over 5MB)
+        "404":
+          description: Not found
+
+  /agencies/{agencyId}/photos/{index}:
+    delete:
+      operationId: deleteAgencyPhoto
+      tags: [agencies]
+      summary: Remove a photo from an agency's gallery by its position in photoUrls
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Agency updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agency"
+        "404":
+          description: Not found
+
   # ─── USERS ──────────────────────────────────────────────────────────────────
   /users:
     get:
@@ -3782,7 +3833,7 @@ components:
     # ─── AGENCY ───────────────────────────────────────────────────────────────
     Agency:
       type: object
-      required: [id, name, slug, active, createdAt, writingTone, publicProfileEnabled, agencyType]
+      required: [id, name, slug, active, createdAt, writingTone, publicProfileEnabled, agencyType, photoUrls]
       properties:
         id:
           type: integer
@@ -3810,6 +3861,11 @@ components:
           description: Agencia tradicional vs. Asesor de Viajes (tenant unipersonal, #169). Solo clasificación de plataforma, no rige permisos (eso lo hace users.role).
         active:
           type: boolean
+        photoUrls:
+          type: array
+          items:
+            type: string
+          description: Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST/DELETE /agencies/{agencyId}/photos, no por PATCH.
         createdAt:
           type: string
 
@@ -4040,7 +4096,7 @@ components:
 
     PublicAgencyProfile:
       type: object
-      required: [id, name, slug, itineraries]
+      required: [id, name, slug, itineraries, photoUrls]
       properties:
         id:
           type: integer
@@ -4054,6 +4110,10 @@ components:
           type: ["string", "null"]
         logoUrl:
           type: ["string", "null"]
+        photoUrls:
+          type: array
+          items:
+            type: string
         itineraries:
           type: array
           items:

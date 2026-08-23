@@ -182,6 +182,14 @@ export class ObjectStorageService {
     return `/objects/${folder}/${objectId}${extension}`;
   }
 
+  // Deletes a public object by the path segment returned from uploadPublicBuffer
+  // ("{folder}/{uuid}{ext}"). Best-effort: caller decides whether a failure here should block
+  // the corresponding DB update (e.g. removing a gallery photo shouldn't fail just because the
+  // underlying object was already gone).
+  async deletePublicObject(folderAndFilename: string): Promise<void> {
+    await new ObjectHandle(`${PUBLIC_PREFIX}/${folderAndFilename}`).delete();
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<ObjectHandle> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

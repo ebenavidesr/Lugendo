@@ -28,5 +28,7 @@ export interface Agency {
   /** Agencia tradicional vs. Asesor de Viajes (tenant unipersonal, */
   agencyType: AgencyAgencyType;
   active: boolean;
+  /** Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST/DELETE /agencies/{agencyId}/photos, no por PATCH. */
+  photoUrls: string[];
   createdAt: string;
 }

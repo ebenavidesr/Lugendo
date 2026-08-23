@@ -1851,6 +1851,148 @@ export const useDeleteAgencyLogo = <TError = ErrorType<void>,
       return useMutation(getDeleteAgencyLogoMutationOptions(options));
     }
 
+export const getUploadAgencyPhotoUrl = (agencyId: number,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/photos`
+}
+
+/**
+ * @summary Upload a photo to an agency's public-profile gallery (PNG/JPG/WebP, max 5MB), appended to photoUrls. Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const uploadAgencyPhoto = async (agencyId: number, options?: RequestInit): Promise<Agency> => {
+
+  return customFetch<Agency>(getUploadAgencyPhotoUrl(agencyId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUploadAgencyPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyPhoto>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyPhoto>>, TError,{agencyId: number}, TContext> => {
+
+const mutationKey = ['uploadAgencyPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadAgencyPhoto>>, {agencyId: number}> = (props) => {
+          const {agencyId} = props ?? {};
+
+          return  uploadAgencyPhoto(agencyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadAgencyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof uploadAgencyPhoto>>>
+
+    export type UploadAgencyPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Upload a photo to an agency's public-profile gallery (PNG/JPG/WebP, max 5MB), appended to photoUrls. Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const useUploadAgencyPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadAgencyPhoto>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadAgencyPhoto>>,
+        TError,
+        {agencyId: number},
+        TContext
+      > => {
+      return useMutation(getUploadAgencyPhotoMutationOptions(options));
+    }
+
+export const getDeleteAgencyPhotoUrl = (agencyId: number,
+    index: number,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}/photos/${index}`
+}
+
+/**
+ * @summary Remove a photo from an agency's gallery by its position in photoUrls
+ */
+export const deleteAgencyPhoto = async (agencyId: number,
+    index: number, options?: RequestInit): Promise<Agency> => {
+
+  return customFetch<Agency>(getDeleteAgencyPhotoUrl(agencyId,index),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAgencyPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyPhoto>>, TError,{agencyId: number;index: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyPhoto>>, TError,{agencyId: number;index: number}, TContext> => {
+
+const mutationKey = ['deleteAgencyPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAgencyPhoto>>, {agencyId: number;index: number}> = (props) => {
+          const {agencyId,index} = props ?? {};
+
+          return  deleteAgencyPhoto(agencyId,index,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAgencyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAgencyPhoto>>>
+
+    export type DeleteAgencyPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a photo from an agency's gallery by its position in photoUrls
+ */
+export const useDeleteAgencyPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgencyPhoto>>, TError,{agencyId: number;index: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAgencyPhoto>>,
+        TError,
+        {agencyId: number;index: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAgencyPhotoMutationOptions(options));
+    }
+
 export const getListUsersUrl = () => {
 
 

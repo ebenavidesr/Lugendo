@@ -17,5 +17,6 @@ export interface PublicAgencyProfile {
   primaryColor?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  photoUrls: string[];
   itineraries: PublicAgencyItinerarySummary[];
 }

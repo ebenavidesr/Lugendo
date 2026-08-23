@@ -122,6 +122,7 @@ export const GetPublicAgencyProfileResponse = zod.object({
   "description": zod.string().nullish(),
   "primaryColor": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "photoUrls": zod.array(zod.string()),
   "itineraries": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -281,6 +282,7 @@ export const ListAgenciesResponseItem = zod.object({
   "publicProfileEnabled": zod.boolean(),
   "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
   "createdAt": zod.string()
 })
 export const ListAgenciesResponse = zod.array(ListAgenciesResponseItem)
@@ -320,6 +322,7 @@ export const GetAgencyResponse = zod.object({
   "publicProfileEnabled": zod.boolean(),
   "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
   "createdAt": zod.string()
 })
 
@@ -354,6 +357,7 @@ export const UpdateAgencyResponse = zod.object({
   "publicProfileEnabled": zod.boolean(),
   "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
   "createdAt": zod.string()
 })
 
@@ -385,6 +389,7 @@ export const UploadAgencyLogoResponse = zod.object({
   "publicProfileEnabled": zod.boolean(),
   "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
   "createdAt": zod.string()
 })
 
@@ -408,6 +413,56 @@ export const DeleteAgencyLogoResponse = zod.object({
   "publicProfileEnabled": zod.boolean(),
   "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Upload a photo to an agency's public-profile gallery (PNG/JPG/WebP, max 5MB), appended to photoUrls. Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
+ */
+export const UploadAgencyPhotoParams = zod.object({
+  "agencyId": zod.coerce.number()
+})
+
+export const UploadAgencyPhotoResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
+  "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
+  "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Remove a photo from an agency's gallery by its position in photoUrls
+ */
+export const DeleteAgencyPhotoParams = zod.object({
+  "agencyId": zod.coerce.number(),
+  "index": zod.coerce.number()
+})
+
+export const DeleteAgencyPhotoResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
+  "primaryColor": zod.string().nullish(),
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
+  "active": zod.boolean(),
+  "photoUrls": zod.array(zod.string()).describe('Carrusel de fotos del perfil público, en orden de subida. Se gestiona por separado vía POST\/DELETE \/agencies\/{agencyId}\/photos, no por PATCH.'),
   "createdAt": zod.string()
 })
 

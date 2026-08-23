@@ -1,0 +1,1 @@
+ALTER TABLE "agencies" ADD COLUMN "photo_urls" text[] DEFAULT '{}' NOT NULL;

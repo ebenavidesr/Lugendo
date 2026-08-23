@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getApiErrorMessage } from "@/lib/utils";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
 import { AgencyLogoField } from "@/components/agency-logo-field";
+import { AgencyPhotosField } from "@/components/agency-photos-field";
 import { Settings, Palette, Mic2, Save, Loader2, Globe, ArrowLeft, Trash2 } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
@@ -227,6 +228,13 @@ export default function AgencySettings() {
             )}
           </div>
           <Switch checked={form.publicProfileEnabled} onCheckedChange={v => setForm(f => ({ ...f, publicProfileEnabled: v }))} />
+        </div>
+
+        <div>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fotos del perfil</label>
+          {targetAgencyId && (
+            <AgencyPhotosField agencyId={targetAgencyId} photoUrls={agency?.photoUrls ?? []} />
+          )}
         </div>
 
         <div>

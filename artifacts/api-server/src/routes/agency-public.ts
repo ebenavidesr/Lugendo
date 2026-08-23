@@ -21,6 +21,7 @@ router.get("/agencies/public/:slug", async (req, res): Promise<void> => {
       primaryColor: agenciesTable.primaryColor,
       logoUrl: agenciesTable.logoUrl,
       logoFileUrl: agenciesTable.logoFileUrl,
+      photoUrls: agenciesTable.photoUrls,
     })
     .from(agenciesTable)
     .where(and(eq(agenciesTable.slug, slug), eq(agenciesTable.active, true), eq(agenciesTable.publicProfileEnabled, true)));
@@ -59,6 +60,7 @@ router.get("/agencies/public/:slug", async (req, res): Promise<void> => {
     description: agency.description,
     primaryColor: agency.primaryColor,
     logoUrl: agency.logoFileUrl ?? agency.logoUrl,
+    photoUrls: agency.photoUrls,
     itineraries: itineraries.map(i => ({ ...i, coverPhotoUrl: coverMap[i.id] ?? null })),
   });
 });
