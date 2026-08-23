@@ -188,6 +188,9 @@ export default function TravelerTripWizard() {
               ? { difficulty: data.scratchDifficulty as "easy" | "moderate" | "demanding" }
               : {}),
             ...(data.scratchDescription ? { description: data.scratchDescription } : {}),
+            // Plantilla interna de este viaje del propio viajero, no una oferta de
+            // catálogo de agencia — nunca debe salir en el buscador público.
+            publishedInSearch: false,
           },
         });
         itineraryId = newItin.id;
@@ -199,6 +202,7 @@ export default function TravelerTripWizard() {
             numDays: data.parsedItinerary.numDays,
             countries,
             ...(data.parsedItinerary.description ? { description: data.parsedItinerary.description } : {}),
+            publishedInSearch: false,
           },
         });
         itineraryId = newItin.id;

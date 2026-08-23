@@ -1655,10 +1655,12 @@ async function getTripEditAccess(tripId: number, userId: number): Promise<number
 
   if (trip) {
     if (trip.itineraryId) return trip.itineraryId;
-    // Auto-create itinerary if none exists
+    // Auto-create itinerary if none exists — a private per-trip template, never a
+    // public catalog entry (agencyId stays null anyway, so the search's inner join
+    // already excludes it, but publishedInSearch:false makes the intent explicit).
     const [itin] = await db
       .insert(itinerariesTable)
-      .values({ name: "Mi itinerario", numDays: 0 })
+      .values({ name: "Mi itinerario", numDays: 0, publishedInSearch: false })
       .returning();
     await db.update(tripsTable).set({ itineraryId: itin.id }).where(eq(tripsTable.id, tripId));
     return itin.id;

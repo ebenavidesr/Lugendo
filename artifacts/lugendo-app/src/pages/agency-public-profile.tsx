@@ -77,11 +77,11 @@ export default function AgencyPublicProfile() {
                   <p className="text-[12px] text-muted-foreground flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {it.countries.join(", ") || it.region || "—"} · {it.numDays}d
                   </p>
-                  {it.priceFrom != null && (
-                    <p className="text-[12px]" style={{ color: "#2D1F0E" }}>
-                      Desde <span className="font-medium">{it.priceFrom}€</span>/persona
-                    </p>
-                  )}
+                  <p className="text-[12px]" style={it.priceFrom != null ? { color: "#2D1F0E" } : { color: "#9C7A58" }}>
+                    {it.priceFrom != null
+                      ? <>Desde <span className="font-medium">{it.priceFrom}€</span>/persona</>
+                      : "Precio a consultar"}
+                  </p>
                   <button
                     onClick={() => openContact({ itineraryId: it.id, itineraryName: it.name })}
                     className="text-[12px] font-medium mt-auto pt-2 text-left"

@@ -186,6 +186,10 @@ export default function TripWizard() {
             ...(data.parsedItinerary?.tripNotes?.length ? { tripNotes: data.parsedItinerary.tripNotes } : {}),
             ...(data.parsedItinerary?.recommendations?.length ? { recommendations: data.parsedItinerary.recommendations } : {}),
             ...(data.parsedItinerary?.checklist?.length ? { checklist: data.parsedItinerary.checklist } : {}),
+            // Este itinerario nace como plantilla interna de ESTE viaje concreto, no como
+            // oferta de catálogo pensada para el buscador público — el catálogo deliberado
+            // se gestiona aparte, en /itineraries.
+            publishedInSearch: false,
           },
         });
         itineraryId = newItin.id;
