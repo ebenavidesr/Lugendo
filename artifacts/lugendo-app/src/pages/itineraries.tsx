@@ -253,7 +253,7 @@ export default function Itineraries() {
             <thead>
               <tr>
                 {[
-                  "Nombre", ...(isAdmin ? ["Agencia"] : []), "Creado por", "Países", "Días", "Dificultad", "Viajes", "Estado", "",
+                  "Nombre", ...(isAdmin ? ["Agencia"] : []), "Creado por", "Países", "Días", "Precio", "Dificultad", "Viajes", "Estado", "",
                 ].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
@@ -277,6 +277,9 @@ export default function Itineraries() {
                     {it.countries?.join(", ") || "—"}
                   </td>
                   <td className="px-5 py-3 text-muted-foreground">{it.numDays}d</td>
+                  <td className="px-5 py-3 text-muted-foreground">
+                    {it.priceFrom != null ? `desde ${it.priceFrom.toLocaleString("es-ES")} €` : "—"}
+                  </td>
                   <td className="px-5 py-3"><DiffBadge diff={it.difficulty ?? null} /></td>
                   <td className="px-5 py-3 text-muted-foreground">{it.tripCount ?? 0}</td>
                   <td className="px-5 py-3">
