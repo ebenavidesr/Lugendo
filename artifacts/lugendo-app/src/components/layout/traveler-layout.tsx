@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, MessageCircle } from "lucide-react";
 import { LugendoCompass, LugendoWordmark } from "@/components/logo";
 import { useLogout } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +30,16 @@ export function TravelerLayout({ children }: { children: ReactNode }) {
           <LugendoWordmark variant="light" size="sm" />
         </Link>
         <div className="flex items-center gap-1">
+          <Link href="/traveler/inquiries">
+            <button
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-sm font-sans transition-colors hover:bg-muted/40"
+              style={{ color: "#7A5C3A" }}
+              title="Mis consultas"
+            >
+              <MessageCircle className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline-block">Consultas</span>
+            </button>
+          </Link>
           <Link href="/traveler/profile">
             <button
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-sm font-sans transition-colors hover:bg-muted/40"

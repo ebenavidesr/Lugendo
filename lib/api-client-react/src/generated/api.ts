@@ -31,6 +31,10 @@ import type {
   AddTripNoteShares201,
   Agency,
   AgencyInput,
+  AgencyInquiry,
+  AgencyInquiryInput,
+  AgencyInquiryReceived,
+  AgencyInquirySent,
   AgencyTravelerTags,
   AgencyUpdate,
   AuthUser,
@@ -464,6 +468,301 @@ export function useGetPublicAgencyProfile<TData = Awaited<ReturnType<typeof getP
 
 
 
+
+export const getCreateAgencyInquiryUrl = () => {
+
+
+
+
+  return `/api/agency-inquiries`
+}
+
+/**
+ * @summary Send an inquiry to an agency (requires a session)
+ */
+export const createAgencyInquiry = async (agencyInquiryInput: AgencyInquiryInput, options?: RequestInit): Promise<AgencyInquiry> => {
+
+  return customFetch<AgencyInquiry>(getCreateAgencyInquiryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      agencyInquiryInput,)
+  }
+);}
+
+
+
+
+export const getCreateAgencyInquiryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyInquiry>>, TError,{data: BodyType<AgencyInquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAgencyInquiry>>, TError,{data: BodyType<AgencyInquiryInput>}, TContext> => {
+
+const mutationKey = ['createAgencyInquiry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAgencyInquiry>>, {data: BodyType<AgencyInquiryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAgencyInquiry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAgencyInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createAgencyInquiry>>>
+    export type CreateAgencyInquiryMutationBody = BodyType<AgencyInquiryInput>
+    export type CreateAgencyInquiryMutationError = ErrorType<void>
+
+    /**
+ * @summary Send an inquiry to an agency (requires a session)
+ */
+export const useCreateAgencyInquiry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAgencyInquiry>>, TError,{data: BodyType<AgencyInquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAgencyInquiry>>,
+        TError,
+        {data: BodyType<AgencyInquiryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAgencyInquiryMutationOptions(options));
+    }
+
+export const getListAgencyInquiriesUrl = () => {
+
+
+
+
+  return `/api/agency-inquiries`
+}
+
+/**
+ * @summary List inquiries received by the caller's agency (Admin/Manager)
+ */
+export const listAgencyInquiries = async ( options?: RequestInit): Promise<AgencyInquiryReceived[]> => {
+
+  return customFetch<AgencyInquiryReceived[]>(getListAgencyInquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAgencyInquiriesQueryKey = () => {
+    return [
+    `/api/agency-inquiries`
+    ] as const;
+    }
+
+
+export const getListAgencyInquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listAgencyInquiries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAgencyInquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAgencyInquiries>>> = ({ signal }) => listAgencyInquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAgencyInquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAgencyInquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listAgencyInquiries>>>
+export type ListAgencyInquiriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List inquiries received by the caller's agency (Admin/Manager)
+ */
+
+export function useListAgencyInquiries<TData = Awaited<ReturnType<typeof listAgencyInquiries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAgencyInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAgencyInquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListMyAgencyInquiriesUrl = () => {
+
+
+
+
+  return `/api/agency-inquiries/me`
+}
+
+/**
+ * @summary List inquiries sent by the current user
+ */
+export const listMyAgencyInquiries = async ( options?: RequestInit): Promise<AgencyInquirySent[]> => {
+
+  return customFetch<AgencyInquirySent[]>(getListMyAgencyInquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyAgencyInquiriesQueryKey = () => {
+    return [
+    `/api/agency-inquiries/me`
+    ] as const;
+    }
+
+
+export const getListMyAgencyInquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listMyAgencyInquiries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAgencyInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyAgencyInquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyAgencyInquiries>>> = ({ signal }) => listMyAgencyInquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyAgencyInquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyAgencyInquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listMyAgencyInquiries>>>
+export type ListMyAgencyInquiriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List inquiries sent by the current user
+ */
+
+export function useListMyAgencyInquiries<TData = Awaited<ReturnType<typeof listMyAgencyInquiries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyAgencyInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyAgencyInquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMarkAgencyInquiryReadUrl = (inquiryId: number,) => {
+
+
+
+
+  return `/api/agency-inquiries/${inquiryId}/read`
+}
+
+/**
+ * @summary Mark an inquiry as read (Admin/Manager, own agency only)
+ */
+export const markAgencyInquiryRead = async (inquiryId: number, options?: RequestInit): Promise<AgencyInquiry> => {
+
+  return customFetch<AgencyInquiry>(getMarkAgencyInquiryReadUrl(inquiryId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getMarkAgencyInquiryReadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAgencyInquiryRead>>, TError,{inquiryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markAgencyInquiryRead>>, TError,{inquiryId: number}, TContext> => {
+
+const mutationKey = ['markAgencyInquiryRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markAgencyInquiryRead>>, {inquiryId: number}> = (props) => {
+          const {inquiryId} = props ?? {};
+
+          return  markAgencyInquiryRead(inquiryId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkAgencyInquiryReadMutationResult = NonNullable<Awaited<ReturnType<typeof markAgencyInquiryRead>>>
+
+    export type MarkAgencyInquiryReadMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark an inquiry as read (Admin/Manager, own agency only)
+ */
+export const useMarkAgencyInquiryRead = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markAgencyInquiryRead>>, TError,{inquiryId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markAgencyInquiryRead>>,
+        TError,
+        {inquiryId: number},
+        TContext
+      > => {
+      return useMutation(getMarkAgencyInquiryReadMutationOptions(options));
+    }
 
 export const getGetMeUrl = () => {
 

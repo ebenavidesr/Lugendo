@@ -124,6 +124,81 @@ paths:
         "404":
           description: Not found or not published
 
+  # ─── AGENCY INQUIRIES (tarea #163) ─────────────────────────────────────────────
+  /agency-inquiries:
+    post:
+      operationId: createAgencyInquiry
+      tags: [agency-inquiries]
+      summary: Send an inquiry to an agency (requires a session)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgencyInquiryInput"
+      responses:
+        "201":
+          description: Inquiry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyInquiry"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "404":
+          description: Agency not found
+    get:
+      operationId: listAgencyInquiries
+      tags: [agency-inquiries]
+      summary: List inquiries received by the caller's agency (Admin/Manager)
+      responses:
+        "200":
+          description: Inquiries for the caller's agency
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgencyInquiryReceived"
+
+  /agency-inquiries/me:
+    get:
+      operationId: listMyAgencyInquiries
+      tags: [agency-inquiries]
+      summary: List inquiries sent by the current user
+      responses:
+        "200":
+          description: Inquiries sent by the caller
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgencyInquirySent"
+
+  /agency-inquiries/{inquiryId}/read:
+    patch:
+      operationId: markAgencyInquiryRead
+      tags: [agency-inquiries]
+      summary: Mark an inquiry as read (Admin/Manager, own agency only)
+      parameters:
+        - name: inquiryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated inquiry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyInquiry"
+        "404":
+          description: Not found
+
   # ─── AUTH ───────────────────────────────────────────────────────────────────
   /auth/me:
     get:
@@ -3793,6 +3868,82 @@ components:
           type: string
 
     # ─── ITINERARY ────────────────────────────────────────────────────────────
+    AgencyInquiryInput:
+      type: object
+      required: [agencyId, message]
+      properties:
+        agencyId:
+          type: integer
+        itineraryId:
+          type: integer
+        message:
+          type: string
+
+    AgencyInquiryStatus:
+      type: string
+      enum: [pending, read]
+
+    AgencyInquiry:
+      type: object
+      required: [id, agencyId, travelerId, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        itineraryId:
+          type: ["integer", "null"]
+        travelerId:
+          type: integer
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/AgencyInquiryStatus"
+        createdAt:
+          type: string
+
+    AgencyInquirySent:
+      type: object
+      required: [id, agencyId, agencyName, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        agencyId:
+          type: integer
+        agencyName:
+          type: string
+        itineraryId:
+          type: ["integer", "null"]
+        itineraryName:
+          type: ["string", "null"]
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/AgencyInquiryStatus"
+        createdAt:
+          type: string
+
+    AgencyInquiryReceived:
+      type: object
+      required: [id, travelerName, travelerEmail, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        itineraryId:
+          type: ["integer", "null"]
+        itineraryName:
+          type: ["string", "null"]
+        travelerName:
+          type: string
+        travelerEmail:
+          type: string
+        message:
+          type: string
+        status:
+          $ref: "#/components/schemas/AgencyInquiryStatus"
+        createdAt:
+          type: string
+
     TripType:
       type: string
       enum: [adventure, beach, cultural, culinary, nature, city, wellness, family]

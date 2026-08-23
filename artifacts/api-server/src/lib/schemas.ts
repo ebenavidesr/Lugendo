@@ -42,7 +42,7 @@ const WritingToneSchema = z.enum(["informative", "friendly", "adventurous", "lux
 export const RESERVED_AGENCY_SLUGS = [
   "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
   "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
-  "team", "agencies", "settings", "traveler",
+  "team", "agencies", "settings", "traveler", "inquiries",
 ];
 
 const AgencySlugSchema = z.string()
@@ -243,6 +243,14 @@ export const ItineraryDayUpdateSchema = z.object({
   meals: z.string().nullable().optional(),
   isTransitNight: z.boolean().optional(),
   photoUrl: z.string().nullable().optional(),
+});
+
+// ─── Agency inquiry (tarea #163) ───────────────────────────────────────────────
+
+export const AgencyInquiryInputSchema = z.object({
+  agencyId: z.number().int().positive(),
+  itineraryId: z.number().int().positive().optional(),
+  message: z.string().min(1).max(2000),
 });
 
 // ─── Trip ─────────────────────────────────────────────────────────────────────

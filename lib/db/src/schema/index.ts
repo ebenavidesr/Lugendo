@@ -18,3 +18,4 @@ export * from "./email-log";
 export * from "./traveler-profiles";
 export * from "./traveler-tag-catalog";
 export * from "./traveler-tags";
+export * from "./agency-inquiries";

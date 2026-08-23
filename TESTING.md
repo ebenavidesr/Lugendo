@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #163 (Notion) — Contacto agencia-viajero desde el itinerario (2026-08-23)
+> Depende de #161 y #162, ambas implementadas los días previos, código completo pendiente de QA.
+> Nota de alcance: la tarjeta habla de "la página de un itinerario" — hoy no existe una página pública de detalle por itinerario (fuera del alcance de #161/#162), así que el punto de entrada es la tarjeta de itinerario tal como aparece en `/buscar` y en el perfil público de agencia (`/:slug`), cada una con su propio botón "Consultar sobre este viaje". No se ha creado ninguna página nueva para esto.
+- [x] Un usuario sin sesión iniciada no puede enviar una consulta; se le invita a iniciar sesión — verificado en el navegador: el botón de contacto (tanto en `/buscar` como en el perfil de agencia) redirige a `/login` si no hay sesión, y los 4 endpoints (`POST/GET /agency-inquiries`, `GET /agency-inquiries/me`, `PATCH /agency-inquiries/:id/read`) devuelven 401 sin sesión (verificado por curl)
+- [x] La consulta enviada queda asociada al itinerario y a la agencia correctos — verificado insertando una fila de prueba y comprobando el JOIN de `GET /agency-inquiries` (bandeja de la agencia) y `GET /agency-inquiries/me` (historial del viajero), ambos devuelven el itinerario y la agencia esperados; limpiado tras la prueba
+- [x] La agencia recibe la consulta en su sección de back office y por email — sección "Consultas" implementada (`/inquiries`, roles Admin/Manager); el envío de email (`sendAgencyInquiryEmail`, Resend) reutiliza el patrón de `#145` y se verificó por lectura de código + verificación de a quién se notificaría (admins/managers activos de la agencia) sin disparar el envío real, para no mandar un email de prueba a una bandeja real
+- [x] La consulta no es visible para ninguna otra agencia distinta de la destinataria — verificado directamente contra la base: una query filtrada por `agencyId` de otra agencia devuelve 0 filas para una consulta que pertenece a la agencia 1
+- [x] El viajero ve el historial de sus propias consultas enviadas — página `/traveler/inquiries` implementada y enlazada desde el header del portal del viajero; verificado el JOIN por API/DB
+- [x] El resultado de la investigación sobre qué roles ven la sección de consultas queda documentado y aplicado — Admin y Manager (mismo patrón que "Equipo"/`checklist-templates`); Agent no tiene acceso, decisión explícita de la tarjeta
+- [ ] Verificación visual en navegador del formulario de contacto y de ambas listas (`/inquiries`, `/traveler/inquiries`) por clic — pendiente por falta de credenciales de login funcionales en local (ver nota sobre `admin@lugendo.io` al final de este archivo); typecheck limpio y lógica de negocio verificada a nivel de API/DB
+
 ### #162 (Notion) — Perfil público de agencia: descripción y escaparate de itinerarios (2026-08-23)
 > Depende de #161 (buscador multiagencia), implementado en la entrada de abajo el mismo día — código completo, pendiente de validación en QA.
 - [x] Una agencia con el interruptor de visibilidad desactivado no tiene página pública accesible — verificado por API (`GET /agencies/public/:slug` devuelve 404) y en el navegador (mensaje "Esta página no existe o la agencia no la ha publicado")

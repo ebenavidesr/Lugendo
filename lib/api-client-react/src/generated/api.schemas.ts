@@ -223,6 +223,57 @@ export interface UserUpdate {
   password?: string;
 }
 
+export interface AgencyInquiryInput {
+  agencyId: number;
+  itineraryId?: number;
+  message: string;
+}
+
+export type AgencyInquiryStatus = typeof AgencyInquiryStatus[keyof typeof AgencyInquiryStatus];
+
+
+export const AgencyInquiryStatus = {
+  pending: 'pending',
+  read: 'read',
+} as const;
+
+export interface AgencyInquiry {
+  id: number;
+  agencyId: number;
+  /** @nullable */
+  itineraryId?: number | null;
+  travelerId: number;
+  message: string;
+  status: AgencyInquiryStatus;
+  createdAt: string;
+}
+
+export interface AgencyInquirySent {
+  id: number;
+  agencyId: number;
+  agencyName: string;
+  /** @nullable */
+  itineraryId?: number | null;
+  /** @nullable */
+  itineraryName?: string | null;
+  message: string;
+  status: AgencyInquiryStatus;
+  createdAt: string;
+}
+
+export interface AgencyInquiryReceived {
+  id: number;
+  /** @nullable */
+  itineraryId?: number | null;
+  /** @nullable */
+  itineraryName?: string | null;
+  travelerName: string;
+  travelerEmail: string;
+  message: string;
+  status: AgencyInquiryStatus;
+  createdAt: string;
+}
+
 export type TripType = typeof TripType[keyof typeof TripType];
 
 

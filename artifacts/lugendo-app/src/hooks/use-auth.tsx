@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const RESERVED_TOP_SEGMENTS = new Set([
   "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
   "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
-  "team", "agencies", "settings", "traveler", "",
+  "team", "agencies", "settings", "traveler", "inquiries", "",
 ]);
 
 export function AuthProvider({ children }: { children: ReactNode }) {

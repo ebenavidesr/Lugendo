@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useSearchItineraries, TripType } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 import { LugendoCompass } from "@/components/logo";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ContactAgencyDialog } from "@/components/contact-agency-dialog";
 import { MapPin, Search as SearchIcon } from "lucide-react";
 
 const TRIP_TYPE_OPTIONS: { value: TripType; label: string }[] = [
@@ -18,9 +20,17 @@ const TRIP_TYPE_OPTIONS: { value: TripType; label: string }[] = [
 ];
 
 export default function SearchPage() {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [destination, setDestination] = useState("");
   const [tripTypes, setTripTypes] = useState<TripType[]>([]);
   const [maxBudget, setMaxBudget] = useState("");
+  const [contactTarget, setContactTarget] = useState<{ agencyId: number; agencyName: string; itineraryId: number; itineraryName: string } | null>(null);
+
+  const openContact = (target: { agencyId: number; agencyName: string; itineraryId: number; itineraryName: string }) => {
+    if (!user) { navigate("/login"); return; }
+    setContactTarget(target);
+  };
 
   const { data: results, isLoading } = useSearchItineraries({
     ...(destination.trim() ? { destination: destination.trim() } : {}),
@@ -93,16 +103,32 @@ export default function SearchPage() {
                     {it.agency.name}
                   </Link>
                   {it.priceFrom != null && (
-                    <p className="text-[12px] mt-auto pt-2" style={{ color: "#2D1F0E" }}>
+                    <p className="text-[12px]" style={{ color: "#2D1F0E" }}>
                       Desde <span className="font-medium">{it.priceFrom}€</span>/persona
                     </p>
                   )}
+                  <button
+                    onClick={() => openContact({ agencyId: it.agency.id, agencyName: it.agency.name, itineraryId: it.id, itineraryName: it.name })}
+                    className="text-[12px] font-medium mt-auto pt-2 text-left"
+                    style={{ color: "#C4793A" }}>
+                    Consultar sobre este viaje →
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {contactTarget && (
+        <ContactAgencyDialog
+          agencyId={contactTarget.agencyId}
+          agencyName={contactTarget.agencyName}
+          itineraryId={contactTarget.itineraryId}
+          itineraryName={contactTarget.itineraryName}
+          onClose={() => setContactTarget(null)}
+        />
+      )}
     </div>
   );
 }

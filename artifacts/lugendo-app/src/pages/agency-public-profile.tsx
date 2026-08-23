@@ -1,12 +1,23 @@
-import { useParams } from "wouter";
+import { useState } from "react";
+import { useParams, useLocation } from "wouter";
 import { useGetPublicAgencyProfile } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 import { LugendoCompass } from "@/components/logo";
 import { Button } from "@/components/ui/button";
+import { ContactAgencyDialog } from "@/components/contact-agency-dialog";
 import { MapPin, Mail } from "lucide-react";
 
 export default function AgencyPublicProfile() {
   const { slug } = useParams<{ slug: string }>();
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { data: profile, isLoading, isError } = useGetPublicAgencyProfile(slug ?? "");
+  const [contactTarget, setContactTarget] = useState<{ itineraryId?: number; itineraryName?: string } | null>(null);
+
+  const openContact = (target?: { itineraryId?: number; itineraryName?: string }) => {
+    if (!user) { navigate("/login"); return; }
+    setContactTarget(target ?? {});
+  };
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center" style={{ background: "#FAF2EB" }}>Cargando…</div>;
@@ -42,7 +53,7 @@ export default function AgencyPublicProfile() {
                 <p className="text-[13px] text-muted-foreground mt-1.5 max-w-xl">{profile.description}</p>
               )}
             </div>
-            <Button disabled title="Próximamente" className="gap-1.5 opacity-60 cursor-not-allowed" style={{ background: accent, color: "white" }}>
+            <Button onClick={() => openContact()} className="gap-1.5" style={{ background: accent, color: "white" }}>
               <Mail className="w-3.5 h-3.5" /> Contactar con la agencia
             </Button>
           </div>
@@ -67,16 +78,32 @@ export default function AgencyPublicProfile() {
                     <MapPin className="w-3 h-3" /> {it.countries.join(", ") || it.region || "—"} · {it.numDays}d
                   </p>
                   {it.priceFrom != null && (
-                    <p className="text-[12px] mt-auto pt-2" style={{ color: "#2D1F0E" }}>
+                    <p className="text-[12px]" style={{ color: "#2D1F0E" }}>
                       Desde <span className="font-medium">{it.priceFrom}€</span>/persona
                     </p>
                   )}
+                  <button
+                    onClick={() => openContact({ itineraryId: it.id, itineraryName: it.name })}
+                    className="text-[12px] font-medium mt-auto pt-2 text-left"
+                    style={{ color: accent }}>
+                    Consultar sobre este viaje →
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {contactTarget && (
+        <ContactAgencyDialog
+          agencyId={profile.id}
+          agencyName={profile.name}
+          itineraryId={contactTarget.itineraryId}
+          itineraryName={contactTarget.itineraryName}
+          onClose={() => setContactTarget(null)}
+        />
+      )}
     </div>
   );
 }

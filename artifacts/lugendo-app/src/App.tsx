@@ -35,6 +35,8 @@ import AgencySettings from "@/pages/agency-settings";
 import TripPhotoView from "@/pages/trip-photo-view";
 import SearchPage from "@/pages/search";
 import AgencyPublicProfile from "@/pages/agency-public-profile";
+import AgencyInquiries from "@/pages/agency-inquiries";
+import TravelerAgencyInquiries from "@/pages/traveler-agency-inquiries";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +113,9 @@ function Router() {
       <Route path="/team">
         <ProtectedBackOffice><Team /></ProtectedBackOffice>
       </Route>
+      <Route path="/inquiries">
+        <ProtectedBackOffice><AgencyInquiries /></ProtectedBackOffice>
+      </Route>
       <Route path="/agencies/:id">
         {() => (
           <ProtectedBackOffice><AgencyDetail /></ProtectedBackOffice>
@@ -126,6 +131,9 @@ function Router() {
       {/* Traveler Portal */}
       <Route path="/traveler/profile">
         <ProtectedTraveler><TravelerProfile /></ProtectedTraveler>
+      </Route>
+      <Route path="/traveler/inquiries">
+        <ProtectedTraveler><TravelerAgencyInquiries /></ProtectedTraveler>
       </Route>
       <Route path="/traveler/travelers/:id">
         {() => (

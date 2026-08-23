@@ -16,6 +16,7 @@ import checklistTemplatesRouter from "./checklist-templates";
 import travelerProfilesRouter from "./traveler-profiles";
 import searchRouter from "./search";
 import agencyPublicRouter from "./agency-public";
+import agencyInquiriesRouter from "./agency-inquiries";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(destinationsRouter);
 router.use(storageRouter);
 router.use(checklistTemplatesRouter);
 router.use(travelerProfilesRouter);
+router.use(agencyInquiriesRouter);
 
 export default router;

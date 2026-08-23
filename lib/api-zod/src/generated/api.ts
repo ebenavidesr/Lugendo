@@ -86,6 +86,66 @@ export const GetPublicAgencyProfileResponse = zod.object({
 
 
 /**
+ * @summary Send an inquiry to an agency (requires a session)
+ */
+export const CreateAgencyInquiryBody = zod.object({
+  "agencyId": zod.number(),
+  "itineraryId": zod.number().optional(),
+  "message": zod.string()
+})
+
+
+/**
+ * @summary List inquiries received by the caller's agency (Admin/Manager)
+ */
+export const ListAgencyInquiriesResponseItem = zod.object({
+  "id": zod.number(),
+  "itineraryId": zod.number().nullish(),
+  "itineraryName": zod.string().nullish(),
+  "travelerName": zod.string(),
+  "travelerEmail": zod.string(),
+  "message": zod.string(),
+  "status": zod.enum(['pending', 'read']),
+  "createdAt": zod.string()
+})
+export const ListAgencyInquiriesResponse = zod.array(ListAgencyInquiriesResponseItem)
+
+
+/**
+ * @summary List inquiries sent by the current user
+ */
+export const ListMyAgencyInquiriesResponseItem = zod.object({
+  "id": zod.number(),
+  "agencyId": zod.number(),
+  "agencyName": zod.string(),
+  "itineraryId": zod.number().nullish(),
+  "itineraryName": zod.string().nullish(),
+  "message": zod.string(),
+  "status": zod.enum(['pending', 'read']),
+  "createdAt": zod.string()
+})
+export const ListMyAgencyInquiriesResponse = zod.array(ListMyAgencyInquiriesResponseItem)
+
+
+/**
+ * @summary Mark an inquiry as read (Admin/Manager, own agency only)
+ */
+export const MarkAgencyInquiryReadParams = zod.object({
+  "inquiryId": zod.coerce.number()
+})
+
+export const MarkAgencyInquiryReadResponse = zod.object({
+  "id": zod.number(),
+  "agencyId": zod.number(),
+  "itineraryId": zod.number().nullish(),
+  "travelerId": zod.number(),
+  "message": zod.string(),
+  "status": zod.enum(['pending', 'read']),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get current authenticated user
  */
 export const GetMeResponse = zod.object({

@@ -218,6 +218,13 @@
       "when": 1787467122676,
       "tag": "0030_good_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1787467693318,
+      "tag": "0031_sloppy_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

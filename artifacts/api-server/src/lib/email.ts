@@ -12,6 +12,18 @@ const EMAIL_FROM_NOREPLY = process.env.EMAIL_FROM_NOREPLY_ADDRESS || "Lugendo <n
 
 type EmailType = EmailSendLog["type"];
 
+// User-supplied free text (e.g. an inquiry message) must be escaped before it lands in an
+// HTML email body — nothing upstream sanitizes it, and it's the first email template in this
+// file to embed unstructured user input rather than admin-authored names/titles.
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Every send (including the pre-existing invitation/document/approval emails) goes through
 // this wrapper so the email_send_log table has a complete record for debugging/auditing,
 // per the DoD in tarea #145 — not just the newly added email types.
@@ -158,6 +170,42 @@ export async function sendInvitationEmail(opts: {
       `,
       ctaText: hasAccount ? "Iniciar sesión" : "Crear mi cuenta",
       ctaUrl,
+    }),
+  });
+}
+
+// Traveler → agency inquiry (tarea #163). Sent to every active admin/manager of the agency,
+// one sendEmail() call per recipient so each gets its own email_send_log row (same pattern
+// as other multi-recipient notifications in this file).
+export async function sendAgencyInquiryEmail(opts: {
+  to: string;
+  agencyName: string;
+  travelerName: string;
+  travelerEmail: string;
+  itineraryName?: string | null;
+  message: string;
+  inquiriesUrl: string;
+}): Promise<void> {
+  const { to, agencyName, travelerName, travelerEmail, itineraryName, message, inquiriesUrl } = opts;
+  const safeName = escapeHtml(travelerName);
+  const safeItinerary = itineraryName ? escapeHtml(itineraryName) : null;
+  const safeMessage = escapeHtml(message);
+  await sendEmail({
+    to,
+    type: "agency_inquiry",
+    subject: `Nueva consulta de ${travelerName}${itineraryName ? ` — ${itineraryName}` : ""}`,
+    html: renderBaseTemplate({
+      title: `${safeName} quiere saber más sobre ${agencyName}`,
+      showFooter: true,
+      bodyHtml: `
+        ${safeItinerary ? `<p style="margin:0 0 4px;font-size:13px;color:#9C7A58;text-transform:uppercase;letter-spacing:.05em">Itinerario</p><p style="margin:0 0 16px;font-size:15px;font-weight:500;color:#2D1F0E">${safeItinerary}</p>` : ""}
+        <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px">
+          <p style="margin:0;font-size:14px;color:#2D1F0E;white-space:pre-wrap">${safeMessage}</p>
+        </div>
+        <p style="margin:0;font-size:13px;color:#6B5744">Responde directamente a ${escapeHtml(travelerEmail)} o gestiona la consulta desde el back office.</p>
+      `,
+      ctaText: "Ver en Consultas",
+      ctaUrl: inquiriesUrl,
     }),
   });
 }
