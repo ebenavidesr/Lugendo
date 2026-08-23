@@ -121,11 +121,13 @@ export default function ItineraryPublicDetail() {
   const { data: itinerary, isLoading, isError } = useGetPublicItinerary(itineraryId, {
     query: { queryKey: getGetPublicItineraryQueryKey(itineraryId), enabled: !!itineraryId },
   });
-  const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set([1]));
+  // Todos los días vienen desplegados por defecto — se rastrea qué días se han
+  // colapsado explícitamente, en vez de cuáles están expandidos.
+  const [collapsedDays, setCollapsedDays] = useState<Set<number>>(new Set());
   const [contactOpen, setContactOpen] = useState(false);
 
   const toggleDay = (dayNumber: number) => {
-    setExpandedDays(prev => {
+    setCollapsedDays(prev => {
       const next = new Set(prev);
       if (next.has(dayNumber)) next.delete(dayNumber); else next.add(dayNumber);
       return next;
@@ -212,7 +214,7 @@ export default function ItineraryPublicDetail() {
           </div>
           <div className="p-4 space-y-3">
             {itinerary.days.map(day => (
-              <DayCard key={day.id} day={day} expanded={expandedDays.has(day.dayNumber)} onToggle={() => toggleDay(day.dayNumber)} />
+              <DayCard key={day.id} day={day} expanded={!collapsedDays.has(day.dayNumber)} onToggle={() => toggleDay(day.dayNumber)} />
             ))}
           </div>
         </div>
