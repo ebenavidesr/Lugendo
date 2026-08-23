@@ -13,4 +13,6 @@ export interface AgencyInput {
   logoUrl?: string;
   primaryColor?: string;
   writingTone?: AgencyInputWritingTone;
+  description?: string;
+  publicProfileEnabled?: boolean;
 }

@@ -88,6 +88,8 @@ export * from './parsedItinerary';
 export * from './parsePdfInput';
 export * from './personalTripDayInput';
 export * from './personalTripDayUpdateInput';
+export * from './publicAgencyItinerarySummary';
+export * from './publicAgencyProfile';
 export * from './publicAgencySummary';
 export * from './publicItinerarySearchResult';
 export * from './registerInput';

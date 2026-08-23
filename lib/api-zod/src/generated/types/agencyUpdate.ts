@@ -13,4 +13,7 @@ export interface AgencyUpdate {
   primaryColor?: string;
   writingTone?: AgencyUpdateWritingTone;
   active?: boolean;
+  /** @nullable */
+  description?: string | null;
+  publicProfileEnabled?: boolean;
 }

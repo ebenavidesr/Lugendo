@@ -15,6 +15,10 @@ export const agenciesTable = pgTable("agencies", {
   writingTone: text("writing_tone", {
     enum: ["informative", "friendly", "adventurous", "luxury", "professional"],
   }).notNull().default("friendly"),
+  // Public profile (tarea #162): short description shown on the public agency page and an
+  // agency-level opt-in that must be explicitly enabled before that page becomes reachable.
+  description: text("description"),
+  publicProfileEnabled: boolean("public_profile_enabled").notNull().default(false),
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

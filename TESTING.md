@@ -6,6 +6,16 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #162 (Notion) — Perfil público de agencia: descripción y escaparate de itinerarios (2026-08-23)
+> Depende de #161 (buscador multiagencia), implementado en la entrada de abajo el mismo día — código completo, pendiente de validación en QA.
+- [x] Una agencia con el interruptor de visibilidad desactivado no tiene página pública accesible — verificado por API (`GET /agencies/public/:slug` devuelve 404) y en el navegador (mensaje "Esta página no existe o la agencia no la ha publicado")
+- [x] La página de agencia es accesible sin sesión iniciada — verificado en el navegador, incluye la exención genérica de rutas de un solo segmento en `use-auth.tsx`
+- [x] Solo aparecen itinerarios marcados como publicados en el buscador (#161); ningún viaje con fechas o viajeros reales — el endpoint público solo consulta `itineraries`/`agencies`, nunca `trips`
+- [x] El slug de la URL es único y legible — reutiliza la columna `agencies.slug` (ya única desde el inicio); añadida validación de formato (minúsculas/números/guiones) y lista de palabras reservadas (rutas del front) para que una agencia no pueda elegir un slug que choque con una ruta real
+- [ ] El botón de contacto abre el flujo de #163 con la agencia correcta preseleccionada — **no implementado**: #163 sigue en Backlog en Notion, así que el botón "Contactar con la agencia" está deshabilitado con un tooltip "Próximamente"; queda listo para conectarse en cuanto exista #163
+- [ ] Panel de agencia: descripción (solo Admin) y toggle "Perfil visible públicamente" en `/settings` — implementado y typecheck limpio, pendiente de verificación visual en navegador por falta de credenciales de login funcionales en local (ver nota sobre `admin@lugendo.io` al final de este archivo)
+- [x] Verificado end-to-end contra la base real: publiqué temporalmente el perfil de una agencia y uno de sus itinerarios, confirmé por API y en el navegador que la página renderiza identidad visual, descripción e itinerario correctamente, y revertí ambos cambios tras la prueba
+
 ### #161 (Notion) — Buscador de viajes multiagencia: destino, tipo, presupuesto (2026-08-23)
 > Nota: hay otro epígrafe "#161 (Notion)" más abajo para "Simplificar invitación a viaje" — ese contenido corresponde en realidad a la tarjeta **#168** de Notion; hubo un desfase histórico de numeración entre los commits locales y el board. Esta entrada usa el número real de Notion para la tarjeta de la que depende #162 (perfil público de agencia).
 - [x] Un itinerario con "publicado en el buscador" desactivado no aparece nunca en resultados, aunque los filtros coincidan — verificado con curl contra la base real (2 itinerarios publicados temporalmente, comprobado con y sin filtros, revertido tras la prueba)

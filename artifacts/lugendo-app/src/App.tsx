@@ -34,6 +34,7 @@ import AgencyDetail from "@/pages/agency-detail";
 import AgencySettings from "@/pages/agency-settings";
 import TripPhotoView from "@/pages/trip-photo-view";
 import SearchPage from "@/pages/search";
+import AgencyPublicProfile from "@/pages/agency-public-profile";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -152,6 +153,11 @@ function Router() {
       <Route path="/">
         <div />
       </Route>
+
+      {/* Public agency profile (tarea #162) — must stay last before the catch-all so it never
+          shadows a real route above; the slug itself is validated against the same reserved
+          list enforced at agency creation time (see RESERVED_AGENCY_SLUGS in schemas.ts). */}
+      <Route path="/:slug" component={AgencyPublicProfile} />
 
       <Route component={NotFound} />
     </Switch>

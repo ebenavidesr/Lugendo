@@ -59,6 +59,33 @@ export const SearchItinerariesResponse = zod.array(SearchItinerariesResponseItem
 
 
 /**
+ * @summary Get an agency's public profile by slug (no session required); 404 unless the agency opted in
+ */
+export const GetPublicAgencyProfileParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const GetPublicAgencyProfileResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "description": zod.string().nullish(),
+  "primaryColor": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "itineraries": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "numDays": zod.number(),
+  "countries": zod.array(zod.string()),
+  "region": zod.string().nullish(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])),
+  "priceFrom": zod.number().nullish(),
+  "coverPhotoUrl": zod.string().nullish()
+}))
+})
+
+
+/**
  * @summary Get current authenticated user
  */
 export const GetMeResponse = zod.object({
@@ -140,6 +167,8 @@ export const ListAgenciesResponseItem = zod.object({
   "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -154,7 +183,9 @@ export const CreateAgencyBody = zod.object({
   "slug": zod.string(),
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
-  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional()
+  "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional(),
+  "description": zod.string().optional(),
+  "publicProfileEnabled": zod.boolean().optional()
 })
 
 
@@ -173,6 +204,8 @@ export const GetAgencyResponse = zod.object({
   "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -190,7 +223,9 @@ export const UpdateAgencyBody = zod.object({
   "logoUrl": zod.string().optional(),
   "primaryColor": zod.string().optional(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean().optional()
 })
 
 export const UpdateAgencyResponse = zod.object({
@@ -201,6 +236,8 @@ export const UpdateAgencyResponse = zod.object({
   "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -221,6 +258,8 @@ export const UploadAgencyLogoResponse = zod.object({
   "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -241,6 +280,8 @@ export const DeleteAgencyLogoResponse = zod.object({
   "logoFileUrl": zod.string().nullish().describe('Uploaded logo file URL, served publicly from R2. Takes priority over logoUrl when present.'),
   "primaryColor": zod.string().nullish(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
+  "description": zod.string().nullish(),
+  "publicProfileEnabled": zod.boolean(),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })

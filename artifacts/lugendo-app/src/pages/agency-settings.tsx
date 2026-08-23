@@ -3,11 +3,13 @@ import { useGetAgency, useUpdateAgency, AuthUserRole } from "@workspace/api-clie
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
 import { AgencyLogoField } from "@/components/agency-logo-field";
-import { Settings, Palette, Mic2, Save, Loader2 } from "lucide-react";
+import { Settings, Palette, Mic2, Save, Loader2, Globe } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
   friendly:      { label: "Cercano",        desc: "Cálido y entusiasta, como un amigo experto en viajes" },
@@ -26,10 +28,14 @@ export default function AgencySettings() {
 
   const updateAgency = useUpdateAgency();
 
+  const isAdmin = user?.role === AuthUserRole.admin;
+
   const [form, setForm] = useState({
     name: "",
     primaryColor: "",
     writingTone: "friendly",
+    description: "",
+    publicProfileEnabled: false,
   });
 
   useEffect(() => {
@@ -38,6 +44,8 @@ export default function AgencySettings() {
         name: agency.name ?? "",
         primaryColor: agency.primaryColor ?? "",
         writingTone: agency.writingTone ?? "friendly",
+        description: agency.description ?? "",
+        publicProfileEnabled: agency.publicProfileEnabled ?? false,
       });
     }
   }, [agency]);
@@ -51,6 +59,8 @@ export default function AgencySettings() {
           name: form.name || undefined,
           primaryColor: form.primaryColor || undefined,
           writingTone: form.writingTone as "informative" | "friendly" | "adventurous" | "luxury" | "professional",
+          ...(isAdmin ? { description: form.description || null } : {}),
+          publicProfileEnabled: form.publicProfileEnabled,
         },
       });
       toast({ title: "Configuración guardada" });
@@ -119,6 +129,44 @@ export default function AgencySettings() {
               <div className="w-6 h-6 rounded-full border border-border" style={{ background: form.primaryColor }} />
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Public profile card (tarea #162) */}
+      <div className="rounded-[14px] border border-border p-5 space-y-4" style={{ background: "white" }}>
+        <div className="flex items-center gap-2 mb-1">
+          <Globe className="w-4 h-4" style={{ color: "#2E7D5A" }} />
+          <span className="text-[13px] font-semibold" style={{ color: "#2D1F0E" }}>Perfil público</span>
+        </div>
+        <p className="text-[12px] text-muted-foreground -mt-1">
+          Página visible para cualquier persona sin cuenta, con vuestra identidad y los itinerarios que hayáis publicado en el buscador.
+        </p>
+
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>Perfil visible públicamente</p>
+            {form.publicProfileEnabled && agency?.slug && (
+              <a href={`/${agency.slug}`} target="_blank" rel="noopener noreferrer"
+                className="text-[12px] font-mono" style={{ color: "#C4793A" }}>
+                lugendo.io/{agency.slug} ↗
+              </a>
+            )}
+          </div>
+          <Switch checked={form.publicProfileEnabled} onCheckedChange={v => setForm(f => ({ ...f, publicProfileEnabled: v }))} />
+        </div>
+
+        <div>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
+            Descripción {!isAdmin && <span className="text-muted-foreground font-normal">(solo un administrador puede editarla)</span>}
+          </label>
+          <Textarea
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="Contadle a un viajero quiénes sois y qué tipo de viajes hacéis mejor que nadie…"
+            rows={3}
+            maxLength={600}
+            disabled={!isAdmin}
+          />
         </div>
       </div>
 

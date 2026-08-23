@@ -41,10 +41,10 @@ router.get("/agencies", requireRoles("admin"), async (req, res): Promise<void> =
 });
 
 router.post("/agencies", requireRoles("admin"), validate(AgencyInputSchema), async (req, res): Promise<void> => {
-  const { name, slug, logoUrl, primaryColor } = req.body;
+  const { name, slug, logoUrl, primaryColor, description, publicProfileEnabled } = req.body;
   const [agency] = await db
     .insert(agenciesTable)
-    .values({ name, slug, logoUrl, primaryColor })
+    .values({ name, slug, logoUrl, primaryColor, description, publicProfileEnabled: publicProfileEnabled ?? false })
     .returning();
   res.status(201).json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
@@ -66,7 +66,12 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
 
 router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
-  const { name, logoUrl, primaryColor, writingTone, active } = req.body;
+  const { name, logoUrl, primaryColor, writingTone, active, description, publicProfileEnabled } = req.body;
+  // La descripción pública es gestionable solo por Admin (decisión de alcance de la #162).
+  if (description !== undefined && req.session.role !== "admin") {
+    res.status(403).json({ error: "Solo un administrador puede editar la descripción pública" });
+    return;
+  }
   const [agency] = await db
     .update(agenciesTable)
     .set({
@@ -75,6 +80,8 @@ router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), validate(A
       ...(primaryColor !== undefined && { primaryColor }),
       ...(writingTone !== undefined && { writingTone }),
       ...(active !== undefined && { active }),
+      ...(description !== undefined && { description }),
+      ...(publicProfileEnabled !== undefined && { publicProfileEnabled }),
     })
     .where(eq(agenciesTable.id, id))
     .returning();

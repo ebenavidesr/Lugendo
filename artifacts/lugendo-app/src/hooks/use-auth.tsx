@@ -11,6 +11,15 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+// Top-level path segments already claimed by real routes in App.tsx. Kept in sync manually
+// with RESERVED_AGENCY_SLUGS in artifacts/api-server/src/lib/schemas.ts, which stops an agency
+// from picking one of these as its public-profile slug in the first place.
+const RESERVED_TOP_SEGMENTS = new Set([
+  "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
+  "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
+  "team", "agencies", "settings", "traveler", "",
+]);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const { data: user, isLoading, isError } = useGetMe();
@@ -23,6 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // /buscar (task #161) is the public multi-agency itinerary search — reachable
     // without any session, same exemption as /foto/:code.
     if (location === "/buscar") return;
+    // /:slug (task #162) is the public agency profile — a single path segment that isn't one
+    // of the app's reserved routes. The page itself 404s if the slug doesn't resolve to an
+    // agency with a published profile, so this exemption doesn't leak anything by itself.
+    const segments = location.split("/");
+    if (segments.length === 2 && !RESERVED_TOP_SEGMENTS.has(segments[1])) return;
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
       const isPublicRoute = isAuthRoute || location === "/forgot-password" || location.startsWith("/reset-password");

@@ -90,6 +90,9 @@ export interface Agency {
   /** @nullable */
   primaryColor?: string | null;
   writingTone: AgencyWritingTone;
+  /** @nullable */
+  description?: string | null;
+  publicProfileEnabled: boolean;
   active: boolean;
   createdAt: string;
 }
@@ -111,6 +114,8 @@ export interface AgencyInput {
   logoUrl?: string;
   primaryColor?: string;
   writingTone?: AgencyInputWritingTone;
+  description?: string;
+  publicProfileEnabled?: boolean;
 }
 
 export type AgencyUpdateWritingTone = typeof AgencyUpdateWritingTone[keyof typeof AgencyUpdateWritingTone];
@@ -130,6 +135,9 @@ export interface AgencyUpdate {
   primaryColor?: string;
   writingTone?: AgencyUpdateWritingTone;
   active?: boolean;
+  /** @nullable */
+  description?: string | null;
+  publicProfileEnabled?: boolean;
 }
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -235,6 +243,33 @@ export interface PublicAgencySummary {
   slug: string;
   /** @nullable */
   logoUrl?: string | null;
+}
+
+export interface PublicAgencyItinerarySummary {
+  id: number;
+  name: string;
+  numDays: number;
+  countries: string[];
+  /** @nullable */
+  region?: string | null;
+  tripTypes: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
+  /** @nullable */
+  coverPhotoUrl?: string | null;
+}
+
+export interface PublicAgencyProfile {
+  id: number;
+  name: string;
+  slug: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  primaryColor?: string | null;
+  /** @nullable */
+  logoUrl?: string | null;
+  itineraries: PublicAgencyItinerarySummary[];
 }
 
 export interface PublicItinerarySearchResult {

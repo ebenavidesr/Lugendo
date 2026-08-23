@@ -36,12 +36,28 @@ export const ResetPasswordInputSchema = z.object({
 
 const WritingToneSchema = z.enum(["informative", "friendly", "adventurous", "luxury", "professional"]);
 
+// Top-level path segments already claimed by the frontend router (artifacts/lugendo-app/src/App.tsx).
+// The public agency profile lives at /:slug (tarea #162), so a slug matching one of these would
+// shadow a real page — kept in sync manually with App.tsx's route list and use-auth.tsx's exemption.
+export const RESERVED_AGENCY_SLUGS = [
+  "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
+  "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
+  "team", "agencies", "settings", "traveler",
+];
+
+const AgencySlugSchema = z.string()
+  .min(1)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "El slug solo puede tener minúsculas, números y guiones")
+  .refine(s => !RESERVED_AGENCY_SLUGS.includes(s), "Ese slug está reservado, elige otro");
+
 export const AgencyInputSchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1),
+  slug: AgencySlugSchema,
   logoUrl: z.string().optional(),
   primaryColor: z.string().optional(),
   writingTone: WritingToneSchema.optional(),
+  description: z.string().max(600).optional(),
+  publicProfileEnabled: z.boolean().optional(),
 });
 
 export const AgencyUpdateSchema = z.object({
@@ -50,6 +66,8 @@ export const AgencyUpdateSchema = z.object({
   primaryColor: z.string().nullable().optional(),
   writingTone: WritingToneSchema.optional(),
   active: z.boolean().optional(),
+  description: z.string().max(600).nullable().optional(),
+  publicProfileEnabled: z.boolean().optional(),
 });
 
 // ─── Hotel ────────────────────────────────────────────────────────────────────

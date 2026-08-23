@@ -21,6 +21,9 @@ export interface Agency {
   /** @nullable */
   primaryColor?: string | null;
   writingTone: AgencyWritingTone;
+  /** @nullable */
+  description?: string | null;
+  publicProfileEnabled: boolean;
   active: boolean;
   createdAt: string;
 }

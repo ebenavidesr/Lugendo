@@ -74,6 +74,7 @@ import type {
   ParsedItinerary,
   PersonalTripDayInput,
   PersonalTripDayUpdateInput,
+  PublicAgencyProfile,
   PublicItinerarySearchResult,
   RegisterInput,
   RemoveActivityParticipant200,
@@ -375,6 +376,83 @@ export function useSearchItineraries<TData = Awaited<ReturnType<typeof searchIti
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchItinerariesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPublicAgencyProfileUrl = (slug: string,) => {
+
+
+
+
+  return `/api/agencies/public/${slug}`
+}
+
+/**
+ * @summary Get an agency's public profile by slug (no session required); 404 unless the agency opted in
+ */
+export const getPublicAgencyProfile = async (slug: string, options?: RequestInit): Promise<PublicAgencyProfile> => {
+
+  return customFetch<PublicAgencyProfile>(getGetPublicAgencyProfileUrl(slug),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicAgencyProfileQueryKey = (slug: string,) => {
+    return [
+    `/api/agencies/public/${slug}`
+    ] as const;
+    }
+
+
+export const getGetPublicAgencyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getPublicAgencyProfile>>, TError = ErrorType<void>>(slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicAgencyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicAgencyProfileQueryKey(slug);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicAgencyProfile>>> = ({ signal }) => getPublicAgencyProfile(slug, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(slug), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicAgencyProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicAgencyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicAgencyProfile>>>
+export type GetPublicAgencyProfileQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get an agency's public profile by slug (no session required); 404 unless the agency opted in
+ */
+
+export function useGetPublicAgencyProfile<TData = Awaited<ReturnType<typeof getPublicAgencyProfile>>, TError = ErrorType<void>>(
+ slug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicAgencyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicAgencyProfileQueryOptions(slug,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
