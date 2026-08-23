@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "wouter";
-import { useGetAgency, useUpdateAgency, useListAgencies, getListAgenciesQueryKey, AuthUserRole } from "@workspace/api-client-react";
+import { useGetAgency, useUpdateAgency, useDeleteAgency, useListAgencies, getListAgenciesQueryKey, AuthUserRole } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { NoteRichTextEditor } from "@/components/note-rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage } from "@/lib/utils";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
 import { AgencyLogoField } from "@/components/agency-logo-field";
-import { Settings, Palette, Mic2, Save, Loader2, Globe, ArrowLeft } from "lucide-react";
+import { Settings, Palette, Mic2, Save, Loader2, Globe, ArrowLeft, Trash2 } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
   friendly:      { label: "Cercano",        desc: "Cálido y entusiasta, como un amigo experto en viajes" },
@@ -38,6 +41,21 @@ export default function AgencySettings() {
   const { data: agency, isLoading } = useGetAgency(targetAgencyId ?? 0);
 
   const updateAgency = useUpdateAgency();
+  const deleteAgency = useDeleteAgency();
+  const qc = useQueryClient();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  const handleDelete = () => {
+    if (!targetAgencyId) return;
+    deleteAgency.mutate({ agencyId: targetAgencyId }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["/api/agencies"] });
+        toast({ title: "Agencia eliminada" });
+        navigate("/agencies");
+      },
+      onError: (err) => toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al eliminar la agencia") }),
+    });
+  };
 
   const [form, setForm] = useState({
     name: "",
@@ -126,14 +144,24 @@ export default function AgencySettings() {
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-[10px] flex items-center justify-center" style={{ background: "#EAE6F5" }}>
-          <Settings className="w-5 h-5" style={{ color: "#3D2F6B" }} />
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: "#EAE6F5" }}>
+            <Settings className="w-5 h-5" style={{ color: "#3D2F6B" }} />
+          </div>
+          <div>
+            <h1 className="text-[20px] font-semibold" style={{ color: "#2D1F0E" }}>Configuración de agencia</h1>
+            <p className="text-[13px] text-muted-foreground">Personaliza el perfil y el tono de escritura IA de {agency?.name ?? "tu agencia"}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-[20px] font-semibold" style={{ color: "#2D1F0E" }}>Configuración de agencia</h1>
-          <p className="text-[13px] text-muted-foreground">Personaliza el perfil y el tono de escritura IA de {agency?.name ?? "tu agencia"}</p>
-        </div>
+        {isPlatformAdmin && (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[13px] font-medium border transition-colors shrink-0"
+            style={{ borderColor: "#F5C6C0", color: "#C0392B" }}>
+            <Trash2 className="w-3.5 h-3.5" /> Eliminar agencia
+          </button>
+        )}
       </div>
 
       {/* Identity card */}
@@ -276,6 +304,32 @@ export default function AgencySettings() {
           {updateAgency.isPending ? "Guardando…" : "Guardar cambios"}
         </Button>
       </div>
+
+      {confirmingDelete && agency && (
+        <Dialog open onOpenChange={v => !v && setConfirmingDelete(false)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base">Eliminar agencia</DialogTitle>
+            </DialogHeader>
+            <p className="text-[13px] text-muted-foreground">
+              ¿Seguro que quieres eliminar{" "}
+              <strong className="font-medium" style={{ color: "#2D1F0E" }}>"{agency.name}"</strong>?{" "}
+              Solo se puede eliminar si no tiene itinerarios, viajes, usuarios, hoteles ni actividades vinculados. Esta acción no se puede deshacer.
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => setConfirmingDelete(false)}
+                disabled={deleteAgency.isPending}>
+                Cancelar
+              </Button>
+              <Button type="button" size="sm" disabled={deleteAgency.isPending}
+                onClick={handleDelete} className="gap-1.5" style={{ background: "#C0392B", color: "white" }}>
+                <Trash2 className="w-3.5 h-3.5" />
+                {deleteAgency.isPending ? "Eliminando…" : "Eliminar agencia"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -57,7 +57,9 @@ export const AgencyInputSchema = z.object({
   logoUrl: z.string().optional(),
   primaryColor: z.string().optional(),
   writingTone: WritingToneSchema.optional(),
-  description: z.string().max(600).optional(),
+  // Almacena HTML enriquecido (negrita/cursiva/listas), no texto plano -- el límite tiene que
+  // cubrir el margen de las etiquetas, no solo el texto visible.
+  description: z.string().max(4000).optional(),
   publicProfileEnabled: z.boolean().optional(),
   agencyType: AgencyTypeSchema.optional(),
 });
@@ -68,7 +70,7 @@ export const AgencyUpdateSchema = z.object({
   primaryColor: z.string().nullable().optional(),
   writingTone: WritingToneSchema.optional(),
   active: z.boolean().optional(),
-  description: z.string().max(600).nullable().optional(),
+  description: z.string().max(4000).nullable().optional(),
   publicProfileEnabled: z.boolean().optional(),
   agencyType: AgencyTypeSchema.optional(),
 });
