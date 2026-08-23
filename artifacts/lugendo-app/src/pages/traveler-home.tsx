@@ -270,7 +270,7 @@ export default function TravelerHome() {
           <Compass className="w-[22px] h-[22px]" style={{ color: "#C4793A" }} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Descubre itinerarios de otras agencias</h3>
+          <h3 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Encuentra tu próximo viaje</h3>
           <p className="text-[13px] mt-0.5" style={{ color: "#8A7860" }}>
             Explora viajes publicados por agencias de la red Lugendo, sin necesidad de código de invitación.
           </p>
