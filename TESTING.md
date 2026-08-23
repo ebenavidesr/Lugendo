@@ -6,6 +6,18 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #161 (Notion) — Buscador de viajes multiagencia: destino, tipo, presupuesto (2026-08-23)
+> Nota: hay otro epígrafe "#161 (Notion)" más abajo para "Simplificar invitación a viaje" — ese contenido corresponde en realidad a la tarjeta **#168** de Notion; hubo un desfase histórico de numeración entre los commits locales y el board. Esta entrada usa el número real de Notion para la tarjeta de la que depende #162 (perfil público de agencia).
+- [x] Un itinerario con "publicado en el buscador" desactivado no aparece nunca en resultados, aunque los filtros coincidan — verificado con curl contra la base real (2 itinerarios publicados temporalmente, comprobado con y sin filtros, revertido tras la prueba)
+- [x] El buscador (`/buscar`) es accesible sin haber iniciado sesión — verificado en el navegador, incluye la exención explícita del guard global de sesión en `use-auth.tsx`
+- [x] El filtro de destino devuelve solo itinerarios de ese destino — verificado por API (`?destination=Iceland`) y en la UI real (campo de texto filtra la rejilla de resultados)
+- [x] El filtro de tipo de viaje permite selección múltiple y combina correctamente con el resto de filtros — verificado por API con `tripTypes` repetido + overlap de array en Postgres
+- [x] El filtro de presupuesto máximo excluye itinerarios con precio orientativo superior al indicado — verificado por API (`maxBudget=500` excluye un itinerario con `priceFrom=1200`)
+- [x] Un itinerario sin precio orientativo informado se excluye al filtrar por presupuesto (no se asume que encaja) — verificado por API con un itinerario publicado sin `priceFrom`
+- [x] Los resultados no exponen ningún dato de viajeros de viajes concretos — el endpoint público solo consulta `itineraries`/`agencies` (plantillas de catálogo), nunca `trips`
+- [ ] El enlace a la agencia desde un resultado lleva al perfil de agencia (#162) — el enlace ya apunta a `/{slug}` y está listo, pero la página en sí es responsabilidad de la tarjeta #162 (todavía no implementada); hoy cae en el guard de sesión → `/login`
+- [ ] Panel de agencia: toggle "Publicado en el buscador", selector de tipo de viaje y campo de precio orientativo en el editor de itinerario (`/itineraries`, diálogo de edición) — implementado y typecheck limpio, pendiente de verificación visual en navegador por falta de credenciales de login funcionales en local (ver nota sobre `admin@lugendo.io` al final de este archivo)
+
 ### #161 (Notion) — Simplificar invitación a viaje: alta directa por email, sin código (2026-08-22)
 - [x] Migraciones aplicadas en Neon: `trip_shares` extendida con `origin` (agency/traveler), `segment`, `tokenExpiresAt`, `acceptedAt`; columna `shareCode` renombrada a nivel de código a `inviteToken` (la columna DB sigue llamándose `share_code` para evitar un rename destructivo); tabla `invitations` eliminada (estaba vacía en producción, verificado antes de generar la migración)
 - [x] Backend: invitar por email a alguien con cuenta existente → `trip_share` creado directamente como `accepted`, sin paso de confirmación intermedio — verificado con curl end-to-end (contexto agencia y contexto viajero), el destinatario ve el viaje al instante en `GET /me/trips`

@@ -14,10 +14,12 @@ import destinationsRouter from "./destinations";
 import storageRouter from "./storage";
 import checklistTemplatesRouter from "./checklist-templates";
 import travelerProfilesRouter from "./traveler-profiles";
+import searchRouter from "./search";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(searchRouter);
 router.use(authRouter);
 router.use(agenciesRouter);
 router.use(usersRouter);

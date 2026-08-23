@@ -24,6 +24,9 @@ export const itinerariesTable = pgTable("itineraries", {
   recommendations: text("recommendations").array().notNull().default([]),
   checklist: jsonb("checklist").$type<{ item: string; category: string | null }[]>().notNull().default([]),
   active: boolean("active").notNull().default(true),
+  publishedInSearch: boolean("published_in_search").notNull().default(false),
+  tripTypes: text("trip_types").array().notNull().default([]),
+  priceFrom: integer("price_from"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

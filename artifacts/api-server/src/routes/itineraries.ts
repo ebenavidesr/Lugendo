@@ -359,12 +359,12 @@ Devuelve SOLO el objeto JSON, sin markdown ni explicaciones.`;
 });
 
 router.post("/itineraries", requireAuth, validate(ItineraryInputSchema), async (req, res): Promise<void> => {
-  const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags, tripNotes, recommendations, checklist } = req.body;
+  const { name, countries, region, numDays, difficulty, description, videoUrl, recommendedMonths, priceRange, tags, tripNotes, recommendations, checklist, publishedInSearch, tripTypes, priceFrom } = req.body;
   const agencyId = req.session.agencyId ?? null;
   const createdBy = req.session.userId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
-    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [], tripNotes: tripNotes ?? [], recommendations: recommendations ?? [], checklist: (checklist ?? []).map((c: { item: string; category?: string | null }) => ({ item: c.item, category: c.category ?? null })) })
+    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [], tripNotes: tripNotes ?? [], recommendations: recommendations ?? [], checklist: (checklist ?? []).map((c: { item: string; category?: string | null }) => ({ item: c.item, category: c.category ?? null })), publishedInSearch: publishedInSearch ?? false, tripTypes: tripTypes ?? [], priceFrom: priceFrom ?? null })
     .returning();
   res.status(201).json(serializeItinerary(itinerary));
 });

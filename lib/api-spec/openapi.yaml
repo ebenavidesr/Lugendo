@@ -70,6 +70,39 @@ paths:
               schema:
                 $ref: "#/components/schemas/DestinationDescribeResult"
 
+  # ─── SEARCH (public, no auth) ─────────────────────────────────────────────────
+  /search/itineraries:
+    get:
+      operationId: searchItineraries
+      tags: [search]
+      summary: Search itineraries published by agencies in the public catalog (no session required)
+      parameters:
+        - name: destination
+          in: query
+          schema:
+            type: string
+        - name: tripTypes
+          in: query
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/TripType"
+        - name: maxBudget
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published itineraries matching the filters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PublicItinerarySearchResult"
+
   # ─── AUTH ───────────────────────────────────────────────────────────────────
   /auth/me:
     get:
@@ -3727,6 +3760,50 @@ components:
           type: string
 
     # ─── ITINERARY ────────────────────────────────────────────────────────────
+    TripType:
+      type: string
+      enum: [adventure, beach, cultural, culinary, nature, city, wellness, family]
+
+    PublicAgencySummary:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        logoUrl:
+          type: ["string", "null"]
+
+    PublicItinerarySearchResult:
+      type: object
+      required: [id, name, numDays, countries, tripTypes, agency]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        numDays:
+          type: integer
+        countries:
+          type: array
+          items:
+            type: string
+        region:
+          type: ["string", "null"]
+        tripTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripType"
+        priceFrom:
+          type: ["integer", "null"]
+        coverPhotoUrl:
+          type: ["string", "null"]
+        agency:
+          $ref: "#/components/schemas/PublicAgencySummary"
+
     Itinerary:
       type: object
       required: [id, agencyId, name, numDays, active, createdAt]
@@ -3766,6 +3843,14 @@ components:
             $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
+        publishedInSearch:
+          type: boolean
+        tripTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripType"
+        priceFrom:
+          type: ["integer", "null"]
         tripCount:
           type: integer
         createdByName:
@@ -3821,6 +3906,14 @@ components:
             $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
+        publishedInSearch:
+          type: boolean
+        tripTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripType"
+        priceFrom:
+          type: ["integer", "null"]
         tripCount:
           type: integer
         createdAt:
@@ -3873,6 +3966,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ChecklistEntry"
+        publishedInSearch:
+          type: boolean
+        tripTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripType"
+        priceFrom:
+          type: integer
 
     ItineraryUpdate:
       type: object
@@ -3918,6 +4019,14 @@ components:
             $ref: "#/components/schemas/ChecklistEntry"
         active:
           type: boolean
+        publishedInSearch:
+          type: boolean
+        tripTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/TripType"
+        priceFrom:
+          type: ["integer", "null"]
 
     ItineraryDay:
       type: object

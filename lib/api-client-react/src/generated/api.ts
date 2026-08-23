@@ -74,9 +74,11 @@ import type {
   ParsedItinerary,
   PersonalTripDayInput,
   PersonalTripDayUpdateInput,
+  PublicItinerarySearchResult,
   RegisterInput,
   RemoveActivityParticipant200,
   ResetPasswordInput,
+  SearchItinerariesParams,
   ShareTripInput,
   SuggestDayDescriptionInput,
   SuggestDayDescriptionResult,
@@ -292,6 +294,98 @@ export const useDescribeDestination = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getDescribeDestinationMutationOptions(options));
     }
+
+export const getSearchItinerariesUrl = (params?: SearchItinerariesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    const explodeParameters = ["tripTypes"];
+
+    if (Array.isArray(value) && explodeParameters.includes(key)) {
+      value.forEach((v) => {
+        normalizedParams.append(key, v === null ? 'null' : v.toString());
+      });
+      return;
+    }
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/search/itineraries?${stringifiedParams}` : `/api/search/itineraries`
+}
+
+/**
+ * @summary Search itineraries published by agencies in the public catalog (no session required)
+ */
+export const searchItineraries = async (params?: SearchItinerariesParams, options?: RequestInit): Promise<PublicItinerarySearchResult[]> => {
+
+  return customFetch<PublicItinerarySearchResult[]>(getSearchItinerariesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchItinerariesQueryKey = (params?: SearchItinerariesParams,) => {
+    return [
+    `/api/search/itineraries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchItinerariesQueryOptions = <TData = Awaited<ReturnType<typeof searchItineraries>>, TError = ErrorType<unknown>>(params?: SearchItinerariesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchItineraries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchItinerariesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchItineraries>>> = ({ signal }) => searchItineraries(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchItineraries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchItinerariesQueryResult = NonNullable<Awaited<ReturnType<typeof searchItineraries>>>
+export type SearchItinerariesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Search itineraries published by agencies in the public catalog (no session required)
+ */
+
+export function useSearchItineraries<TData = Awaited<ReturnType<typeof searchItineraries>>, TError = ErrorType<unknown>>(
+ params?: SearchItinerariesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchItineraries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchItinerariesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetMeUrl = () => {
 

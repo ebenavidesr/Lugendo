@@ -31,6 +31,34 @@ export const DescribeDestinationResponse = zod.object({
 
 
 /**
+ * @summary Search itineraries published by agencies in the public catalog (no session required)
+ */
+export const SearchItinerariesQueryParams = zod.object({
+  "destination": zod.coerce.string().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "maxBudget": zod.coerce.number().optional()
+})
+
+export const SearchItinerariesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "numDays": zod.number(),
+  "countries": zod.array(zod.string()),
+  "region": zod.string().nullish(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])),
+  "priceFrom": zod.number().nullish(),
+  "coverPhotoUrl": zod.string().nullish(),
+  "agency": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish()
+})
+})
+export const SearchItinerariesResponse = zod.array(SearchItinerariesResponseItem)
+
+
+/**
  * @summary Get current authenticated user
  */
 export const GetMeResponse = zod.object({
@@ -314,6 +342,9 @@ export const ListItinerariesResponseItem = zod.object({
   "category": zod.string().nullish()
 })).optional(),
   "active": zod.boolean(),
+  "publishedInSearch": zod.boolean().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "priceFrom": zod.number().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
   "createdAt": zod.string()
@@ -340,7 +371,10 @@ export const CreateItineraryBody = zod.object({
   "checklist": zod.array(zod.object({
   "item": zod.string(),
   "category": zod.string().nullish()
-})).optional()
+})).optional(),
+  "publishedInSearch": zod.boolean().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "priceFrom": zod.number().optional()
 })
 
 
@@ -371,6 +405,9 @@ export const GetItineraryResponse = zod.object({
   "category": zod.string().nullish()
 })).optional(),
   "active": zod.boolean(),
+  "publishedInSearch": zod.boolean().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "priceFrom": zod.number().nullish(),
   "tripCount": zod.number().optional(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
@@ -429,7 +466,10 @@ export const UpdateItineraryBody = zod.object({
   "item": zod.string(),
   "category": zod.string().nullish()
 })).optional(),
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "publishedInSearch": zod.boolean().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "priceFrom": zod.number().nullish()
 })
 
 export const UpdateItineraryResponse = zod.object({
@@ -449,6 +489,9 @@ export const UpdateItineraryResponse = zod.object({
   "category": zod.string().nullish()
 })).optional(),
   "active": zod.boolean(),
+  "publishedInSearch": zod.boolean().optional(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
+  "priceFrom": zod.number().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
   "createdAt": zod.string()

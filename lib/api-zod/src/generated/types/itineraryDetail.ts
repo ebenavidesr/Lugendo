@@ -7,6 +7,7 @@
  */
 import type { ChecklistEntry } from './checklistEntry';
 import type { ItineraryDay } from './itineraryDay';
+import type { TripType } from './tripType';
 
 export interface ItineraryDetail {
   id: number;
@@ -30,6 +31,10 @@ export interface ItineraryDetail {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active: boolean;
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
   tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];

@@ -135,6 +135,21 @@ export const ActivityUpdateSchema = z.object({
 
 const DifficultySchema = z.enum(["easy", "moderate", "demanding"]);
 
+// Taxonomía cerrada y común a toda la plataforma (tarea #161). Ampliable editando esta lista,
+// sin migración de esquema porque no se modela como enum de Postgres.
+export const TRIP_TYPES = [
+  "adventure",
+  "beach",
+  "cultural",
+  "culinary",
+  "nature",
+  "city",
+  "wellness",
+  "family",
+] as const;
+
+const TripTypeSchema = z.enum(TRIP_TYPES);
+
 const ChecklistEntrySchema = z.object({
   item: z.string().min(1),
   category: z.string().nullable().optional(),
@@ -154,6 +169,9 @@ export const ItineraryInputSchema = z.object({
   tripNotes: z.array(z.string()).optional(),
   recommendations: z.array(z.string()).optional(),
   checklist: z.array(ChecklistEntrySchema).optional(),
+  publishedInSearch: z.boolean().optional(),
+  tripTypes: z.array(TripTypeSchema).optional(),
+  priceFrom: z.number().int().nonnegative().optional(),
 });
 
 export const ItineraryUpdateSchema = z.object({
@@ -171,6 +189,17 @@ export const ItineraryUpdateSchema = z.object({
   recommendations: z.array(z.string()).optional(),
   checklist: z.array(ChecklistEntrySchema).optional(),
   active: z.boolean().optional(),
+  publishedInSearch: z.boolean().optional(),
+  tripTypes: z.array(TripTypeSchema).optional(),
+  priceFrom: z.number().int().nonnegative().nullable().optional(),
+});
+
+// ─── Public search (tarea #161) ────────────────────────────────────────────────
+
+export const PublicItinerarySearchQuerySchema = z.object({
+  destination: z.string().min(1).optional(),
+  tripTypes: z.array(TripTypeSchema).optional(),
+  maxBudget: z.coerce.number().int().nonnegative().optional(),
 });
 
 export const ItineraryDayInputSchema = z.object({

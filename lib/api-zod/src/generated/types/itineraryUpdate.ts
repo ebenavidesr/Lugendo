@@ -7,6 +7,7 @@
  */
 import type { ChecklistEntry } from './checklistEntry';
 import type { ItineraryUpdateDifficulty } from './itineraryUpdateDifficulty';
+import type { TripType } from './tripType';
 
 export interface ItineraryUpdate {
   name?: string;
@@ -23,4 +24,8 @@ export interface ItineraryUpdate {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active?: boolean;
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
 }

@@ -215,6 +215,43 @@ export interface UserUpdate {
   password?: string;
 }
 
+export type TripType = typeof TripType[keyof typeof TripType];
+
+
+export const TripType = {
+  adventure: 'adventure',
+  beach: 'beach',
+  cultural: 'cultural',
+  culinary: 'culinary',
+  nature: 'nature',
+  city: 'city',
+  wellness: 'wellness',
+  family: 'family',
+} as const;
+
+export interface PublicAgencySummary {
+  id: number;
+  name: string;
+  slug: string;
+  /** @nullable */
+  logoUrl?: string | null;
+}
+
+export interface PublicItinerarySearchResult {
+  id: number;
+  name: string;
+  numDays: number;
+  countries: string[];
+  /** @nullable */
+  region?: string | null;
+  tripTypes: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
+  /** @nullable */
+  coverPhotoUrl?: string | null;
+  agency: PublicAgencySummary;
+}
+
 /**
  * @nullable
  */
@@ -251,6 +288,10 @@ export interface Itinerary {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active: boolean;
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
   tripCount?: number;
   /** @nullable */
   createdByName?: string | null;
@@ -347,6 +388,10 @@ export interface ItineraryDetail {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active: boolean;
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
   tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];
@@ -375,6 +420,9 @@ export interface ItineraryInput {
   tripNotes?: string[];
   recommendations?: string[];
   checklist?: ChecklistEntry[];
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  priceFrom?: number;
 }
 
 export type ItineraryUpdateDifficulty = typeof ItineraryUpdateDifficulty[keyof typeof ItineraryUpdateDifficulty];
@@ -401,6 +449,10 @@ export interface ItineraryUpdate {
   recommendations?: string[];
   checklist?: ChecklistEntry[];
   active?: boolean;
+  publishedInSearch?: boolean;
+  tripTypes?: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
 }
 
 export interface ItineraryDayInput {
@@ -2065,6 +2117,12 @@ export interface DestinationDescribeInput {
 export interface DestinationDescribeResult {
   description: string;
 }
+
+export type SearchItinerariesParams = {
+destination?: string;
+tripTypes?: TripType[];
+maxBudget?: number;
+};
 
 export type AddActivityParticipant201 = {
   participants: ActivityParticipant[];

@@ -20,6 +20,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // contact ("Invitada") must be able to view it whether logged out, logged in as a
     // traveler, or logged in as back-office staff, so it's fully exempt from routing.
     if (location.startsWith("/foto/")) return;
+    // /buscar (task #161) is the public multi-agency itinerary search — reachable
+    // without any session, same exemption as /foto/:code.
+    if (location === "/buscar") return;
     if (!isLoading) {
       const isAuthRoute = location === "/login" || location === "/register";
       const isPublicRoute = isAuthRoute || location === "/forgot-password" || location.startsWith("/reset-password");
