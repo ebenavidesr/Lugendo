@@ -229,6 +229,7 @@ export const ListAgenciesResponseItem = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "description": zod.string().nullish(),
   "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -245,7 +246,8 @@ export const CreateAgencyBody = zod.object({
   "primaryColor": zod.string().optional(),
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional(),
   "description": zod.string().optional(),
-  "publicProfileEnabled": zod.boolean().optional()
+  "publicProfileEnabled": zod.boolean().optional(),
+  "agencyType": zod.enum(['agency', 'advisor']).optional()
 })
 
 
@@ -266,6 +268,7 @@ export const GetAgencyResponse = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "description": zod.string().nullish(),
   "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -285,7 +288,8 @@ export const UpdateAgencyBody = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']).optional(),
   "active": zod.boolean().optional(),
   "description": zod.string().nullish(),
-  "publicProfileEnabled": zod.boolean().optional()
+  "publicProfileEnabled": zod.boolean().optional(),
+  "agencyType": zod.enum(['agency', 'advisor']).optional()
 })
 
 export const UpdateAgencyResponse = zod.object({
@@ -298,6 +302,7 @@ export const UpdateAgencyResponse = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "description": zod.string().nullish(),
   "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -320,6 +325,7 @@ export const UploadAgencyLogoResponse = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "description": zod.string().nullish(),
   "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -342,6 +348,7 @@ export const DeleteAgencyLogoResponse = zod.object({
   "writingTone": zod.enum(['informative', 'friendly', 'adventurous', 'luxury', 'professional']),
   "description": zod.string().nullish(),
   "publicProfileEnabled": zod.boolean(),
+  "agencyType": zod.enum(['agency', 'advisor']).describe('Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,'),
   "active": zod.boolean(),
   "createdAt": zod.string()
 })
@@ -446,6 +453,7 @@ export const ListItinerariesResponseItem = zod.object({
   "publishedInSearch": zod.boolean().optional(),
   "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
   "priceFrom": zod.number().nullish(),
+  "sourceUrl": zod.string().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
   "createdAt": zod.string()
@@ -509,6 +517,7 @@ export const GetItineraryResponse = zod.object({
   "publishedInSearch": zod.boolean().optional(),
   "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
   "priceFrom": zod.number().nullish(),
+  "sourceUrl": zod.string().nullish(),
   "tripCount": zod.number().optional(),
   "createdAt": zod.string(),
   "days": zod.array(zod.object({
@@ -593,6 +602,7 @@ export const UpdateItineraryResponse = zod.object({
   "publishedInSearch": zod.boolean().optional(),
   "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])).optional(),
   "priceFrom": zod.number().nullish(),
+  "sourceUrl": zod.string().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
   "createdAt": zod.string()

@@ -5,6 +5,7 @@
  * Lugendo — Travel agency management platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { AgencyInputAgencyType } from './agencyInputAgencyType';
 import type { AgencyInputWritingTone } from './agencyInputWritingTone';
 
 export interface AgencyInput {
@@ -15,4 +16,5 @@ export interface AgencyInput {
   writingTone?: AgencyInputWritingTone;
   description?: string;
   publicProfileEnabled?: boolean;
+  agencyType?: AgencyInputAgencyType;
 }

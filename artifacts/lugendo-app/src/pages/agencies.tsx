@@ -10,20 +10,29 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { AgencyLogoField } from "@/components/agency-logo-field";
 import { validateLogoFile, uploadAgencyLogoFile } from "@/lib/agency-logo";
+import type { AgencyAgencyType } from "@workspace/api-client-react";
+
+const AGENCY_TYPE_OPTIONS: { value: AgencyAgencyType; label: string; hint: string }[] = [
+  { value: "agency", label: "Agencia", hint: "Agencia de viajes con equipo (Admin, Manager, Agente…)" },
+  { value: "advisor", label: "Asesor de Viajes", hint: "Consultor independiente, tenant de una sola persona" },
+];
 
 function AgencyForm({
   initial,
   onSubmit,
   isPending,
   onClose,
+  showType,
 }: {
-  initial: { name: string; slug: string; primaryColor: string };
+  initial: { name: string; slug: string; primaryColor: string; agencyType: AgencyAgencyType };
   onSubmit: (data: typeof initial) => void;
   isPending: boolean;
   onClose: () => void;
+  showType?: boolean;
 }) {
   const [form, setForm] = useState(initial);
   const set = (patch: Partial<typeof initial>) => setForm(f => ({ ...f, ...patch }));
@@ -38,6 +47,22 @@ function AgencyForm({
         <label className="text-[12px] font-medium text-muted-foreground mb-1 block">Slug *</label>
         <Input value={form.slug} onChange={e => set({ slug: e.target.value.toLowerCase().replace(/\s+/g, "-") })} placeholder="mi-agencia" className="font-mono text-[13px]" />
       </div>
+      {showType !== false && (
+        <div>
+          <label className="text-[12px] font-medium text-muted-foreground mb-1 block">Tipo *</label>
+          <Select value={form.agencyType} onValueChange={v => set({ agencyType: v as AgencyAgencyType })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {AGENCY_TYPE_OPTIONS.map(o => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground mt-1">
+            {AGENCY_TYPE_OPTIONS.find(o => o.value === form.agencyType)?.hint}
+          </p>
+        </div>
+      )}
       <div>
         <label className="text-[12px] font-medium text-muted-foreground mb-1 block">Color principal</label>
         <div className="flex items-center gap-2">
@@ -78,12 +103,12 @@ function EditAgencyDialog({ agency, onClose }: { agency: Agency; onClose: () => 
           />
         </div>
         <AgencyForm
-          initial={{ name: agency.name, slug: agency.slug, primaryColor: agency.primaryColor ?? "#C4793A" }}
+          initial={{ name: agency.name, slug: agency.slug, primaryColor: agency.primaryColor ?? "#C4793A", agencyType: agency.agencyType }}
           isPending={update.isPending}
           onClose={onClose}
           onSubmit={data => {
             update.mutate(
-              { agencyId: agency.id, data: { name: data.name, primaryColor: data.primaryColor || undefined } },
+              { agencyId: agency.id, data: { name: data.name, primaryColor: data.primaryColor || undefined, agencyType: data.agencyType } },
               {
                 onSuccess: () => {
                   qc.invalidateQueries({ queryKey: ["/api/agencies"] });
@@ -153,12 +178,12 @@ function CreateAgencyDialog({ onClose }: { onClose: () => void }) {
           </div>
         </div>
         <AgencyForm
-          initial={{ name: "", slug: "", primaryColor: "#C4793A" }}
+          initial={{ name: "", slug: "", primaryColor: "#C4793A", agencyType: "agency" }}
           isPending={create.isPending || uploadingLogo}
           onClose={onClose}
           onSubmit={data => {
             create.mutate(
-              { data: { name: data.name, slug: data.slug, primaryColor: data.primaryColor || undefined } },
+              { data: { name: data.name, slug: data.slug, primaryColor: data.primaryColor || undefined, agencyType: data.agencyType } },
               {
                 onSuccess: async newAgency => {
                   if (logoFile) {
@@ -252,7 +277,7 @@ export default function Agencies() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Agencia", "Slug", "Color", "Estado", ""].map(h => (
+                {["Agencia", "Slug", "Tipo", "Color", "Estado", ""].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -276,6 +301,11 @@ export default function Agencies() {
                   </td>
                   <td className="px-5 py-3">
                     <span className="font-mono text-[12px] text-muted-foreground">{agency.slug}</span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${agency.agencyType === "advisor" ? "bg-[#F5E6DC] text-[#8B4420]" : "bg-[#EAE6F5] text-[#3D2F6B]"}`}>
+                      {agency.agencyType === "advisor" ? "Asesor" : "Agencia"}
+                    </span>
                   </td>
                   <td className="px-5 py-3">
                     {agency.primaryColor ? (

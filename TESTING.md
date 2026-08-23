@@ -34,6 +34,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [ ] Typecheck y build pasan sin errores nuevos
 - [ ] La tarjeta #169 en Notion refleja el resumen final (ya documentado en la Fase 1)
 
+**Ampliación (2026-08-23, feedback de Quique tras la primera pasada):** falta forma de marcar una agencia como "Agencia" o "Asesor de Viajes" al crearla, y el listado de agencias no distinguía el tipo. Se añadió `agencyType` (`agency`/`advisor`) a la tabla `agencies` — puramente informativo/de reporting, no rige permisos (eso sigue siendo `users.role`). Migración `0034_cool_aqueduct.sql` aplicada en local (ADD COLUMN con DEFAULT, sin pérdida de datos; verificado que las 4 agencias existentes quedaron backfilleadas a `agency`).
+- [ ] El diálogo "Nueva agencia" (`/agencies`) tiene un selector "Tipo" (Agencia / Asesor de Viajes), por defecto "Agencia"
+- [ ] El listado de agencias muestra una columna "Tipo" con badge distinto para Agencia vs. Asesor
+- [ ] El diálogo "Editar agencia" permite cambiar el tipo de una agencia existente
+- [ ] Solo Admin puede cambiar `agencyType` (backend rechaza con 403 si lo intenta otro rol vía API)
+
 ### #163 (Notion) — Contacto agencia-viajero desde el itinerario (2026-08-23)
 > Depende de #161 y #162, ambas implementadas los días previos, código completo pendiente de QA.
 > Nota de alcance: la tarjeta habla de "la página de un itinerario" — hoy no existe una página pública de detalle por itinerario (fuera del alcance de #161/#162), así que el punto de entrada es la tarjeta de itinerario tal como aparece en `/buscar` y en el perfil público de agencia (`/:slug`), cada una con su propio botón "Consultar sobre este viaje". No se ha creado ninguna página nueva para esto.

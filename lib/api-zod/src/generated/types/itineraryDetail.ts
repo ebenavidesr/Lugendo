@@ -35,6 +35,8 @@ export interface ItineraryDetail {
   tripTypes?: TripType[];
   /** @nullable */
   priceFrom?: number | null;
+  /** @nullable */
+  sourceUrl?: string | null;
   tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];

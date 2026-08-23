@@ -77,6 +77,17 @@ export const AgencyWritingTone = {
   professional: 'professional',
 } as const;
 
+/**
+ * Agencia tradicional vs. Asesor de Viajes (tenant unipersonal,
+ */
+export type AgencyAgencyType = typeof AgencyAgencyType[keyof typeof AgencyAgencyType];
+
+
+export const AgencyAgencyType = {
+  agency: 'agency',
+  advisor: 'advisor',
+} as const;
+
 export interface Agency {
   id: number;
   name: string;
@@ -94,6 +105,8 @@ export interface Agency {
   /** @nullable */
   description?: string | null;
   publicProfileEnabled: boolean;
+  /** Agencia tradicional vs. Asesor de Viajes (tenant unipersonal, */
+  agencyType: AgencyAgencyType;
   active: boolean;
   createdAt: string;
 }
@@ -109,6 +122,14 @@ export const AgencyInputWritingTone = {
   professional: 'professional',
 } as const;
 
+export type AgencyInputAgencyType = typeof AgencyInputAgencyType[keyof typeof AgencyInputAgencyType];
+
+
+export const AgencyInputAgencyType = {
+  agency: 'agency',
+  advisor: 'advisor',
+} as const;
+
 export interface AgencyInput {
   name: string;
   slug: string;
@@ -117,6 +138,7 @@ export interface AgencyInput {
   writingTone?: AgencyInputWritingTone;
   description?: string;
   publicProfileEnabled?: boolean;
+  agencyType?: AgencyInputAgencyType;
 }
 
 export type AgencyUpdateWritingTone = typeof AgencyUpdateWritingTone[keyof typeof AgencyUpdateWritingTone];
@@ -130,6 +152,14 @@ export const AgencyUpdateWritingTone = {
   professional: 'professional',
 } as const;
 
+export type AgencyUpdateAgencyType = typeof AgencyUpdateAgencyType[keyof typeof AgencyUpdateAgencyType];
+
+
+export const AgencyUpdateAgencyType = {
+  agency: 'agency',
+  advisor: 'advisor',
+} as const;
+
 export interface AgencyUpdate {
   name?: string;
   logoUrl?: string;
@@ -139,6 +169,7 @@ export interface AgencyUpdate {
   /** @nullable */
   description?: string | null;
   publicProfileEnabled?: boolean;
+  agencyType?: AgencyUpdateAgencyType;
 }
 
 export type UserRole = typeof UserRole[keyof typeof UserRole];
@@ -382,6 +413,8 @@ export interface Itinerary {
   tripTypes?: TripType[];
   /** @nullable */
   priceFrom?: number | null;
+  /** @nullable */
+  sourceUrl?: string | null;
   tripCount?: number;
   /** @nullable */
   createdByName?: string | null;
@@ -482,6 +515,8 @@ export interface ItineraryDetail {
   tripTypes?: TripType[];
   /** @nullable */
   priceFrom?: number | null;
+  /** @nullable */
+  sourceUrl?: string | null;
   tripCount?: number;
   createdAt: string;
   days: ItineraryDay[];

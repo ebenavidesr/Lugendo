@@ -3740,7 +3740,7 @@ components:
     # ─── AGENCY ───────────────────────────────────────────────────────────────
     Agency:
       type: object
-      required: [id, name, slug, active, createdAt, writingTone, publicProfileEnabled]
+      required: [id, name, slug, active, createdAt, writingTone, publicProfileEnabled, agencyType]
       properties:
         id:
           type: integer
@@ -3762,6 +3762,10 @@ components:
           type: ["string", "null"]
         publicProfileEnabled:
           type: boolean
+        agencyType:
+          type: string
+          enum: [agency, advisor]
+          description: Agencia tradicional vs. Asesor de Viajes (tenant unipersonal, #169). Solo clasificación de plataforma, no rige permisos (eso lo hace users.role).
         active:
           type: boolean
         createdAt:
@@ -3786,6 +3790,9 @@ components:
           type: string
         publicProfileEnabled:
           type: boolean
+        agencyType:
+          type: string
+          enum: [agency, advisor]
 
     AgencyUpdate:
       type: object
@@ -3805,6 +3812,9 @@ components:
           type: ["string", "null"]
         publicProfileEnabled:
           type: boolean
+        agencyType:
+          type: string
+          enum: [agency, advisor]
 
     # ─── USER ─────────────────────────────────────────────────────────────────
     User:

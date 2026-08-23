@@ -31,6 +31,8 @@ export interface Itinerary {
   tripTypes?: TripType[];
   /** @nullable */
   priceFrom?: number | null;
+  /** @nullable */
+  sourceUrl?: string | null;
   tripCount?: number;
   /** @nullable */
   createdByName?: string | null;

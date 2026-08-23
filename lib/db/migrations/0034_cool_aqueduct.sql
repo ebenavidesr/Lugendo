@@ -1,0 +1,1 @@
+ALTER TABLE "agencies" ADD COLUMN "agency_type" text DEFAULT 'agency' NOT NULL;

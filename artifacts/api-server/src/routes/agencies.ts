@@ -41,10 +41,10 @@ router.get("/agencies", requireRoles("admin"), async (req, res): Promise<void> =
 });
 
 router.post("/agencies", requireRoles("admin"), validate(AgencyInputSchema), async (req, res): Promise<void> => {
-  const { name, slug, logoUrl, primaryColor, description, publicProfileEnabled } = req.body;
+  const { name, slug, logoUrl, primaryColor, description, publicProfileEnabled, agencyType } = req.body;
   const [agency] = await db
     .insert(agenciesTable)
-    .values({ name, slug, logoUrl, primaryColor, description, publicProfileEnabled: publicProfileEnabled ?? false })
+    .values({ name, slug, logoUrl, primaryColor, description, publicProfileEnabled: publicProfileEnabled ?? false, agencyType: agencyType ?? "agency" })
     .returning();
   res.status(201).json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
@@ -66,12 +66,17 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
 
 router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
-  const { name, logoUrl, primaryColor, writingTone, active, description, publicProfileEnabled } = req.body;
+  const { name, logoUrl, primaryColor, writingTone, active, description, publicProfileEnabled, agencyType } = req.body;
   // La descripción pública es gestionable solo por Admin (decisión de alcance de la #162),
   // y por Asesor de Viajes en su propia agencia (tarea #169: es admin-only imprescindible
   // para operar en solitario, ya que un asesor no tiene ningún Admin al que recurrir).
   if (description !== undefined && req.session.role !== "admin" && req.session.role !== "advisor") {
     res.status(403).json({ error: "Solo un administrador puede editar la descripción pública" });
+    return;
+  }
+  // El tipo de agencia (agencia/asesor) es clasificación de plataforma, solo Admin la cambia.
+  if (agencyType !== undefined && req.session.role !== "admin") {
+    res.status(403).json({ error: "Solo un administrador puede cambiar el tipo de agencia" });
     return;
   }
   const [agency] = await db
@@ -84,6 +89,7 @@ router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"),
       ...(active !== undefined && { active }),
       ...(description !== undefined && { description }),
       ...(publicProfileEnabled !== undefined && { publicProfileEnabled }),
+      ...(agencyType !== undefined && { agencyType }),
     })
     .where(eq(agenciesTable.id, id))
     .returning();

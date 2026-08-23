@@ -35,6 +35,7 @@ export const ResetPasswordInputSchema = z.object({
 // ─── Agency ───────────────────────────────────────────────────────────────────
 
 const WritingToneSchema = z.enum(["informative", "friendly", "adventurous", "luxury", "professional"]);
+const AgencyTypeSchema = z.enum(["agency", "advisor"]);
 
 // Top-level path segments already claimed by the frontend router (artifacts/lugendo-app/src/App.tsx).
 // The public agency profile lives at /:slug (tarea #162), so a slug matching one of these would
@@ -58,6 +59,7 @@ export const AgencyInputSchema = z.object({
   writingTone: WritingToneSchema.optional(),
   description: z.string().max(600).optional(),
   publicProfileEnabled: z.boolean().optional(),
+  agencyType: AgencyTypeSchema.optional(),
 });
 
 export const AgencyUpdateSchema = z.object({
@@ -68,6 +70,7 @@ export const AgencyUpdateSchema = z.object({
   active: z.boolean().optional(),
   description: z.string().max(600).nullable().optional(),
   publicProfileEnabled: z.boolean().optional(),
+  agencyType: AgencyTypeSchema.optional(),
 });
 
 // ─── Hotel ────────────────────────────────────────────────────────────────────
