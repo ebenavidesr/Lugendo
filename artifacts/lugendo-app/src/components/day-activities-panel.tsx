@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X, Clock, StickyNote, Search, Loader2, Pencil, ChevronDown } from "lucide-react";
+import { Plus, X, Search, Loader2, Pencil, ChevronDown } from "lucide-react";
 import {
   useListDayActivities,
   useAddDayActivity,
@@ -278,67 +278,11 @@ export function DayActivitiesPanel({
             <div className="mb-3">
               <ul className="list-none m-0 p-0">
                 {dayActivities.map((a, idx) => {
-                  const meta = categoryMeta[a.activityCategory ?? ""] ?? categoryMeta.other;
                   const timeRange = formatTimeRange(a.startTime, a.endTime ?? undefined);
                   const isFree = !a.included;
                   const canEdit = a.canEdit !== false;
 
-                  // ── Itinerary/template rows: unchanged, no accordion, no #159 fields ──
-                  if (isItinerary) {
-                    return (
-                      <li key={a.id}>
-                        <div className="flex items-start gap-2 px-2.5 py-2 rounded-[8px] border border-border/60 bg-card">
-                          <span className="text-base leading-none mt-0.5">{meta.emoji}</span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <p className="text-[12px] font-medium" style={{ color: "#2D1F0E" }}>{a.activityName}</p>
-                              {isFree && (
-                                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
-                                  style={{ background: "#F0F4F0", color: "#4A6A4A" }}>
-                                  {a.createdByName ? `Por libre · ${a.createdByName}` : "Por libre"}
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                              {timeRange ? (
-                                <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "#C4793A" }}>
-                                  <Clock className="w-3 h-3" />{timeRange}
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--text-ter, #9C7A58)" }}>
-                                  <Clock className="w-3 h-3 opacity-50" />Hora por confirmar
-                                </span>
-                              )}
-                              {a.notes && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                                  <StickyNote className="w-3 h-3" />
-                                  <span className="truncate max-w-[200px]">{a.notes}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                            {canEdit && (
-                              <button
-                                onClick={() => { setEditActivity(a as unknown as DayActivity); setEditSheetOpen(true); }}
-                                className="p-0.5 text-muted-foreground hover:text-[#3D2F6B] transition-colors"
-                                title="Editar actividad">
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {canEdit && (
-                              <button onClick={() => doRemove(a.id)}
-                                className="p-0.5 text-muted-foreground hover:text-red-500 transition-colors">
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  }
-
-                  // ── Trip rows (#159): flat list, collapsed to one line, expands individually on click ──
+                  // ── Row shared by itinerary and trip (#159/#171): collapsed to one line, expands individually on click ──
                   const transportOpt = getTransportOption(a.transportMode ?? undefined);
                   const isOpen = openActivityIds.has(a.id);
                   const address = a.addressOverride ?? a.address;

@@ -1,5 +1,5 @@
 import { useParams, Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2, Pencil } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -800,67 +800,89 @@ export default function ItineraryDetail() {
               const isExpanded = expandedDays.has(day.id);
               return (
                 <li key={day.id} className="hover:bg-[#ECD5B8]/10 transition-colors">
-                  <div className="px-5 py-3.5 flex items-start gap-4 group">
-                    <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shrink-0 font-medium text-[13px]"
-                      style={{ background: "#FAEEE4", color: "#C4793A" }}>
-                      {day.dayNumber}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>
+                  <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-4 group">
+                    <DayPhotoZone
+                      photoUrl={day.photoUrl}
+                      editable={false}
+                      onSave={async () => {}}
+                      square={140}
+                      className="rounded-[12px]"
+                    />
+                    <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
+                            Día {day.dayNumber}
+                          </span>
+                          {(day.cityTo ?? day.cityFrom) && (
+                            <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
+                              · {day.cityTo ?? day.cityFrom}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[14px] font-medium mt-1" style={{ color: "#2D1F0E" }}>
                           {day.cityFrom && day.cityTo
                             ? `${day.cityFrom} → ${day.cityTo}`
                             : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
                         </p>
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                        {day.transport && (
-                          <span className="text-[12px] text-muted-foreground">
-                            <TransportLabel value={day.transport} />
-                          </span>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          {day.transport && (
+                            <span className="text-[12px] text-muted-foreground">
+                              <TransportLabel value={day.transport} />
+                            </span>
+                          )}
+                          {day.isTransitNight ? (
+                            <TransitNightBadge />
+                          ) : day.hotels && day.hotels.length > 0 && (
+                            <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
+                              🏨 {day.hotels.map(h => h.hotelName).join(", ")}
+                              {(() => {
+                                const label = getNightLabel(days.findIndex((d: ItineraryDay) => d.id === day.id), days);
+                                return label ? <NightLabelBadge label={label} /> : null;
+                              })()}
+                            </span>
+                          )}
+                        </div>
+                        {day.description && !isExpanded && (
+                          <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
                         )}
-                        {day.isTransitNight ? (
-                          <TransitNightBadge />
-                        ) : day.hotels && day.hotels.length > 0 && (
-                          <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                            🏨 {day.hotels.map(h => h.hotelName).join(", ")}
-                            {(() => {
-                              const label = getNightLabel(days.findIndex((d: ItineraryDay) => d.id === day.id), days);
-                              return label ? <NightLabelBadge label={label} /> : null;
-                            })()}
-                          </span>
-                        )}
-                      </div>
-                      {day.description && (
-                        <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
-                      )}
 
-                      {isExpanded && (
-                        <>
-                          <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} allDays={days} />
-                          <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} days={days} />
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => toggleDay(day.id)}
-                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                        title={isExpanded ? "Colapsar actividades" : "Ver actividades"}>
-                        {isExpanded
-                          ? <ChevronDown className="w-4 h-4" />
-                          : <ChevronRight className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => setEditDay(day)}
-                        className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                        ✏️
-                      </button>
-                      <button
-                        onClick={() => onDeleteDay(day.id)}
-                        className="p-1.5 rounded-[6px] transition-colors text-muted-foreground hover:text-red-500 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        {isExpanded && (
+                          <div className="mt-3 space-y-4">
+                            {day.description && (
+                              <p className="text-[13px] text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40">
+                                {day.description}
+                              </p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} allDays={days} />
+                              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} day={day} days={days} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                        <button
+                          onClick={() => toggleDay(day.id)}
+                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          title={isExpanded ? "Colapsar" : "Ver detalle"}>
+                          {isExpanded
+                            ? <ChevronDown className="w-4 h-4" />
+                            : <ChevronRight className="w-4 h-4" />}
+                        </button>
+                        <button
+                          onClick={() => setEditDay(day)}
+                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-[#3D2F6B] hover:bg-[#EAE6F5] transition-colors"
+                          title="Editar día">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onDeleteDay(day.id)}
+                          className="p-1.5 rounded-[6px] transition-colors text-muted-foreground hover:text-red-500 hover:bg-red-50"
+                          title="Eliminar día">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </li>
