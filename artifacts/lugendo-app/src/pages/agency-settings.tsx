@@ -28,7 +28,7 @@ export default function AgencySettings() {
 
   const updateAgency = useUpdateAgency();
 
-  const isAdmin = user?.role === AuthUserRole.admin;
+  const isAdmin = user?.role === AuthUserRole.admin || user?.role === AuthUserRole.advisor;
 
   const [form, setForm] = useState({
     name: "",
@@ -157,7 +157,7 @@ export default function AgencySettings() {
 
         <div>
           <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
-            Descripción {!isAdmin && <span className="text-muted-foreground font-normal">(solo un administrador puede editarla)</span>}
+            Descripción {!isAdmin && <span className="text-muted-foreground font-normal">(solo un administrador o asesor puede editarla)</span>}
           </label>
           <Textarea
             value={form.description}
@@ -220,7 +220,7 @@ export default function AgencySettings() {
         </div>
       </div>
 
-      {(user?.role === AuthUserRole.admin || user?.role === AuthUserRole.manager) && <ChecklistTemplatesSettings />}
+      {(user?.role === AuthUserRole.admin || user?.role === AuthUserRole.manager || user?.role === AuthUserRole.advisor) && <ChecklistTemplatesSettings />}
 
       {/* Save button */}
       <div className="flex justify-end">

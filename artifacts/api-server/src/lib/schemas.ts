@@ -381,7 +381,7 @@ export const InvitationUpdateSchema = z.object({
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
-const UserRoleSchema = z.enum(["admin", "manager", "agent", "traveler"]);
+const UserRoleSchema = z.enum(["admin", "manager", "agent", "advisor", "traveler"]);
 
 export const UserInputSchema = z.object({
   email: z.string().email(),

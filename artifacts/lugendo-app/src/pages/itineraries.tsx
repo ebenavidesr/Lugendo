@@ -157,7 +157,7 @@ export default function Itineraries() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent";
+  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent" || user?.role === "advisor";
 
   const visibleItineraries = itineraries?.filter(it => showInactive || it.active !== false);
 

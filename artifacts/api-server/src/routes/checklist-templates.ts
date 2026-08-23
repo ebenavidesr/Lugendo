@@ -12,7 +12,7 @@ function serialize(t: typeof checklistTemplatesTable.$inferSelect) {
   return { ...t, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
 }
 
-router.get("/checklist-templates", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.get("/checklist-templates", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.json([]); return; }
   const rows = await db
@@ -23,7 +23,7 @@ router.get("/checklist-templates", requireRoles("admin", "manager"), async (req,
   res.json(rows.map(serialize));
 });
 
-router.post("/checklist-templates", requireRoles("admin", "manager"), validate(ChecklistTemplateInputSchema), async (req, res): Promise<void> => {
+router.post("/checklist-templates", requireRoles("admin", "manager", "advisor"), validate(ChecklistTemplateInputSchema), async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.status(400).json({ error: "No agency associated with this account" }); return; }
   const { title, active } = req.body;
@@ -34,7 +34,7 @@ router.post("/checklist-templates", requireRoles("admin", "manager"), validate(C
   res.status(201).json(serialize(template));
 });
 
-router.patch("/checklist-templates/:templateId", requireRoles("admin", "manager"), validate(ChecklistTemplateUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/checklist-templates/:templateId", requireRoles("admin", "manager", "advisor"), validate(ChecklistTemplateUpdateSchema), async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId;
   const id = parseInt(Array.isArray(req.params.templateId) ? req.params.templateId[0] : req.params.templateId, 10);
   const fields = req.body;
@@ -47,7 +47,7 @@ router.patch("/checklist-templates/:templateId", requireRoles("admin", "manager"
   res.json(serialize(template));
 });
 
-router.delete("/checklist-templates/:templateId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/checklist-templates/:templateId", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId;
   const id = parseInt(Array.isArray(req.params.templateId) ? req.params.templateId[0] : req.params.templateId, 10);
   await db

@@ -39,7 +39,7 @@ router.post("/agency-inquiries", requireAuth, validate(AgencyInquiryInputSchema)
   const agencyStaff = await db.select({ email: usersTable.email, role: usersTable.role })
     .from(usersTable)
     .where(and(eq(usersTable.agencyId, agencyId), eq(usersTable.active, true)));
-  const notifyEmails = agencyStaff.filter(u => u.role === "admin" || u.role === "manager").map(u => u.email);
+  const notifyEmails = agencyStaff.filter(u => u.role === "admin" || u.role === "manager" || u.role === "advisor").map(u => u.email);
 
   await Promise.allSettled(notifyEmails.map(to => sendAgencyInquiryEmail({
     to,
@@ -78,7 +78,7 @@ router.get("/agency-inquiries/me", requireAuth, async (req, res): Promise<void> 
 // Bandeja de consultas de la agencia (back office). Siempre filtrado por la agencia de la
 // sesión — nunca por un agencyId recibido del cliente, para que una agencia no pueda leer
 // las consultas de otra.
-router.get("/agency-inquiries", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.get("/agency-inquiries", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.json([]); return; }
   const rows = await db
@@ -100,7 +100,7 @@ router.get("/agency-inquiries", requireRoles("admin", "manager"), async (req, re
   res.json(rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })));
 });
 
-router.patch("/agency-inquiries/:inquiryId/read", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.patch("/agency-inquiries/:inquiryId/read", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.inquiryId) ? req.params.inquiryId[0] : req.params.inquiryId, 10);
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.status(404).json({ error: "Not found" }); return; }

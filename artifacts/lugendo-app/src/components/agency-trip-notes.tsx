@@ -57,7 +57,7 @@ export function AgencyTripNotes({ tripId, days = [], readOnly = false }: AgencyT
 
   const canManageNote = (note: TripNote) => {
     if (readOnly) return false;
-    if (user?.role === "admin" || user?.role === "manager") return true;
+    if (user?.role === "admin" || user?.role === "manager" || user?.role === "advisor") return true;
     if (user?.role === "agent") return note.userId === user.id;
     return false;
   };

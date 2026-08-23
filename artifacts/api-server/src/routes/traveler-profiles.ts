@@ -38,7 +38,7 @@ const avatarUpload = multer({
 // Roles allowed to see individual traveler tags in the back office (#155, decision 8).
 // "local_guide" doesn't exist as a role yet (#91 is still in the backlog) -- listed here
 // ahead of time so this endpoint needs no changes once that role ships.
-const AGENCY_TAG_VIEWER_ROLES = ["admin", "manager", "agent", "local_guide"];
+const AGENCY_TAG_VIEWER_ROLES = ["admin", "manager", "agent", "advisor", "local_guide"];
 
 class TagAlreadyAddedError extends Error {
   constructor() { super("AlreadyTagged"); }

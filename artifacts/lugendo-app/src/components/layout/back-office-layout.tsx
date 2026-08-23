@@ -29,10 +29,10 @@ export function BackOfficeLayout({ children }: { children: ReactNode }) {
     { href: "/trips", label: "Viajes", icon: Plane },
     { href: "/hotels", label: "Hoteles", icon: Bed },
     { href: "/activities", label: "Actividades", icon: Zap },
-    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/inquiries", label: "Consultas", icon: MessageCircle }] : []),
-    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/team", label: "Equipo", icon: Users }] : []),
+    ...(user?.role === "admin" || user?.role === "manager" || user?.role === "advisor" ? [{ href: "/inquiries", label: "Consultas", icon: MessageCircle }] : []),
+    ...(user?.role === "admin" || user?.role === "manager" || user?.role === "advisor" ? [{ href: "/team", label: "Equipo", icon: Users }] : []),
     ...(user?.role === "admin" ? [{ href: "/agencies", label: "Agencias", icon: Building2 }] : []),
-    ...(user?.role === "admin" || user?.role === "manager" ? [{ href: "/settings", label: "Configuración", icon: Settings }] : []),
+    ...(user?.role === "admin" || user?.role === "manager" || user?.role === "advisor" ? [{ href: "/settings", label: "Configuración", icon: Settings }] : []),
   ];
 
   return (

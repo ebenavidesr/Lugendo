@@ -30,7 +30,7 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/users", requireRoles("admin", "manager"), validate(UserInputSchema), async (req, res): Promise<void> => {
+router.post("/users", requireRoles("admin", "manager", "advisor"), validate(UserInputSchema), async (req, res): Promise<void> => {
   const { email, name, role, agencyId, password } = req.body;
   const targetAgencyId = req.session.role === "admin" ? (agencyId ?? req.session.agencyId) : req.session.agencyId;
   if (role !== "traveler" && !targetAgencyId) {
@@ -77,7 +77,7 @@ router.get("/users/:userId", requireAuth, async (req, res): Promise<void> => {
   res.json(serialize(user));
 });
 
-router.patch("/users/:userId", requireRoles("admin", "manager"), validate(UserUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/users/:userId", requireRoles("admin", "manager", "advisor"), validate(UserUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId, 10);
   const { name, email, role, agencyId, active, status, password } = req.body;
 

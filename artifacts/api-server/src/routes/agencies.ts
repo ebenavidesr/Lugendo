@@ -64,11 +64,13 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
 
-router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
   const { name, logoUrl, primaryColor, writingTone, active, description, publicProfileEnabled } = req.body;
-  // La descripción pública es gestionable solo por Admin (decisión de alcance de la #162).
-  if (description !== undefined && req.session.role !== "admin") {
+  // La descripción pública es gestionable solo por Admin (decisión de alcance de la #162),
+  // y por Asesor de Viajes en su propia agencia (tarea #169: es admin-only imprescindible
+  // para operar en solitario, ya que un asesor no tiene ningún Admin al que recurrir).
+  if (description !== undefined && req.session.role !== "admin" && req.session.role !== "advisor") {
     res.status(403).json({ error: "Solo un administrador puede editar la descripción pública" });
     return;
   }
@@ -89,7 +91,7 @@ router.patch("/agencies/:agencyId", requireRoles("admin", "manager"), validate(A
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
 
-router.post("/agencies/:agencyId/logo", requireRoles("admin", "manager"), (req, res, next) => {
+router.post("/agencies/:agencyId/logo", requireRoles("admin", "manager", "advisor"), (req, res, next) => {
   logoUpload.single("logo")(req, res, (err: unknown) => {
     if (!err) { next(); return; }
     if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
@@ -122,7 +124,7 @@ router.post("/agencies/:agencyId/logo", requireRoles("admin", "manager"), (req, 
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
 
-router.delete("/agencies/:agencyId/logo", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/agencies/:agencyId/logo", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
   const [agency] = await db.update(agenciesTable).set({ logoFileUrl: null }).where(eq(agenciesTable.id, id)).returning();
   if (!agency) { res.status(404).json({ error: "Not found" }); return; }

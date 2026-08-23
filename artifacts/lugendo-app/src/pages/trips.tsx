@@ -222,7 +222,7 @@ export default function Trips() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const canDelete = user?.role === "admin" || user?.role === "manager";
+  const canDelete = user?.role === "admin" || user?.role === "manager" || user?.role === "advisor";
 
   const handleDelete = () => {
     if (!deleteTarget) return;

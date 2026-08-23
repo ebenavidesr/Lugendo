@@ -15,7 +15,7 @@ export interface TripDocument {
   mimeType: string;
   storageKey: string;
   createdAt: string;
-  /** Role of the user who uploaded the document (admin, manager, agent, traveler) */
+  /** Role of the user who uploaded the document (admin, manager, agent, advisor, traveler) */
   uploaderRole: string;
   /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
   sharedWith?: ActivityParticipant[];

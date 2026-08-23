@@ -237,7 +237,7 @@ export function TripDocumentsTab({ tripId, trip }: TripDocumentsTabProps) {
     }
   };
 
-  const isAgencyUpload = (d: TripDocument) => ["admin", "manager", "agent"].includes(d.uploaderRole);
+  const isAgencyUpload = (d: TripDocument) => ["admin", "manager", "agent", "advisor"].includes(d.uploaderRole);
   const agencyDocs = documents?.filter((d: TripDocument) => isAgencyUpload(d)) ?? [];
   const travelerDocs = documents?.filter((d: TripDocument) => !isAgencyUpload(d)) ?? [];
 

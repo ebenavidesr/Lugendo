@@ -173,7 +173,7 @@ router.patch("/activities/:activityId", requireAuth, validate(ActivityUpdateSche
   res.json(serialize(activity));
 });
 
-router.delete("/activities/:activityId", requireRoles("admin", "manager"), async (req, res): Promise<void> => {
+router.delete("/activities/:activityId", requireRoles("admin", "manager", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.activityId) ? req.params.activityId[0] : req.params.activityId, 10);
   await db.delete(activitiesTable).where(eq(activitiesTable.id, id));
   res.status(204).send();

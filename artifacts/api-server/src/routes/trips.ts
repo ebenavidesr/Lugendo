@@ -116,7 +116,7 @@ export async function verifyTripAccessCore(
   if (role === "admin") return { authorized: true, reason: "", trip: tripInfo, memberType: null };
 
   // Agency staff: trip must belong to their agency
-  if ((role === "manager" || role === "agent") && agencyId != null && trip.agencyId === agencyId) {
+  if ((role === "manager" || role === "agent" || role === "advisor") && agencyId != null && trip.agencyId === agencyId) {
     return { authorized: true, reason: "", trip: tripInfo, memberType: null };
   }
 
@@ -162,7 +162,7 @@ async function verifyTripDayAccess(
 }
 
 function isAgencyStaffRole(role: string | undefined): boolean {
-  return role === "admin" || role === "manager" || role === "agent";
+  return role === "admin" || role === "manager" || role === "agent" || role === "advisor";
 }
 
 // "Trip creator": agency staff of the trip's own agency (admin counts for any agency, matching
@@ -175,7 +175,7 @@ function isTripCreator(
   session: { userId: number; role: string | undefined; agencyId: number | null | undefined },
 ): boolean {
   if (session.role === "admin") return true;
-  if ((session.role === "manager" || session.role === "agent") && session.agencyId != null && trip.agencyId === session.agencyId) {
+  if ((session.role === "manager" || session.role === "agent" || session.role === "advisor") && session.agencyId != null && trip.agencyId === session.agencyId) {
     return true;
   }
   if (session.role === "traveler" && trip.ownerId === session.userId) return true;
@@ -448,7 +448,7 @@ router.get("/trips", requireAuth, async (req, res): Promise<void> => {
   ));
 });
 
-router.post("/trips", requireRoles("admin", "manager", "agent"), validate(TripInputSchema), async (req, res): Promise<void> => {
+router.post("/trips", requireRoles("admin", "manager", "agent", "advisor"), validate(TripInputSchema), async (req, res): Promise<void> => {
   const { name, description, itineraryId, startDate, endDate, maxCapacity, airline, flightNumber, flightTime, reservationCode, flightNotes, returnAirline, returnFlightNumber, returnFlightTime, returnReservationCode, outboundFlights, returnFlights } = req.body;
   const agencyId = req.session.agencyId;
   if (!agencyId) { res.status(400).json({ error: "No agency associated" }); return; }
@@ -587,7 +587,7 @@ router.get("/trips/:tripId", requireAuth, async (req, res): Promise<void> => {
 });
 
 // ─── TRIP DAY CREATE (back-office) ───────────────────────────────────────────
-router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent", "advisor"), validate(PersonalTripDayInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { dayNumber, cityFrom, cityTo, cityFromCountry, cityToCountry, transport, description, isTransitNight } = req.body;
 
@@ -614,7 +614,7 @@ router.post("/trips/:tripId/days", requireRoles("admin", "manager", "agent"), va
 });
 
 // ─── TRIP DAY DELETE (back-office) ───────────────────────────────────────────
-router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/days/:dayId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
 
@@ -709,7 +709,7 @@ router.post("/trips/:tripId/days/:dayId/hotels", requireAuth, validate(DayHotelI
 
   res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, createdAt: assignment.createdAt }));
 
-  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent";
+  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent" || req.session.role === "advisor";
   if (isAgencyStaff) {
     notifyTripUpdated(
       tripId,
@@ -731,7 +731,7 @@ router.delete("/trips/:tripId/days/:dayId/hotels/:assignmentId", requireAuth, as
   await db.delete(tripDayHotelsTable).where(and(eq(tripDayHotelsTable.id, assignmentId), eq(tripDayHotelsTable.tripDayId, dayId)));
   res.sendStatus(204);
 
-  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent";
+  const isAgencyStaff = req.session.role === "admin" || req.session.role === "manager" || req.session.role === "agent" || req.session.role === "advisor";
   if (isAgencyStaff) {
     notifyTripUpdated(
       tripId,
@@ -841,7 +841,7 @@ router.post("/trips/:tripId/days/:dayId/activities", requireAuth, validate(DayAc
   } = req.body;
 
   // Agency staff must supply an activityId; travelers can create free activities (no activityId)
-  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent" || role === "advisor";
 
   if (!activityId && !activityTitle) {
     res.status(400).json({ error: "activityId or activityTitle is required" });
@@ -992,7 +992,7 @@ router.patch("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, valid
     return;
   }
 
-  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent" || role === "advisor";
 
   const {
     dayId: targetDayId,
@@ -1136,7 +1136,7 @@ router.delete("/trips/:tripId/days/:dayId/activities/:linkId", requireAuth, asyn
   await db.execute(sql`DELETE FROM trip_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
 
-  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent";
+  const isAgencyStaff = role === "admin" || role === "manager" || role === "agent" || role === "advisor";
   if (isAgencyStaff) {
     notifyTripUpdated(
       tripId,
@@ -1307,7 +1307,7 @@ router.get("/trips/:tripId/usage", requireAuth, async (req, res): Promise<void> 
   res.json({ travelers });
 });
 
-router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent"), validate(TripUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId", requireRoles("admin", "manager", "agent", "advisor"), validate(TripUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const fields = req.body;
   const [before] = await db.select({ startDate: tripsTable.startDate, endDate: tripsTable.endDate }).from(tripsTable).where(eq(tripsTable.id, id));
@@ -1340,11 +1340,11 @@ async function verifyTripAccess(tripId: number, userId: number, agencyId: number
     .where(eq(tripsTable.id, tripId));
   if (!trip) return false;
   if (role === "admin") return true;
-  if ((role === "manager" || role === "agent") && agencyId != null && trip.agencyId === agencyId) return true;
+  if ((role === "manager" || role === "agent" || role === "advisor") && agencyId != null && trip.agencyId === agencyId) return true;
   return false;
 }
 
-router.get("/trips/:tripId/travel-advisories", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/travel-advisories", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1381,7 +1381,7 @@ router.get("/trips/:tripId/travel-advisories", requireRoles("admin", "manager", 
 
 // #153: the back office never sees a traveler's own documents, by any route -- only what the
 // agency itself uploaded. Filtering by uploader role, not a parallel origin column.
-router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1402,12 +1402,12 @@ router.get("/trips/:tripId/documents", requireRoles("admin", "manager", "agent")
     })
     .from(tripDocumentsTable)
     .innerJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
-    .where(and(eq(tripDocumentsTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
+    .where(and(eq(tripDocumentsTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent", "advisor"])))
     .orderBy(tripDocumentsTable.createdAt);
   res.json(docs.map(d => ({ ...d, createdAt: d.createdAt.toISOString(), uploaderRole: d.uploaderRole ?? "traveler" })));
 });
 
-router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent", "advisor"), validate(TripDocumentInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1481,7 +1481,7 @@ router.post("/trips/:tripId/documents", requireRoles("admin", "manager", "agent"
   })();
 });
 
-router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent", "advisor"), validate(TripDocumentRenameSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1496,7 +1496,7 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
     .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(doc.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
 
@@ -1514,7 +1514,7 @@ router.patch("/trips/:tripId/documents/:documentId", requireRoles("admin", "mana
   res.json({ ...updated, createdAt: updated.createdAt.toISOString(), uploaderRole: role! });
 });
 
-router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1529,7 +1529,7 @@ router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "man
     .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(doc.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
 
@@ -1549,7 +1549,7 @@ router.delete("/trips/:tripId/documents/:documentId", requireRoles("admin", "man
   res.sendStatus(204);
 });
 
-router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const documentId = parseInt(Array.isArray(req.params.documentId) ? req.params.documentId[0] : req.params.documentId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1564,7 +1564,7 @@ router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin"
     .leftJoin(usersTable, eq(usersTable.id, tripDocumentsTable.userId))
     .where(and(eq(tripDocumentsTable.id, documentId), eq(tripDocumentsTable.tripId, tripId)));
 
-  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent"].includes(doc.uploaderRole)) {
+  if (!doc || !doc.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(doc.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
 
@@ -1581,7 +1581,7 @@ router.get("/trips/:tripId/documents/:documentId/download", requireRoles("admin"
 // Independent feature reusing trip_documents' ownership/visibility pattern exactly (#153):
 // the back office never sees a traveler's own links, by any route -- only what the agency
 // itself created. Filtering by uploader role, not a parallel origin column.
-router.get("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/links", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1601,12 +1601,12 @@ router.get("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), as
     })
     .from(tripLinksTable)
     .innerJoin(usersTable, eq(usersTable.id, tripLinksTable.userId))
-    .where(and(eq(tripLinksTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
+    .where(and(eq(tripLinksTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent", "advisor"])))
     .orderBy(tripLinksTable.createdAt);
   res.json(links.map(l => ({ ...l, createdAt: l.createdAt.toISOString(), uploaderRole: l.uploaderRole ?? "traveler" })));
 });
 
-router.post("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), validate(TripLinkInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/links", requireRoles("admin", "manager", "agent", "advisor"), validate(TripLinkInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1623,7 +1623,7 @@ router.post("/trips/:tripId/links", requireRoles("admin", "manager", "agent"), v
   res.status(201).json({ ...link, createdAt: link.createdAt.toISOString(), uploaderRole: role! });
 });
 
-router.delete("/trips/:tripId/links/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/links/:linkId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1638,7 +1638,7 @@ router.delete("/trips/:tripId/links/:linkId", requireRoles("admin", "manager", "
     .leftJoin(usersTable, eq(usersTable.id, tripLinksTable.userId))
     .where(and(eq(tripLinksTable.id, linkId), eq(tripLinksTable.tripId, tripId)));
 
-  if (!link || !link.uploaderRole || !["admin", "manager", "agent"].includes(link.uploaderRole)) {
+  if (!link || !link.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(link.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
 
@@ -1655,7 +1655,7 @@ router.delete("/trips/:tripId/links/:linkId", requireRoles("admin", "manager", "
 // Agency notes are a new concept: previously trip_notes only had traveler-authored rows.
 // Same visibility rule as documents -- the back office only ever sees/manages its own notes,
 // never a traveler's; travelers see these via GET /me/trips/:tripId/notes (traveler.ts).
-router.get("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/notes", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1677,12 +1677,12 @@ router.get("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), as
     })
     .from(tripNotesTable)
     .innerJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
-    .where(and(eq(tripNotesTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent"])))
+    .where(and(eq(tripNotesTable.tripId, tripId), inArray(usersTable.role, ["admin", "manager", "agent", "advisor"])))
     .orderBy(tripNotesTable.dayNumber);
   res.json(notes.map(n => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString(), uploaderRole: n.uploaderRole ?? "traveler" })));
 });
 
-router.post("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/notes", requireRoles("admin", "manager", "agent", "advisor"), validate(TripNoteInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { userId, agencyId, role } = req.session;
 
@@ -1698,7 +1698,7 @@ router.post("/trips/:tripId/notes", requireRoles("admin", "manager", "agent"), v
   res.status(201).json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString(), uploaderRole: role! });
 });
 
-router.patch("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent", "advisor"), validate(TripNoteUpdateSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1713,7 +1713,7 @@ router.patch("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "a
     .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
     .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.tripId, tripId)));
 
-  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent"].includes(existing.uploaderRole)) {
+  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(existing.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
   if (role === "agent" && existing.userId !== userId) {
@@ -1733,7 +1733,7 @@ router.patch("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "a
   res.json({ ...note, createdAt: note.createdAt.toISOString(), updatedAt: note.updatedAt.toISOString(), uploaderRole: role! });
 });
 
-router.delete("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const noteId = parseInt(Array.isArray(req.params.noteId) ? req.params.noteId[0] : req.params.noteId, 10);
   const { userId, agencyId, role } = req.session;
@@ -1748,7 +1748,7 @@ router.delete("/trips/:tripId/notes/:noteId", requireRoles("admin", "manager", "
     .leftJoin(usersTable, eq(usersTable.id, tripNotesTable.userId))
     .where(and(eq(tripNotesTable.id, noteId), eq(tripNotesTable.tripId, tripId)));
 
-  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent"].includes(existing.uploaderRole)) {
+  if (!existing || !existing.uploaderRole || !["admin", "manager", "agent", "advisor"].includes(existing.uploaderRole)) {
     res.status(404).json({ error: "Not found" }); return;
   }
   if (role === "agent" && existing.userId !== userId) {
@@ -1763,14 +1763,14 @@ router.delete("/trips/:tripId", requireAuth, async (req, res): Promise<void> => 
   const id = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   const { role, userId } = req.session;
 
-  // Admins/managers can delete any trip; travelers can only delete their own
+  // Admins/managers/advisors can delete any trip; travelers can only delete their own
   if (role === "traveler") {
     const [owned] = await db
       .select({ id: tripsTable.id })
       .from(tripsTable)
       .where(and(eq(tripsTable.id, id), eq(tripsTable.ownerId, userId!)));
     if (!owned) { res.status(403).json({ error: "No tienes permisos para eliminar este viaje" }); return; }
-  } else if (role !== "admin" && role !== "manager") {
+  } else if (role !== "admin" && role !== "manager" && role !== "advisor") {
     res.status(403).json({ error: "Forbidden" }); return;
   }
 

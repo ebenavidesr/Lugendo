@@ -6,6 +6,19 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #169 (Notion) — Nuevo rol "Asesor de Viajes" (agencia de una sola persona, permisos de Manager) (2026-08-23)
+> Nombre técnico del rol: `advisor`. Permisos base idénticos a Manager en todas las comprobaciones de rol del backend y frontend (middlewares `requireRoles`, checks inline de acceso a viaje/agencia, clasificación "de agencia" de documentos/notas/enlaces en el portal del viajero). Además hereda dos acciones hoy exclusivas de Admin, imprescindibles para operar sin ningún Admin en su agencia: borrar hoteles del catálogo propio y editar la descripción pública de su agencia. No hereda visibilidad/gestión de otras agencias de la plataforma (listado global, creación de agencias, reasignar la agencia de un usuario). Decisión explícita de Quique: la gestión de equipo (`POST/PATCH /users`) NO se bloquea a nivel de backend para este rol pese al diseño de "tenant unipersonal" — es una intención de producto sin UI de invitación, no una restricción de permisos.
+> No existe un flujo de alta automática de agencia de asesor: la investigación confirmó que "primer usuario = admin" ya era una convención operativa (el rol se elige libremente al crear el usuario), no una regla de código — con `advisor` en el enum, basta con elegirlo en el diálogo de creación de usuario existente.
+- [ ] Un usuario con rol Asesor de Viajes puede hacer todo lo que puede hacer un Manager (itinerarios, viajes, hoteles/actividades salvo borrado, documentos/notas/enlaces de cualquier usuario de su agencia, plantillas de checklist, consultas, equipo, ajustes)
+- [ ] Un usuario con rol Asesor de Viajes puede borrar hoteles del catálogo de su agencia (excepción admin-only heredada)
+- [ ] Un usuario con rol Asesor de Viajes puede editar la descripción pública de su propia agencia (excepción admin-only heredada)
+- [ ] Un usuario con rol Asesor de Viajes NO ve el listado global de agencias ni la ficha de otras agencias, y no puede crear agencias ni reasignar la agencia de un usuario
+- [ ] El backend rechaza las acciones no otorgadas aunque se manipule la petición (verificado con `GET /agencies` y `POST /agencies` devolviendo 403 para rol `advisor`)
+- [ ] El rol se muestra como "Asesor de Viajes" en el badge/select de Equipo
+- [ ] Un documento/nota/enlace subido por un Asesor de Viajes se clasifica como "de agencia" (no personal) en el portal del viajero
+- [ ] Typecheck y build pasan sin errores nuevos
+- [ ] La tarjeta #169 en Notion refleja el resumen final (ya documentado en la Fase 1)
+
 ### #163 (Notion) — Contacto agencia-viajero desde el itinerario (2026-08-23)
 > Depende de #161 y #162, ambas implementadas los días previos, código completo pendiente de QA.
 > Nota de alcance: la tarjeta habla de "la página de un itinerario" — hoy no existe una página pública de detalle por itinerario (fuera del alcance de #161/#162), así que el punto de entrada es la tarjeta de itinerario tal como aparece en `/buscar` y en el perfil público de agencia (`/:slug`), cada una con su propio botón "Consultar sobre este viaje". No se ha creado ninguna página nueva para esto.

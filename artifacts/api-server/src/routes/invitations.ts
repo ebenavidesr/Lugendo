@@ -53,7 +53,7 @@ function serialize(i: InvRow) {
   };
 }
 
-router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
     res.status(403).json({ error: "No autorizado para ver las invitaciones de este viaje" });
@@ -77,7 +77,7 @@ router.get("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent
   res.json(rows.map(r => serialize(r as InvRow)));
 });
 
-router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent"), validate(InvitationInputSchema), async (req, res): Promise<void> => {
+router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agent", "advisor"), validate(InvitationInputSchema), async (req, res): Promise<void> => {
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
     res.status(403).json({ error: "No autorizado para invitar a este viaje" });
@@ -173,7 +173,7 @@ router.post("/trips/:tripId/invitations", requireRoles("admin", "manager", "agen
   res.status(201).json(created.map(r => serialize({ ...r, travelerId: r.sharedWithUserId, email: r.sharedWithEmail } as unknown as InvRow)));
 });
 
-router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), validate(InvitationUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent", "advisor"), validate(InvitationUpdateSchema), async (req, res): Promise<void> => {
   const invitationId = parseInt(Array.isArray(req.params.invitationId) ? req.params.invitationId[0] : req.params.invitationId, 10);
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {
@@ -196,7 +196,7 @@ router.patch("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "
   res.json(serialize({ ...updated, email: updated.sharedWithEmail, travelerId: updated.sharedWithUserId, travelerName: traveler?.name ?? null } as unknown as InvRow));
 });
 
-router.delete("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/trips/:tripId/invitations/:invitationId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const invitationId = parseInt(Array.isArray(req.params.invitationId) ? req.params.invitationId[0] : req.params.invitationId, 10);
   const tripId = parseInt(Array.isArray(req.params.tripId) ? req.params.tripId[0] : req.params.tripId, 10);
   if (!await verifyAgencyOwnsTrip(tripId, req.session.role, req.session.agencyId)) {

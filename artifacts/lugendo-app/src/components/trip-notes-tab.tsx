@@ -18,7 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
-const AGENCY_ROLES = new Set(["admin", "manager", "agent"]);
+const AGENCY_ROLES = new Set(["admin", "manager", "agent", "advisor"]);
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });

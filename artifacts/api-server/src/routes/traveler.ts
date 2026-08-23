@@ -49,7 +49,7 @@ import { backfillSharedWithAll } from "../lib/shared-with-all-backfill";
 
 // Roles whose uploads/authoring count as "agency" origin (#153): derived from the author's role,
 // no parallel origin column on trip_documents/trip_notes.
-const AGENCY_STAFF_ROLES = new Set(["admin", "manager", "agent"]);
+const AGENCY_STAFF_ROLES = new Set(["admin", "manager", "agent", "advisor"]);
 
 const objectStorage = new ObjectStorageService();
 
@@ -977,7 +977,7 @@ router.get("/me/trips/:tripId/notes", requireRoles("traveler"), async (req, res)
     .where(and(
       eq(tripNotesTable.tripId, tripId),
       or(
-        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        inArray(usersTable.role, ["admin", "manager", "agent", "advisor"]),
         eq(tripNotesTable.userId, userId),
         sql`EXISTS(SELECT 1 FROM trip_note_shares s WHERE s.note_id = ${tripNotesTable.id} AND s.traveler_id = ${userId})`,
       ),
@@ -2050,7 +2050,7 @@ async function copyVisibleTripNotes(tripId: number, newTripId: number, userId: n
     .where(and(
       eq(tripNotesTable.tripId, tripId),
       or(
-        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        inArray(usersTable.role, ["admin", "manager", "agent", "advisor"]),
         eq(tripNotesTable.userId, userId),
         sql`EXISTS(SELECT 1 FROM trip_note_shares s WHERE s.note_id = ${tripNotesTable.id} AND s.traveler_id = ${userId})`,
       ),
@@ -2117,7 +2117,7 @@ router.get("/me/trips/:tripId/documents", requireRoles("traveler"), async (req, 
     .where(and(
       eq(tripDocumentsTable.tripId, tripId),
       or(
-        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        inArray(usersTable.role, ["admin", "manager", "agent", "advisor"]),
         eq(tripDocumentsTable.userId, userId),
         sql`EXISTS(SELECT 1 FROM trip_document_shares s WHERE s.document_id = ${tripDocumentsTable.id} AND s.traveler_id = ${userId})`,
       ),
@@ -2319,7 +2319,7 @@ router.get("/me/trips/:tripId/links", requireRoles("traveler"), async (req, res)
     .where(and(
       eq(tripLinksTable.tripId, tripId),
       or(
-        inArray(usersTable.role, ["admin", "manager", "agent"]),
+        inArray(usersTable.role, ["admin", "manager", "agent", "advisor"]),
         eq(tripLinksTable.userId, userId),
         sql`EXISTS(SELECT 1 FROM trip_link_shares s WHERE s.link_id = ${tripLinksTable.id} AND s.traveler_id = ${userId})`,
       ),

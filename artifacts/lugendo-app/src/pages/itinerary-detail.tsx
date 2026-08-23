@@ -572,7 +572,7 @@ export default function ItineraryDetail() {
   const { data: days, isLoading: daysLoading } = useListItineraryDays(itineraryId);
   const { user } = useAuth();
   const { toast } = useToast();
-  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent";
+  const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent" || user?.role === "advisor";
   const updateItinerary = useUpdateItinerary();
   const deleteItinerary = useDeleteItinerary();
   const qc = useQueryClient();

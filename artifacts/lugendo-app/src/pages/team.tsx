@@ -54,16 +54,18 @@ function PasswordRequirements({ password }: { password: string }) {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const roleBadge: Record<UserRole, { bg: string; color: string; label: string }> = {
-  admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },    // Rojo — acceso máximo
-  manager:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Manager" },  // Índigo — rol relevante
-  agent:    { bg: "#FFF3D6", color: "#C47A00", label: "Agente" },   // Ámbar — rol operativo
-  traveler: { bg: "#E4F3EC", color: "#2E7D5A", label: "Viajero" },  // Verde — usuario final
+  admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },            // Rojo — acceso máximo
+  manager:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Manager" },          // Índigo — rol relevante
+  agent:    { bg: "#FFF3D6", color: "#C47A00", label: "Agente" },           // Ámbar — rol operativo
+  advisor:  { bg: "#F5E6DC", color: "#8B4420", label: "Asesor de Viajes" }, // Ocre — agencia unipersonal
+  traveler: { bg: "#E4F3EC", color: "#2E7D5A", label: "Viajero" },          // Verde — usuario final
 };
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "admin",    label: "Admin" },
   { value: "manager",  label: "Manager" },
   { value: "agent",    label: "Agente" },
+  { value: "advisor",  label: "Asesor de Viajes" },
   { value: "traveler", label: "Viajero" },
 ];
 

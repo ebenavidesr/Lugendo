@@ -8,7 +8,7 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
-  role: text("role", { enum: ["admin", "manager", "agent", "traveler"] }).notNull().default("traveler"),
+  role: text("role", { enum: ["admin", "manager", "agent", "advisor", "traveler"] }).notNull().default("traveler"),
   agencyId: integer("agency_id").references(() => agenciesTable.id),
   active: boolean("active").notNull().default(true),
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("approved"),

@@ -17,6 +17,7 @@ export const AuthUserRole = {
   admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  advisor: 'advisor',
   traveler: 'traveler',
 } as const;
 
@@ -147,6 +148,7 @@ export const UserRole = {
   admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  advisor: 'advisor',
   traveler: 'traveler',
 } as const;
 
@@ -178,6 +180,7 @@ export const UserInputRole = {
   admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  advisor: 'advisor',
   traveler: 'traveler',
 } as const;
 
@@ -197,6 +200,7 @@ export const UserUpdateRole = {
   admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  advisor: 'advisor',
   traveler: 'traveler',
 } as const;
 
@@ -1320,7 +1324,7 @@ export interface TripDocument {
   mimeType: string;
   storageKey: string;
   createdAt: string;
-  /** Role of the user who uploaded the document (admin, manager, agent, traveler) */
+  /** Role of the user who uploaded the document (admin, manager, agent, advisor, traveler) */
   uploaderRole: string;
   /** Recipients this document has been shared with. Only present when the caller is the document's creator (#153). */
   sharedWith?: ActivityParticipant[];
@@ -1345,7 +1349,7 @@ export interface TripLink {
   title: string;
   url: string;
   createdAt: string;
-  /** Role of the user who created the link (admin, manager, agent, traveler) */
+  /** Role of the user who created the link (admin, manager, agent, advisor, traveler) */
   uploaderRole: string;
   /** Recipients this link has been shared with. Only present when the caller is the link's creator. */
   sharedWith?: ActivityParticipant[];
@@ -1723,7 +1727,7 @@ export interface TripNote {
   content: string;
   createdAt: string;
   updatedAt?: string;
-  /** Role of the user who authored the note (admin, manager, agent, traveler) */
+  /** Role of the user who authored the note (admin, manager, agent, advisor, traveler) */
   uploaderRole?: string;
   /** Recipients this note has been shared with. Only present when the caller is the note's creator (#153). */
   sharedWith?: ActivityParticipant[];

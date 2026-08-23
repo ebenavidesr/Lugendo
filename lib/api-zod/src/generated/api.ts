@@ -152,7 +152,7 @@ export const GetMeResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
   "agencyName": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
@@ -172,7 +172,7 @@ export const LoginResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
   "agencyName": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
@@ -354,7 +354,7 @@ export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
@@ -369,7 +369,7 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 export const CreateUserBody = zod.object({
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "password": zod.string().optional(),
   "agencyId": zod.number().nullish()
 })
@@ -386,7 +386,7 @@ export const GetUserResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
@@ -404,7 +404,7 @@ export const UpdateUserParams = zod.object({
 export const UpdateUserBody = zod.object({
   "email": zod.string().optional(),
   "name": zod.string().optional(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']).optional(),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']).optional(),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean().optional(),
   "status": zod.enum(['approved', 'rejected']).optional().describe('Approve or reject a pending registration. Setting this also invalidates the user\'s approval-email token.'),
@@ -415,7 +415,7 @@ export const UpdateUserResponse = zod.object({
   "id": zod.number(),
   "email": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['admin', 'manager', 'agent', 'traveler']),
+  "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
@@ -1639,7 +1639,7 @@ export const ListTripDocumentsAdminResponseItem = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -1683,7 +1683,7 @@ export const RenameTripDocumentAdminResponse = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -1728,7 +1728,7 @@ export const ListTripLinksAdminResponseItem = zod.object({
   "title": zod.string(),
   "url": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -1776,7 +1776,7 @@ export const ListTripNotesAdminResponseItem = zod.object({
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional(),
-  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -1823,7 +1823,7 @@ export const UpdateTripNoteAdminResponse = zod.object({
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional(),
-  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -2320,7 +2320,7 @@ export const ListMyTripNotesResponseItem = zod.object({
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional(),
-  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -2367,7 +2367,7 @@ export const UpdateTripNoteResponse = zod.object({
   "content": zod.string(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional(),
-  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().optional().describe('Role of the user who authored the note (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -2554,7 +2554,7 @@ export const ListTripDocumentsResponseItem = zod.object({
   "mimeType": zod.string(),
   "storageKey": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().describe('Role of the user who uploaded the document (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()
@@ -2625,7 +2625,7 @@ export const ListTripLinksResponseItem = zod.object({
   "title": zod.string(),
   "url": zod.string(),
   "createdAt": zod.string(),
-  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, traveler)'),
+  "uploaderRole": zod.string().describe('Role of the user who created the link (admin, manager, agent, advisor, traveler)'),
   "sharedWith": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string()

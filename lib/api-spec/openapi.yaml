@@ -3686,7 +3686,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, agent, traveler]
+          enum: [admin, manager, agent, advisor, traveler]
         agencyId:
           type: ["integer", "null"]
         agencyName:
@@ -3819,7 +3819,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, agent, traveler]
+          enum: [admin, manager, agent, advisor, traveler]
         agencyId:
           type: ["integer", "null"]
         active:
@@ -3840,7 +3840,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, agent, traveler]
+          enum: [admin, manager, agent, advisor, traveler]
         password:
           type: string
         agencyId:
@@ -3855,7 +3855,7 @@ components:
           type: string
         role:
           type: string
-          enum: [admin, manager, agent, traveler]
+          enum: [admin, manager, agent, advisor, traveler]
         agencyId:
           type: ["integer", "null"]
         active:
@@ -5291,7 +5291,7 @@ components:
           type: string
         uploaderRole:
           type: string
-          description: Role of the user who uploaded the document (admin, manager, agent, traveler)
+          description: Role of the user who uploaded the document (admin, manager, agent, advisor, traveler)
         sharedWith:
           type: array
           description: Recipients this document has been shared with. Only present when the caller is the document's creator (#153).
@@ -5337,7 +5337,7 @@ components:
           type: string
         uploaderRole:
           type: string
-          description: Role of the user who created the link (admin, manager, agent, traveler)
+          description: Role of the user who created the link (admin, manager, agent, advisor, traveler)
         sharedWith:
           type: array
           description: Recipients this link has been shared with. Only present when the caller is the link's creator.
@@ -5790,7 +5790,7 @@ components:
           type: string
         uploaderRole:
           type: string
-          description: Role of the user who authored the note (admin, manager, agent, traveler)
+          description: Role of the user who authored the note (admin, manager, agent, advisor, traveler)
         sharedWith:
           type: array
           description: Recipients this note has been shared with. Only present when the caller is the note's creator (#153).

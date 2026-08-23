@@ -32,7 +32,7 @@ router.get("/hotels", requireAuth, async (req, res): Promise<void> => {
   res.json(rows.map(serialize));
 });
 
-router.post("/hotels", requireRoles("admin", "manager", "agent", "traveler"), validate(HotelInputSchema), async (req, res): Promise<void> => {
+router.post("/hotels", requireRoles("admin", "manager", "agent", "advisor", "traveler"), validate(HotelInputSchema), async (req, res): Promise<void> => {
   const { name, city, country, address, phone, website, type, stars, description } = req.body;
   const agencyId = req.session.agencyId ?? undefined;
   const [hotel] = await db
@@ -165,7 +165,7 @@ router.patch("/hotels/:hotelId", requireAuth, validate(HotelUpdateSchema), async
   res.json(serialize(hotel));
 });
 
-router.delete("/hotels/:hotelId", requireRoles("admin"), async (req, res): Promise<void> => {
+router.delete("/hotels/:hotelId", requireRoles("admin", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.hotelId) ? req.params.hotelId[0] : req.params.hotelId, 10);
   await db.delete(hotelsTable).where(eq(hotelsTable.id, id));
   res.sendStatus(204);

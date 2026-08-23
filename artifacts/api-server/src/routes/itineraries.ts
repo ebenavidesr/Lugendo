@@ -121,7 +121,7 @@ router.get("/itineraries", requireAuth, async (req, res): Promise<void> => {
 });
 
 // ─── PARSE PDF (must come before /:itineraryId to avoid routing conflicts) ───
-router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
+router.post("/itineraries/parse-pdf", requireRoles("admin", "manager", "agent", "advisor", "traveler"), async (req, res): Promise<void> => {
   const { fileBase64, fileName } = req.body as { fileBase64: string; fileName: string };
   if (!fileBase64 || !fileName) {
     res.status(400).json({ error: "fileBase64 and fileName are required" });
@@ -391,7 +391,7 @@ router.get("/itineraries/:itineraryId", requireAuth, async (req, res): Promise<v
   });
 });
 
-router.patch("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent"), validate(ItineraryUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent", "advisor"), validate(ItineraryUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const fields = req.body;
   const [itinerary] = await db.update(itinerariesTable).set(fields).where(eq(itinerariesTable.id, id)).returning();
@@ -408,7 +408,7 @@ router.get("/itineraries/:itineraryId/usage", requireAuth, async (req, res): Pro
   res.json({ trips });
 });
 
-router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/itineraries/:itineraryId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const [{ count: linkedTrips }] = await db
     .select({ count: sql<number>`count(*)::int` })
@@ -477,7 +477,7 @@ router.patch("/itineraries/:itineraryId/days/:dayId", requireAuth, validate(Itin
   res.json({ ...day, createdAt: day.createdAt.toISOString(), hotels: hotelMap[day.id] ?? [] });
 });
 
-router.delete("/itineraries/:itineraryId/days/:dayId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/itineraries/:itineraryId/days/:dayId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
 
@@ -498,7 +498,7 @@ router.get("/itineraries/:itineraryId/days/:dayId/hotels", requireAuth, async (r
   res.json(hotelMap[dayId] ?? []);
 });
 
-router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent", "traveler"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
+router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin", "manager", "agent", "advisor", "traveler"), validate(DayHotelInputSchema), async (req, res): Promise<void> => {
   const dayId = parseInt(Array.isArray(req.params.dayId) ? req.params.dayId[0] : req.params.dayId, 10);
   const { hotelId, segment, guaranteed, alternatives, reviewManually } = req.body as { hotelId: number; segment: "basic" | "standard" | "premium"; guaranteed?: boolean; alternatives?: string[]; reviewManually?: boolean };
   if (!hotelId) { res.status(400).json({ error: "hotelId is required" }); return; }
@@ -514,7 +514,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/hotels", requireRoles("admin"
   res.status(201).json(serializeDayHotel({ id: assignment.id, hotelId: assignment.hotelId, hotelName: hotel.name, hotelCity: hotel.city ?? null, hotelAddress: hotel.address ?? null, hotelPhone: hotel.phone ?? null, hotelWebsite: hotel.website ?? null, segment: assignment.segment, guaranteed: assignment.guaranteed, alternatives: assignment.alternatives, reviewManually: assignment.reviewManually, createdAt: assignment.createdAt }));
 });
 
-router.delete("/itineraries/:itineraryId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent", "traveler"), async (req, res): Promise<void> => {
+router.delete("/itineraries/:itineraryId/days/:dayId/hotels/:assignmentId", requireRoles("admin", "manager", "agent", "advisor", "traveler"), async (req, res): Promise<void> => {
   const assignmentId = parseInt(Array.isArray(req.params.assignmentId) ? req.params.assignmentId[0] : req.params.assignmentId, 10);
   await db.delete(itineraryDayHotelsTable).where(eq(itineraryDayHotelsTable.id, assignmentId));
   res.sendStatus(204);
@@ -573,7 +573,7 @@ router.post("/itineraries/:itineraryId/days/:dayId/activities", requireAuth, val
   });
 });
 
-router.patch("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), validate(ItineraryDayActivityUpdateSchema), async (req, res): Promise<void> => {
+router.patch("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent", "advisor"), validate(ItineraryDayActivityUpdateSchema), async (req, res): Promise<void> => {
   const itineraryId = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
   const body = req.body as { dayId?: number; startTime?: string | null; notes?: string | null };
@@ -619,14 +619,14 @@ router.patch("/itineraries/:itineraryId/days/:dayId/activities/:linkId", require
   });
 });
 
-router.delete("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.delete("/itineraries/:itineraryId/days/:dayId/activities/:linkId", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const linkId = parseInt(Array.isArray(req.params.linkId) ? req.params.linkId[0] : req.params.linkId, 10);
   await db.execute(sql`DELETE FROM itinerary_day_activities WHERE id = ${linkId}`);
   res.sendStatus(204);
 });
 
 // ─── AI: SUGGEST DAY DESCRIPTION ─────────────────────────────────────────────
-router.post("/itineraries/suggest-day-description", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/itineraries/suggest-day-description", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const { dayNumber, cityFrom, cityTo, activities = [], writingTone = "friendly" } = req.body as {
     dayNumber: number;
     cityFrom?: string;

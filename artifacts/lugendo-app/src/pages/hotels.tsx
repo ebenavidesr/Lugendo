@@ -330,7 +330,7 @@ export default function Hotels() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
-  const canDelete = user?.role === "admin";
+  const canDelete = user?.role === "admin" || user?.role === "advisor";
 
   const handleDelete = async () => {
     if (!deleteTarget) return;

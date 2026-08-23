@@ -13,5 +13,6 @@ export const UserInputRole = {
   admin: 'admin',
   manager: 'manager',
   agent: 'agent',
+  advisor: 'advisor',
   traveler: 'traveler',
 } as const;

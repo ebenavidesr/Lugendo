@@ -16,7 +16,7 @@ Incluye qué se hace, qué se aprende o experimenta, a quién va dirigida y por 
 Escribe en español, en 2-3 párrafos (100-180 palabras). Solo devuelve el texto, sin títulos ni formateo adicional.`,
 };
 
-router.post("/destinations/describe", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.post("/destinations/describe", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const { query, type } = req.body as { query: string; type: "destination" | "hotel" | "activity" };
   if (!query || !type) {
     res.status(400).json({ error: "query and type are required" });

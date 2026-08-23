@@ -14,7 +14,7 @@ export interface TripLink {
   title: string;
   url: string;
   createdAt: string;
-  /** Role of the user who created the link (admin, manager, agent, traveler) */
+  /** Role of the user who created the link (admin, manager, agent, advisor, traveler) */
   uploaderRole: string;
   /** Recipients this link has been shared with. Only present when the caller is the link's creator. */
   sharedWith?: ActivityParticipant[];

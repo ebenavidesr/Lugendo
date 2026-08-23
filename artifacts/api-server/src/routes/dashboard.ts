@@ -8,7 +8,7 @@ import { requireRoles } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/dashboard/summary", requireRoles("admin", "manager", "agent"), async (req, res): Promise<void> => {
+router.get("/dashboard/summary", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const { agencyId, role } = req.session;
   const whereTrip = role === "admin" || !agencyId
     ? undefined

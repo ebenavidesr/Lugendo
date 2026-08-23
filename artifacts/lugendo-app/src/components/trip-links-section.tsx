@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ResourceSharePanel } from "@/components/resource-share-panel";
 import { getLinkPlatform } from "@/lib/link-platform";
 
-const AGENCY_ROLES = new Set(["admin", "manager", "agent"]);
+const AGENCY_ROLES = new Set(["admin", "manager", "agent", "advisor"]);
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });

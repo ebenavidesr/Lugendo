@@ -40,7 +40,7 @@ export function AgencyTripDocuments({ tripId, readOnly = false }: AgencyTripDocu
 
   const canManageDoc = (doc: TripDocument) => {
     if (readOnly) return false;
-    if (user?.role === "admin" || user?.role === "manager") return true;
+    if (user?.role === "admin" || user?.role === "manager" || user?.role === "advisor") return true;
     if (user?.role === "agent") return doc.userId === user.id;
     return false;
   };
