@@ -5,7 +5,7 @@ import {
   useDeleteTrip, useLeaveTrip, useDismissTrip,
 } from "@workspace/api-client-react";
 import type { TravelerTrip, TravelerTripStatus, TravelerTripClassification } from "@workspace/api-client-react";
-import { MapPin, ArrowRight, Plus, Users, Trash2, LogOut, AlertTriangle } from "lucide-react";
+import { MapPin, ArrowRight, Plus, Users, Trash2, LogOut, AlertTriangle, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -263,6 +263,24 @@ export default function TravelerHome() {
           </Button>
         )}
       </div>
+
+      <Link href="/buscar"
+        className="flex items-center gap-4 bg-card border border-border rounded-[16px] px-5 py-4 shadow-sm transition-colors hover:bg-[#FAF2EB]">
+        <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0" style={{ background: "#FAEEE4" }}>
+          <Compass className="w-[22px] h-[22px]" style={{ color: "#C4793A" }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[14px] font-medium" style={{ color: "#2D1F0E" }}>Descubre itinerarios de otras agencias</h3>
+          <p className="text-[13px] mt-0.5" style={{ color: "#8A7860" }}>
+            Explora viajes publicados por agencias de la red Lugendo, sin necesidad de código de invitación.
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-[8px] text-[13px] font-medium shrink-0 whitespace-nowrap"
+          style={{ background: "#C4793A", color: "#fff" }}>
+          Explorar viajes
+          <ArrowRight className="w-3.5 h-3.5" />
+        </span>
+      </Link>
 
       <div className="flex gap-1 p-1 rounded-[10px] w-fit" style={{ background: "#ECD5B8" }}>
         {(Object.keys(TAB_LABELS) as Tab[]).map(key => (
