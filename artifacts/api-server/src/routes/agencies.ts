@@ -67,11 +67,11 @@ router.get("/agencies/:agencyId", requireAuth, async (req, res): Promise<void> =
 router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"), validate(AgencyUpdateSchema), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
   const { name, logoUrl, primaryColor, writingTone, active, description, publicProfileEnabled, agencyType } = req.body;
-  // La descripción pública es gestionable solo por Admin (decisión de alcance de la #162),
-  // y por Asesor de Viajes en su propia agencia (tarea #169: es admin-only imprescindible
-  // para operar en solitario, ya que un asesor no tiene ningún Admin al que recurrir).
-  if (description !== undefined && req.session.role !== "admin" && req.session.role !== "advisor") {
-    res.status(403).json({ error: "Solo un administrador puede editar la descripción pública" });
+  // La descripción pública es gestionable por Admin, Manager y Asesor de Viajes (decisión de
+  // alcance revisada de la #162 tras QA) — el Agente no llega a esta ruta porque el propio
+  // requireRoles de este endpoint ya lo excluye.
+  if (description !== undefined && req.session.role !== "admin" && req.session.role !== "manager" && req.session.role !== "advisor") {
+    res.status(403).json({ error: "Solo un administrador, manager o asesor puede editar la descripción pública" });
     return;
   }
   // El tipo de agencia (agencia/asesor) es clasificación de plataforma, solo Admin la cambia.

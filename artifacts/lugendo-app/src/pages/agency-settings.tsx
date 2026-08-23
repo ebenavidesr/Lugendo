@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, useParams } from "wouter";
-import { useGetAgency, useUpdateAgency, AuthUserRole } from "@workspace/api-client-react";
+import { Link, useParams, useLocation } from "wouter";
+import { useGetAgency, useUpdateAgency, useListAgencies, getListAgenciesQueryKey, AuthUserRole } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,12 +23,17 @@ const TONE_LABELS: Record<string, { label: string; desc: string }> = {
 export default function AgencySettings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   // /agencies/:id/settings (solo admin, gestionar cualquier agencia) vs. /settings (la propia).
   const params = useParams<{ id?: string }>();
   const isPlatformAdmin = user?.role === AuthUserRole.admin;
   const isAgent = user?.role === AuthUserRole.agent;
   const targetAgencyId = params.id && isPlatformAdmin ? parseInt(params.id, 10) : (user?.agencyId ?? undefined);
   const managingOtherAgency = params.id != null;
+
+  // Un admin puede saltar a la configuración de cualquier agencia/asesor desde aquí mismo,
+  // sin tener que pasar antes por /agencies/:id.
+  const { data: allAgencies } = useListAgencies({ query: { queryKey: getListAgenciesQueryKey(), enabled: isPlatformAdmin } });
 
   const { data: agency, isLoading } = useGetAgency(targetAgencyId ?? 0);
 
@@ -96,6 +101,30 @@ export default function AgencySettings() {
           <ArrowLeft className="w-3.5 h-3.5" /> Todas las agencias
         </Link>
       )}
+
+      {isPlatformAdmin && allAgencies && allAgencies.length > 0 && (
+        <div className="rounded-[14px] border border-border p-4" style={{ background: "#EAE6F5" }}>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#3D2F6B" }}>
+            Editando la configuración de
+          </label>
+          <Select
+            value={String(targetAgencyId ?? "")}
+            onValueChange={v => navigate(`/agencies/${v}/settings`)}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {allAgencies.map(a => (
+                <SelectItem key={a.id} value={String(a.id)}>
+                  {a.name} {a.agencyType === "advisor" ? "· Asesor" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center" style={{ background: "#EAE6F5" }}>
