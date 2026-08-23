@@ -1145,6 +1145,15 @@ export interface DeleteItineraryConflict {
   linkedTrips: number;
 }
 
+export interface DeleteAgencyConflict {
+  error: string;
+  linkedItineraries: number;
+  linkedTrips: number;
+  linkedUsers: number;
+  linkedHotels: number;
+  linkedActivities: number;
+}
+
 export interface DeleteTripResult {
   /** true if the trip was soft-cancelled (had active travelers), false if hard-deleted */
   cancelled: boolean;

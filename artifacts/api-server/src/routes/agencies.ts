@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { agenciesTable } from "@workspace/db";
+import { agenciesTable, itinerariesTable, tripsTable, usersTable, hotelsTable, activitiesTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { AgencyInputSchema, AgencyUpdateSchema } from "../lib/schemas";
@@ -95,6 +95,44 @@ router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"),
     .returning();
   if (!agency) { res.status(404).json({ error: "Not found" }); return; }
   res.json({ ...agency, createdAt: agency.createdAt.toISOString() });
+});
+
+router.delete("/agencies/:agencyId", requireRoles("admin"), async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.agencyId) ? req.params.agencyId[0] : req.params.agencyId, 10);
+  const [existing] = await db.select({ id: agenciesTable.id }).from(agenciesTable).where(eq(agenciesTable.id, id));
+  if (!existing) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [
+    [{ count: linkedItineraries }],
+    [{ count: linkedTrips }],
+    [{ count: linkedUsers }],
+    [{ count: linkedHotels }],
+    [{ count: linkedActivities }],
+  ] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(itinerariesTable).where(eq(itinerariesTable.agencyId, id)),
+    db.select({ count: sql<number>`count(*)::int` }).from(tripsTable).where(eq(tripsTable.agencyId, id)),
+    db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.agencyId, id)),
+    db.select({ count: sql<number>`count(*)::int` }).from(hotelsTable).where(eq(hotelsTable.agencyId, id)),
+    db.select({ count: sql<number>`count(*)::int` }).from(activitiesTable).where(eq(activitiesTable.agencyId, id)),
+  ]);
+
+  if (linkedItineraries > 0 || linkedTrips > 0 || linkedUsers > 0 || linkedHotels > 0 || linkedActivities > 0) {
+    const parts = [
+      linkedItineraries > 0 && `${linkedItineraries} itinerario(s)`,
+      linkedTrips > 0 && `${linkedTrips} viaje(s)`,
+      linkedUsers > 0 && `${linkedUsers} usuario(s)`,
+      linkedHotels > 0 && `${linkedHotels} hotel(es)`,
+      linkedActivities > 0 && `${linkedActivities} actividad(es)`,
+    ].filter(Boolean).join(", ");
+    res.status(409).json({
+      error: `No se puede borrar: tiene ${parts} vinculados`,
+      linkedItineraries, linkedTrips, linkedUsers, linkedHotels, linkedActivities,
+    });
+    return;
+  }
+
+  await db.delete(agenciesTable).where(eq(agenciesTable.id, id));
+  res.sendStatus(204);
 });
 
 router.post("/agencies/:agencyId/logo", requireRoles("admin", "manager", "advisor"), (req, res, next) => {

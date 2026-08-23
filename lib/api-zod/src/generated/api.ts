@@ -359,6 +359,14 @@ export const UpdateAgencyResponse = zod.object({
 
 
 /**
+ * @summary Delete agency or advisor (Admin only) — rejected if it has any linked itineraries, trips, users, hotels or activities
+ */
+export const DeleteAgencyParams = zod.object({
+  "agencyId": zod.coerce.number()
+})
+
+
+/**
  * @summary Upload a logo file for an agency (PNG/JPG/SVG/WebP, max 2MB). Uploaded directly via fetch/FormData on the client, not through the generated hook's body.
  */
 export const UploadAgencyLogoParams = zod.object({

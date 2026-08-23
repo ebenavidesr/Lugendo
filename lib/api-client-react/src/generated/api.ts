@@ -48,6 +48,7 @@ import type {
   DayActivityInput,
   DayHotel,
   DayHotelInput,
+  DeleteAgencyConflict,
   DeleteItineraryConflict,
   DeleteTripResult,
   DestinationDescribeInput,
@@ -1638,6 +1639,76 @@ export const useUpdateAgency = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateAgencyMutationOptions(options));
+    }
+
+export const getDeleteAgencyUrl = (agencyId: number,) => {
+
+
+
+
+  return `/api/agencies/${agencyId}`
+}
+
+/**
+ * @summary Delete agency or advisor (Admin only) — rejected if it has any linked itineraries, trips, users, hotels or activities
+ */
+export const deleteAgency = async (agencyId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAgencyUrl(agencyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAgencyMutationOptions = <TError = ErrorType<void | DeleteAgencyConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgency>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAgency>>, TError,{agencyId: number}, TContext> => {
+
+const mutationKey = ['deleteAgency'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAgency>>, {agencyId: number}> = (props) => {
+          const {agencyId} = props ?? {};
+
+          return  deleteAgency(agencyId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAgencyMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAgency>>>
+
+    export type DeleteAgencyMutationError = ErrorType<void | DeleteAgencyConflict>
+
+    /**
+ * @summary Delete agency or advisor (Admin only) — rejected if it has any linked itineraries, trips, users, hotels or activities
+ */
+export const useDeleteAgency = <TError = ErrorType<void | DeleteAgencyConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAgency>>, TError,{agencyId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAgency>>,
+        TError,
+        {agencyId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAgencyMutationOptions(options));
     }
 
 export const getUploadAgencyLogoUrl = (agencyId: number,) => {

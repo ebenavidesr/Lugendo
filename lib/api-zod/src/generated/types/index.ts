@@ -54,6 +54,7 @@ export * from './dayActivityTimeOfDay';
 export * from './dayHotel';
 export * from './dayHotelInput';
 export * from './dayHotelInputSegment';
+export * from './deleteAgencyConflict';
 export * from './deleteItineraryConflict';
 export * from './deleteTripResult';
 export * from './destinationDescribeInput';

@@ -44,8 +44,8 @@ export default function AgencyPublicProfile() {
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "#FAF2EB" }}>
-      <div className="h-40 relative" style={{ background: accent }}>
-        <div className="max-w-4xl mx-auto px-4 pt-4">
+      <div className="h-14 flex items-center" style={{ background: accent }}>
+        <div className="max-w-4xl mx-auto px-4 w-full">
           <button
             onClick={goBack}
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/90 hover:text-white transition-colors">
@@ -53,7 +53,7 @@ export default function AgencyPublicProfile() {
           </button>
         </div>
       </div>
-      <div className="max-w-4xl mx-auto px-4 -mt-14 pb-14">
+      <div className="max-w-4xl mx-auto px-4 pt-6 pb-14">
         <div className="bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
           <div className="flex items-start gap-4 flex-wrap">
             <div className="w-20 h-20 rounded-[14px] bg-white border border-border flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">

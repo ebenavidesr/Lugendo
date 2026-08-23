@@ -406,6 +406,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Agency"
+    delete:
+      operationId: deleteAgency
+      tags: [agencies]
+      summary: Delete agency or advisor (Admin only) — rejected if it has any linked itineraries, trips, users, hotels or activities
+      parameters:
+        - name: agencyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: Cannot delete — agency has linked data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteAgencyConflict"
 
   /agencies/{agencyId}/logo:
     post:
@@ -5123,6 +5144,23 @@ components:
         linkedTrips:
           type: integer
           description: Number of trips currently linked to this itinerary, preventing deletion
+
+    DeleteAgencyConflict:
+      type: object
+      required: [error, linkedItineraries, linkedTrips, linkedUsers, linkedHotels, linkedActivities]
+      properties:
+        error:
+          type: string
+        linkedItineraries:
+          type: integer
+        linkedTrips:
+          type: integer
+        linkedUsers:
+          type: integer
+        linkedHotels:
+          type: integer
+        linkedActivities:
+          type: integer
 
     DeleteTripResult:
       type: object
