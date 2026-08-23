@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 // from picking one of these as its public-profile slug in the first place.
 const RESERVED_TOP_SEGMENTS = new Set([
   "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
-  "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
+  "foto", "buscar", "itinerarios", "dashboard", "trips", "itineraries", "hotels", "activities",
   "team", "agencies", "settings", "traveler", "inquiries", "",
 ]);
 
@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // /buscar (task #161) is the public multi-agency itinerary search — reachable
     // without any session, same exemption as /foto/:code.
     if (location === "/buscar") return;
+    // /itinerarios/:id (task #161 follow-up) — public read-only detail of a published
+    // itinerary, same exemption as /buscar.
+    if (location.startsWith("/itinerarios/")) return;
     // /:slug (task #162) is the public agency profile — a single path segment that isn't one
     // of the app's reserved routes. The page itself 404s if the slug doesn't resolve to an
     // agency with a published profile, so this exemption doesn't leak anything by itself.

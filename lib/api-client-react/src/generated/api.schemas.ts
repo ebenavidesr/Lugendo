@@ -373,6 +373,74 @@ export interface PublicItinerarySearchResult {
   agency: PublicAgencySummary;
 }
 
+export interface PublicItineraryDayHotel {
+  hotelName: string;
+  /** @nullable */
+  hotelCity?: string | null;
+  /** @nullable */
+  hotelAddress?: string | null;
+  /** @nullable */
+  segment?: string | null;
+}
+
+export interface PublicItineraryDayActivity {
+  activityName: string;
+  /** @nullable */
+  activityCategory?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  timeOfDay?: string | null;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PublicItineraryDay {
+  id: number;
+  dayNumber: number;
+  /** @nullable */
+  cityFrom?: string | null;
+  /** @nullable */
+  cityTo?: string | null;
+  /** @nullable */
+  transport?: string | null;
+  /** @nullable */
+  description?: string | null;
+  isTransitNight: boolean;
+  /** @nullable */
+  photoUrl?: string | null;
+  hotels: PublicItineraryDayHotel[];
+  activities: PublicItineraryDayActivity[];
+}
+
+export interface PublicItineraryDetailAgency {
+  id: number;
+  name: string;
+  slug: string;
+  /** @nullable */
+  logoUrl?: string | null;
+  /** @nullable */
+  primaryColor?: string | null;
+}
+
+export interface PublicItineraryDetail {
+  id: number;
+  name: string;
+  numDays: number;
+  countries: string[];
+  /** @nullable */
+  region?: string | null;
+  /** @nullable */
+  difficulty?: string | null;
+  /** @nullable */
+  description?: string | null;
+  tripTypes: TripType[];
+  /** @nullable */
+  priceFrom?: number | null;
+  agency: PublicItineraryDetailAgency;
+  days: PublicItineraryDay[];
+}
+
 /**
  * @nullable
  */

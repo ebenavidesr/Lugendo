@@ -42,7 +42,7 @@ const AgencyTypeSchema = z.enum(["agency", "advisor"]);
 // shadow a real page — kept in sync manually with App.tsx's route list and use-auth.tsx's exemption.
 export const RESERVED_AGENCY_SLUGS = [
   "login", "register", "pending", "verify-email", "forgot-password", "reset-password",
-  "foto", "buscar", "dashboard", "trips", "itineraries", "hotels", "activities",
+  "foto", "buscar", "itinerarios", "dashboard", "trips", "itineraries", "hotels", "activities",
   "team", "agencies", "settings", "traveler", "inquiries",
 ];
 

@@ -84,6 +84,12 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ### #161 (Notion) — Buscador de viajes multiagencia: destino, tipo, presupuesto (2026-08-23)
 > Nota: hay otro epígrafe "#161 (Notion)" más abajo para "Simplificar invitación a viaje" — ese contenido corresponde en realidad a la tarjeta **#168** de Notion; hubo un desfase histórico de numeración entre los commits locales y el board. Esta entrada usa el número real de Notion para la tarjeta de la que depende #162 (perfil público de agencia).
+
+**Detalle público de itinerario (2026-08-23, 4ª ronda):** a petición de Quique, un viajero puede entrar a ver el itinerario completo desde una ficha de resultado — mismo layout que la vista de gestión de la agencia (`/itineraries/:id`) pero de solo lectura, sin la tarjeta "Catálogo público" y con un banner de contacto destacado arriba.
+- [x] Nueva ruta pública `GET /api/search/itineraries/:id` (sin sesión) — solo devuelve itinerarios `publishedInSearch=true`/`active=true`/agencia activa; incluye días con hoteles y actividades ya anidados (sin N+1 requests desde el cliente); verificado por curl contra datos reales (itinerario de Alaska, 14 días con foto y descripción por día)
+- [x] Página pública `/itinerarios/:id`: cabecera igual a `/buscar`/`Mis viajes`, banner destacado "¿Te gusta este viaje? Ponte en contacto con la agencia para pedir más información" con el color de marca de la agencia, tarjeta de descripción, y lista de días expandibles (foto, ciudad, transporte, descripción, hotel, actividades) — sin ningún botón de gestión (editar/borrar/marcar inactivo/añadir día/PDF) ni la tarjeta "Catálogo público"
+- [x] Las tarjetas de resultado en `/buscar` y en el perfil público de agencia enlazan a `/itinerarios/:id`
+- [x] Verificado por clic con una cuenta de viajero desechable: la página carga con datos reales, el botón "Contactar con la agencia" abre el diálogo con la agencia/itinerario preseleccionados
 - [x] Un itinerario con "publicado en el buscador" desactivado no aparece nunca en resultados, aunque los filtros coincidan — verificado con curl contra la base real (2 itinerarios publicados temporalmente, comprobado con y sin filtros, revertido tras la prueba)
 - [x] El buscador (`/buscar`) es accesible sin haber iniciado sesión — verificado en el navegador, incluye la exención explícita del guard global de sesión en `use-auth.tsx`
 - [x] El filtro de destino devuelve solo itinerarios de ese destino — verificado por API (`?destination=Iceland`) y en la UI real (campo de texto filtra la rejilla de resultados)

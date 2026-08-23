@@ -1,7 +1,10 @@
 import { Router, type IRouter } from "express";
-import { and, eq, lte, inArray, sql } from "drizzle-orm";
+import { and, eq, lte, inArray, sql, asc } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { itinerariesTable, agenciesTable, itineraryDaysTable } from "@workspace/db";
+import {
+  itinerariesTable, agenciesTable, itineraryDaysTable,
+  itineraryDayHotelsTable, hotelsTable, itineraryDayActivitiesTable, activitiesTable,
+} from "@workspace/db";
 import { PublicItinerarySearchQuerySchema } from "../lib/schemas";
 
 const router: IRouter = Router();
@@ -83,6 +86,114 @@ router.get("/search/itineraries", async (req, res): Promise<void> => {
     coverPhotoUrl: coverMap[r.id] ?? null,
     agency: { id: r.agencyId, name: r.agencyName, slug: r.agencySlug, logoUrl: r.agencyLogoUrl },
   })));
+});
+
+// Public itinerary detail (tarea #161 follow-up) — same read-only public rules as the list
+// endpoint above (published + active + agency active), with days/hotels/activities embedded
+// so the client doesn't need N+1 requests per day.
+router.get("/search/itineraries/:itineraryId", async (req, res): Promise<void> => {
+  const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
+  if (Number.isNaN(id)) { res.status(404).json({ error: "Not found" }); return; }
+
+  const [itinerary] = await db
+    .select({
+      id: itinerariesTable.id,
+      name: itinerariesTable.name,
+      numDays: itinerariesTable.numDays,
+      countries: itinerariesTable.countries,
+      region: itinerariesTable.region,
+      difficulty: itinerariesTable.difficulty,
+      description: itinerariesTable.description,
+      tripTypes: itinerariesTable.tripTypes,
+      priceFrom: itinerariesTable.priceFrom,
+      agencyId: agenciesTable.id,
+      agencyName: agenciesTable.name,
+      agencySlug: agenciesTable.slug,
+      agencyPrimaryColor: agenciesTable.primaryColor,
+      agencyLogoUrl: sql<string | null>`COALESCE(${agenciesTable.logoFileUrl}, ${agenciesTable.logoUrl})`,
+    })
+    .from(itinerariesTable)
+    .innerJoin(agenciesTable, eq(itinerariesTable.agencyId, agenciesTable.id))
+    .where(and(
+      eq(itinerariesTable.id, id),
+      eq(itinerariesTable.publishedInSearch, true),
+      eq(itinerariesTable.active, true),
+      eq(agenciesTable.active, true),
+    ));
+  if (!itinerary) { res.status(404).json({ error: "Not found" }); return; }
+
+  const days = await db.select().from(itineraryDaysTable)
+    .where(eq(itineraryDaysTable.itineraryId, id))
+    .orderBy(asc(itineraryDaysTable.dayNumber));
+  const dayIds = days.map(d => d.id);
+
+  const [hotelRows, activityRows] = dayIds.length === 0 ? [[], []] : await Promise.all([
+    db.select({
+      dayId: itineraryDayHotelsTable.itineraryDayId,
+      hotelName: hotelsTable.name,
+      hotelCity: hotelsTable.city,
+      hotelAddress: hotelsTable.address,
+      segment: itineraryDayHotelsTable.segment,
+    })
+      .from(itineraryDayHotelsTable)
+      .innerJoin(hotelsTable, eq(itineraryDayHotelsTable.hotelId, hotelsTable.id))
+      .where(inArray(itineraryDayHotelsTable.itineraryDayId, dayIds)),
+    db.select({
+      dayId: itineraryDayActivitiesTable.dayId,
+      activityName: activitiesTable.name,
+      activityCategory: activitiesTable.category,
+      startTime: itineraryDayActivitiesTable.startTime,
+      timeOfDay: itineraryDayActivitiesTable.timeOfDay,
+      notes: itineraryDayActivitiesTable.notes,
+      sortOrder: itineraryDayActivitiesTable.sortOrder,
+    })
+      .from(itineraryDayActivitiesTable)
+      .innerJoin(activitiesTable, eq(itineraryDayActivitiesTable.activityId, activitiesTable.id))
+      .where(inArray(itineraryDayActivitiesTable.dayId, dayIds))
+      .orderBy(asc(itineraryDayActivitiesTable.sortOrder)),
+  ]);
+
+  const hotelsByDay = new Map<number, typeof hotelRows>();
+  for (const h of hotelRows) {
+    if (!hotelsByDay.has(h.dayId)) hotelsByDay.set(h.dayId, []);
+    hotelsByDay.get(h.dayId)!.push(h);
+  }
+  const activitiesByDay = new Map<number, typeof activityRows>();
+  for (const a of activityRows) {
+    if (!activitiesByDay.has(a.dayId)) activitiesByDay.set(a.dayId, []);
+    activitiesByDay.get(a.dayId)!.push(a);
+  }
+
+  res.json({
+    id: itinerary.id,
+    name: itinerary.name,
+    numDays: itinerary.numDays,
+    countries: itinerary.countries,
+    region: itinerary.region,
+    difficulty: itinerary.difficulty,
+    description: itinerary.description,
+    tripTypes: itinerary.tripTypes,
+    priceFrom: itinerary.priceFrom,
+    agency: {
+      id: itinerary.agencyId,
+      name: itinerary.agencyName,
+      slug: itinerary.agencySlug,
+      logoUrl: itinerary.agencyLogoUrl,
+      primaryColor: itinerary.agencyPrimaryColor,
+    },
+    days: days.map(d => ({
+      id: d.id,
+      dayNumber: d.dayNumber,
+      cityFrom: d.cityFrom,
+      cityTo: d.cityTo,
+      transport: d.transport,
+      description: d.description,
+      isTransitNight: d.isTransitNight,
+      photoUrl: d.photoUrl,
+      hotels: (hotelsByDay.get(d.id) ?? []).map(h => ({ hotelName: h.hotelName, hotelCity: h.hotelCity, hotelAddress: h.hotelAddress, segment: h.segment })),
+      activities: (activitiesByDay.get(d.id) ?? []).map(a => ({ activityName: a.activityName, activityCategory: a.activityCategory, startTime: a.startTime, timeOfDay: a.timeOfDay, notes: a.notes })),
+    })),
+  });
 });
 
 export default router;

@@ -34,6 +34,7 @@ import AgencyDetail from "@/pages/agency-detail";
 import AgencySettings from "@/pages/agency-settings";
 import TripPhotoView from "@/pages/trip-photo-view";
 import SearchPage from "@/pages/search";
+import ItineraryPublicDetail from "@/pages/itinerary-public-detail";
 import AgencyPublicProfile from "@/pages/agency-public-profile";
 import AgencyInquiries from "@/pages/agency-inquiries";
 import TravelerAgencyInquiries from "@/pages/traveler-agency-inquiries";
@@ -77,6 +78,7 @@ function Router() {
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/foto/:code" component={TripPhotoView} />
       <Route path="/buscar" component={SearchPage} />
+      <Route path="/itinerarios/:id" component={ItineraryPublicDetail} />
 
       {/* Back Office */}
       <Route path="/dashboard">

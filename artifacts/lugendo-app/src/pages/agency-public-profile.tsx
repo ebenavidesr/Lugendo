@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useLocation } from "wouter";
+import { useParams, useLocation, Link } from "wouter";
 import { useGetPublicAgencyProfile } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { LugendoCompass } from "@/components/logo";
@@ -71,9 +71,13 @@ export default function AgencyPublicProfile() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {profile.itineraries.map(it => (
               <div key={it.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden flex flex-col">
-                <div className="h-36 bg-muted" style={it.coverPhotoUrl ? { backgroundImage: `url(${it.coverPhotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: "#ECD5B8" }} />
+                <Link href={`/itinerarios/${it.id}`}>
+                  <div className="h-36 bg-muted" style={it.coverPhotoUrl ? { backgroundImage: `url(${it.coverPhotoUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : { background: "#ECD5B8" }} />
+                </Link>
                 <div className="p-4 flex flex-col gap-1.5 flex-1">
-                  <p className="font-medium text-[14px]" style={{ color: "#2D1F0E" }}>{it.name}</p>
+                  <Link href={`/itinerarios/${it.id}`} className="font-medium text-[14px] hover:underline" style={{ color: "#2D1F0E" }}>
+                    {it.name}
+                  </Link>
                   <p className="text-[12px] text-muted-foreground flex items-center gap-1">
                     <MapPin className="w-3 h-3" /> {it.countries.join(", ") || it.region || "—"} · {it.numDays}d
                   </p>

@@ -59,6 +59,56 @@ export const SearchItinerariesResponse = zod.array(SearchItinerariesResponseItem
 
 
 /**
+ * @summary Get the public detail of a published itinerary (no session required), with days/hotels/activities
+ */
+export const GetPublicItineraryParams = zod.object({
+  "itineraryId": zod.coerce.number()
+})
+
+export const GetPublicItineraryResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "numDays": zod.number(),
+  "countries": zod.array(zod.string()),
+  "region": zod.string().nullish(),
+  "difficulty": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "tripTypes": zod.array(zod.enum(['adventure', 'beach', 'cultural', 'culinary', 'nature', 'city', 'wellness', 'family'])),
+  "priceFrom": zod.number().nullish(),
+  "agency": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoUrl": zod.string().nullish(),
+  "primaryColor": zod.string().nullish()
+}),
+  "days": zod.array(zod.object({
+  "id": zod.number(),
+  "dayNumber": zod.number(),
+  "cityFrom": zod.string().nullish(),
+  "cityTo": zod.string().nullish(),
+  "transport": zod.string().nullish(),
+  "description": zod.string().nullish(),
+  "isTransitNight": zod.boolean(),
+  "photoUrl": zod.string().nullish(),
+  "hotels": zod.array(zod.object({
+  "hotelName": zod.string(),
+  "hotelCity": zod.string().nullish(),
+  "hotelAddress": zod.string().nullish(),
+  "segment": zod.string().nullish()
+})),
+  "activities": zod.array(zod.object({
+  "activityName": zod.string(),
+  "activityCategory": zod.string().nullish(),
+  "startTime": zod.string().nullish(),
+  "timeOfDay": zod.string().nullish(),
+  "notes": zod.string().nullish()
+}))
+}))
+})
+
+
+/**
  * @summary Get an agency's public profile by slug (no session required); 404 unless the agency opted in
  */
 export const GetPublicAgencyProfileParams = zod.object({

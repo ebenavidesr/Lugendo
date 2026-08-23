@@ -79,6 +79,7 @@ import type {
   PersonalTripDayInput,
   PersonalTripDayUpdateInput,
   PublicAgencyProfile,
+  PublicItineraryDetail,
   PublicItinerarySearchResult,
   RegisterInput,
   RemoveActivityParticipant200,
@@ -380,6 +381,83 @@ export function useSearchItineraries<TData = Awaited<ReturnType<typeof searchIti
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchItinerariesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetPublicItineraryUrl = (itineraryId: number,) => {
+
+
+
+
+  return `/api/search/itineraries/${itineraryId}`
+}
+
+/**
+ * @summary Get the public detail of a published itinerary (no session required), with days/hotels/activities
+ */
+export const getPublicItinerary = async (itineraryId: number, options?: RequestInit): Promise<PublicItineraryDetail> => {
+
+  return customFetch<PublicItineraryDetail>(getGetPublicItineraryUrl(itineraryId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicItineraryQueryKey = (itineraryId: number,) => {
+    return [
+    `/api/search/itineraries/${itineraryId}`
+    ] as const;
+    }
+
+
+export const getGetPublicItineraryQueryOptions = <TData = Awaited<ReturnType<typeof getPublicItinerary>>, TError = ErrorType<void>>(itineraryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicItinerary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicItineraryQueryKey(itineraryId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicItinerary>>> = ({ signal }) => getPublicItinerary(itineraryId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(itineraryId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicItinerary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicItineraryQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicItinerary>>>
+export type GetPublicItineraryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the public detail of a published itinerary (no session required), with days/hotels/activities
+ */
+
+export function useGetPublicItinerary<TData = Awaited<ReturnType<typeof getPublicItinerary>>, TError = ErrorType<void>>(
+ itineraryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicItinerary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicItineraryQueryOptions(itineraryId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
