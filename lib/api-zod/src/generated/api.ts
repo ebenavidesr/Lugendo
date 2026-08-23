@@ -456,6 +456,7 @@ export const ListItinerariesResponseItem = zod.object({
   "sourceUrl": zod.string().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
+  "agencyName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListItinerariesResponse = zod.array(ListItinerariesResponseItem)
@@ -605,6 +606,7 @@ export const UpdateItineraryResponse = zod.object({
   "sourceUrl": zod.string().nullish(),
   "tripCount": zod.number().optional(),
   "createdByName": zod.string().nullish(),
+  "agencyName": zod.string().nullish(),
   "createdAt": zod.string()
 })
 

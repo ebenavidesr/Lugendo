@@ -3,7 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   itinerariesTable, itineraryDaysTable, itineraryDayHotelsTable, itineraryDayActivitiesTable,
-  hotelsTable, tripsTable, activitiesTable, usersTable,
+  hotelsTable, tripsTable, activitiesTable, usersTable, agenciesTable,
 } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
@@ -56,8 +56,8 @@ function worksheetToMarkdownTable(worksheet: ExcelJS.Worksheet): string {
   ].join("\n");
 }
 
-function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount = 0, createdByName: string | null = null) {
-  return { ...i, createdAt: i.createdAt.toISOString(), tripCount, createdByName };
+function serializeItinerary(i: typeof itinerariesTable.$inferSelect, tripCount = 0, createdByName: string | null = null, agencyName: string | null = null) {
+  return { ...i, createdAt: i.createdAt.toISOString(), tripCount, createdByName, agencyName };
 }
 
 function serializeDayHotel(r: {
@@ -106,18 +106,29 @@ router.get("/itineraries", requireAuth, async (req, res): Promise<void> => {
       ? await db.select().from(itinerariesTable).where(eq(itinerariesTable.agencyId, agencyId)).orderBy(itinerariesTable.name)
       : [];
 
-  const [tripCounts, creators] = await Promise.all([
+  const [tripCounts, creators, agencies] = await Promise.all([
     db.select({ itineraryId: tripsTable.itineraryId, count: sql<number>`count(*)::int` })
       .from(tripsTable)
       .groupBy(tripsTable.itineraryId),
     db.select({ id: usersTable.id, name: usersTable.name })
       .from(usersTable)
       .where(inArray(usersTable.id, [...new Set(rows.map(r => r.createdBy).filter((id): id is number => id != null))])),
+    // Only needed for admin (the only role that sees itineraries across multiple agencies at
+    // once) — non-admins already know it's their own agency from context.
+    role === "admin"
+      ? db.select({ id: agenciesTable.id, name: agenciesTable.name }).from(agenciesTable)
+      : Promise.resolve([]),
   ]);
   const countMap = Object.fromEntries(tripCounts.map(t => [t.itineraryId, t.count]));
   const creatorMap = Object.fromEntries(creators.map(u => [u.id, u.name]));
+  const agencyMap = Object.fromEntries(agencies.map(a => [a.id, a.name]));
 
-  res.json(rows.map(i => serializeItinerary(i, countMap[i.id] ?? 0, i.createdBy != null ? (creatorMap[i.createdBy] ?? null) : null)));
+  res.json(rows.map(i => serializeItinerary(
+    i,
+    countMap[i.id] ?? 0,
+    i.createdBy != null ? (creatorMap[i.createdBy] ?? null) : null,
+    i.agencyId != null ? (agencyMap[i.agencyId] ?? null) : null,
+  )));
 });
 
 // ─── PARSE PDF (must come before /:itineraryId to avoid routing conflicts) ───

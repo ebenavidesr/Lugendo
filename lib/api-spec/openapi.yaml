@@ -4097,6 +4097,8 @@ components:
           type: integer
         createdByName:
           type: ["string", "null"]
+        agencyName:
+          type: ["string", "null"]
         createdAt:
           type: string
 

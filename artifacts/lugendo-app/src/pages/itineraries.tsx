@@ -158,6 +158,7 @@ export default function Itineraries() {
   const { toast } = useToast();
   const { user } = useAuth();
   const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent" || user?.role === "advisor";
+  const isAdmin = user?.role === "admin";
 
   const visibleItineraries = itineraries?.filter(it => showInactive || it.active !== false);
 
@@ -251,7 +252,9 @@ export default function Itineraries() {
           <table className="w-full text-[13px]">
             <thead>
               <tr>
-                {["Nombre", "Creado por", "Países", "Días", "Dificultad", "Viajes", "Estado", ""].map(h => (
+                {[
+                  "Nombre", ...(isAdmin ? ["Agencia"] : []), "Creado por", "Países", "Días", "Dificultad", "Viajes", "Estado", "",
+                ].map(h => (
                   <th key={h} className="text-left px-5 py-2.5 text-[11px] font-medium uppercase tracking-wider border-b border-border"
                     style={{ color: "#9C7A58", background: "#FAF2EB" }}>{h}</th>
                 ))}
@@ -266,6 +269,9 @@ export default function Itineraries() {
                     <span className="font-medium" style={{ color: "#2D1F0E" }}>{it.name}</span>
                     {it.region && <div className="text-[11px] text-muted-foreground mt-0.5">{it.region}</div>}
                   </td>
+                  {isAdmin && (
+                    <td className="px-5 py-3 text-muted-foreground">{it.agencyName ?? "—"}</td>
+                  )}
                   <td className="px-5 py-3 text-muted-foreground">{it.createdByName ?? "—"}</td>
                   <td className="px-5 py-3 text-muted-foreground">
                     {it.countries?.join(", ") || "—"}

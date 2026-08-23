@@ -36,5 +36,7 @@ export interface Itinerary {
   tripCount?: number;
   /** @nullable */
   createdByName?: string | null;
+  /** @nullable */
+  agencyName?: string | null;
   createdAt: string;
 }
