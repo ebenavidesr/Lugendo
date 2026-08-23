@@ -4,8 +4,8 @@ import { useGetAgency, useUpdateAgency, useListAgencies, getListAgenciesQueryKey
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { NoteRichTextEditor } from "@/components/note-rich-text-editor";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
@@ -203,12 +203,12 @@ export default function AgencySettings() {
 
         <div>
           <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Descripción</label>
-          <Textarea
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+          <NoteRichTextEditor
+            key={targetAgencyId}
+            initialHtml={agency?.description ?? ""}
+            onChange={html => setForm(f => ({ ...f, description: html }))}
             placeholder="Contadle a un viajero quiénes sois y qué tipo de viajes hacéis mejor que nadie…"
-            rows={3}
-            maxLength={600}
+            className="min-h-[90px]"
           />
         </div>
       </div>

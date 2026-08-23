@@ -7,7 +7,7 @@ import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { AgencyInputSchema, AgencyUpdateSchema } from "../lib/schemas";
 import { ObjectStorageService } from "../lib/objectStorage";
-import { sanitizeSvg } from "../lib/sanitize";
+import { sanitizeSvg, sanitizeNoteHtml } from "../lib/sanitize";
 
 const router: IRouter = Router();
 const objectStorage = new ObjectStorageService();
@@ -44,7 +44,7 @@ router.post("/agencies", requireRoles("admin"), validate(AgencyInputSchema), asy
   const { name, slug, logoUrl, primaryColor, description, publicProfileEnabled, agencyType } = req.body;
   const [agency] = await db
     .insert(agenciesTable)
-    .values({ name, slug, logoUrl, primaryColor, description, publicProfileEnabled: publicProfileEnabled ?? false, agencyType: agencyType ?? "agency" })
+    .values({ name, slug, logoUrl, primaryColor, description: description ? sanitizeNoteHtml(description) : description, publicProfileEnabled: publicProfileEnabled ?? false, agencyType: agencyType ?? "agency" })
     .returning();
   res.status(201).json({ ...agency, createdAt: agency.createdAt.toISOString() });
 });
@@ -87,7 +87,7 @@ router.patch("/agencies/:agencyId", requireRoles("admin", "manager", "advisor"),
       ...(primaryColor !== undefined && { primaryColor }),
       ...(writingTone !== undefined && { writingTone }),
       ...(active !== undefined && { active }),
-      ...(description !== undefined && { description }),
+      ...(description !== undefined && { description: description ? sanitizeNoteHtml(description) : description }),
       ...(publicProfileEnabled !== undefined && { publicProfileEnabled }),
       ...(agencyType !== undefined && { agencyType }),
     })

@@ -55,7 +55,7 @@ export default function AgencyPublicProfile() {
       </div>
       <div className="max-w-4xl mx-auto px-4 pt-6 pb-14">
         <div className="bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
-          <div className="flex items-start gap-4 flex-wrap">
+          <div className="flex items-start gap-4">
             <div className="w-20 h-20 rounded-[14px] bg-white border border-border flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
               {profile.logoUrl ? (
                 <img src={profile.logoUrl} alt={profile.name} className="w-full h-full object-contain p-2" />
@@ -63,16 +63,20 @@ export default function AgencyPublicProfile() {
                 <LugendoCompass size={32} variant="light" />
               )}
             </div>
-            <div className="flex-1 min-w-[200px]">
+            <div className="flex-1 min-w-0">
               <h1 className="text-xl font-serif" style={{ color: "#2D1F0E" }}>{profile.name}</h1>
-              {profile.description && (
-                <p className="text-[13px] text-muted-foreground mt-1.5 max-w-xl">{profile.description}</p>
-              )}
             </div>
-            <Button onClick={() => openContact()} className="gap-1.5" style={{ background: accent, color: "white" }}>
-              <Mail className="w-3.5 h-3.5" /> Contactar con la agencia
-            </Button>
           </div>
+          {profile.description && (
+            // El contenido se sanitiza en el backend (sanitizeNoteHtml, solo etiquetas permitidas) antes de guardarse.
+            <div
+              className="text-[13px] text-muted-foreground mt-4 w-full leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:font-semibold [&_b]:font-semibold"
+              dangerouslySetInnerHTML={{ __html: profile.description }}
+            />
+          )}
+          <Button onClick={() => openContact()} className="gap-1.5 mt-4" style={{ background: accent, color: "white" }}>
+            <Mail className="w-3.5 h-3.5" /> Contactar con la agencia
+          </Button>
         </div>
 
         <h2 className="text-[13px] font-medium uppercase tracking-wider mb-3" style={{ color: "#9C7A58" }}>
