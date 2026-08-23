@@ -1,15 +1,10 @@
 import { useParams, Link, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, MapPin, ChevronDown, ChevronRight, X, FileUp, Check, Loader2, Pencil } from "lucide-react";
+import { ArrowLeft, Trash2, MapPin, FileUp, Check, Loader2, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
   useGetItinerary,
   useListItineraryDays,
   useCreateItineraryDay,
-  useDeleteItineraryDay,
-  useUpdateItineraryDay,
   useListHotels,
   useListActivities,
   useCreateHotel,
@@ -23,24 +18,15 @@ import {
 } from "@workspace/api-client-react";
 import type { ItineraryDetail as ItineraryDetailType } from "@workspace/api-client-react";
 import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
-import { DayActivitiesPanel } from "@/components/day-activities-panel";
-import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
-import { DayPhotoZone } from "@/components/day-photo-editor";
-import type { GenericDay } from "@/components/day-hotel-panel";
-import { TransportSelect, TransportLabel } from "@/components/transport-select";
-import { CountrySelect } from "@/components/country-select";
+import { DayListPanel } from "@/components/day-list-panel";
 import type { ParsedItinerary } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ItineraryDay } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getApiErrorMessage } from "@/lib/utils";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -135,182 +121,11 @@ function PublicCatalogCard({ itinerary, itineraryId }: { itinerary: ItineraryDet
   );
 }
 
-const daySchema = z.object({
-  dayNumber: z.string().min(1),
-  cityFrom: z.string().optional(),
-  cityTo: z.string().optional(),
-  cityFromCountry: z.string().optional(),
-  cityToCountry: z.string().optional(),
-  transport: z.string().optional(),
-  description: z.string().optional(),
-});
-
 const diffLabel: Record<string, string> = {
   easy: "Fácil",
   moderate: "Moderado",
   demanding: "Exigente",
 };
-
-
-// ── Edit Day Dialog ──────────────────────────────────────────────────────────
-function EditDayDialog({
-  itineraryId,
-  day,
-  open,
-  onClose,
-  allDays,
-}: {
-  itineraryId: number;
-  day: ItineraryDay;
-  open: boolean;
-  onClose: () => void;
-  allDays?: GenericDay[];
-}) {
-  const updateDay = useUpdateItineraryDay();
-  const { data: hotels } = useListHotels();
-  const qc = useQueryClient();
-  const { toast } = useToast();
-
-  const form = useForm<z.infer<typeof daySchema>>({
-    resolver: zodResolver(daySchema),
-    defaultValues: {
-      dayNumber: String(day.dayNumber),
-      cityFrom: day.cityFrom ?? "",
-      cityTo: day.cityTo ?? "",
-      cityFromCountry: day.cityFromCountry ?? "",
-      cityToCountry: day.cityToCountry ?? "",
-      transport: day.transport ?? "",
-      description: day.description ?? "",
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof daySchema>) => {
-    updateDay.mutate({
-      itineraryId,
-      dayId: day.id,
-      data: {
-        cityFrom: values.cityFrom?.trim() || null,
-        cityTo: values.cityTo?.trim() || null,
-        cityFromCountry: values.cityFromCountry || null,
-        cityToCountry: values.cityToCountry || null,
-        transport: (values.transport || null) as import("@workspace/api-client-react").TransportMode | null,
-        description: values.description?.trim() || null,
-      },
-    }, {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
-        toast({ title: "Día actualizado" });
-        onClose();
-      },
-      onError: () => toast({ variant: "destructive", title: "Error al actualizar el día" }),
-    });
-  };
-
-  const handleSavePhoto = async (photoUrl: string | null) => {
-    await updateDay.mutateAsync({ itineraryId, dayId: day.id, data: { photoUrl } });
-    qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Editar día {day.dayNumber}</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-            <div className="space-y-1">
-              <FormLabel>Foto de portada</FormLabel>
-              <DayPhotoZone
-                photoUrl={day.photoUrl}
-                editable
-                onSave={handleSavePhoto}
-                height={100}
-                className="rounded-[8px]"
-              />
-            </div>
-            <FormField control={form.control} name="dayNumber" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Número de día</FormLabel>
-                <FormControl><Input type="number" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="cityFrom" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ciudad origen</FormLabel>
-                  <FormControl><Input placeholder="Casablanca" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="cityTo" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Ciudad destino</FormLabel>
-                  <FormControl><Input placeholder="Fez" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="cityFromCountry" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>País origen</FormLabel>
-                  <FormControl>
-                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="cityToCountry" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>País destino</FormLabel>
-                  <FormControl>
-                    <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-            <FormField control={form.control} name="transport" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Transporte</FormLabel>
-                <FormControl>
-                  <TransportSelect value={field.value ?? ""} onChange={field.onChange} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} compact allDays={allDays} />
-            <FormField control={form.control} name="description" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Descripción</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Actividades y puntos de interés del día…" rows={3} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <div className="pt-2 border-t border-border/60">
-              <p className="text-[11px] font-medium uppercase tracking-wide mb-2" style={{ color: "#9C7A58" }}>
-                Actividades del día
-              </p>
-              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} compact day={day} days={allDays?.map(d => ({ id: d.id, dayNumber: d.dayNumber ?? 0 }))} />
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button type="submit" disabled={updateDay.isPending}
-                style={{ background: "#C4793A", color: "#FAF2EB" }}>
-                {updateDay.isPending ? "Guardando…" : "Guardar cambios"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 // ── PDF Fill Dialog ───────────────────────────────────────────────────────────
 function PdfFillDialog({
@@ -563,10 +378,7 @@ export default function ItineraryDetail() {
   const params = useParams<{ id: string }>();
   const itineraryId = parseInt(params.id ?? "0");
   const [, navigate] = useLocation();
-  const [addDayOpen, setAddDayOpen] = useState(false);
   const [pdfFillOpen, setPdfFillOpen] = useState(false);
-  const [editDay, setEditDay] = useState<ItineraryDay | null>(null);
-  const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set());
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { data: itinerary, isLoading } = useGetItinerary(itineraryId);
   const { data: days, isLoading: daysLoading } = useListItineraryDays(itineraryId);
@@ -599,66 +411,6 @@ export default function ItineraryDetail() {
         navigate("/itineraries");
       },
       onError: (err) => toast({ variant: "destructive", title: getApiErrorMessage(err, "Error al eliminar el itinerario") }),
-    });
-  };
-
-  useEffect(() => {
-    if (days && days.length > 0) {
-      setExpandedDays(prev => (prev.size > 0 ? prev : new Set([days[0].id])));
-    }
-  }, [days?.[0]?.id]);
-
-  const { data: hotels } = useListHotels();
-  const createDay = useCreateItineraryDay();
-  const deleteDay = useDeleteItineraryDay();
-
-  const form = useForm<z.infer<typeof daySchema>>({
-    resolver: zodResolver(daySchema),
-    defaultValues: {
-      dayNumber: String((days?.length ?? 0) + 1),
-      cityFrom: "", cityTo: "", cityFromCountry: "", cityToCountry: "", transport: "", description: "",
-    },
-  });
-
-  const onAddDay = (values: z.infer<typeof daySchema>) => {
-    createDay.mutate({
-      itineraryId,
-      data: {
-        dayNumber: parseInt(values.dayNumber),
-        ...(values.cityFrom ? { cityFrom: values.cityFrom } : {}),
-        ...(values.cityTo ? { cityTo: values.cityTo } : {}),
-        ...(values.cityFromCountry ? { cityFromCountry: values.cityFromCountry } : {}),
-        ...(values.cityToCountry ? { cityToCountry: values.cityToCountry } : {}),
-        ...(values.transport ? { transport: values.transport as import("@workspace/api-client-react").TransportMode } : {}),
-        ...(values.description ? { description: values.description } : {}),
-      },
-    }, {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
-        toast({ title: "Día añadido" });
-        setAddDayOpen(false);
-        form.reset({ dayNumber: String((days?.length ?? 0) + 2) });
-      },
-      onError: () => toast({ variant: "destructive", title: "Error al añadir el día" }),
-    });
-  };
-
-  const onDeleteDay = (dayId: number) => {
-    deleteDay.mutate({ itineraryId, dayId }, {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}/days`] });
-        toast({ title: "Día eliminado" });
-      },
-      onError: () => toast({ variant: "destructive", title: "Error al eliminar el día" }),
-    });
-  };
-
-  const toggleDay = (dayId: number) => {
-    setExpandedDays(prev => {
-      const next = new Set(prev);
-      if (next.has(dayId)) next.delete(dayId);
-      else next.add(dayId);
-      return next;
     });
   };
 
@@ -739,249 +491,29 @@ export default function ItineraryDetail() {
               </button>
             </>
           )}
-          <button
-            onClick={() => setPdfFillOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors"
-            style={{ borderColor: "#E5D4BF", color: "#7A5C3A", background: "white" }}
-            onMouseOver={e => (e.currentTarget.style.background = "#FAF2EB")}
-            onMouseOut={e => (e.currentTarget.style.background = "white")}>
-            <FileUp className="w-4 h-4" /> Desde PDF
-          </button>
-          <button
-            onClick={() => {
-              form.setValue("dayNumber", String((days?.length ?? 0) + 1));
-              setAddDayOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium"
-            style={{ background: "#C4793A", color: "#FAF2EB" }}
-            onMouseOver={e => (e.currentTarget.style.background = "#8B4420")}
-            onMouseOut={e => (e.currentTarget.style.background = "#C4793A")}>
-            <Plus className="w-4 h-4" /> Añadir día
-          </button>
         </div>
       </div>
 
       <PublicCatalogCard itinerary={itinerary} itineraryId={itineraryId} />
 
-      {/* Days */}
-      <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-border flex items-center justify-between">
-          <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>
-            Días ({days?.length ?? 0} / {itinerary.numDays})
-          </span>
-          {days && days.length > 0 && (
-            <button
-              onClick={() => {
-                const allExpanded = days.every(d => expandedDays.has(d.id));
-                if (allExpanded) setExpandedDays(new Set());
-                else setExpandedDays(new Set(days.map(d => d.id)));
-              }}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
-              {days.every(d => expandedDays.has(d.id)) ? "Colapsar todos" : "Expandir todos"}
-            </button>
-          )}
-        </div>
-
-        {daysLoading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">Cargando días…</div>
-        ) : !days?.length ? (
-          <div className="p-10 text-center">
-            <p className="text-sm text-muted-foreground mb-3">No hay días definidos todavía</p>
-            <button
-              onClick={() => setAddDayOpen(true)}
-              className="text-[13px] font-medium"
-              style={{ color: "#C4793A" }}>
-              Añade el primer día →
-            </button>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border/60">
-            {days.map((day: ItineraryDay) => {
-              const isExpanded = expandedDays.has(day.id);
-              return (
-                <li key={day.id} className="hover:bg-[#ECD5B8]/10 transition-colors">
-                  <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-4 group">
-                    <DayPhotoZone
-                      photoUrl={day.photoUrl}
-                      editable={false}
-                      onSave={async () => {}}
-                      square={140}
-                      className="rounded-[12px]"
-                    />
-                    <div className="flex items-start gap-4 flex-1 min-w-0 w-full">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
-                            Día {day.dayNumber}
-                          </span>
-                          {(day.cityTo ?? day.cityFrom) && (
-                            <span className="text-[12px]" style={{ color: "var(--ocre)" }}>
-                              · {day.cityTo ?? day.cityFrom}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[14px] font-medium mt-1" style={{ color: "#2D1F0E" }}>
-                          {day.cityFrom && day.cityTo
-                            ? `${day.cityFrom} → ${day.cityTo}`
-                            : day.cityTo ?? day.cityFrom ?? `Día ${day.dayNumber}`}
-                        </p>
-                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                          {day.transport && (
-                            <span className="text-[12px] text-muted-foreground">
-                              <TransportLabel value={day.transport} />
-                            </span>
-                          )}
-                          {day.isTransitNight ? (
-                            <TransitNightBadge />
-                          ) : day.hotels && day.hotels.length > 0 && (
-                            <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                              🏨 {day.hotels.map(h => h.hotelName).join(", ")}
-                              {(() => {
-                                const label = getNightLabel(days.findIndex((d: ItineraryDay) => d.id === day.id), days);
-                                return label ? <NightLabelBadge label={label} /> : null;
-                              })()}
-                            </span>
-                          )}
-                        </div>
-                        {day.description && !isExpanded && (
-                          <p className="text-[12px] text-muted-foreground mt-1 line-clamp-2">{day.description}</p>
-                        )}
-
-                        {isExpanded && (
-                          <div className="mt-3 space-y-4">
-                            {day.description && (
-                              <p className="text-[13px] text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border border-border/40">
-                                {day.description}
-                              </p>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <DayHotelPanel entityType="itinerary" entityId={itineraryId} day={day} allDays={days} />
-                              <DayActivitiesPanel entityType="itinerary" entityId={itineraryId} dayId={day.id} day={day} days={days} />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 mt-0.5">
-                        <button
-                          onClick={() => toggleDay(day.id)}
-                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                          title={isExpanded ? "Colapsar" : "Ver detalle"}>
-                          {isExpanded
-                            ? <ChevronDown className="w-4 h-4" />
-                            : <ChevronRight className="w-4 h-4" />}
-                        </button>
-                        <button
-                          onClick={() => setEditDay(day)}
-                          className="p-1.5 rounded-[6px] text-muted-foreground hover:text-[#3D2F6B] hover:bg-[#EAE6F5] transition-colors"
-                          title="Editar día">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteDay(day.id)}
-                          className="p-1.5 rounded-[6px] transition-colors text-muted-foreground hover:text-red-500 hover:bg-red-50"
-                          title="Eliminar día">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      {/* Add day dialog */}
-      <Dialog open={addDayOpen} onOpenChange={setAddDayOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Añadir día al itinerario</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onAddDay)} className="space-y-3">
-              <FormField control={form.control} name="dayNumber" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Número de día</FormLabel>
-                  <FormControl><Input type="number" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="cityFrom" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ciudad origen</FormLabel>
-                    <FormControl><Input placeholder="Casablanca" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="cityTo" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ciudad destino</FormLabel>
-                    <FormControl><Input placeholder="Fez" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormField control={form.control} name="cityFromCountry" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>País origen (opcional)</FormLabel>
-                    <FormControl>
-                      <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="cityToCountry" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>País destino (opcional)</FormLabel>
-                    <FormControl>
-                      <CountrySelect value={field.value} onChange={field.onChange} placeholder="Seleccionar país…" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-              <FormField control={form.control} name="transport" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Transporte (opcional)</FormLabel>
-                  <FormControl>
-                    <TransportSelect value={field.value ?? ""} onChange={field.onChange} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descripción (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Actividades y puntos de interés del día…" rows={3} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setAddDayOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={createDay.isPending}
-                  style={{ background: "#C4793A", color: "#FAF2EB" }}>
-                  {createDay.isPending ? "Guardando…" : "Añadir día"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {editDay && (
-        <EditDayDialog
-          itineraryId={itineraryId}
-          day={editDay}
-          open={!!editDay}
-          onClose={() => setEditDay(null)}
-          allDays={days}
-        />
-      )}
+      <DayListPanel
+        mode="itinerary"
+        entityId={itineraryId}
+        days={days}
+        isLoading={daysLoading}
+        headerLabel={`Días (${days?.length ?? 0} / ${itinerary.numDays})`}
+        emptyMessage="No hay días definidos todavía."
+        extraHeaderActions={
+          <button
+            onClick={() => setPdfFillOpen(true)}
+            className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-full transition-colors"
+            style={{ background: "#FAEEE4", color: "#8B4420" }}
+          >
+            <FileUp className="w-3 h-3" />
+            Desde PDF
+          </button>
+        }
+      />
 
       {pdfFillOpen && (
         <PdfFillDialog
