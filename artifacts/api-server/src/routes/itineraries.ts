@@ -364,7 +364,7 @@ router.post("/itineraries", requireAuth, validate(ItineraryInputSchema), async (
   const createdBy = req.session.userId ?? null;
   const [itinerary] = await db
     .insert(itinerariesTable)
-    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [], tripNotes: tripNotes ?? [], recommendations: recommendations ?? [], checklist: (checklist ?? []).map((c: { item: string; category?: string | null }) => ({ item: c.item, category: c.category ?? null })), publishedInSearch: publishedInSearch ?? false, tripTypes: tripTypes ?? [], priceFrom: priceFrom ?? null })
+    .values({ agencyId, createdBy, name, countries: countries ?? [], region, numDays, difficulty, description, videoUrl, recommendedMonths: recommendedMonths ?? [], priceRange: priceRange ?? null, tags: tags ?? [], tripNotes: tripNotes ?? [], recommendations: recommendations ?? [], checklist: (checklist ?? []).map((c: { item: string; category?: string | null }) => ({ item: c.item, category: c.category ?? null })), publishedInSearch: publishedInSearch ?? true, tripTypes: tripTypes ?? [], priceFrom: priceFrom ?? null })
     .returning();
   res.status(201).json(serializeItinerary(itinerary));
 });

@@ -24,7 +24,10 @@ export const itinerariesTable = pgTable("itineraries", {
   recommendations: text("recommendations").array().notNull().default([]),
   checklist: jsonb("checklist").$type<{ item: string; category: string | null }[]>().notNull().default([]),
   active: boolean("active").notNull().default(true),
-  publishedInSearch: boolean("published_in_search").notNull().default(false),
+  // Los itinerarios (plantillas de catálogo) son visibles en el buscador público por
+  // defecto — el modelo es opt-out, no opt-in. Los viajes a medida no vinculados a un
+  // itinerario (tabla `trips`) nunca pasan por aquí y siguen siendo siempre privados.
+  publishedInSearch: boolean("published_in_search").notNull().default(true),
   tripTypes: text("trip_types").array().notNull().default([]),
   priceFrom: integer("price_from"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

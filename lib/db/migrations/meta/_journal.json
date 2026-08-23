@@ -225,6 +225,13 @@
       "when": 1787467693318,
       "tag": "0031_sloppy_obadiah_stane",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1787470737531,
+      "tag": "0032_tearful_silver_centurion",
+      "breakpoints": true
     }
   ]
 }

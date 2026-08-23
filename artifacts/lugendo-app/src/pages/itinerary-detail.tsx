@@ -19,7 +19,9 @@ import {
   useParseItineraryPdf,
   useUpdateItinerary,
   useDeleteItinerary,
+  TripType,
 } from "@workspace/api-client-react";
+import type { ItineraryDetail as ItineraryDetailType } from "@workspace/api-client-react";
 import { matchOrCreateActivityIds, matchOrCreateHotelId } from "@/lib/pdf-day-autofill";
 import { DayActivitiesPanel } from "@/components/day-activities-panel";
 import { DayHotelPanel, TransitNightBadge, getNightLabel, NightLabelBadge } from "@/components/day-hotel-panel";
@@ -35,10 +37,103 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { getApiErrorMessage } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+
+const TRIP_TYPE_OPTIONS: { value: TripType; label: string }[] = [
+  { value: "adventure", label: "Aventura" },
+  { value: "beach", label: "Playa" },
+  { value: "cultural", label: "Cultural" },
+  { value: "culinary", label: "Gastronómico" },
+  { value: "nature", label: "Naturaleza" },
+  { value: "city", label: "Ciudad" },
+  { value: "wellness", label: "Bienestar" },
+  { value: "family", label: "Familiar" },
+];
+
+// Catálogo público del itinerario (tarea #161) — visible por defecto en el buscador; el
+// dueño puede desactivarlo, fijar el tipo de viaje y el precio orientativo. Vive en la
+// página de detalle (no en el diálogo de edición de la lista) para que sea fácil de
+// encontrar al gestionar un itinerario concreto.
+function PublicCatalogCard({ itinerary, itineraryId }: { itinerary: ItineraryDetailType; itineraryId: number }) {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const updateItinerary = useUpdateItinerary();
+  const [publishedInSearch, setPublishedInSearch] = useState(itinerary.publishedInSearch ?? true);
+  const [tripTypes, setTripTypes] = useState<TripType[]>(itinerary.tripTypes ?? []);
+  const [priceFrom, setPriceFrom] = useState(itinerary.priceFrom != null ? String(itinerary.priceFrom) : "");
+
+  useEffect(() => {
+    setPublishedInSearch(itinerary.publishedInSearch ?? true);
+    setTripTypes(itinerary.tripTypes ?? []);
+    setPriceFrom(itinerary.priceFrom != null ? String(itinerary.priceFrom) : "");
+  }, [itinerary.id]);
+
+  const handleSave = () => {
+    updateItinerary.mutate({
+      itineraryId,
+      data: { publishedInSearch, tripTypes, priceFrom: priceFrom ? parseInt(priceFrom) : null },
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: [`/api/itineraries/${itineraryId}`] });
+        toast({ title: "Catálogo público actualizado" });
+      },
+      onError: () => toast({ variant: "destructive", title: "Error al guardar" }),
+    });
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-[14px] shadow-sm p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-semibold" style={{ color: "#2D1F0E" }}>Catálogo público</p>
+          <p className="text-[12px] text-muted-foreground">
+            Visible en el buscador público (/buscar) para cualquier persona sin cuenta. Activado por defecto.
+          </p>
+        </div>
+        <Switch checked={publishedInSearch} onCheckedChange={setPublishedInSearch} />
+      </div>
+
+      {publishedInSearch && (
+        <>
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
+              Precio orientativo desde (€/persona, opcional)
+            </label>
+            <Input type="number" min={0} placeholder="890" value={priceFrom} onChange={e => setPriceFrom(e.target.value)} className="max-w-[160px]" />
+          </div>
+          <div>
+            <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Tipo de viaje</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-1.5">
+              {TRIP_TYPE_OPTIONS.map(opt => {
+                const checked = tripTypes.includes(opt.value);
+                return (
+                  <label key={opt.value} className="flex items-center gap-1.5 text-[12px] cursor-pointer select-none">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={v => setTripTypes(v ? [...tripTypes, opt.value] : tripTypes.filter(t => t !== opt.value))}
+                    />
+                    {opt.label}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={updateItinerary.isPending} size="sm" style={{ background: "#C4793A", color: "#FAF2EB" }}>
+          {updateItinerary.isPending ? "Guardando…" : "Guardar"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 const daySchema = z.object({
   dayNumber: z.string().min(1),
@@ -665,6 +760,8 @@ export default function ItineraryDetail() {
           </button>
         </div>
       </div>
+
+      <PublicCatalogCard itinerary={itinerary} itineraryId={itineraryId} />
 
       {/* Days */}
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">

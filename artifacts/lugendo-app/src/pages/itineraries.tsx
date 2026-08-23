@@ -9,29 +9,16 @@ import {
   useDeleteItinerary,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Itinerary, ItineraryDifficulty, TripType } from "@workspace/api-client-react";
+import type { Itinerary, ItineraryDifficulty } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { getApiErrorMessage } from "@/lib/utils";
-
-const TRIP_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: "adventure", label: "Aventura" },
-  { value: "beach", label: "Playa" },
-  { value: "cultural", label: "Cultural" },
-  { value: "culinary", label: "Gastronómico" },
-  { value: "nature", label: "Naturaleza" },
-  { value: "city", label: "Ciudad" },
-  { value: "wellness", label: "Bienestar" },
-  { value: "family", label: "Familiar" },
-];
 
 const diffBadge: Record<NonNullable<ItineraryDifficulty>, { bg: string; color: string; label: string }> = {
   easy:      { bg: "#E4F3EC", color: "#2E7D5A", label: "Fácil" },
@@ -55,9 +42,6 @@ const schema = z.object({
   region: z.string().optional(),
   difficulty: z.enum(["easy", "moderate", "demanding"]).optional(),
   description: z.string().optional(),
-  publishedInSearch: z.boolean().optional(),
-  tripTypes: z.array(z.string()).optional(),
-  priceFrom: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -148,58 +132,6 @@ function ItineraryForm({
               </FormItem>
             )} />
 
-            <div className="border-t border-border pt-3 space-y-3">
-              <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "#9C7A58" }}>
-                Buscador público
-              </p>
-
-              <FormField control={form.control} name="publishedInSearch" render={({ field }) => (
-                <FormItem className="flex items-center justify-between gap-3">
-                  <div>
-                    <FormLabel className="text-[13px]">Publicado en el buscador</FormLabel>
-                    <p className="text-[11px] text-muted-foreground">
-                      Visible para cualquier persona sin sesión iniciada en el catálogo público de itinerarios.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch checked={field.value ?? false} onCheckedChange={field.onChange} />
-                  </FormControl>
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="priceFrom" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Precio orientativo desde (€/persona, opcional)</FormLabel>
-                  <FormControl><Input type="number" min={0} placeholder="890" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="tripTypes" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo de viaje</FormLabel>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
-                    {TRIP_TYPE_OPTIONS.map(opt => {
-                      const checked = (field.value ?? []).includes(opt.value);
-                      return (
-                        <label key={opt.value} className="flex items-center gap-1.5 text-[12px] cursor-pointer select-none">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={v => {
-                              const current = field.value ?? [];
-                              field.onChange(v ? [...current, opt.value] : current.filter(t => t !== opt.value));
-                            }}
-                          />
-                          {opt.label}
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )} />
-            </div>
-
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
               <Button type="submit" disabled={isPending}
@@ -265,9 +197,6 @@ export default function Itineraries() {
         ...(values.region ? { region: values.region } : {}),
         ...(values.difficulty ? { difficulty: values.difficulty } : {}),
         ...(values.description ? { description: values.description } : {}),
-        publishedInSearch: values.publishedInSearch ?? false,
-        tripTypes: (values.tripTypes ?? []) as TripType[],
-        priceFrom: values.priceFrom ? parseInt(values.priceFrom) : null,
       },
     }, {
       onSuccess: () => {
@@ -402,9 +331,6 @@ export default function Itineraries() {
             region: editItinerary.region ?? "",
             difficulty: editItinerary.difficulty ?? undefined,
             description: editItinerary.description ?? "",
-            publishedInSearch: editItinerary.publishedInSearch ?? false,
-            tripTypes: editItinerary.tripTypes ?? [],
-            priceFrom: editItinerary.priceFrom != null ? String(editItinerary.priceFrom) : "",
           }}
           onSubmit={handleEdit}
           isPending={update.isPending}
