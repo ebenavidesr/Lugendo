@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams, Link } from "wouter";
-import { ArrowLeft, Building2, Users } from "lucide-react";
+import { ArrowLeft, Building2, Users, Settings } from "lucide-react";
 import { useGetAgency, useListUsers } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { RoleBadge, ActiveBadge } from "@/pages/team";
@@ -50,9 +50,16 @@ export default function AgencyDetail() {
             <p className="text-sm text-muted-foreground mt-0.5 font-mono">{agency.slug}</p>
           </div>
         </div>
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium ${agency.active ? "bg-[#E4F3EC] text-[#2E7D5A]" : "bg-[#FDECEA] text-[#C0392B]"}`}>
-          {agency.active ? "Activa" : "Inactiva"}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-medium ${agency.active ? "bg-[#E4F3EC] text-[#2E7D5A]" : "bg-[#FDECEA] text-[#C0392B]"}`}>
+            {agency.active ? "Activa" : "Inactiva"}
+          </span>
+          <Link href={`/agencies/${agencyId}/settings`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[13px] font-medium border transition-colors"
+            style={{ borderColor: "#E5D4BF", color: "#7A5C3A" }}>
+            <Settings className="w-3.5 h-3.5" /> Configuración
+          </Link>
+        </div>
       </div>
 
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">

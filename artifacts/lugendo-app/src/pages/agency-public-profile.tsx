@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { LugendoCompass } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { ContactAgencyDialog } from "@/components/contact-agency-dialog";
-import { MapPin, Mail } from "lucide-react";
+import { MapPin, Mail, ArrowLeft } from "lucide-react";
 
 export default function AgencyPublicProfile() {
   const { slug } = useParams<{ slug: string }>();
@@ -17,6 +17,14 @@ export default function AgencyPublicProfile() {
   const openContact = (target?: { itineraryId?: number; itineraryName?: string }) => {
     if (!user) { navigate("/login"); return; }
     setContactTarget(target ?? {});
+  };
+
+  const goBack = () => {
+    // Vuelve a la página real desde la que se navegó aquí (normalmente /buscar o el
+    // detalle de un itinerario) usando el historial del navegador, en vez de un destino
+    // fijo — funciona sea cual sea la página de origen.
+    if (window.history.length > 1) window.history.back();
+    else navigate("/buscar");
   };
 
   if (isLoading) {
@@ -36,7 +44,15 @@ export default function AgencyPublicProfile() {
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "#FAF2EB" }}>
-      <div className="h-40" style={{ background: accent }} />
+      <div className="h-40 relative" style={{ background: accent }}>
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <button
+            onClick={goBack}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/90 hover:text-white transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" /> Volver
+          </button>
+        </div>
+      </div>
       <div className="max-w-4xl mx-auto px-4 -mt-14 pb-14">
         <div className="bg-card border border-border rounded-[16px] shadow-sm p-6 mb-6">
           <div className="flex items-start gap-4 flex-wrap">

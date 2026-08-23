@@ -118,6 +118,11 @@ function Router() {
       <Route path="/inquiries">
         <ProtectedBackOffice><AgencyInquiries /></ProtectedBackOffice>
       </Route>
+      <Route path="/agencies/:id/settings">
+        {() => (
+          <ProtectedBackOffice><AgencySettings /></ProtectedBackOffice>
+        )}
+      </Route>
       <Route path="/agencies/:id">
         {() => (
           <ProtectedBackOffice><AgencyDetail /></ProtectedBackOffice>

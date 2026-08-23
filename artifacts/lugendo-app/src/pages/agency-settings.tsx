@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link, useParams } from "wouter";
 import { useGetAgency, useUpdateAgency, AuthUserRole } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ChecklistTemplatesSettings } from "@/components/checklist-templates-settings";
 import { AgencyLogoField } from "@/components/agency-logo-field";
-import { Settings, Palette, Mic2, Save, Loader2, Globe } from "lucide-react";
+import { Settings, Palette, Mic2, Save, Loader2, Globe, ArrowLeft } from "lucide-react";
 
 const TONE_LABELS: Record<string, { label: string; desc: string }> = {
   friendly:      { label: "Cercano",        desc: "Cálido y entusiasta, como un amigo experto en viajes" },
@@ -22,13 +23,16 @@ const TONE_LABELS: Record<string, { label: string; desc: string }> = {
 export default function AgencySettings() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const agencyId = user?.agencyId;
+  // /agencies/:id/settings (solo admin, gestionar cualquier agencia) vs. /settings (la propia).
+  const params = useParams<{ id?: string }>();
+  const isPlatformAdmin = user?.role === AuthUserRole.admin;
+  const isAgent = user?.role === AuthUserRole.agent;
+  const targetAgencyId = params.id && isPlatformAdmin ? parseInt(params.id, 10) : (user?.agencyId ?? undefined);
+  const managingOtherAgency = params.id != null;
 
-  const { data: agency, isLoading } = useGetAgency(agencyId ?? 0);
+  const { data: agency, isLoading } = useGetAgency(targetAgencyId ?? 0);
 
   const updateAgency = useUpdateAgency();
-
-  const isAdmin = user?.role === AuthUserRole.admin || user?.role === AuthUserRole.advisor;
 
   const [form, setForm] = useState({
     name: "",
@@ -51,15 +55,15 @@ export default function AgencySettings() {
   }, [agency]);
 
   const handleSave = async () => {
-    if (!agencyId) return;
+    if (!targetAgencyId) return;
     try {
       await updateAgency.mutateAsync({
-        agencyId,
+        agencyId: targetAgencyId,
         data: {
           name: form.name || undefined,
           primaryColor: form.primaryColor || undefined,
           writingTone: form.writingTone as "informative" | "friendly" | "adventurous" | "luxury" | "professional",
-          ...(isAdmin ? { description: form.description || null } : {}),
+          description: form.description || null,
           publicProfileEnabled: form.publicProfileEnabled,
         },
       });
@@ -68,6 +72,14 @@ export default function AgencySettings() {
       toast({ variant: "destructive", title: "Error al guardar la configuración" });
     }
   };
+
+  if (managingOtherAgency && !isPlatformAdmin) {
+    return <div className="p-8 text-center text-muted-foreground text-sm">Acceso restringido a administradores.</div>;
+  }
+
+  if (isAgent) {
+    return <div className="p-8 text-center text-muted-foreground text-sm">Acceso restringido — habla con un administrador o manager de tu agencia.</div>;
+  }
 
   if (isLoading) {
     return (
@@ -79,6 +91,11 @@ export default function AgencySettings() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">
+      {managingOtherAgency && (
+        <Link href="/agencies" className="inline-flex items-center gap-1 text-[12px] text-muted-foreground hover:text-foreground -mb-2">
+          <ArrowLeft className="w-3.5 h-3.5" /> Todas las agencias
+        </Link>
+      )}
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="w-10 h-10 rounded-[10px] flex items-center justify-center" style={{ background: "#EAE6F5" }}>
@@ -106,8 +123,8 @@ export default function AgencySettings() {
         </div>
         <div>
           <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Logo</label>
-          {agencyId && (
-            <AgencyLogoField agencyId={agencyId} logoFileUrl={agency?.logoFileUrl} logoUrl={agency?.logoUrl} />
+          {targetAgencyId && (
+            <AgencyLogoField agencyId={targetAgencyId} logoFileUrl={agency?.logoFileUrl} logoUrl={agency?.logoUrl} />
           )}
         </div>
         <div>
@@ -156,16 +173,13 @@ export default function AgencySettings() {
         </div>
 
         <div>
-          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>
-            Descripción {!isAdmin && <span className="text-muted-foreground font-normal">(solo un administrador o asesor puede editarla)</span>}
-          </label>
+          <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Descripción</label>
           <Textarea
             value={form.description}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Contadle a un viajero quiénes sois y qué tipo de viajes hacéis mejor que nadie…"
             rows={3}
             maxLength={600}
-            disabled={!isAdmin}
           />
         </div>
       </div>
