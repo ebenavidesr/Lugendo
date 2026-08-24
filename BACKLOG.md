@@ -10,7 +10,7 @@
 
 | # | Tarea | Prioridad | Área | Autor |
 |---|-------|-----------|------|-------|
-| #179 | Bugs funcionales de la auditoría UX/UI — en curso: 6 de 7 corregidos (selector vacío en Configuración, estado duplicado en detalle de viaje back office, bloque "Vuelos" duplicado, checkbox "Tipo de viaje", logos de agencia ya correctos); queda pendiente de decisión de producto el "estado duplicado" en `/traveler/trips/:id` (no es un duplicado real, ver ficha de Notion) | 🔴 Alta | General | Yo |
+| #179 | Bugs funcionales de la auditoría UX/UI — 7 de 7 resueltos (selector vacío en Configuración, estado duplicado en detalle de viaje back office, bloque "Vuelos" duplicado, checkbox "Tipo de viaje", logos de agencia ya correctos, y el "estado duplicado" en `/traveler/trips/:id` — que no era un duplicado real — diferenciado con un icono a petición de Quique) — pendiente de verificación visual en producción (sin credenciales locales) | 🔴 Alta | General | Yo |
 | #176 | Sistema de color/badges unificado — formalizar 3 colores semánticos (peligro/aviso/éxito), componente `EstadoBadge` único (6+ implementaciones hoy), fondos de tarjetas/página a Duna/Arena oficial | 🟡 Media | General | Yo |
 | #177 | Navegación unificada del front del viajero (extraer cabecera compartida para `/buscar` e `/itinerarios/:id`, las otras 3 rutas ya comparten `TravelerLayout`) + componente `StatCard` único (3 implementaciones independientes hoy) | 🟡 Media | Viajeros | Yo |
 | #178 | Filtros combinables (Nombre/Agencia/Región) en Itinerarios y Viajes + filtro de Agencia en Equipo — bloqueado por convertir "Región" de itinerario de texto libre a desplegable | 🟡 Media | Itinerarios | Yo |

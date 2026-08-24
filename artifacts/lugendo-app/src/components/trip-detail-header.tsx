@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   ArrowLeft, Users, Hotel, Share2, Pencil, X, Calendar,
-  MoreHorizontal, ShieldCheck, ListChecks, Luggage, StickyNote, Map as MapIcon, Check,
+  MoreHorizontal, ShieldCheck, ListChecks, Luggage, StickyNote, Map as MapIcon, Check, Tag,
 } from "lucide-react";
 import { Link } from "wouter";
 import type { TravelerTripDetail, TravelerTripDetailStatus, TravelerTripClassification } from "@workspace/api-client-react";
@@ -201,6 +201,7 @@ export function TripDetailHeader({
               className="h-6 w-auto gap-1 border-none px-2.5 py-0.5 rounded-full text-[11px] font-medium [&>svg]:opacity-60 [&>svg]:h-3 [&>svg]:w-3"
               style={{ background: "rgba(255,255,255,0.15)", color: "#ECD5B8" }}
             >
+              <Tag className="w-3 h-3 opacity-60 shrink-0" />
               <SelectValue>{CLASSIFICATION_LABELS[trip.classification]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
