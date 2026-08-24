@@ -1,7 +1,8 @@
-import { useGetDashboardSummary } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useGetDashboardItineraries } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { MapPin, Users, Plane, CalendarDays, ArrowRight, TrendingUp } from "lucide-react";
+import { MapPin, Users, Plane, CalendarDays, ArrowRight, TrendingUp, Map, Trophy } from "lucide-react";
 import type { Trip, Invitation, TripStatus } from "@workspace/api-client-react";
+import { StatCard } from "@/components/stat-card";
 
 const statusBadge: Record<TripStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
@@ -25,28 +26,13 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function StatCard({ label, value, sub, icon: Icon, accent }: {
-  label: string; value: number | string; sub?: string; icon: React.ElementType; accent?: string;
-}) {
-  return (
-    <div className="bg-card border border-border rounded-[14px] p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="text-[32px] font-medium leading-none mt-1.5" style={{ color: "#2D1F0E" }}>{value}</p>
-          {sub && <p className="text-xs mt-1 text-muted-foreground">{sub}</p>}
-        </div>
-        <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-          style={{ background: accent ?? "#FAEEE4" }}>
-          <Icon className="w-4.5 h-4.5" style={{ color: "#C4793A" }} />
-        </div>
-      </div>
-    </div>
-  );
+function fmtEur(n: number) {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
 }
 
 export default function Dashboard() {
   const { data, isLoading } = useGetDashboardSummary();
+  const { data: itinStats } = useGetDashboardItineraries();
 
   if (isLoading) {
     return (
@@ -149,6 +135,64 @@ export default function Dashboard() {
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-[15px] font-medium" style={{ color: "#2D1F0E" }}>Itinerarios</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Rendimiento agregado de los itinerarios de la agencia</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard label="Viajes creados" value={itinStats?.tripCount ?? 0} icon={Map} accent="#EAE6F5" />
+          <StatCard label="Total viajeros" value={itinStats?.totalTravelers ?? 0} icon={Users} accent="#FAEEE4" />
+          <StatCard label="Ingresos totales" value={fmtEur(itinStats?.totalRevenue ?? 0)}
+            sub="Estimación a 10€/viajero" icon={Trophy} accent="#E4F3EC" />
+        </div>
+
+        {!itinStats?.tripCount ? (
+          <div className="bg-card border border-border rounded-[14px] shadow-sm px-5 py-10 text-center text-sm text-muted-foreground">
+            Todavía no hay viajes creados a partir de itinerarios
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-5">
+            <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-border">
+                <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>Top itinerarios por ingresos</span>
+              </div>
+              <ul className="divide-y divide-border/60">
+                {itinStats.topByRevenue.map((it, i) => (
+                  <li key={it.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[11px] text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                      <Link href={`/itineraries/${it.id}`} className="text-[13px] font-medium truncate hover:underline"
+                        style={{ color: "#2D1F0E" }}>{it.name}</Link>
+                    </div>
+                    <span className="text-[13px] font-medium shrink-0" style={{ color: "#C4793A" }}>{fmtEur(it.revenue)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-border">
+                <span className="text-[13px] font-medium" style={{ color: "#2D1F0E" }}>Top itinerarios por viajeros</span>
+              </div>
+              <ul className="divide-y divide-border/60">
+                {itinStats.topByTravelers.map((it, i) => (
+                  <li key={it.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[11px] text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                      <Link href={`/itineraries/${it.id}`} className="text-[13px] font-medium truncate hover:underline"
+                        style={{ color: "#2D1F0E" }}>{it.name}</Link>
+                    </div>
+                    <span className="text-[13px] font-medium shrink-0" style={{ color: "#3D2F6B" }}>{it.travelerCount}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

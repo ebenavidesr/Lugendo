@@ -698,6 +698,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteItineraryConflict"
 
+  /itineraries/{itineraryId}/stats:
+    get:
+      operationId: getItineraryStats
+      tags: [itineraries]
+      summary: Itinerary KPIs (trips, travelers, revenue) and the list of linked trips (Admin/Manager/Agent)
+      parameters:
+        - name: itineraryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Itinerary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItineraryStats"
+
   /itineraries/{itineraryId}/days:
     get:
       operationId: listItineraryDays
@@ -3755,6 +3774,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
 
+  /dashboard/itineraries:
+    get:
+      operationId: getDashboardItineraries
+      tags: [dashboard]
+      summary: Aggregated itinerary performance across the agency — totals and ranking (Admin/Manager/Agent)
+      responses:
+        "200":
+          description: Aggregated itinerary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardItinerariesSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -5205,6 +5237,46 @@ components:
           type: integer
           description: Number of trips currently linked to this itinerary, preventing deletion
 
+    ItineraryStatsTrip:
+      type: object
+      required: [id, name, startDate, endDate, status, travelerCount, revenue]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [draft, scheduled, active, finished, cancelled]
+        travelerCount:
+          type: integer
+        revenue:
+          type: number
+          description: "Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92"
+
+    ItineraryStats:
+      type: object
+      required: [tripCount, totalTravelers, avgTravelersPerTrip, totalRevenue, avgRevenuePerTrip, trips]
+      properties:
+        tripCount:
+          type: integer
+        totalTravelers:
+          type: integer
+        avgTravelersPerTrip:
+          type: number
+        totalRevenue:
+          type: number
+        avgRevenuePerTrip:
+          type: number
+        trips:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryStatsTrip"
+
     DeleteAgencyConflict:
       type: object
       required: [error, linkedItineraries, linkedTrips, linkedUsers, linkedHotels, linkedActivities]
@@ -6572,6 +6644,47 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Trip"
+
+    ItineraryRankingEntry:
+      type: object
+      required: [id, name, tripCount, travelerCount, revenue]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        tripCount:
+          type: integer
+        travelerCount:
+          type: integer
+        revenue:
+          type: number
+          description: "Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92"
+
+    DashboardItinerariesSummary:
+      type: object
+      required: [totalItineraries, tripCount, totalTravelers, avgTravelersPerTrip, totalRevenue, avgRevenuePerTrip, topByRevenue, topByTravelers]
+      properties:
+        totalItineraries:
+          type: integer
+        tripCount:
+          type: integer
+        totalTravelers:
+          type: integer
+        avgTravelersPerTrip:
+          type: number
+        totalRevenue:
+          type: number
+        avgRevenuePerTrip:
+          type: number
+        topByRevenue:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryRankingEntry"
+        topByTravelers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ItineraryRankingEntry"
 
     # ─── DESTINATIONS ─────────────────────────────────────────────────────────
     DestinationDescribeInput:

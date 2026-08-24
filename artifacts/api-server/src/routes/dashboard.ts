@@ -5,6 +5,7 @@ import {
   tripsTable, tripSharesTable, itinerariesTable, usersTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
+import { getTripStatsForItineraries, summarizeTripStats } from "../lib/itinerary-stats";
 
 const router: IRouter = Router();
 
@@ -110,6 +111,48 @@ router.get("/dashboard/summary", requireRoles("admin", "manager", "agent", "advi
       acceptedAt: i.acceptedAt?.toISOString() ?? null,
     })),
     occupancyAlerts,
+  });
+});
+
+router.get("/dashboard/itineraries", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
+  const { agencyId, role } = req.session;
+  const whereItinerary = role === "admin" || !agencyId
+    ? undefined
+    : eq(itinerariesTable.agencyId, agencyId);
+
+  const itineraries = await db
+    .select({ id: itinerariesTable.id, name: itinerariesTable.name })
+    .from(itinerariesTable)
+    .where(whereItinerary);
+
+  const trips = await getTripStatsForItineraries(itineraries.map(i => i.id));
+  const overall = summarizeTripStats(trips);
+
+  const perItinerary: Record<number, { tripCount: number; travelerCount: number; revenue: number }> = {};
+  for (const t of trips) {
+    if (t.itineraryId == null) continue;
+    if (!perItinerary[t.itineraryId]) perItinerary[t.itineraryId] = { tripCount: 0, travelerCount: 0, revenue: 0 };
+    perItinerary[t.itineraryId].tripCount += 1;
+    perItinerary[t.itineraryId].travelerCount += t.travelerCount;
+    perItinerary[t.itineraryId].revenue += t.revenue;
+  }
+
+  const ranked = itineraries.map(i => ({
+    id: i.id,
+    name: i.name,
+    tripCount: perItinerary[i.id]?.tripCount ?? 0,
+    travelerCount: perItinerary[i.id]?.travelerCount ?? 0,
+    revenue: perItinerary[i.id]?.revenue ?? 0,
+  }));
+
+  const topByRevenue = [...ranked].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  const topByTravelers = [...ranked].sort((a, b) => b.travelerCount - a.travelerCount).slice(0, 5);
+
+  res.json({
+    totalItineraries: itineraries.length,
+    ...overall,
+    topByRevenue,
+    topByTravelers,
   });
 });
 

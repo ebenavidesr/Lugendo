@@ -1148,6 +1148,38 @@ export interface DeleteItineraryConflict {
   linkedTrips: number;
 }
 
+export type ItineraryStatsTripStatus = typeof ItineraryStatsTripStatus[keyof typeof ItineraryStatsTripStatus];
+
+
+export const ItineraryStatsTripStatus = {
+  draft: 'draft',
+  scheduled: 'scheduled',
+  active: 'active',
+  finished: 'finished',
+  cancelled: 'cancelled',
+} as const;
+
+export interface ItineraryStatsTrip {
+  id: number;
+  name: string;
+  startDate: string;
+  /** @nullable */
+  endDate: string | null;
+  status: ItineraryStatsTripStatus;
+  travelerCount: number;
+  /** Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92 */
+  revenue: number;
+}
+
+export interface ItineraryStats {
+  tripCount: number;
+  totalTravelers: number;
+  avgTravelersPerTrip: number;
+  totalRevenue: number;
+  avgRevenuePerTrip: number;
+  trips: ItineraryStatsTrip[];
+}
+
 export interface DeleteAgencyConflict {
   error: string;
   linkedItineraries: number;
@@ -2304,6 +2336,26 @@ export interface DashboardSummary {
   upcomingTrips: Trip[];
   recentInvitations: Invitation[];
   occupancyAlerts?: Trip[];
+}
+
+export interface ItineraryRankingEntry {
+  id: number;
+  name: string;
+  tripCount: number;
+  travelerCount: number;
+  /** Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92 */
+  revenue: number;
+}
+
+export interface DashboardItinerariesSummary {
+  totalItineraries: number;
+  tripCount: number;
+  totalTravelers: number;
+  avgTravelersPerTrip: number;
+  totalRevenue: number;
+  avgRevenuePerTrip: number;
+  topByRevenue: ItineraryRankingEntry[];
+  topByTravelers: ItineraryRankingEntry[];
 }
 
 export type DestinationDescribeInputType = typeof DestinationDescribeInputType[keyof typeof DestinationDescribeInputType];

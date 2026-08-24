@@ -733,6 +733,31 @@ export const DeleteItineraryParams = zod.object({
 
 
 /**
+ * @summary Itinerary KPIs (trips, travelers, revenue) and the list of linked trips (Admin/Manager/Agent)
+ */
+export const GetItineraryStatsParams = zod.object({
+  "itineraryId": zod.coerce.number()
+})
+
+export const GetItineraryStatsResponse = zod.object({
+  "tripCount": zod.number(),
+  "totalTravelers": zod.number(),
+  "avgTravelersPerTrip": zod.number(),
+  "totalRevenue": zod.number(),
+  "avgRevenuePerTrip": zod.number(),
+  "trips": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "startDate": zod.string(),
+  "endDate": zod.string().nullable(),
+  "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
+  "travelerCount": zod.number(),
+  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+}))
+})
+
+
+/**
  * @summary List days for an itinerary
  */
 export const ListItineraryDaysParams = zod.object({
@@ -3825,6 +3850,33 @@ export const GetDashboardSummaryResponse = zod.object({
 })).optional(),
   "createdAt": zod.string()
 })).optional()
+})
+
+
+/**
+ * @summary Aggregated itinerary performance across the agency — totals and ranking (Admin/Manager/Agent)
+ */
+export const GetDashboardItinerariesResponse = zod.object({
+  "totalItineraries": zod.number(),
+  "tripCount": zod.number(),
+  "totalTravelers": zod.number(),
+  "avgTravelersPerTrip": zod.number(),
+  "totalRevenue": zod.number(),
+  "avgRevenuePerTrip": zod.number(),
+  "topByRevenue": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "tripCount": zod.number(),
+  "travelerCount": zod.number(),
+  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+})),
+  "topByTravelers": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "tripCount": zod.number(),
+  "travelerCount": zod.number(),
+  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+}))
 })
 
 

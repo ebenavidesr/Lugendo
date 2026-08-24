@@ -43,6 +43,7 @@ import type {
   ChecklistTemplateUpdate,
   CreatePersonalTripInput,
   CreateTripChecklistInput,
+  DashboardItinerariesSummary,
   DashboardSummary,
   DayActivity,
   DayActivityInput,
@@ -71,6 +72,7 @@ import type {
   ItineraryDayUpdate,
   ItineraryDetail,
   ItineraryInput,
+  ItineraryStats,
   ItineraryUpdate,
   ListTripMembers200,
   LoginInput,
@@ -2656,6 +2658,83 @@ export const useDeleteItinerary = <TError = ErrorType<DeleteItineraryConflict>,
       > => {
       return useMutation(getDeleteItineraryMutationOptions(options));
     }
+
+export const getGetItineraryStatsUrl = (itineraryId: number,) => {
+
+
+
+
+  return `/api/itineraries/${itineraryId}/stats`
+}
+
+/**
+ * @summary Itinerary KPIs (trips, travelers, revenue) and the list of linked trips (Admin/Manager/Agent)
+ */
+export const getItineraryStats = async (itineraryId: number, options?: RequestInit): Promise<ItineraryStats> => {
+
+  return customFetch<ItineraryStats>(getGetItineraryStatsUrl(itineraryId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetItineraryStatsQueryKey = (itineraryId: number,) => {
+    return [
+    `/api/itineraries/${itineraryId}/stats`
+    ] as const;
+    }
+
+
+export const getGetItineraryStatsQueryOptions = <TData = Awaited<ReturnType<typeof getItineraryStats>>, TError = ErrorType<unknown>>(itineraryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getItineraryStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetItineraryStatsQueryKey(itineraryId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getItineraryStats>>> = ({ signal }) => getItineraryStats(itineraryId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(itineraryId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getItineraryStats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetItineraryStatsQueryResult = NonNullable<Awaited<ReturnType<typeof getItineraryStats>>>
+export type GetItineraryStatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Itinerary KPIs (trips, travelers, revenue) and the list of linked trips (Admin/Manager/Agent)
+ */
+
+export function useGetItineraryStats<TData = Awaited<ReturnType<typeof getItineraryStats>>, TError = ErrorType<unknown>>(
+ itineraryId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getItineraryStats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetItineraryStatsQueryOptions(itineraryId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListItineraryDaysUrl = (itineraryId: number,) => {
 
@@ -12360,6 +12439,83 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetDashboardItinerariesUrl = () => {
+
+
+
+
+  return `/api/dashboard/itineraries`
+}
+
+/**
+ * @summary Aggregated itinerary performance across the agency — totals and ranking (Admin/Manager/Agent)
+ */
+export const getDashboardItineraries = async ( options?: RequestInit): Promise<DashboardItinerariesSummary> => {
+
+  return customFetch<DashboardItinerariesSummary>(getGetDashboardItinerariesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDashboardItinerariesQueryKey = () => {
+    return [
+    `/api/dashboard/itineraries`
+    ] as const;
+    }
+
+
+export const getGetDashboardItinerariesQueryOptions = <TData = Awaited<ReturnType<typeof getDashboardItineraries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardItineraries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDashboardItinerariesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDashboardItineraries>>> = ({ signal }) => getDashboardItineraries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDashboardItineraries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDashboardItinerariesQueryResult = NonNullable<Awaited<ReturnType<typeof getDashboardItineraries>>>
+export type GetDashboardItinerariesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Aggregated itinerary performance across the agency — totals and ranking (Admin/Manager/Agent)
+ */
+
+export function useGetDashboardItineraries<TData = Awaited<ReturnType<typeof getDashboardItineraries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDashboardItineraries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDashboardItinerariesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

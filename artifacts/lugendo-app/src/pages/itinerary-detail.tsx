@@ -1,5 +1,5 @@
 import { useParams, Link, useLocation } from "wouter";
-import { ArrowLeft, Trash2, MapPin, FileUp, Check, Loader2, X } from "lucide-react";
+import { ArrowLeft, Trash2, MapPin, FileUp, Check, Loader2, X, BarChart3 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import {
   useGetItinerary,
@@ -467,6 +467,14 @@ export default function ItineraryDetail() {
         <div className="flex items-center gap-2 shrink-0">
           {canManage && (
             <>
+              <Link
+                href={`/itineraries/${itineraryId}/stats`}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-[8px] text-[13px] font-medium border transition-colors"
+                style={{ borderColor: "#E5D4BF", color: "#7A5C3A", background: "white" }}
+                onMouseOver={e => (e.currentTarget.style.background = "#FAF2EB")}
+                onMouseOut={e => (e.currentTarget.style.background = "white")}>
+                <BarChart3 className="w-4 h-4" /> Estadísticas
+              </Link>
               <button
                 onClick={handleToggleActive}
                 disabled={updateItinerary.isPending}

@@ -6,6 +6,28 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #174 (Notion) — Sección de estadísticas de itinerarios en el dashboard (2026-08-24)
+> Reutiliza la lógica de cálculo de ingresos/viajeros de #172 (`artifacts/api-server/src/lib/itinerary-stats.ts`), no la duplica. Ingresos = aproximación a 10€/viajero (placeholder, ver nota en #172) — no hay todavía dato de facturación real en el schema.
+
+- [ ] La sección "Itinerarios" aparece en el dashboard para roles Admin/Manager/Agent/Advisor
+- [ ] Los totales agregados (viajes creados, total viajeros, ingresos totales) son correctos y coherentes con la suma de los itinerarios individuales de la agencia
+- [ ] El ranking (top por ingresos y top por viajeros) muestra los itinerarios correctos, ordenados correctamente
+- [ ] Los enlaces del ranking navegan a la ficha correcta de cada itinerario
+- [ ] Agencia sin itinerarios o sin viajes: sección con empty state, sin errores
+- [ ] Un usuario sin permisos no ve la sección / el backend rechaza la petición (verificado: `/api/dashboard/itineraries` sin sesión devuelve 401)
+- [x] `pnpm run typecheck` pasa sin errores nuevos
+
+### #172 (Notion) — Botón de estadísticas en la ficha de itinerario (2026-08-24)
+> No existe ningún dato de facturación real (fee/precio por viaje o viajero, ni integración de pagos) en el schema actual — los ingresos usan el placeholder de 10€/viajero del modelo de negocio, señalado con un comentario en `artifacts/api-server/src/lib/itinerary-stats.ts` (`PLACEHOLDER_FEE_PER_TRAVELER_EUR`) hasta que exista facturación real (#92).
+
+- [ ] El botón "Estadísticas" aparece junto a Marcar como inactivo/Borrar en la ficha de itinerario, para roles Admin/Manager/Agent/Advisor
+- [ ] KPIs correctos: número de viajes, número total de viajeros, promedio de viajeros por viaje, ingresos totales, ingresos medios por viaje
+- [ ] Tabla de viajes vinculados con nombre, fecha inicio, fecha fin, estado y nº viajeros, correctamente ordenada
+- [ ] Enlace "Ver viaje" de cada fila navega a la ficha correcta del viaje
+- [ ] Itinerario sin viajes vinculados: KPIs a 0 y tabla con empty state, sin errores
+- [ ] Un usuario sin permisos no ve el botón / el backend rechaza la petición (verificado: `/api/itineraries/:id/stats` sin sesión devuelve 401)
+- [x] `pnpm run typecheck` pasa sin errores nuevos
+
 ### #171 (Notion) — Unificar vista de itinerario (back office) con el patrón de #159 (2026-08-23)
 > Auditoría: `/buscar` (#161) y el perfil público de agencia (#162) solo muestran tarjetas resumen de itinerario (foto/nombre/precio), no la vista día a día — no había conflicto real con el trabajo en curso de esas dos tarjetas pese al aviso inicial.
 > **Ampliación de alcance (feedback de Quique tras la primera pasada):** el pedido real no era solo "que se parezcan visualmente" — era que la ficha de viaje y la ficha de itinerario (roles agencia/admin) **compartan el mismo componente** de visualización y edición de días, no dos implementaciones separadas que coinciden en estilo. Se extrajo [`day-list-panel.tsx`](../artifacts/lugendo-app/src/components/day-list-panel.tsx) (`DayListPanel`, modo `"trip"` | `"itinerary"`) que ahora es la única implementación: cabecera con contador, toggle Detalle/Resumen, "Añadir día", expandir/colapsar todos; fila con foto cuadrada, edición inline (antes viaje usaba edición inline y itinerario un diálogo modal — se unificó a inline, el patrón de viaje) y borrado; usa `DayHotelPanel`/`DayActivitiesPanel` con `entityType={mode}` para los datos específicos de cada entidad. `trip-detail.tsx` e `itinerary-detail.tsx` ahora solo aportan lo específico de cada uno (import de PDF para itinerario, gestión bulk de hoteles para viaje) vía props `extraHeaderActions`/`belowHeaderContent`.
