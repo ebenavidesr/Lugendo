@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #179 (Notion) — Bugs funcionales de la auditoría UX/UI (2026-08-24)
+> Sub-tarea de #175 (auditoría UX/UI completa, descompuesta en #176-#180). 6 de 7 bugs corregidos; el punto 5 (estado duplicado en `/traveler/trips/:id`) resultó, tras investigar en código, ser dos campos legítimamente distintos (`trip.status` vs `trip.classification` de #140/#141) que solo coinciden visualmente — no se tocó, pendiente de una decisión de producto de Quique, no de una corrección de código. Ver la nota de implementación completa en la tarjeta de Notion.
+
+- [x] `/settings`: el selector "Editando la configuración de" ya no aparece vacío — se debía a que la agencia por defecto del admin ("Lugendo Demo") está inactiva y el filtro de opciones la excluía de la lista aunque fuera el valor seleccionado
+- [x] `/trips/:id` (back office): quitada la pill de estado duplicada junto al desplegable de estado en la cabecera
+- [x] `/trips/:id` (back office): el bloque "Vuelos" ya no repite el mensaje de estado vacío + botón "Añadir vuelo" dos veces cuando no hay vuelos
+- [x] Checkbox "Tipo de viaje" (modal editar itinerario y filtro `/buscar`) ya se ve cuadrado en vez de círculo — causa raíz era el token global `--radius-sm`; fix de una línea en `ui/checkbox.tsx`, verificado en navegador en `/buscar`
+- [x] Logos de agencia en `/agencies` — verificado en código, ya usaban un contenedor circular uniforme; no requirió cambio
+- [ ] Estado duplicado en `/traveler/trips/:id` — pendiente de decisión de producto (no es un duplicado real, ver nota arriba)
+- [ ] Verificación visual en navegador de `agency-settings.tsx`, `trip-detail.tsx` y `flight-edit-panel.tsx` — sin credenciales de agencia/admin funcionales en local (mismo bloqueo documentado en #171/#162/#163); `pnpm run typecheck` limpio
+
 ### #174 (Notion) — Sección de estadísticas de itinerarios en el dashboard (2026-08-24)
 > Reutiliza la lógica de cálculo de ingresos/viajeros de #172 (`artifacts/api-server/src/lib/itinerary-stats.ts`), no la duplica.
 > **Corrección (feedback de Quique tras la primera pasada):** los ingresos NO son un fee plano para todos los roles. Admin ve el fee de plataforma (10€/viajero, sin cambios). Agencia/asesor (manager/agent/advisor) ven una estimación de **su propio** negocio: por cada itinerario, nº de viajeros × `priceFrom` ("precio desde") de ese itinerario, sumado entre itinerarios — implementado como `RevenueMode` (`"platform-fee"` vs `"itinerary-price"`) en el helper compartido, elegido por `revenueModeForRole(session.role)`. También se añadió el KPI "Itinerarios activos" (recuento de itinerarios con `active=true` en el scope de la agencia) que faltaba en la fila de KPIs.

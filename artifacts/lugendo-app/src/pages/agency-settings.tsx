@@ -134,7 +134,7 @@ export default function AgencySettings() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {allAgencies.filter(a => a.active).map(a => (
+              {allAgencies.filter(a => a.active || a.id === targetAgencyId).map(a => (
                 <SelectItem key={a.id} value={String(a.id)}>
                   {a.name} {a.agencyType === "advisor" ? "· Asesor" : ""}
                 </SelectItem>

@@ -171,7 +171,7 @@ export function FlightEditPanel({ outboundFlights, returnFlights, onSave, readOn
         <Plane className="w-4 h-4 shrink-0" style={{ color: "#C4793A" }} />
         <div className="flex-1 min-w-0">
           <p className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">Vuelos</p>
-          {hasAnyFlight ? (
+          {hasAnyFlight && (
             <div className="mt-0.5 space-y-0.5">
               {outboundFlights.length > 0 && (
                 <p className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>
@@ -184,23 +184,10 @@ export function FlightEditPanel({ outboundFlights, returnFlights, onSave, readOn
                 </p>
               )}
             </div>
-          ) : (
-            <p className="text-[13px] text-muted-foreground mt-0.5">
-              {readOnly ? "No hay vuelos añadidos todavía" : "No has añadido tu vuelo todavía"}
-            </p>
           )}
+          {/* El estado vacío (mensaje + botón "Añadir vuelo") se muestra solo una vez, en el cuerpo del panel de abajo — el panel siempre está expandido cuando no hay vuelos, así que repetirlo aquí sería duplicado. */}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {!readOnly && !hasAnyFlight && !editing && (
-            <button
-              type="button"
-              onClick={handleOpenEdit}
-              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[6px] text-[12px] font-medium"
-              style={{ background: "#C4793A", color: "#FAF2EB" }}
-            >
-              <Plus className="w-3.5 h-3.5" /> Añadir vuelo
-            </button>
-          )}
           {!readOnly && hasAnyFlight && !editing && (
             <button
               type="button"

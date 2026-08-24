@@ -27,14 +27,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
-const statusBadge: Record<TripDetailStatus, { bg: string; color: string; label: string }> = {
-  draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
-  scheduled: { bg: "#EAE6F5", color: "#3D2F6B", label: "Programado" },
-  active:    { bg: "#E4F3EC", color: "#2E7D5A", label: "Activo" },
-  finished:  { bg: "#E5D4BF", color: "#9C7A58", label: "Finalizado" },
-  cancelled: { bg: "#FDECEA", color: "#C0392B", label: "Cancelado" },
-};
-
 const invStatusBadge: Record<InvitationStatus, { bg: string; color: string; label: string }> = {
   pending:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Pendiente" },
   accepted: { bg: "#E4F3EC", color: "#2E7D5A", label: "Aceptada" },
@@ -181,7 +173,6 @@ export default function TripDetail() {
     );
   }
 
-  const s = statusBadge[trip.status] ?? statusBadge.draft;
   const accepted = trip.invitations?.filter(i => i.status === "accepted").length ?? 0;
 
   const outboundFlights: FlightLeg[] = trip.outboundFlights && trip.outboundFlights.length > 0
@@ -222,8 +213,6 @@ export default function TripDetail() {
           />
         </div>
         <div className="flex items-center gap-2 shrink-0 ml-4">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium"
-            style={{ background: s.bg, color: s.color }}>{s.label}</span>
           <Select value={trip.status} onValueChange={v => onStatusChange(v as TripDetailStatus)}>
             <SelectTrigger className="h-8 text-[12px] w-36">
               <SelectValue />
