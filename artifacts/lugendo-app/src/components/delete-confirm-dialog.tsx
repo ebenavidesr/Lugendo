@@ -142,7 +142,7 @@ export function DeleteConfirmDialog({
               </Button>
             ) : (
               <Button type="button" size="sm" disabled={isPendingDelete} onClick={onDelete}
-                className="gap-1.5" style={{ background: "#C0392B", color: "white" }}>
+                className="gap-1.5" style={{ background: "var(--red)", color: "white" }}>
                 <Trash2 className="w-3.5 h-3.5" />
                 {isPendingDelete ? "Eliminando…" : "Eliminar definitivamente"}
               </Button>

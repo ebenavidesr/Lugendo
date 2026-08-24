@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAutoDescription } from "@/hooks/use-auto-description";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { CountrySelect } from "@/components/country-select";
+import { EstadoBadge } from "@/components/estado-badge";
 
 function Stars({ n }: { n: number | null | undefined }) {
   if (!n) return <span className="text-muted-foreground text-[12px]">—</span>;
@@ -285,17 +286,8 @@ function HotelForm({
                 <FormItem>
                   <FormLabel>Estado</FormLabel>
                   <div className="flex items-center gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => field.onChange(!field.value)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors border"
-                      style={{
-                        background: field.value ? "#E4F3EC" : "#ECD5B8",
-                        color: field.value ? "#2E7D5A" : "#7A5C3A",
-                        borderColor: field.value ? "#2E7D5A40" : "#7A5C3A40",
-                      }}>
-                      <span className="w-2 h-2 rounded-full" style={{ background: field.value ? "#2E7D5A" : "#7A5C3A" }} />
-                      {field.value ? "Activo" : "Inactivo"}
+                    <button type="button" onClick={() => field.onChange(!field.value)} className="transition-opacity hover:opacity-75">
+                      <EstadoBadge tone={field.value ? "green" : "duna"} label={field.value ? "Activo" : "Inactivo"} />
                     </button>
                     <span className="text-[11px] text-muted-foreground">
                       Haz clic para cambiar el estado
@@ -464,10 +456,8 @@ export default function Hotels() {
                           onError: () => toast({ variant: "destructive", title: "Error al cambiar estado" }) }
                       )}
                       title={h.active ? "Haz clic para desactivar" : "Haz clic para activar"}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
-                      style={{ background: h.active ? "#E4F3EC" : "#ECD5B8", color: h.active ? "#2E7D5A" : "#7A5C3A" }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: h.active ? "#2E7D5A" : "#7A5C3A" }} />
-                      {h.active ? "Activo" : "Inactivo"}
+                      className="transition-opacity hover:opacity-75 cursor-pointer">
+                      <EstadoBadge tone={h.active ? "green" : "duna"} label={h.active ? "Activo" : "Inactivo"} />
                     </button>
                   </td>
                   <td className="px-5 py-3 text-right">

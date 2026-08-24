@@ -159,7 +159,7 @@ export default function AgencySettings() {
           <button
             onClick={() => setConfirmingDelete(true)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[13px] font-medium border transition-colors shrink-0"
-            style={{ borderColor: "#F5C6C0", color: "#C0392B" }}>
+            style={{ borderColor: "#F5C6C0", color: "var(--red)" }}>
             <Trash2 className="w-3.5 h-3.5" /> Eliminar agencia
           </button>
         )}
@@ -330,7 +330,7 @@ export default function AgencySettings() {
                 Cancelar
               </Button>
               <Button type="button" size="sm" disabled={deleteAgency.isPending}
-                onClick={handleDelete} className="gap-1.5" style={{ background: "#C0392B", color: "white" }}>
+                onClick={handleDelete} className="gap-1.5" style={{ background: "var(--red)", color: "white" }}>
                 <Trash2 className="w-3.5 h-3.5" />
                 {deleteAgency.isPending ? "Eliminando…" : "Eliminar agencia"}
               </Button>

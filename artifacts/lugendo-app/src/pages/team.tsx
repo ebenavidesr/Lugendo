@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { EstadoBadge, type EstadoTone } from "@/components/estado-badge";
 
 // ── Password rules (same as traveler register) ────────────────────────────────
 
@@ -53,12 +54,16 @@ function PasswordRequirements({ password }: { password: string }) {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const roleBadge: Record<UserRole, { bg: string; color: string; label: string }> = {
-  admin:    { bg: "#FDECEA", color: "#C0392B", label: "Admin" },            // Rojo — acceso máximo
-  manager:  { bg: "#EAE6F5", color: "#3D2F6B", label: "Manager" },          // Índigo — rol relevante
-  agent:    { bg: "#FFF3D6", color: "#C47A00", label: "Agente" },           // Ámbar — rol operativo
-  advisor:  { bg: "#F5E6DC", color: "#8B4420", label: "Asesor de Viajes" }, // Ocre — agencia unipersonal
-  traveler: { bg: "#E4F3EC", color: "#2E7D5A", label: "Viajero" },          // Verde — usuario final
+const roleTone: Record<UserRole, EstadoTone> = {
+  admin:    "red",    // acceso máximo
+  manager:  "indigo", // rol relevante
+  agent:    "amber",  // rol operativo
+  advisor:  "terra",  // agencia unipersonal
+  traveler: "green",  // usuario final — nota: mismo tono que "estado: activo" en otras páginas (#176, hallazgo de la auditoría); no se introdujo un 7º color ajeno a la paleta solo para separarlos, queda documentado como decisión pendiente si se quiere resolver del todo
+};
+
+const roleLabel: Record<UserRole, string> = {
+  admin: "Admin", manager: "Manager", agent: "Agente", advisor: "Asesor de Viajes", traveler: "Viajero",
 };
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -70,11 +75,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 ];
 
 export function RoleBadge({ role }: { role: UserRole }) {
-  const s = roleBadge[role] ?? roleBadge.agent;
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-      style={{ background: s.bg, color: s.color }}>{s.label}</span>
-  );
+  return <EstadoBadge tone={roleTone[role] ?? "amber"} label={roleLabel[role] ?? role} />;
 }
 
 function fmt(date: string) {
@@ -82,30 +83,15 @@ function fmt(date: string) {
 }
 
 export function ActiveBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-      style={{ background: active ? "#E4F3EC" : "#ECD5B8", color: active ? "#2E7D5A" : "#7A5C3A" }}
-    >
-      {active ? "Activo" : "Inactivo"}
-    </span>
-  );
+  return <EstadoBadge tone={active ? "green" : "duna"} label={active ? "Activo" : "Inactivo"} />;
 }
 
 export function StatusBadge({ user }: { user: Pick<User, "status" | "active"> }) {
   if (user.status === "pending") {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium" style={{ background: "#FFF3D6", color: "#C47A00" }}>
-        Pendiente de aprobación
-      </span>
-    );
+    return <EstadoBadge tone="amber" label="Pendiente de aprobación" />;
   }
   if (user.status === "rejected") {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium" style={{ background: "#FDECEA", color: "#C0392B" }}>
-        Rechazado
-      </span>
-    );
+    return <EstadoBadge tone="red" label="Rechazado" />;
   }
   return <ActiveBadge active={user.active} />;
 }

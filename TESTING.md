@@ -6,6 +6,19 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #176 (Notion) — Sistema de color/badges unificado (paleta semántica + EstadoBadge + fondos) (2026-08-24)
+> Sub-tarea de #175. **Cambio de alto impacto visual:** `--background` y `--card` son tokens globales en `index.css`, así que el ajuste de fondos afecta a TODA la app (toda superficie `bg-card`), no solo a Dashboard/Viajes. Pendiente de verificación visual completa en producción.
+
+- [x] Nuevo componente `components/estado-badge.tsx` (`EstadoBadge`, 7 tonos + variante `onDark`) sustituye las implementaciones sueltas de Itinerarios, Hoteles, Viajes, Equipo (`RoleBadge`/`ActiveBadge`/`StatusBadge`, reutilizados por `agency-detail.tsx`), Agencias y Actividades
+- [x] Los 3 colores semánticos (peligro/aviso/éxito) ya existían como variables CSS (`--red`/`--amber`/`--green`); ahora se consumen de forma consistente en vez de repetirse como hex sueltos
+- [x] Rol "Admin" en Equipo — investigado, ya tenía pill igual que los demás roles; no requirió cambio
+- [x] Botón destructivo usa `var(--red)` en el diálogo de borrado compartido y en los botones de agencias (eliminar/desactivar)
+- [x] Chip "Playa" de Actividades corregido de azul ajeno a la paleta a tono Duna (igual que "Ciudad")
+- [x] Inconsistencia "Inactiva" en rojo (Agencias) corregida a tono Duna/neutro, igual que el resto de páginas
+- [x] `--background` → Arena exacto (`#FAF2EB`), `--card` → Duna (`#ECD5B8`) — verificado en navegador en `/buscar` e `/itinerarios/:id`, sin errores de consola
+- [ ] Rol "Viajero" sigue compartiendo el verde con el estado "Activo" — decisión de producto pendiente (no forzado un color nuevo ajeno a la paleta), ver ficha de Notion
+- [ ] Verificación visual completa del back office (Itinerarios, Hoteles, Viajes, Equipo, Agencias, Actividades, Dashboard) — sin credenciales locales, pendiente en producción; `pnpm run typecheck` limpio
+
 ### #177 (Notion) — Navegación unificada del front del viajero + componente StatCard (2026-08-24)
 > Sub-tarea de #175. La investigación de código redujo el alcance real: `/traveler`, `/traveler/profile` y `/traveler/trips/:id` ya compartían cabecera vía `TravelerLayout`; solo `/buscar` e `/itinerarios/:id` tenían copias manuales.
 

@@ -15,6 +15,7 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EstadoBadge, type EstadoTone } from "@/components/estado-badge";
 
 const CLASSIFICATION_LABELS: Record<TravelerTripClassification, string> = {
   programado: "Programado",
@@ -45,12 +46,11 @@ const ALL_TABS: { id: Tab; label: string }[] = [
   ...MORE_TABS.map(({ id, label }) => ({ id, label })),
 ];
 
-const statusBadge: Record<TravelerTripDetailStatus, { bg: string; color: string; label: string }> = {
-  draft:     { bg: "rgba(255,255,255,0.15)", color: "#ECD5B8", label: "Próximamente" },
-  scheduled: { bg: "rgba(255,255,255,0.15)", color: "#ECD5B8", label: "Programado" },
-  active:    { bg: "rgba(76,175,80,0.25)",   color: "#A5D6A7", label: "En curso" },
-  finished:  { bg: "rgba(255,255,255,0.15)", color: "#ECD5B8", label: "Finalizado" },
-  cancelled: { bg: "rgba(244,67,54,0.25)",   color: "#EF9A9A", label: "Cancelado" },
+const statusTone: Record<TravelerTripDetailStatus, EstadoTone> = {
+  draft: "duna", scheduled: "duna", active: "green", finished: "duna", cancelled: "red",
+};
+const statusLabel: Record<TravelerTripDetailStatus, string> = {
+  draft: "Próximamente", scheduled: "Programado", active: "En curso", finished: "Finalizado", cancelled: "Cancelado",
 };
 
 function fmtDate(date: string) {
@@ -137,7 +137,6 @@ export function TripDetailHeader({
   const hotelCount = uniqueHotelCount(trip.days);
   const destinationsData = getDestinations(trip.days);
   const countdown = getCountdown(trip.startDate, trip.status);
-  const s = statusBadge[trip.status] ?? statusBadge.scheduled;
 
   const dateRange = trip.endDate
     ? `${fmtDate(trip.startDate)} – ${fmtDate(trip.endDate)}`
@@ -190,12 +189,7 @@ export function TripDetailHeader({
       <div className="px-5 pt-3 pb-4">
         {/* Status badge + classification (editable, task #140) */}
         <div className="mb-2 flex items-center gap-2 flex-wrap">
-          <span
-            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-            style={{ background: s.bg, color: s.color }}
-          >
-            {s.label}
-          </span>
+          <EstadoBadge tone={statusTone[trip.status] ?? "duna"} label={statusLabel[trip.status] ?? trip.status} onDark />
           <Select value={trip.classification} onValueChange={v => onClassificationChange(v as TravelerTripClassification)}>
             <SelectTrigger
               className="h-6 w-auto gap-1 border-none px-2.5 py-0.5 rounded-full text-[11px] font-medium [&>svg]:opacity-60 [&>svg]:h-3 [&>svg]:w-3"

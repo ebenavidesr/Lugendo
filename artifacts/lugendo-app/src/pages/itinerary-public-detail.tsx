@@ -141,12 +141,12 @@ export default function ItineraryPublicDetail() {
   };
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center" style={{ background: "#F0E8DE" }}>Cargando…</div>;
+    return <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--arena)" }}>Cargando…</div>;
   }
 
   if (isError || !itinerary) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center" style={{ background: "#F0E8DE" }}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center" style={{ background: "var(--arena)" }}>
         <LugendoCompass size={40} variant="light" className="mb-4" />
         <p className="text-[15px]" style={{ color: "#2D1F0E" }}>Este itinerario no existe o ya no está publicado.</p>
         <Link href="/buscar" className="text-[13px] font-medium mt-3" style={{ color: "#C4793A" }}>← Volver al buscador</Link>

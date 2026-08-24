@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { getApiErrorMessage } from "@/lib/utils";
+import { EstadoBadge } from "@/components/estado-badge";
 
 const diffBadge: Record<NonNullable<ItineraryDifficulty>, { bg: string; color: string; label: string }> = {
   easy:      { bg: "#E4F3EC", color: "#2E7D5A", label: "Fácil" },
@@ -287,16 +288,11 @@ export default function Itineraries() {
                       <button
                         onClick={() => handleToggleActive(it)}
                         title={it.active === false ? "Haz clic para activar" : "Haz clic para desactivar"}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
-                        style={{ background: it.active === false ? "#ECD5B8" : "#E4F3EC", color: it.active === false ? "#7A5C3A" : "#2E7D5A" }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: it.active === false ? "#7A5C3A" : "#2E7D5A" }} />
-                        {it.active === false ? "Inactivo" : "Activo"}
+                        className="transition-opacity hover:opacity-75 cursor-pointer">
+                        <EstadoBadge tone={it.active === false ? "duna" : "green"} label={it.active === false ? "Inactivo" : "Activo"} />
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-                        style={{ background: it.active === false ? "#ECD5B8" : "#E4F3EC", color: it.active === false ? "#7A5C3A" : "#2E7D5A" }}>
-                        {it.active === false ? "Inactivo" : "Activo"}
-                      </span>
+                      <EstadoBadge tone={it.active === false ? "duna" : "green"} label={it.active === false ? "Inactivo" : "Activo"} />
                     )}
                   </td>
                   <td className="px-5 py-3">

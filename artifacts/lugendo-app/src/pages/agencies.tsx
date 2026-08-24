@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AgencyLogoField } from "@/components/agency-logo-field";
 import { validateLogoFile, uploadAgencyLogoFile } from "@/lib/agency-logo";
 import type { AgencyAgencyType } from "@workspace/api-client-react";
+import { EstadoBadge } from "@/components/estado-badge";
 
 const AGENCY_TYPE_OPTIONS: { value: AgencyAgencyType; label: string; hint: string }[] = [
   { value: "agency", label: "Agencia", hint: "Agencia de viajes con equipo (Admin, Manager, Agente…)" },
@@ -234,7 +235,7 @@ function ToggleActiveButton({ agency }: { agency: Agency }) {
       disabled={update.isPending}
       title={agency.active ? "Desactivar agencia" : "Activar agencia"}
       className="p-1 rounded-[6px] transition-colors hover:bg-muted"
-      style={{ color: agency.active ? "#C0392B" : "#2E7D5A" }}
+      style={{ color: agency.active ? "var(--red)" : "var(--green)" }}
     >
       {agency.active ? <PowerOff className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5" />}
     </button>
@@ -303,9 +304,7 @@ export default function Agencies() {
                     <span className="font-mono text-[12px] text-muted-foreground">{agency.slug}</span>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${agency.agencyType === "advisor" ? "bg-[#F5E6DC] text-[#8B4420]" : "bg-[#EAE6F5] text-[#3D2F6B]"}`}>
-                      {agency.agencyType === "advisor" ? "Asesor" : "Agencia"}
-                    </span>
+                    <EstadoBadge tone={agency.agencyType === "advisor" ? "terra" : "indigo"} label={agency.agencyType === "advisor" ? "Asesor" : "Agencia"} />
                   </td>
                   <td className="px-5 py-3">
                     {agency.primaryColor ? (
@@ -316,9 +315,7 @@ export default function Agencies() {
                     ) : <span className="text-muted-foreground">—</span>}
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${agency.active ? "bg-[#E4F3EC] text-[#2E7D5A]" : "bg-[#FDECEA] text-[#C0392B]"}`}>
-                      {agency.active ? "Activa" : "Inactiva"}
-                    </span>
+                    <EstadoBadge tone={agency.active ? "green" : "duna"} label={agency.active ? "Activa" : "Inactiva"} />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

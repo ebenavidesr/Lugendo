@@ -69,11 +69,11 @@
   --elevate-2: rgba(45,31,14,0.08);
 
   /* Lugendo — Arena/Terracota/Índigo */
-  --background: 32 28% 91%;        /* #F0E8DE — fondo página */
+  --background: 28 60% 95%;        /* Arena #FAF2EB — fondo página (#175/#176: antes #F0E8DE, desviación de la guía) */
   --foreground: 25 52% 12%;        /* Noche #2D1F0E */
   --border: 33 38% 80%;            /* #E5D4BF */
 
-  --card: 0 0% 100%;
+  --card: 34 58% 82%;              /* Duna #ECD5B8 — superficie de tarjeta (#175/#176: antes blanco puro) */
   --card-foreground: 25 52% 12%;
   --card-border: 33 38% 80%;
 

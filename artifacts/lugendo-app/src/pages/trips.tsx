@@ -15,21 +15,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { EstadoBadge, type EstadoTone } from "@/components/estado-badge";
 
-const statusBadge: Record<TripStatus, { bg: string; color: string; label: string }> = {
-  draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
-  scheduled: { bg: "#EAE6F5", color: "#3D2F6B", label: "Programado" },
-  active:    { bg: "#E4F3EC", color: "#2E7D5A", label: "Activo" },
-  finished:  { bg: "#E5D4BF", color: "#9C7A58", label: "Finalizado" },
-  cancelled: { bg: "#FDECEA", color: "#C0392B", label: "Cancelado" },
+const statusTone: Record<TripStatus, EstadoTone> = {
+  draft: "duna", scheduled: "indigo", active: "green", finished: "muted", cancelled: "red",
+};
+const statusLabel: Record<TripStatus, string> = {
+  draft: "Borrador", scheduled: "Programado", active: "Activo", finished: "Finalizado", cancelled: "Cancelado",
 };
 
 function StatusBadge({ status }: { status: TripStatus }) {
-  const s = statusBadge[status] ?? statusBadge.draft;
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium"
-      style={{ background: s.bg, color: s.color }}>{s.label}</span>
-  );
+  return <EstadoBadge tone={statusTone[status] ?? "duna"} label={statusLabel[status] ?? status} />;
 }
 
 function fmt(date: string) {

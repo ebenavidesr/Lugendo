@@ -17,13 +17,14 @@ import { useAuth } from "@/hooks/use-auth";
 import { useAutoDescription } from "@/hooks/use-auto-description";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { CountrySelect } from "@/components/country-select";
+import { EstadoBadge } from "@/components/estado-badge";
 
 const categoryMeta: Record<string, { label: string; bg: string; color: string; emoji: string }> = {
   cultural:    { label: "Cultural",     bg: "#EAE6F5", color: "#3D2F6B", emoji: "🏛️" },
   gastronomic: { label: "Gastronómica", bg: "#FFF3D6", color: "#C47A00", emoji: "🍽️" },
   adventure:   { label: "Aventura",     bg: "#FDECEA", color: "#C0392B", emoji: "🧗" },
   nature:      { label: "Naturaleza",   bg: "#E4F3EC", color: "#2E7D5A", emoji: "🌿" },
-  beach:       { label: "Playa",        bg: "#E0F0FF", color: "#1A6FA8", emoji: "🏖️" },
+  beach:       { label: "Playa",        bg: "#ECD5B8", color: "#7A5C3A", emoji: "🏖️" },
   city:        { label: "Ciudad",       bg: "#ECD5B8", color: "#7A5C3A", emoji: "🏙️" },
   excursion:   { label: "Excursión",    bg: "#FAEEE4", color: "#8B4420", emoji: "🚌" },
   other:       { label: "Otros",        bg: "#E5D4BF", color: "#9C7A58", emoji: "⭐" },
@@ -536,13 +537,8 @@ export default function Activities() {
                           onError: () => toast({ variant: "destructive", title: "Error al cambiar estado" }) }
                       )}
                       title={a.active ? "Haz clic para desactivar" : "Haz clic para activar"}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-opacity hover:opacity-75 cursor-pointer"
-                      style={{
-                        background: a.active ? "#E4F3EC" : "#ECD5B8",
-                        color: a.active ? "#2E7D5A" : "#7A5C3A",
-                      }}>
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: a.active ? "#2E7D5A" : "#7A5C3A" }} />
-                      {a.active ? "Activa" : "Inactiva"}
+                      className="transition-opacity hover:opacity-75 cursor-pointer">
+                      <EstadoBadge tone={a.active ? "green" : "duna"} label={a.active ? "Activa" : "Inactiva"} />
                     </button>
                   </td>
                   <td className="px-5 py-3">
