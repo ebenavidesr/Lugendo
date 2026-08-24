@@ -6,6 +6,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #177 (Notion) — Navegación unificada del front del viajero + componente StatCard (2026-08-24)
+> Sub-tarea de #175. La investigación de código redujo el alcance real: `/traveler`, `/traveler/profile` y `/traveler/trips/:id` ya compartían cabecera vía `TravelerLayout`; solo `/buscar` e `/itinerarios/:id` tenían copias manuales.
+
+- [x] Nuevo componente `components/layout/traveler-header.tsx` (`TravelerHeader`) sustituye las 3 implementaciones de cabecera; sin sesión muestra solo "Iniciar sesión", con sesión muestra logo + Explorar viajes + Consultas + perfil + divisor + "Salir" (icono y texto, ya no un icono suelto)
+- [x] `TravelerLayout`, `search.tsx` e `itinerary-public-detail.tsx` usan el mismo `TravelerHeader` — verificado en navegador sin sesión en `/buscar` e `/itinerarios/:id`, sin errores de consola
+- [x] `components/stat-card.tsx` gana una prop `variant` ("default" | "compact"); `/traveler/profile` y `trip-kpi-row.tsx` (`/traveler/trips/:id`) ya usan el componente compartido en vez de implementaciones propias, sin perder la lógica de color dinámico por ratio de `KpiCard`
+- [x] Contenido de `/traveler` (home) sin cambios, solo la cabecera
+- [ ] QA visual con sesión de viajero (cabecera logueada, las 3 pantallas con `StatCard`) — sin credenciales locales, pendiente de verificar en producción
+
 ### #179 (Notion) — Bugs funcionales de la auditoría UX/UI (2026-08-24)
 > Sub-tarea de #175 (auditoría UX/UI completa, descompuesta en #176-#180). El punto 5 (estado duplicado en `/traveler/trips/:id`) resultó, tras investigar en código, ser dos campos legítimamente distintos (`trip.status` vs `trip.classification` de #140/#141) que solo coinciden visualmente, no un duplicado real — a petición de Quique se diferenciaron con un icono de etiqueta en el desplegable de clasificación, en vez de eliminar ninguno de los dos. Ver la nota de implementación completa en la tarjeta de Notion.
 

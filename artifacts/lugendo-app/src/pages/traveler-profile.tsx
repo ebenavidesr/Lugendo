@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useGetMyProfile, useGetMyTravelProfile, useUpdateMyTravelProfile } from "@workspace/api-client-react";
 import { Globe, Luggage, Calendar, ArrowLeft, Users, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { StatCard } from "@/components/stat-card";
 import { MyCountriesSection } from "@/components/my-countries-section";
 import { MyCountriesMap } from "@/components/my-countries-map";
 import { TravelerAvatarEditor } from "@/components/traveler-avatar-editor";
@@ -31,16 +32,6 @@ function initials(name: string): string {
 
 function fmtDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("es-ES", { month: "long", year: "numeric" });
-}
-
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
-  return (
-    <div className="bg-card border border-border rounded-[14px] p-4 flex flex-col items-center gap-1.5">
-      <div className="text-muted-foreground">{icon}</div>
-      <p className="text-[22px] font-medium" style={{ color: "#2D1F0E" }}>{value}</p>
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
-    </div>
-  );
 }
 
 function VisibilityRow({
@@ -190,14 +181,18 @@ export default function TravelerProfile() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          icon={<Luggage className="w-5 h-5" />}
+          icon={Luggage}
           label="Viajes"
           value={profile.tripCount}
+          accent="#FAEEE4"
+          iconColor="#C4793A"
         />
         <StatCard
-          icon={<Globe className="w-5 h-5" />}
+          icon={Globe}
           label="Países"
           value={profile.countriesVisited.length}
+          accent="#EAE6F5"
+          iconColor="#3D2F6B"
         />
       </div>
 

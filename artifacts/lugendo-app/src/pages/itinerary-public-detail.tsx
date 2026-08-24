@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { useGetPublicItinerary, getGetPublicItineraryQueryKey, PublicItineraryDay } from "@workspace/api-client-react";
 import { useAuth } from "@/hooks/use-auth";
-import { LugendoCompass, LugendoWordmark } from "@/components/logo";
+import { LugendoCompass } from "@/components/logo";
+import { TravelerHeader } from "@/components/layout/traveler-header";
 import { ContactAgencyDialog } from "@/components/contact-agency-dialog";
 import { DayPhotoZone } from "@/components/day-photo-editor";
 import { TransitNightBadge } from "@/components/day-hotel-panel";
@@ -157,18 +158,7 @@ export default function ItineraryPublicDetail() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
-      <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 max-w-4xl w-full mx-auto">
-        <Link href="/traveler" className="flex items-center gap-2">
-          <LugendoCompass size={22} variant="light" />
-          <LugendoWordmark variant="light" size="sm" />
-        </Link>
-        <Link href="/buscar"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-[8px] text-sm font-sans transition-colors hover:bg-muted/40"
-          style={{ color: "#7A5C3A" }}>
-          <ArrowLeft className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline-block">Explorar viajes</span>
-        </Link>
-      </header>
+      <TravelerHeader maxWidth="max-w-4xl" />
 
       <main className="max-w-4xl w-full mx-auto px-4 py-8 space-y-5">
         <div>

@@ -1,5 +1,6 @@
 import { Building2, Star, ListChecks, FileText, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { StatCard } from "@/components/stat-card";
 
 interface RatioKpi {
   kind: "ratio";
@@ -38,24 +39,8 @@ function valueColor(kpi: Kpi): string {
 }
 
 function KpiCard({ kpi }: { kpi: Kpi }) {
-  const Icon = kpi.icon;
-  const color = valueColor(kpi);
   const display = kpi.kind === "ratio" ? `${kpi.numerator}/${kpi.denominator}` : `${kpi.value}`;
-
-  return (
-    <div
-      className="flex flex-col items-center justify-center gap-1.5 rounded-[14px] border border-border p-3 text-center"
-      style={{ background: "#F5EFE6" }}
-    >
-      <Icon className="w-4 h-4" style={{ color: "var(--terra)" }} />
-      <p className="text-[16px] font-semibold leading-none" style={{ color }}>
-        {display}
-      </p>
-      <p className="text-[10px] leading-tight" style={{ color: "#888888" }}>
-        {kpi.label}
-      </p>
-    </div>
-  );
+  return <StatCard variant="compact" icon={kpi.icon} label={kpi.label} value={display} valueColor={valueColor(kpi)} />;
 }
 
 export function TripKpiRow({
