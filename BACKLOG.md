@@ -183,6 +183,8 @@
 | #141 | Compartir viaje: permisos vista/edición entre viajeros (ya existía) y "foto" de inspiración para contactos externos ("Invitada") — mejora 2026-07-30: elegir Miembro (edición, Programado/Realizado) vs Invitado (solo vista, Compartido) al compartir, reclasificable después | 🟡 Media | Viajes · Viajeros |
 | #135 | Borrar itinerario (solo si no tiene viajes vinculados) y marcar como inactivo (si tiene viajes vinculados) | 🟡 Media | Itinerarios |
 | #147 | Arreglar entorno de desarrollo local: binario nativo de Vite/Rollup, carga automática de `.env`, proxy de `/api` en el dev server — confirmado también en otra máquina | 🟡 Media | Infraestructura |
+| #172 | Botón de estadísticas en la ficha de itinerario (KPIs + listado de viajes vinculados) — ingresos con placeholder de 10€/viajero hasta que exista facturación real (#92); en QA | 🟡 Media | Itinerarios |
+| #174 | Sección de estadísticas de itinerarios en el dashboard (ranking + totales agregados) — reutiliza el cálculo de #172, sin duplicar lógica; en QA | 🟡 Media | Itinerarios |
 
 ---
 
