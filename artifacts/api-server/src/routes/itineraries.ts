@@ -8,7 +8,7 @@ import {
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { closeDayGap, repositionDay } from "../lib/day-renumbering";
-import { getTripStatsForItineraries, summarizeTripStats } from "../lib/itinerary-stats";
+import { getTripStatsForItineraries, summarizeTripStats, revenueModeForRole } from "../lib/itinerary-stats";
 import {
   ItineraryInputSchema, ItineraryUpdateSchema,
   ItineraryDayInputSchema, ItineraryDayUpdateSchema,
@@ -422,7 +422,7 @@ router.get("/itineraries/:itineraryId/usage", requireAuth, async (req, res): Pro
 
 router.get("/itineraries/:itineraryId/stats", requireRoles("admin", "manager", "agent", "advisor"), async (req, res): Promise<void> => {
   const id = parseInt(Array.isArray(req.params.itineraryId) ? req.params.itineraryId[0] : req.params.itineraryId, 10);
-  const trips = await getTripStatsForItineraries([id]);
+  const trips = await getTripStatsForItineraries([id], revenueModeForRole(req.session.role ?? ""));
   const summary = summarizeTripStats(trips);
   res.json({
     ...summary,

@@ -7,21 +7,27 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 ## Sprint actual
 
 ### #174 (Notion) — Sección de estadísticas de itinerarios en el dashboard (2026-08-24)
-> Reutiliza la lógica de cálculo de ingresos/viajeros de #172 (`artifacts/api-server/src/lib/itinerary-stats.ts`), no la duplica. Ingresos = aproximación a 10€/viajero (placeholder, ver nota en #172) — no hay todavía dato de facturación real en el schema.
+> Reutiliza la lógica de cálculo de ingresos/viajeros de #172 (`artifacts/api-server/src/lib/itinerary-stats.ts`), no la duplica.
+> **Corrección (feedback de Quique tras la primera pasada):** los ingresos NO son un fee plano para todos los roles. Admin ve el fee de plataforma (10€/viajero, sin cambios). Agencia/asesor (manager/agent/advisor) ven una estimación de **su propio** negocio: por cada itinerario, nº de viajeros × `priceFrom` ("precio desde") de ese itinerario, sumado entre itinerarios — implementado como `RevenueMode` (`"platform-fee"` vs `"itinerary-price"`) en el helper compartido, elegido por `revenueModeForRole(session.role)`. También se añadió el KPI "Itinerarios activos" (recuento de itinerarios con `active=true` en el scope de la agencia) que faltaba en la fila de KPIs.
 
 - [ ] La sección "Itinerarios" aparece en el dashboard para roles Admin/Manager/Agent/Advisor
-- [ ] Los totales agregados (viajes creados, total viajeros, ingresos totales) son correctos y coherentes con la suma de los itinerarios individuales de la agencia
-- [ ] El ranking (top por ingresos y top por viajeros) muestra los itinerarios correctos, ordenados correctamente
-- [ ] Los enlaces del ranking navegan a la ficha correcta de cada itinerario
+- [ ] KPI "Itinerarios activos" cuenta correctamente los itinerarios con `active=true` de la agencia (o de toda la plataforma para admin)
+- [ ] Como manager/agent/advisor: "Ingresos totales" = suma por itinerario de (nº viajeros del itinerario × su precio "desde"), no un fee plano
+- [ ] Como admin: "Ingresos totales" sigue siendo el fee de plataforma (10€/viajero) — sin cambios respecto a la implementación original
+- [ ] Los totales agregados (viajes creados, total viajeros) son correctos y coherentes con la suma de los itinerarios individuales de la agencia
+- [ ] El ranking (top por ingresos y top por viajeros) usa la misma regla de ingresos según el rol, y navega a la ficha correcta de cada itinerario
 - [ ] Agencia sin itinerarios o sin viajes: sección con empty state, sin errores
 - [ ] Un usuario sin permisos no ve la sección / el backend rechaza la petición (verificado: `/api/dashboard/itineraries` sin sesión devuelve 401)
 - [x] `pnpm run typecheck` pasa sin errores nuevos
 
 ### #172 (Notion) — Botón de estadísticas en la ficha de itinerario (2026-08-24)
-> No existe ningún dato de facturación real (fee/precio por viaje o viajero, ni integración de pagos) en el schema actual — los ingresos usan el placeholder de 10€/viajero del modelo de negocio, señalado con un comentario en `artifacts/api-server/src/lib/itinerary-stats.ts` (`PLACEHOLDER_FEE_PER_TRAVELER_EUR`) hasta que exista facturación real (#92).
+> No existe ningún dato de facturación real (fee/precio por viaje o viajero, ni integración de pagos) en el schema actual.
+> **Corrección (feedback de Quique tras la primera pasada):** el placeholder de 10€/viajero solo aplica para el rol admin (visión de plataforma). Para manager/agent/advisor (visión de la propia agencia), los ingresos del itinerario se calculan como nº de viajeros × `priceFrom` ("precio desde") de ese itinerario — más realista que un fee plano, porque usa el precio real listado del itinerario. Ver `RevenueMode` en `artifacts/api-server/src/lib/itinerary-stats.ts`.
 
 - [ ] El botón "Estadísticas" aparece junto a Marcar como inactivo/Borrar en la ficha de itinerario, para roles Admin/Manager/Agent/Advisor
-- [ ] KPIs correctos: número de viajes, número total de viajeros, promedio de viajeros por viaje, ingresos totales, ingresos medios por viaje
+- [ ] Como manager/agent/advisor: "Ingresos totales"/"Ingresos por viaje" = nº viajeros × precio "desde" del itinerario (no 10€/viajero)
+- [ ] Como admin: "Ingresos totales"/"Ingresos por viaje" siguen siendo el fee de plataforma (10€/viajero) — sin cambios
+- [ ] KPIs correctos: número de viajes, número total de viajeros, promedio de viajeros por viaje
 - [ ] Tabla de viajes vinculados con nombre, fecha inicio, fecha fin, estado y nº viajeros, correctamente ordenada
 - [ ] Enlace "Ver viaje" de cada fila navega a la ficha correcta del viaje
 - [ ] Itinerario sin viajes vinculados: KPIs a 0 y tabla con empty state, sin errores

@@ -9,6 +9,7 @@ import type { ItineraryRankingEntry } from './itineraryRankingEntry';
 
 export interface DashboardItinerariesSummary {
   totalItineraries: number;
+  activeItineraries: number;
   tripCount: number;
   totalTravelers: number;
   avgTravelersPerTrip: number;

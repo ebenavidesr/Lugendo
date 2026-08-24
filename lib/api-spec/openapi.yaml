@@ -5256,7 +5256,7 @@ components:
           type: integer
         revenue:
           type: number
-          description: "Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92"
+          description: "Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€/viajero) para admin, o viajeros × precio desde del itinerario para agencia/asesor"
 
     ItineraryStats:
       type: object
@@ -6659,13 +6659,15 @@ components:
           type: integer
         revenue:
           type: number
-          description: "Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92"
+          description: "Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€/viajero) para admin, o viajeros × precio desde del itinerario para agencia/asesor"
 
     DashboardItinerariesSummary:
       type: object
-      required: [totalItineraries, tripCount, totalTravelers, avgTravelersPerTrip, totalRevenue, avgRevenuePerTrip, topByRevenue, topByTravelers]
+      required: [totalItineraries, activeItineraries, tripCount, totalTravelers, avgTravelersPerTrip, totalRevenue, avgRevenuePerTrip, topByRevenue, topByTravelers]
       properties:
         totalItineraries:
+          type: integer
+        activeItineraries:
           type: integer
         tripCount:
           type: integer

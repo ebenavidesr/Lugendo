@@ -15,6 +15,6 @@ export interface ItineraryStatsTrip {
   endDate: string | null;
   status: ItineraryStatsTripStatus;
   travelerCount: number;
-  /** Aproximación (10€/viajero) hasta que exista un dato de facturación real — ver #92 */
+  /** Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€/viajero) para admin, o viajeros × precio desde del itinerario para agencia/asesor */
   revenue: number;
 }

@@ -1,12 +1,21 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
-import { tripsTable, tripSharesTable } from "@workspace/db";
+import { tripsTable, tripSharesTable, itinerariesTable } from "@workspace/db";
 
 // No hay todavía ningún dato de facturación real por viaje/viajero en el schema (ni tabla de
-// pagos, ni integración con Stripe). Hasta que exista (#92 — Módulo de facturación), usamos
-// como aproximación el fee de 10€/viajero del modelo de negocio.
-// TODO: sustituir por dato de facturación real cuando exista.
+// pagos, ni integración con Stripe). Hasta que exista (#92 — Módulo de facturación), estimamos
+// los ingresos con dos reglas distintas según quién mira el dato (decisión de Quique, #172/#174):
+// - Admin (visión de plataforma): fee fijo de Lugendo por viajero.
+// - Agencia/asesor (manager/agent/advisor, visión de su propio negocio): nº de viajeros del
+//   itinerario multiplicado por el precio "desde" (`itineraries.priceFrom`) de ese itinerario.
+// TODO: sustituir ambas por dato de facturación real cuando exista.
 export const PLACEHOLDER_FEE_PER_TRAVELER_EUR = 10;
+
+export type RevenueMode = "platform-fee" | "itinerary-price";
+
+export function revenueModeForRole(role: string): RevenueMode {
+  return role === "admin" ? "platform-fee" : "itinerary-price";
+}
 
 export interface ItineraryTripStat {
   id: number;
@@ -20,10 +29,10 @@ export interface ItineraryTripStat {
 }
 
 // Trips vinculados a los itinerarios dados, con nº de viajeros (aceptados, origin=agency) e
-// ingresos (placeholder) por viaje. Compartido entre el endpoint de estadísticas de un
-// itinerario individual (#172) y el de estadísticas agregadas del dashboard (#174) para no
-// duplicar la lógica de cálculo.
-export async function getTripStatsForItineraries(itineraryIds: number[]): Promise<ItineraryTripStat[]> {
+// ingresos estimados por viaje. Compartido entre el endpoint de estadísticas de un itinerario
+// individual (#172) y el de estadísticas agregadas del dashboard (#174) para no duplicar la
+// lógica de cálculo.
+export async function getTripStatsForItineraries(itineraryIds: number[], revenueMode: RevenueMode): Promise<ItineraryTripStat[]> {
   if (itineraryIds.length === 0) return [];
 
   const trips = await db
@@ -40,22 +49,31 @@ export async function getTripStatsForItineraries(itineraryIds: number[]): Promis
 
   if (trips.length === 0) return [];
 
-  const travelerCounts = await db
-    .select({
-      tripId: tripSharesTable.tripId,
-      count: sql<number>`count(distinct ${tripSharesTable.sharedWithUserId})::int`,
-    })
-    .from(tripSharesTable)
-    .where(and(
-      eq(tripSharesTable.origin, "agency"),
-      eq(tripSharesTable.status, "accepted"),
-      inArray(tripSharesTable.tripId, trips.map(t => t.id)),
-    ))
-    .groupBy(tripSharesTable.tripId);
+  const [travelerCounts, priceFromRows] = await Promise.all([
+    db
+      .select({
+        tripId: tripSharesTable.tripId,
+        count: sql<number>`count(distinct ${tripSharesTable.sharedWithUserId})::int`,
+      })
+      .from(tripSharesTable)
+      .where(and(
+        eq(tripSharesTable.origin, "agency"),
+        eq(tripSharesTable.status, "accepted"),
+        inArray(tripSharesTable.tripId, trips.map(t => t.id)),
+      ))
+      .groupBy(tripSharesTable.tripId),
+    revenueMode === "itinerary-price"
+      ? db.select({ id: itinerariesTable.id, priceFrom: itinerariesTable.priceFrom }).from(itinerariesTable).where(inArray(itinerariesTable.id, itineraryIds))
+      : Promise.resolve([]),
+  ]);
   const countMap = Object.fromEntries(travelerCounts.map(t => [t.tripId, t.count]));
+  const priceFromMap = Object.fromEntries(priceFromRows.map(i => [i.id, i.priceFrom ?? 0]));
 
   return trips.map(t => {
     const travelerCount = countMap[t.id] ?? 0;
+    const revenue = revenueMode === "platform-fee"
+      ? travelerCount * PLACEHOLDER_FEE_PER_TRAVELER_EUR
+      : travelerCount * (t.itineraryId != null ? (priceFromMap[t.itineraryId] ?? 0) : 0);
     return {
       id: t.id,
       itineraryId: t.itineraryId,
@@ -64,7 +82,7 @@ export async function getTripStatsForItineraries(itineraryIds: number[]): Promis
       endDate: t.endDate,
       status: t.status,
       travelerCount,
-      revenue: travelerCount * PLACEHOLDER_FEE_PER_TRAVELER_EUR,
+      revenue,
     };
   });
 }

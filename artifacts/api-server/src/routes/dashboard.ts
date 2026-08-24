@@ -5,7 +5,7 @@ import {
   tripsTable, tripSharesTable, itinerariesTable, usersTable,
 } from "@workspace/db";
 import { requireRoles } from "../middlewares/auth";
-import { getTripStatsForItineraries, summarizeTripStats } from "../lib/itinerary-stats";
+import { getTripStatsForItineraries, summarizeTripStats, revenueModeForRole } from "../lib/itinerary-stats";
 
 const router: IRouter = Router();
 
@@ -121,11 +121,12 @@ router.get("/dashboard/itineraries", requireRoles("admin", "manager", "agent", "
     : eq(itinerariesTable.agencyId, agencyId);
 
   const itineraries = await db
-    .select({ id: itinerariesTable.id, name: itinerariesTable.name })
+    .select({ id: itinerariesTable.id, name: itinerariesTable.name, active: itinerariesTable.active })
     .from(itinerariesTable)
     .where(whereItinerary);
+  const activeItineraries = itineraries.filter(i => i.active).length;
 
-  const trips = await getTripStatsForItineraries(itineraries.map(i => i.id));
+  const trips = await getTripStatsForItineraries(itineraries.map(i => i.id), revenueModeForRole(role ?? ""));
   const overall = summarizeTripStats(trips);
 
   const perItinerary: Record<number, { tripCount: number; travelerCount: number; revenue: number }> = {};
@@ -150,6 +151,7 @@ router.get("/dashboard/itineraries", requireRoles("admin", "manager", "agent", "
 
   res.json({
     totalItineraries: itineraries.length,
+    activeItineraries,
     ...overall,
     topByRevenue,
     topByTravelers,

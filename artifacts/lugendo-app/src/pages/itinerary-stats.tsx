@@ -3,6 +3,7 @@ import { ArrowLeft, Map, Users, TrendingUp, Trophy, Coins } from "lucide-react";
 import { useGetItinerary, useGetItineraryStats } from "@workspace/api-client-react";
 import type { ItineraryStatsTrip, TripStatus } from "@workspace/api-client-react";
 import { StatCard } from "@/components/stat-card";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusBadge: Record<TripStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
@@ -25,6 +26,10 @@ export default function ItineraryStats() {
   const itineraryId = parseInt(id, 10);
   const { data: itinerary } = useGetItinerary(itineraryId);
   const { data: stats, isLoading } = useGetItineraryStats(itineraryId);
+  const { user } = useAuth();
+  const revenueNote = user?.role === "admin"
+    ? "Los ingresos son una estimación (10€/viajero, fee de plataforma) hasta que exista un dato de facturación real."
+    : "Los ingresos son una estimación (viajeros × precio \"desde\" del itinerario) hasta que exista un dato de facturación real.";
 
   return (
     <div className="p-6 space-y-5 max-w-4xl">
@@ -51,9 +56,7 @@ export default function ItineraryStats() {
             <StatCard label="Ingresos totales" value={fmtEur(stats?.totalRevenue ?? 0)} icon={Trophy} accent="#ECD5B8" />
             <StatCard label="Ingresos / viaje" value={fmtEur(stats?.avgRevenuePerTrip ?? 0)} icon={Coins} accent="#FAEEE4" />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Los ingresos son una estimación (10€/viajero) hasta que exista un dato de facturación real.
-          </p>
+          <p className="text-xs text-muted-foreground">{revenueNote}</p>
 
           <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
             <div className="px-5 py-3.5 border-b border-border">

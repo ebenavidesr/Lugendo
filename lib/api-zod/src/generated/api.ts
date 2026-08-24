@@ -752,7 +752,7 @@ export const GetItineraryStatsResponse = zod.object({
   "endDate": zod.string().nullable(),
   "status": zod.enum(['draft', 'scheduled', 'active', 'finished', 'cancelled']),
   "travelerCount": zod.number(),
-  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+  "revenue": zod.number().describe('Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€\/viajero) para admin, o viajeros × precio desde del itinerario para agencia\/asesor')
 }))
 })
 
@@ -3858,6 +3858,7 @@ export const GetDashboardSummaryResponse = zod.object({
  */
 export const GetDashboardItinerariesResponse = zod.object({
   "totalItineraries": zod.number(),
+  "activeItineraries": zod.number(),
   "tripCount": zod.number(),
   "totalTravelers": zod.number(),
   "avgTravelersPerTrip": zod.number(),
@@ -3868,14 +3869,14 @@ export const GetDashboardItinerariesResponse = zod.object({
   "name": zod.string(),
   "tripCount": zod.number(),
   "travelerCount": zod.number(),
-  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+  "revenue": zod.number().describe('Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€\/viajero) para admin, o viajeros × precio desde del itinerario para agencia\/asesor')
 })),
   "topByTravelers": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "tripCount": zod.number(),
   "travelerCount": zod.number(),
-  "revenue": zod.number().describe('Aproximación (10€\/viajero) hasta que exista un dato de facturación real — ver #92')
+  "revenue": zod.number().describe('Estimación hasta que exista un dato de facturación real (#92): fee de plataforma (10€\/viajero) para admin, o viajeros × precio desde del itinerario para agencia\/asesor')
 }))
 })
 

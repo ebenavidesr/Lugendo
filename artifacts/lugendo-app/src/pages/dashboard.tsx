@@ -1,8 +1,9 @@
 import { useGetDashboardSummary, useGetDashboardItineraries } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { MapPin, Users, Plane, CalendarDays, ArrowRight, TrendingUp, Map, Trophy } from "lucide-react";
+import { MapPin, Users, Plane, CalendarDays, ArrowRight, TrendingUp, Map, Trophy, CheckCircle2 } from "lucide-react";
 import type { Trip, Invitation, TripStatus } from "@workspace/api-client-react";
 import { StatCard } from "@/components/stat-card";
+import { useAuth } from "@/hooks/use-auth";
 
 const statusBadge: Record<TripStatus, { bg: string; color: string; label: string }> = {
   draft:     { bg: "#ECD5B8", color: "#7A5C3A", label: "Borrador" },
@@ -33,6 +34,8 @@ function fmtEur(n: number) {
 export default function Dashboard() {
   const { data, isLoading } = useGetDashboardSummary();
   const { data: itinStats } = useGetDashboardItineraries();
+  const { user } = useAuth();
+  const revenueSub = user?.role === "admin" ? "Estimación a 10€/viajero" : "Estimación: viajeros × precio desde";
 
   if (isLoading) {
     return (
@@ -143,11 +146,12 @@ export default function Dashboard() {
           <p className="text-xs text-muted-foreground mt-0.5">Rendimiento agregado de los itinerarios de la agencia</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Itinerarios activos" value={itinStats?.activeItineraries ?? 0} icon={CheckCircle2} accent="#ECD5B8" />
           <StatCard label="Viajes creados" value={itinStats?.tripCount ?? 0} icon={Map} accent="#EAE6F5" />
           <StatCard label="Total viajeros" value={itinStats?.totalTravelers ?? 0} icon={Users} accent="#FAEEE4" />
           <StatCard label="Ingresos totales" value={fmtEur(itinStats?.totalRevenue ?? 0)}
-            sub="Estimación a 10€/viajero" icon={Trophy} accent="#E4F3EC" />
+            sub={revenueSub} icon={Trophy} accent="#E4F3EC" />
         </div>
 
         {!itinStats?.tripCount ? (
