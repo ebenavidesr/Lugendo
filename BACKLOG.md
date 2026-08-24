@@ -10,6 +10,11 @@
 
 | # | Tarea | Prioridad | Área | Autor |
 |---|-------|-----------|------|-------|
+| #179 | Bugs funcionales de la auditoría UX/UI (estado duplicado en detalle de viaje back office/viajero, bloque "Vuelos" duplicado, selector vacío en Configuración, checkbox "Tipo de viaje" con forma de radio, logos de agencia sin formato uniforme) | 🔴 Alta | General | Yo |
+| #176 | Sistema de color/badges unificado — formalizar 3 colores semánticos (peligro/aviso/éxito), componente `EstadoBadge` único (6+ implementaciones hoy), fondos de tarjetas/página a Duna/Arena oficial | 🟡 Media | General | Yo |
+| #177 | Navegación unificada del front del viajero (extraer cabecera compartida para `/buscar` e `/itinerarios/:id`, las otras 3 rutas ya comparten `TravelerLayout`) + componente `StatCard` único (3 implementaciones independientes hoy) | 🟡 Media | Viajeros | Yo |
+| #178 | Filtros combinables (Nombre/Agencia/Región) en Itinerarios y Viajes + filtro de Agencia en Equipo — bloqueado por convertir "Región" de itinerario de texto libre a desplegable | 🟡 Media | Itinerarios | Yo |
+| #180 | Explorar viajes: sección "viajes a tus destinos deseados" (cruza países "Quiero visitar" del perfil con itinerarios publicados) | 🟢 Baja | Viajeros | Yo |
 | #2 | País desde lista y defaults del día | 🟢 Baja | Itinerarios | — |
 | #4 | Aplicar lógica misma ciudad al crear hotel nuevo — en curso | 🔴 Alta | Hoteles | — |
 | #5 | Asignación bulk de hoteles en todos los días del viaje — en curso | 🔴 Alta | Hoteles | — |
@@ -209,3 +214,4 @@
 | #69 | Notificar al viajero cuando se renombra o elimina un documento |
 | #70 | Opt-out de notificaciones por email (viajero) |
 | #108 | Tocar una tarjeta KPI para ir directo a esa pestaña |
+| #175 | Auditoría UX/UI: sistema de color/badges, navegación unificada del viajero, filtros y bugs (back office + front) — descompuesta en #176, #177, #178, #179 y #180 por volumen; el documento de auditoría adjunto sigue siendo la fuente de verdad |
