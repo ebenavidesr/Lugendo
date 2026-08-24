@@ -201,6 +201,7 @@ export interface User {
   role: UserRole;
   /** @nullable */
   agencyId?: number | null;
+  agencyIds?: number[];
   active: boolean;
   status: UserStatus;
   createdAt: string;
@@ -447,6 +448,21 @@ export interface PublicItineraryDetail {
 /**
  * @nullable
  */
+export type ItineraryRegion = typeof ItineraryRegion[keyof typeof ItineraryRegion] | null;
+
+
+export const ItineraryRegion = {
+  África: 'África',
+  Asia: 'Asia',
+  Europa: 'Europa',
+  América: 'América',
+  Oceanía: 'Oceanía',
+  Polar: 'Polar',
+} as const;
+
+/**
+ * @nullable
+ */
 export type ItineraryDifficulty = typeof ItineraryDifficulty[keyof typeof ItineraryDifficulty] | null;
 
 
@@ -468,7 +484,7 @@ export interface Itinerary {
   name: string;
   countries?: string[];
   /** @nullable */
-  region?: string | null;
+  region?: ItineraryRegion;
   numDays: number;
   /** @nullable */
   difficulty?: ItineraryDifficulty;
@@ -595,6 +611,18 @@ export interface ItineraryDetail {
   days: ItineraryDay[];
 }
 
+export type ItineraryInputRegion = typeof ItineraryInputRegion[keyof typeof ItineraryInputRegion];
+
+
+export const ItineraryInputRegion = {
+  África: 'África',
+  Asia: 'Asia',
+  Europa: 'Europa',
+  América: 'América',
+  Oceanía: 'Oceanía',
+  Polar: 'Polar',
+} as const;
+
 export type ItineraryInputDifficulty = typeof ItineraryInputDifficulty[keyof typeof ItineraryInputDifficulty];
 
 
@@ -607,7 +635,7 @@ export const ItineraryInputDifficulty = {
 export interface ItineraryInput {
   name: string;
   countries?: string[];
-  region?: string;
+  region?: ItineraryInputRegion;
   numDays: number;
   difficulty?: ItineraryInputDifficulty;
   description?: string;
@@ -623,6 +651,18 @@ export interface ItineraryInput {
   priceFrom?: number;
 }
 
+export type ItineraryUpdateRegion = typeof ItineraryUpdateRegion[keyof typeof ItineraryUpdateRegion];
+
+
+export const ItineraryUpdateRegion = {
+  África: 'África',
+  Asia: 'Asia',
+  Europa: 'Europa',
+  América: 'América',
+  Oceanía: 'Oceanía',
+  Polar: 'Polar',
+} as const;
+
 export type ItineraryUpdateDifficulty = typeof ItineraryUpdateDifficulty[keyof typeof ItineraryUpdateDifficulty];
 
 
@@ -635,7 +675,7 @@ export const ItineraryUpdateDifficulty = {
 export interface ItineraryUpdate {
   name?: string;
   countries?: string[];
-  region?: string;
+  region?: ItineraryUpdateRegion;
   numDays?: number;
   difficulty?: ItineraryUpdateDifficulty;
   description?: string;

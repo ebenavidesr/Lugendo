@@ -12,7 +12,9 @@ export const itinerariesTable = pgTable("itineraries", {
   createdBy: integer("created_by").references(() => usersTable.id),
   name: text("name").notNull(),
   countries: text("countries").array().notNull().default([]),
-  region: text("region"),
+  // #178: lista cerrada desde 2026-08-24 (antes texto libre). Los datos existentes ya
+  // encajaban con estos 6 valores exactos al migrar — sin necesidad de backfill.
+  region: text("region", { enum: ["África", "Asia", "Europa", "América", "Oceanía", "Polar"] }),
   numDays: integer("num_days").notNull().default(1),
   difficulty: text("difficulty", { enum: ["easy", "moderate", "demanding"] }),
   description: text("description"),

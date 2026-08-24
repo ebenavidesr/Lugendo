@@ -476,6 +476,7 @@ export const ListUsersResponseItem = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
+  "agencyIds": zod.array(zod.number()).optional(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
@@ -508,6 +509,7 @@ export const GetUserResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
+  "agencyIds": zod.array(zod.number()).optional(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
@@ -537,6 +539,7 @@ export const UpdateUserResponse = zod.object({
   "name": zod.string(),
   "role": zod.enum(['admin', 'manager', 'agent', 'advisor', 'traveler']),
   "agencyId": zod.number().nullish(),
+  "agencyIds": zod.array(zod.number()).optional(),
   "active": zod.boolean(),
   "status": zod.enum(['pending', 'approved', 'rejected']),
   "createdAt": zod.string()
@@ -551,7 +554,7 @@ export const ListItinerariesResponseItem = zod.object({
   "agencyId": zod.number(),
   "name": zod.string(),
   "countries": zod.array(zod.string()).optional(),
-  "region": zod.string().nullish(),
+  "region": zod.union([zod.literal('África'),zod.literal('Asia'),zod.literal('Europa'),zod.literal('América'),zod.literal('Oceanía'),zod.literal('Polar'),zod.literal(null)]).nullish(),
   "numDays": zod.number(),
   "difficulty": zod.union([zod.literal('easy'),zod.literal('moderate'),zod.literal('demanding'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),
@@ -581,7 +584,7 @@ export const ListItinerariesResponse = zod.array(ListItinerariesResponseItem)
 export const CreateItineraryBody = zod.object({
   "name": zod.string(),
   "countries": zod.array(zod.string()).optional(),
-  "region": zod.string().optional(),
+  "region": zod.enum(['África', 'Asia', 'Europa', 'América', 'Oceanía', 'Polar']).optional(),
   "numDays": zod.number(),
   "difficulty": zod.enum(['easy', 'moderate', 'demanding']).optional(),
   "description": zod.string().optional(),
@@ -676,7 +679,7 @@ export const UpdateItineraryParams = zod.object({
 export const UpdateItineraryBody = zod.object({
   "name": zod.string().optional(),
   "countries": zod.array(zod.string()).optional(),
-  "region": zod.string().optional(),
+  "region": zod.enum(['África', 'Asia', 'Europa', 'América', 'Oceanía', 'Polar']).optional(),
   "numDays": zod.number().optional(),
   "difficulty": zod.enum(['easy', 'moderate', 'demanding']).optional(),
   "description": zod.string().optional(),
@@ -701,7 +704,7 @@ export const UpdateItineraryResponse = zod.object({
   "agencyId": zod.number(),
   "name": zod.string(),
   "countries": zod.array(zod.string()).optional(),
-  "region": zod.string().nullish(),
+  "region": zod.union([zod.literal('África'),zod.literal('Asia'),zod.literal('Europa'),zod.literal('América'),zod.literal('Oceanía'),zod.literal('Polar'),zod.literal(null)]).nullish(),
   "numDays": zod.number(),
   "difficulty": zod.union([zod.literal('easy'),zod.literal('moderate'),zod.literal('demanding'),zod.literal(null)]).nullish(),
   "description": zod.string().nullish(),

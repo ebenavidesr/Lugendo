@@ -27,7 +27,10 @@ const SITES: SiteConfig[] = [
 // JS/AJAX, so a plain fetch sees no <a href="/viaje/..."> links there at all — useless for
 // attribution. Region is derived instead from the per-country nav (which IS server-rendered,
 // see discoverAttribution below) via this static lookup, built from both sites' full country menus.
-const COUNTRY_TO_REGION: Record<string, string> = {
+// #178: coincide exactamente con la lista cerrada de region en el schema de itinerarios.
+type Region = "África" | "Asia" | "Europa" | "América" | "Oceanía" | "Polar";
+
+const COUNTRY_TO_REGION: Record<string, Region> = {
   "Angola": "África", "Argelia": "África", "Benín": "África", "Botswana": "África",
   "Cabo Verde": "África", "Cataratas Victoria": "África", "Congo Brazzaville": "África",
   "Egipto": "África", "Eswatini (Swaziland)": "África", "Etiopía": "África", "Kenia": "África",
@@ -89,10 +92,10 @@ async function discoverTripUrls(site: SiteConfig): Promise<string[]> {
 // record which trip slugs they link to. A trip not found in any listing keeps empty countries.
 async function discoverAttribution(site: SiteConfig): Promise<{
   countriesByUrl: Map<string, Set<string>>;
-  regionByUrl: Map<string, string>;
+  regionByUrl: Map<string, Region>;
 }> {
   const countriesByUrl = new Map<string, Set<string>>();
-  const regionByUrl = new Map<string, string>();
+  const regionByUrl = new Map<string, Region>();
 
   // Kananga names its country listing pages "/viajes/{slug}-{id}" and uses "/viajar/{slug}"
   // (no id) for curated theme pages; Ambar Viajes does the exact opposite (country pages are

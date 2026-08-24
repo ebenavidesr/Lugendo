@@ -7,6 +7,7 @@
  */
 import type { ChecklistEntry } from './checklistEntry';
 import type { ItineraryDifficulty } from './itineraryDifficulty';
+import type { ItineraryRegion } from './itineraryRegion';
 import type { TripType } from './tripType';
 
 export interface Itinerary {
@@ -15,7 +16,7 @@ export interface Itinerary {
   name: string;
   countries?: string[];
   /** @nullable */
-  region?: string | null;
+  region?: ItineraryRegion;
   numDays: number;
   /** @nullable */
   difficulty?: ItineraryDifficulty;

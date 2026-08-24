@@ -6,6 +6,17 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### #178 (Notion) — Filtros de Itinerarios/Viajes/Equipo + Región como desplegable (2026-08-24)
+> Sub-tarea de #175. Los datos de "región" ya estaban perfectamente limpios (6 valores exactos, sin backfill necesario) porque el script de importación #170 ya generaba solo esos valores.
+
+- [x] Campo "Región" del modal de editar itinerario: `Input` → `Select` con lista cerrada (África/Asia/Europa/América/Oceanía/Polar); schema, OpenAPI y validación Zod actualizados; sin migración SQL (el `enum` de Drizzle en columna `text` es solo tipo TS)
+- [x] Nuevo `components/itinerary-trip-filter-bar.tsx` (`ItineraryTripFilterBar`): Nombre + Agencia + Región combinables (AND) + "Limpiar filtros", mismo componente en Itinerarios y Viajes; para Viajes, la región se deriva cruzando `itineraryId` con la lista de itinerarios
+- [x] Filtro de Agencia en Equipo: nuevo campo `agencyIds` en `GET /api/users` (solo para `role=traveler`, calculado vía `trip_shares` × `trips` con `origin=agency`); "Personal de agencia" sigue filtrando por `agencyId` directo
+- [x] `pnpm run typecheck` limpio en todo el monorepo (incluida una actualización necesaria en `scripts/import-tourknife.ts`) y `pnpm run build` limpio en `lugendo-app`/`api-server`
+- [ ] Verificación visual en Itinerarios, Viajes y Equipo — sin credenciales locales, pendiente en producción
+
+**Hallazgo colateral fuera de alcance:** `GET /api/users` filtra por `agencyId` directo para roles no-admin, pero 11 de 12 viajeros no tienen ese campo poblado — un manager/agente probablemente no ve a casi ningún viajero en Equipo hoy. No se tocó (no es parte de esta tarea), señalado a Quique para decidir si se abre como tarea nueva.
+
 ### #176 (Notion) — Sistema de color/badges unificado (paleta semántica + EstadoBadge + fondos) (2026-08-24)
 > Sub-tarea de #175. **Cambio de alto impacto visual:** `--background` y `--card` son tokens globales en `index.css`, así que el ajuste de fondos afecta a TODA la app (toda superficie `bg-card`), no solo a Dashboard/Viajes. Pendiente de verificación visual completa en producción.
 

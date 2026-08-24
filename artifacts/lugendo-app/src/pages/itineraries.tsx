@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   useListItineraries, useCreateItinerary, useUpdateItinerary,
-  useDeleteItinerary,
+  useDeleteItinerary, useListAgencies, getListAgenciesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Itinerary, ItineraryDifficulty } from "@workspace/api-client-react";
@@ -20,6 +20,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { getApiErrorMessage } from "@/lib/utils";
 import { EstadoBadge } from "@/components/estado-badge";
+import {
+  ItineraryTripFilterBar, EMPTY_ITINERARY_TRIP_FILTERS, REGIONS, hasActiveFilters,
+  type ItineraryTripFilters,
+} from "@/components/itinerary-trip-filter-bar";
 
 const diffBadge: Record<NonNullable<ItineraryDifficulty>, { bg: string; color: string; label: string }> = {
   easy:      { bg: "#E4F3EC", color: "#2E7D5A", label: "Fácil" },
@@ -40,7 +44,7 @@ const schema = z.object({
   name: z.string().min(2, "Nombre requerido"),
   numDays: z.string().min(1, "Días requerido"),
   countries: z.string().optional(),
-  region: z.string().optional(),
+  region: z.enum(REGIONS).optional(),
   difficulty: z.enum(["easy", "moderate", "demanding"]).optional(),
   description: z.string().optional(),
 });
@@ -118,7 +122,14 @@ function ItineraryForm({
             <FormField control={form.control} name="region" render={({ field }) => (
               <FormItem>
                 <FormLabel>Región (opcional)</FormLabel>
-                <FormControl><Input placeholder="Norte de África" {...field} /></FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {REGIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )} />
@@ -152,7 +163,9 @@ export default function Itineraries() {
   const [editItinerary, setEditItinerary] = useState<Itinerary | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [filters, setFilters] = useState<ItineraryTripFilters>(EMPTY_ITINERARY_TRIP_FILTERS);
   const { data: itineraries, isLoading } = useListItineraries();
+  const { data: agencies } = useListAgencies({ query: { queryKey: getListAgenciesQueryKey() } });
   const update = useUpdateItinerary();
   const deleteIt = useDeleteItinerary();
   const qc = useQueryClient();
@@ -161,7 +174,10 @@ export default function Itineraries() {
   const canManage = user?.role === "admin" || user?.role === "manager" || user?.role === "agent" || user?.role === "advisor";
   const isAdmin = user?.role === "admin";
 
-  const visibleItineraries = itineraries?.filter(it => showInactive || it.active !== false);
+  const visibleItineraries = itineraries?.filter(it => showInactive || it.active !== false)
+    .filter(it => !filters.name || it.name.toLowerCase().includes(filters.name.toLowerCase()))
+    .filter(it => !filters.agencyId || it.agencyId === Number(filters.agencyId))
+    .filter(it => !filters.region || it.region === filters.region);
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -235,6 +251,10 @@ export default function Itineraries() {
         </div>
       </div>
 
+      {!!itineraries?.length && (
+        <ItineraryTripFilterBar filters={filters} onChange={setFilters} agencies={agencies ?? []} />
+      )}
+
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Cargando itinerarios…</div>
@@ -247,7 +267,11 @@ export default function Itineraries() {
           </div>
         ) : !visibleItineraries?.length ? (
           <div className="p-12 text-center">
-            <p className="text-sm text-muted-foreground">Todos los itinerarios están inactivos — activa "Mostrar inactivos" para verlos</p>
+            <p className="text-sm text-muted-foreground">
+              {hasActiveFilters(filters)
+                ? "Ningún itinerario coincide con los filtros aplicados"
+                : "Todos los itinerarios están inactivos — activa \"Mostrar inactivos\" para verlos"}
+            </p>
           </div>
         ) : (
           <table className="w-full text-[13px]">
@@ -333,7 +357,7 @@ export default function Itineraries() {
             name: editItinerary.name,
             numDays: String(editItinerary.numDays),
             countries: editItinerary.countries?.join(", ") ?? "",
-            region: editItinerary.region ?? "",
+            region: editItinerary.region ?? undefined,
             difficulty: editItinerary.difficulty ?? undefined,
             description: editItinerary.description ?? "",
           }}

@@ -4,7 +4,10 @@ import { Plus, ArrowRight, Pencil, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useListTrips, useUpdateTrip, useDeleteTrip, useListItineraries } from "@workspace/api-client-react";
+import {
+  useListTrips, useUpdateTrip, useDeleteTrip, useListItineraries,
+  useListAgencies, getListAgenciesQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Trip, TripStatus } from "@workspace/api-client-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,6 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { EstadoBadge, type EstadoTone } from "@/components/estado-badge";
+import {
+  ItineraryTripFilterBar, EMPTY_ITINERARY_TRIP_FILTERS,
+  type ItineraryTripFilters,
+} from "@/components/itinerary-trip-filter-bar";
 
 const statusTone: Record<TripStatus, EstadoTone> = {
   draft: "duna", scheduled: "indigo", active: "green", finished: "muted", cancelled: "red",
@@ -212,13 +219,24 @@ export default function Trips() {
   const [, navigate] = useLocation();
   const [editTrip, setEditTrip] = useState<Trip | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [filters, setFilters] = useState<ItineraryTripFilters>(EMPTY_ITINERARY_TRIP_FILTERS);
   const { data: trips, isLoading } = useListTrips();
+  const { data: itinerariesForFilter } = useListItineraries();
+  const { data: agencies } = useListAgencies({ query: { queryKey: getListAgenciesQueryKey() } });
   const remove = useDeleteTrip();
   const update = useUpdateTrip();
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
   const canDelete = user?.role === "admin" || user?.role === "manager" || user?.role === "advisor";
+
+  // El viaje no guarda región directamente — se deriva del itinerario del que proviene.
+  const regionByItineraryId = new Map((itinerariesForFilter ?? []).map(it => [it.id, it.region]));
+
+  const visibleTrips = trips
+    ?.filter(t => !filters.name || t.name.toLowerCase().includes(filters.name.toLowerCase()))
+    .filter(t => !filters.agencyId || t.agencyId === Number(filters.agencyId))
+    .filter(t => !filters.region || (t.itineraryId != null && regionByItineraryId.get(t.itineraryId) === filters.region));
 
   const handleDelete = () => {
     if (!deleteTarget) return;
@@ -260,6 +278,10 @@ export default function Trips() {
         </button>
       </div>
 
+      {!!trips?.length && (
+        <ItineraryTripFilterBar filters={filters} onChange={setFilters} agencies={agencies ?? []} />
+      )}
+
       <div className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground">Cargando viajes…</div>
@@ -269,6 +291,10 @@ export default function Trips() {
             <button onClick={() => navigate("/trips/new")} className="text-[13px] font-medium" style={{ color: "#C4793A" }}>
               Crea el primer viaje →
             </button>
+          </div>
+        ) : !visibleTrips?.length ? (
+          <div className="p-12 text-center">
+            <p className="text-sm text-muted-foreground">Ningún viaje coincide con los filtros aplicados</p>
           </div>
         ) : (
           <table className="w-full text-[13px]">
@@ -281,7 +307,7 @@ export default function Trips() {
               </tr>
             </thead>
             <tbody>
-              {trips.map((trip: Trip) => (
+              {(visibleTrips ?? []).map((trip: Trip) => (
                 <tr key={trip.id} className="border-b border-border/60 hover:bg-[#ECD5B8]/20 transition-colors group">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">

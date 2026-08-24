@@ -750,15 +750,24 @@ export default function Team() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [query, setQuery] = useState("");
+  const [agencyFilter, setAgencyFilter] = useState("");
 
   const filtered = useMemo(() => {
     if (!users) return [];
+    let list = users;
     const q = query.trim().toLowerCase();
-    if (!q) return users;
-    return users.filter(u =>
-      u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-    );
-  }, [users, query]);
+    if (q) {
+      list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    }
+    if (agencyFilter) {
+      // "Personal de agencia" filtra por su campo directo agencyId; "Viajeros" no
+      // pertenecen a una agencia, se filtran por con qué agencia han viajado
+      // (agencyIds, relación histórica calculada en el backend) — no es el mismo campo.
+      const aid = Number(agencyFilter);
+      list = list.filter(u => u.role === "traveler" ? (u.agencyIds ?? []).includes(aid) : u.agencyId === aid);
+    }
+    return list;
+  }, [users, query, agencyFilter]);
 
   const staff     = filtered.filter(u => u.role !== "traveler");
   const travelers = filtered.filter(u => u.role === "traveler");
@@ -804,24 +813,35 @@ export default function Team() {
         </div>
       </div>
 
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-        <input
-          type="text"
-          placeholder="Buscar por nombre o email…"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-[13px] rounded-[8px] border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#3D2F6B]/20 focus:border-[#3D2F6B]"
-          style={{ color: "#2D1F0E" }}
-        />
-        {query && (
-          <button
-            onClick={() => setQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-[11px]"
-          >
-            ✕
-          </button>
+      {/* Search bar + filtro de agencia (#178) */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o email…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-[13px] rounded-[8px] border border-border bg-white focus:outline-none focus:ring-2 focus:ring-[#3D2F6B]/20 focus:border-[#3D2F6B]"
+            style={{ color: "#2D1F0E" }}
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-[11px]"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        {isAdmin && !!agencies?.length && (
+          <Select value={agencyFilter || "all"} onValueChange={v => setAgencyFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="h-9 w-44 shrink-0"><SelectValue placeholder="Agencia" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las agencias</SelectItem>
+              {agencies.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         )}
       </div>
 

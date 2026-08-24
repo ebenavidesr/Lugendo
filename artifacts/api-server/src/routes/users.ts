@@ -1,9 +1,9 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
-import { usersTable, agenciesTable } from "@workspace/db";
+import { usersTable, agenciesTable, tripSharesTable, tripsTable } from "@workspace/db";
 import { requireAuth, requireRoles } from "../middlewares/auth";
 import { validate } from "../middlewares/validate";
 import { UserInputSchema, UserUpdateSchema } from "../lib/schemas";
@@ -13,8 +13,12 @@ import { PUBLIC_APP_URL } from "../lib/publicUrl";
 const router: IRouter = Router();
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
-function serialize(u: typeof usersTable.$inferSelect) {
-  return { id: u.id, email: u.email, name: u.name, role: u.role, agencyId: u.agencyId, active: u.active, status: u.status, createdAt: u.createdAt.toISOString() };
+function serialize(u: typeof usersTable.$inferSelect, agencyIds?: number[]) {
+  return {
+    id: u.id, email: u.email, name: u.name, role: u.role, agencyId: u.agencyId,
+    ...(agencyIds ? { agencyIds } : {}),
+    active: u.active, status: u.status, createdAt: u.createdAt.toISOString(),
+  };
 }
 
 router.get("/users", requireAuth, async (req, res): Promise<void> => {
@@ -27,7 +31,32 @@ router.get("/users", requireAuth, async (req, res): Promise<void> => {
   } else {
     rows = [];
   }
-  res.json(rows.map(serialize));
+
+  // #178: filtro de Agencia en Equipo para "Viajeros" — a diferencia de "Personal de
+  // agencia" (campo agencyId directo), un viajero se asocia a una agencia por haber
+  // viajado con ella (trip_shares con origin="agency", i.e. invitación oficial de la
+  // agencia a un viaje suyo, no un share personal entre viajeros).
+  const travelerIds = rows.filter(u => u.role === "traveler").map(u => u.id);
+  const agencyIdsByTraveler = new Map<number, number[]>();
+  if (travelerIds.length > 0) {
+    const shareRows = await db
+      .select({ travelerId: tripSharesTable.sharedWithUserId, agencyId: tripsTable.agencyId })
+      .from(tripSharesTable)
+      .innerJoin(tripsTable, eq(tripsTable.id, tripSharesTable.tripId))
+      .where(and(
+        eq(tripSharesTable.status, "accepted"),
+        eq(tripSharesTable.origin, "agency"),
+        inArray(tripSharesTable.sharedWithUserId, travelerIds),
+      ));
+    for (const r of shareRows) {
+      if (r.travelerId == null || r.agencyId == null) continue;
+      const list = agencyIdsByTraveler.get(r.travelerId) ?? [];
+      if (!list.includes(r.agencyId)) list.push(r.agencyId);
+      agencyIdsByTraveler.set(r.travelerId, list);
+    }
+  }
+
+  res.json(rows.map(u => serialize(u, u.role === "traveler" ? (agencyIdsByTraveler.get(u.id) ?? []) : undefined)));
 });
 
 router.post("/users", requireRoles("admin", "manager", "advisor"), validate(UserInputSchema), async (req, res): Promise<void> => {

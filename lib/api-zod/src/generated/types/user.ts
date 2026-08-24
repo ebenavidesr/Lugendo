@@ -15,6 +15,7 @@ export interface User {
   role: UserRole;
   /** @nullable */
   agencyId?: number | null;
+  agencyIds?: number[];
   active: boolean;
   status: UserStatus;
   createdAt: string;

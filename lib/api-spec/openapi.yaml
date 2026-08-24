@@ -3962,6 +3962,13 @@ components:
           enum: [admin, manager, agent, advisor, traveler]
         agencyId:
           type: ["integer", "null"]
+        # Solo poblado para role=traveler (#178): agencias con las que el viajero ha viajado
+        # (viaje con invitación/share aceptada), derivado de trip_shares. No es el mismo
+        # concepto que agencyId (personal de agencia), es una relación histórica.
+        agencyIds:
+          type: array
+          items:
+            type: integer
         active:
           type: boolean
         status:
@@ -4299,6 +4306,7 @@ components:
             type: string
         region:
           type: ["string", "null"]
+          enum: ["África", "Asia", "Europa", "América", "Oceanía", "Polar", null]
         numDays:
           type: integer
         difficulty:
@@ -4420,6 +4428,7 @@ components:
             type: string
         region:
           type: string
+          enum: [África, Asia, Europa, América, Oceanía, Polar]
         numDays:
           type: integer
         difficulty:
@@ -4471,6 +4480,7 @@ components:
             type: string
         region:
           type: string
+          enum: [África, Asia, Europa, América, Oceanía, Polar]
         numDays:
           type: integer
         difficulty:

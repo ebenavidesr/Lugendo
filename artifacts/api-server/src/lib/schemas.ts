@@ -157,6 +157,7 @@ export const ActivityUpdateSchema = z.object({
 // ─── Itinerary ────────────────────────────────────────────────────────────────
 
 const DifficultySchema = z.enum(["easy", "moderate", "demanding"]);
+const RegionSchema = z.enum(["África", "Asia", "Europa", "América", "Oceanía", "Polar"]);
 
 // Taxonomía cerrada y común a toda la plataforma (tarea #161). Ampliable editando esta lista,
 // sin migración de esquema porque no se modela como enum de Postgres.
@@ -182,7 +183,7 @@ export const ItineraryInputSchema = z.object({
   name: z.string().min(1),
   numDays: z.number().int().positive(),
   countries: z.array(z.string()).optional(),
-  region: z.string().optional(),
+  region: RegionSchema.optional(),
   difficulty: DifficultySchema.optional(),
   description: z.string().optional(),
   videoUrl: z.string().optional(),
@@ -201,7 +202,7 @@ export const ItineraryUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   numDays: z.number().int().positive().optional(),
   countries: z.array(z.string()).optional(),
-  region: z.string().nullable().optional(),
+  region: RegionSchema.nullable().optional(),
   difficulty: DifficultySchema.nullable().optional(),
   description: z.string().nullable().optional(),
   videoUrl: z.string().nullable().optional(),

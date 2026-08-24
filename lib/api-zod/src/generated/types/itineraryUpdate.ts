@@ -7,12 +7,13 @@
  */
 import type { ChecklistEntry } from './checklistEntry';
 import type { ItineraryUpdateDifficulty } from './itineraryUpdateDifficulty';
+import type { ItineraryUpdateRegion } from './itineraryUpdateRegion';
 import type { TripType } from './tripType';
 
 export interface ItineraryUpdate {
   name?: string;
   countries?: string[];
-  region?: string;
+  region?: ItineraryUpdateRegion;
   numDays?: number;
   difficulty?: ItineraryUpdateDifficulty;
   description?: string;
