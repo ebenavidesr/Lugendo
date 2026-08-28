@@ -6,6 +6,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Bug — "Siguiente" desactivado en el paso 3 (Datos del viaje) del wizard aunque los campos se vean rellenos (2026-08-28)
+> Reportado por Quique: en `/traveler/trips/new`, paso 3, con todos los campos aparentemente completos, el botón "Siguiente" seguía desactivado.
+
+- [x] **Causa raíz confirmada en producción** (consola del navegador, `input[type=date]` de "Fecha de salida" con `.value === ""` aunque el campo mostraba visualmente "26/12/2026"): la fecha se había tecleado a mano y el `<input type="date">` nativo nunca llegó a considerarla una fecha válida (típico cuando el tecleo del teclado no completa correctamente los segmentos día/mes/año), así que React nunca recibió un `onChange` con valor completo — `canProceed()` (`!!data.tripName && !!data.startDate`) estaba actuando correctamente sobre un estado real vacío, no había bug de lógica. Confirmado por el propio Quique: seleccionando la fecha desde el selector/calendario del input sí funcionaba.
+- [x] Fix (UX, no de lógica): aviso inline bajo "Fecha de salida" — "La fecha no se guardó — revisa que día, mes y año estén completos y vuelve a introducirla" — que aparece si el campo pierde el foco (`onBlur`) y su valor sigue vacío, en ambos wizards que comparten el patrón (`traveler-trip-wizard.tsx` y `trip-wizard.tsx`, agencia)
+- [x] `pnpm run typecheck` limpio en todo el monorepo
+- [ ] Verificación visual pendiente por parte de Quique del aviso en `/traveler/trips/new` y `/trips/new`
+
 ### #178 (Notion) — Filtros de Itinerarios/Viajes/Equipo + Región como desplegable (2026-08-24)
 > Sub-tarea de #175. Los datos de "región" ya estaban perfectamente limpios (6 valores exactos, sin backfill necesario) porque el script de importación #170 ya generaba solo esos valores.
 

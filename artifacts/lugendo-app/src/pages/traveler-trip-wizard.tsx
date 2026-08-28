@@ -79,6 +79,7 @@ export default function TravelerTripWizard() {
   });
   const [isCreating, setIsCreating] = useState(false);
   const [isUsingPhoto, setIsUsingPhoto] = useState(false);
+  const [startDateTouched, setStartDateTouched] = useState(false);
   const useAsTemplate = useUseTripPhotoAsTemplate();
 
   // Coming from a shared photo link (/foto/:code → "Crear mi cuenta y usarla") —
@@ -430,7 +431,17 @@ export default function TravelerTripWizard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de salida *</label>
-                  <Input type="date" value={data.startDate} onChange={e => set({ startDate: e.target.value })} />
+                  <Input
+                    type="date"
+                    value={data.startDate}
+                    onChange={e => set({ startDate: e.target.value })}
+                    onBlur={() => setStartDateTouched(true)}
+                  />
+                  {startDateTouched && !data.startDate && (
+                    <p className="text-[11px] mt-1" style={{ color: "#C0392B" }}>
+                      La fecha no se guardó — revisa que día, mes y año estén completos y vuelve a introducirla.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Fecha de regreso</label>
