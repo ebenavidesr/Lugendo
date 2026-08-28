@@ -196,21 +196,21 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
             onClick={onToggle}
             className="rounded-[10px]"
           />
-          {canEditDay && (
-            <button
-              onClick={e => { e.stopPropagation(); openDayEdit(); }}
-              className="absolute top-1.5 right-1.5 p-1.5 rounded-[8px] transition-colors"
-              style={{ background: "rgba(0,0,0,0.45)", color: "#FAF2EB" }}
-              title="Editar día"
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-center gap-2 flex-wrap">
+              {canEditDay && (
+                <button
+                  onClick={e => { e.stopPropagation(); openDayEdit(); }}
+                  className="shrink-0 p-1 -m-1 rounded-[6px] transition-colors hover:bg-muted/40"
+                  style={{ color: "var(--ocre)" }}
+                  title="Editar día"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
               <span className="text-[12px] font-medium uppercase tracking-[0.5px]" style={{ color: "var(--terra)" }}>
                 Día {day.dayNumber}
               </span>

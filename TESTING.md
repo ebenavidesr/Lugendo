@@ -14,6 +14,13 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `pnpm run typecheck` limpio en todo el monorepo
 - [ ] Verificación visual pendiente por parte de Quique del aviso en `/traveler/trips/new` y `/trips/new`
 
+### UX — botón "Editar día" tapaba la foto de portada en la ficha del día (2026-08-28)
+> Reportado por Quique tras crear un viaje desde cero: al ver el detalle del viaje (`/traveler/trips/:id`), el lápiz de "Editar día" aparecía superpuesto sobre la foto de portada de cada día, confuso porque se confundía con los controles propios de la foto (cambiar/quitar foto).
+
+- [x] `trip-day-card.tsx` (usado en `traveler-trip.tsx`): el botón de editar día deja de ser un overlay `absolute` sobre `DayPhotoZone` y pasa a la esquina superior izquierda de la ficha, junto a la etiqueta "Día N" (fuera de la foto, que ahora solo conserva sus propios controles de cambiar/quitar foto)
+- [x] `pnpm run typecheck` limpio
+- [ ] Verificación visual pendiente por parte de Quique en `/traveler/trips/:id` (sin credenciales de viajero funcionales en este entorno para probarlo en el navegador)
+
 ### #178 (Notion) — Filtros de Itinerarios/Viajes/Equipo + Región como desplegable (2026-08-24)
 > Sub-tarea de #175. Los datos de "región" ya estaban perfectamente limpios (6 valores exactos, sin backfill necesario) porque el script de importación #170 ya generaba solo esos valores.
 
