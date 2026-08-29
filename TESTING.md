@@ -21,6 +21,15 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `pnpm run typecheck` limpio
 - [ ] Verificación visual pendiente por parte de Quique en `/traveler/trips/:id` (sin credenciales de viajero funcionales en este entorno para probarlo en el navegador)
 
+### UX — el recorte de foto de día mostraba un cuadrante panorámico (2.5:1) que no coincidía con el cuadrado (1:1) donde se muestra la foto (2026-08-29)
+> Reportado por Quique: el editor de recorte (`day-photo-editor.tsx`) mostraba una guía con las proporciones "del tamaño anterior" en vez del cuadrado nuevo, así que lo que se enmarcaba en el editor no coincidía con lo que se veía después en la ficha del día.
+
+- [x] Confirmado por lectura de código: los 4 usos reales de `DayPhotoZone` en la app (`trip-day-card.tsx`, `day-list-panel.tsx` ×2, `itinerary-public-detail.tsx`) muestran la foto en un cuadrado `square={140}` — ningún sitio la muestra ya en el banner panorámico 2.5:1 que usaba `CROP_ASPECT`, así que la guía de recorte estaba desincronizada con el único formato de salida real
+- [x] Fix: `CROP_ASPECT` pasa de `2.5` a `1` en `day-photo-editor.tsx` — la guía del `Cropper`, el recuadro de vista previa dentro del formulario de edición de día y el recorte final (`getCroppedImageBlob`, que ya derivaba el alto de salida de los píxeles de recorte reales) quedan los tres en cuadrado, consistentes entre sí
+- [x] Sin migración: las fotos ya guardadas con el recorte panorámico anterior no se tocan, solo cambia el recorte de las que se editen a partir de ahora
+- [x] `pnpm run typecheck` limpio
+- [ ] Verificación visual pendiente por parte de Quique (editar la foto de un día y comprobar que el cuadrante del recorte ya es cuadrado)
+
 ### #178 (Notion) — Filtros de Itinerarios/Viajes/Equipo + Región como desplegable (2026-08-24)
 > Sub-tarea de #175. Los datos de "región" ya estaban perfectamente limpios (6 valores exactos, sin backfill necesario) porque el script de importación #170 ya generaba solo esos valores.
 

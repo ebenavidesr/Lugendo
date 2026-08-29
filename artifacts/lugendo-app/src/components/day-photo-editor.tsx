@@ -7,10 +7,10 @@ import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-// Fixed output aspect for every day cover photo. Every DayPhotoZone display box uses this
-// same CSS aspect-ratio (see DayPhotoZone below) so what the user frames here is exactly
-// what's shown everywhere -- object-cover never re-crops beyond it.
-const CROP_ASPECT = 2.5;
+// Fixed output aspect for every day cover photo -- matches the square thumbnail every
+// DayPhotoZone actually renders at (see `square` usages), so what the user frames in the
+// crop dialog is exactly what's shown everywhere -- object-cover never re-crops beyond it.
+const CROP_ASPECT = 1;
 const OUTPUT_WIDTH = 1200;
 // Cap the working copy well above OUTPUT_WIDTH so zoomed crops stay sharp, but far below
 // typical phone-camera originals (4000-8000px) so decoding/drawing during pan & zoom stays fast.
@@ -235,12 +235,12 @@ interface DayPhotoZoneProps {
   photoUrl: string | null | undefined;
   editable: boolean;
   onSave: (photoUrl: string | null) => Promise<void>;
-  /** Caps the banner height on very wide layouts. The box always keeps CROP_ASPECT so it
-   * never gets re-cropped by object-cover beyond what the user already framed while editing. */
+  /** Caps the box height on very wide layouts. The box always keeps CROP_ASPECT (square) so
+   * it never gets re-cropped by object-cover beyond what the user already framed while editing. */
   height?: number;
-  /** Renders a fixed-size square thumbnail (1:1) instead of the full-width CROP_ASPECT banner --
-   * used for the day-row thumbnail (#159). The underlying photo is still stored/cropped at
-   * CROP_ASPECT; object-cover just shows a centered square slice of it here. */
+  /** Renders a fixed-size box instead of a fluid-width one -- used for the day-row thumbnail
+   * (#159). Both are square (CROP_ASPECT); this just fixes the pixel size instead of filling
+   * the parent's width. */
   square?: number;
   onClick?: () => void;
   children?: React.ReactNode;
