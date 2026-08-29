@@ -137,8 +137,8 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
     return (
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 bg-card border border-border rounded-[14px] text-left hover:bg-muted/40 transition-colors"
-        style={{ minHeight: 44 }}
+        className="w-full flex items-center gap-3 px-4 border border-border rounded-[14px] text-left hover:bg-muted/40 transition-colors"
+        style={{ minHeight: 44, background: "white" }}
       >
         <div className="flex flex-col items-center gap-0.5 shrink-0">
           <div
@@ -184,7 +184,7 @@ export function TripDayCard({ day, dayIndex, allDays, expanded, onToggle, tripId
   }
 
   return (
-    <div className="bg-card border border-border rounded-[18px] overflow-hidden">
+    <div className="border border-border rounded-[18px] overflow-hidden" style={{ background: "white" }}>
       {/* Day row: square photo + header, side by side on desktop, stacked on mobile */}
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 p-4">
         <div className="relative shrink-0">

@@ -30,6 +30,14 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 - [x] `pnpm run typecheck` limpio
 - [ ] Verificación visual pendiente por parte de Quique (editar la foto de un día y comprobar que el cuadrante del recorte ya es cuadrado)
 
+### UX — editar la foto de un día ya con foto solo dejaba subir una nueva, y color de fondo de las tarjetas de día (2026-08-29)
+> Reportado por Quique: (1) al pulsar editar sobre un día que ya tenía foto, el diálogo solo ofrecía subir un archivo nuevo, sin forma de reencuadrar/rezumar la foto existente; (2) el fondo de las tarjetas de día pasó a Duna (#ECD5B8) con el cambio de tokens de color de #176 y dificulta la lectura de los textos — pide volver al blanco que tenían antes.
+
+- [x] **Causa (1):** `DayPhotoEditDialog` nunca recibía el `photoUrl` existente, así que siempre arrancaba en la pantalla vacía "Seleccionar una foto". Fix: `DayPhotoZone` le pasa el `photoUrl` actual y el diálogo lo carga en el `Cropper` al abrirse (efecto ligado solo a `open`, no a `imageSrc`, para que "Elegir otra foto" no se sobrescriba solo); "Elegir otra foto" sigue disponible para reemplazarla por completo
+- [x] **Causa (2):** `--card` (token global, `index.css`) cambió de blanco puro a Duna en #176 — afecta a toda la app a propósito (Dashboard, Viajes, Equipo…), pero en las tarjetas de día concretamente empeora la legibilidad. En vez de revertir el token global (deshaciendo #176 en todas partes), se vuelve a blanco explícito (`style={{ background: "white" }}`, mismo patrón que ya usan las tarjetas de día del wizard) solo en los contenedores de tarjeta de día: `trip-day-card.tsx` (fila compacta y ficha expandida), `day-list-panel.tsx` (fila compacta y ficha expandida), `itinerary-public-detail.tsx` (fila compacta y ficha expandida) — el resto de tarjetas de la app conserva el fondo Duna de #176
+- [x] `pnpm run typecheck` limpio
+- [ ] Verificación visual pendiente por parte de Quique (editar foto de un día con foto existente y reencuadrarla sin subir un archivo nuevo; comprobar que las tarjetas de día vuelven a verse blancas)
+
 ### #178 (Notion) — Filtros de Itinerarios/Viajes/Equipo + Región como desplegable (2026-08-24)
 > Sub-tarea de #175. Los datos de "región" ya estaban perfectamente limpios (6 valores exactos, sin backfill necesario) porque el script de importación #170 ya generaba solo esos valores.
 

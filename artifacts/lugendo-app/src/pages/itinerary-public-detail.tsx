@@ -23,8 +23,8 @@ function DayCard({ day, expanded, onToggle }: { day: PublicItineraryDay; expande
     return (
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-3 px-4 bg-card border border-border rounded-[14px] text-left hover:bg-muted/40 transition-colors"
-        style={{ minHeight: 44 }}>
+        className="w-full flex items-center gap-3 px-4 border border-border rounded-[14px] text-left hover:bg-muted/40 transition-colors"
+        style={{ minHeight: 44, background: "white" }}>
         <div className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[11px] font-semibold shrink-0"
           style={{ background: "var(--indigo)", color: "#FAF2EB" }}>
           {day.dayNumber}
@@ -50,7 +50,7 @@ function DayCard({ day, expanded, onToggle }: { day: PublicItineraryDay; expande
   }
 
   return (
-    <div className="bg-card border border-border rounded-[18px] overflow-hidden">
+    <div className="border border-border rounded-[18px] overflow-hidden" style={{ background: "white" }}>
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-5 p-4">
         {day.photoUrl && (
           <div className="shrink-0">

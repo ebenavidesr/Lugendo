@@ -432,7 +432,7 @@ export function DayListPanel({ mode, entityId, days, isLoading, startDate, heade
 
             if (viewMode === "summary" && !isExpanded) {
               return (
-                <div key={day.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in duration-200">
+                <div key={day.id} className="border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in duration-200" style={{ background: "white" }}>
                   <CompactDayRow mode={mode} entityId={entityId} day={day} startDate={startDate} onClick={() => toggleDay(day.id)} />
                 </div>
               );
@@ -441,7 +441,7 @@ export function DayListPanel({ mode, entityId, days, isLoading, startDate, heade
             const dateStr = formatDayDate(startDate, day.dayNumber);
 
             return (
-              <div key={day.id} className="bg-card border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+              <div key={day.id} className="border border-border rounded-[14px] shadow-sm overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200" style={{ background: "white" }}>
                 <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 px-5 py-4">
                   <DayPhotoZone
                     photoUrl={day.photoUrl}

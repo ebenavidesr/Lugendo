@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { Camera, ImagePlus, Loader2, Trash2 } from "lucide-react";
@@ -95,9 +95,12 @@ interface DayPhotoEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (photoUrl: string | null) => Promise<void>;
+  /** Existing photo, if any -- loaded straight into the cropper on open so the user can
+   * re-frame/re-zoom it, instead of only being able to upload a brand new file. */
+  currentPhotoUrl?: string | null;
 }
 
-function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogProps) {
+function DayPhotoEditDialog({ open, onOpenChange, onSave, currentPhotoUrl }: DayPhotoEditDialogProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -106,6 +109,19 @@ function DayPhotoEditDialog({ open, onOpenChange, onSave }: DayPhotoEditDialogPr
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingImage, setLoadingImage] = useState(false);
+
+  // Opening the dialog on an existing photo starts the cropper on that photo (re-frame/re-zoom
+  // in place) rather than the empty "select a file" screen. Only reacts to `open` itself --
+  // not to imageSrc -- so picking "Elegir otra foto" mid-session (which clears imageSrc while
+  // staying open) doesn't get immediately overwritten back to the current photo.
+  useEffect(() => {
+    if (open && currentPhotoUrl) {
+      setImageSrc(currentPhotoUrl);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const reset = () => {
     setImageSrc(current => {
@@ -310,7 +326,7 @@ export function DayPhotoZone({ photoUrl, editable, onSave, height = 134, square,
         </div>
       )}
 
-      <DayPhotoEditDialog open={dialogOpen} onOpenChange={setDialogOpen} onSave={onSave} />
+      <DayPhotoEditDialog open={dialogOpen} onOpenChange={setDialogOpen} onSave={onSave} currentPhotoUrl={photoUrl} />
     </div>
   );
 }
