@@ -55,6 +55,16 @@ export function useItineraryImport() {
           }
 
           const singleCountry = result.countries?.length === 1 ? result.countries[0] : undefined;
+          // The AI is asked to infer a per-day country from context, but on a document where
+          // it's not confident, fall back to the trip's single declared country rather than
+          // leaving it empty -- an approximate country still keeps city geocoding (map) and
+          // hotel search from matching same-named places in the wrong part of the world.
+          if (singleCountry) {
+            for (const day of result.days) {
+              if (day.cityFrom && !day.cityFromCountry) day.cityFromCountry = singleCountry;
+              if (day.cityTo && !day.cityToCountry) day.cityToCountry = singleCountry;
+            }
+          }
           const dayActivities: Record<number, number[]> = {};
           const dayHotels: Record<number, string> = {};
           for (const day of result.days) {

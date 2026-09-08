@@ -217,7 +217,9 @@ export default function TravelerTripWizard() {
             data: {
               dayNumber: day.dayNumber,
               ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
+              ...(day.cityFromCountry ? { cityFromCountry: day.cityFromCountry } : {}),
               ...(day.cityTo ? { cityTo: day.cityTo } : {}),
+              ...(day.cityToCountry ? { cityToCountry: day.cityToCountry } : {}),
               ...(dayTransports[day.dayNumber] ? { transport: dayTransports[day.dayNumber] as import("@workspace/api-client-react").TransportMode } : day.transport ? { transport: day.transport } : {}),
               ...(day.description ? { description: day.description } : {}),
               ...(isTransit ? { isTransitNight: true } : {}),

@@ -1,3 +1,4 @@
+import { COUNTRY_CODE_BY_NAME, COUNTRY_NAME_BY_CODE } from "@workspace/db/countries";
 import { logger } from "./logger";
 
 const MAPBOX_GEOCODING_URL = "https://api.mapbox.com/geocoding/v5/mapbox.places";
@@ -17,7 +18,21 @@ export interface GeocodeResult {
   lng: number;
 }
 
-// Resolves a free-text city name (optionally qualified with a country) to coordinates via
+// `country` is accepted as either an ISO-3166-1 alpha-2 code (what the day-edit country
+// selects store) or a Spanish country name (what the AI PDF extraction returns) -- normalize
+// both to the alpha-2 code Mapbox's `country` filter param expects. Appending the country as
+// free text to the query (the previous approach) doesn't actually constrain the search: Mapbox
+// treats it as more fuzzy text, so an ambiguous city name (e.g. "Saint-Louis", which exists in
+// both Senegal and the US) can still resolve to the wrong continent. The `country` param is a
+// real filter -- results outside it are excluded, not just deprioritized.
+function toCountryCode(country: string): string | null {
+  const trimmed = country.trim();
+  if (!trimmed) return null;
+  if (trimmed.length === 2 && COUNTRY_NAME_BY_CODE[trimmed.toUpperCase()]) return trimmed.toUpperCase();
+  return COUNTRY_CODE_BY_NAME[trimmed] ?? null;
+}
+
+// Resolves a free-text city name (optionally filtered to a country) to coordinates via
 // Mapbox's forward geocoding API. Returns null on any failure -- missing token, no match,
 // network error, timeout, low-confidence match -- so callers degrade gracefully: a city
 // without coordinates just doesn't get a map pin, it never blocks saving a trip day.
@@ -26,8 +41,13 @@ export async function geocodeCity(city: string | null | undefined, country?: str
   const trimmedCity = city?.trim();
   if (!token || !trimmedCity) return null;
 
-  const query = country?.trim() ? `${trimmedCity}, ${country.trim()}` : trimmedCity;
-  const url = `${MAPBOX_GEOCODING_URL}/${encodeURIComponent(query)}.json?access_token=${token}&types=${GEOCODE_TYPES}&limit=1`;
+  const countryCode = country ? toCountryCode(country) : null;
+  if (country?.trim() && !countryCode) {
+    logger.warn({ city: trimmedCity, country }, "geocodeCity: unrecognized country, geocoding without country filter");
+  }
+
+  let url = `${MAPBOX_GEOCODING_URL}/${encodeURIComponent(trimmedCity)}.json?access_token=${token}&types=${GEOCODE_TYPES}&limit=1`;
+  if (countryCode) url += `&country=${countryCode.toLowerCase()}`;
 
   try {
     const response = await fetch(url, { signal: AbortSignal.timeout(8000) });

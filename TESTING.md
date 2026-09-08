@@ -6,6 +6,19 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Bug — El mapa del viaje mostraba ubicaciones en otros continentes (país nunca se rellenaba al extraer el itinerario por IA) (2026-09-08)
+> Reportado por Quique: en el viaje "Fin de año en Senegal con visita a Guembeul", el mapa mostraba pines en España, Sudamérica y Norteamérica. Investigación: el país de cada día nunca se rellenaba (ni por IA al leer el PDF ni en los wizards), así que Mapbox geocodificaba solo por nombre de ciudad — nombres ambiguos como "St. Louis" (existe en Senegal y en EE. UU.), "Saloum" o "Petite Côte" resolvían a la ciudad homónima equivocada en otro continente. Además, al añadir el país manualmente desde "Editar día" el mapa seguía sin corregirse: el filtro de país de Mapbox se pasaba pegado al texto de búsqueda en vez de como parámetro de filtro real, así que no restringía nada.
+
+- [x] Prompt de extracción por IA (`itineraries.ts`, `parse-pdf`): pide `cityFromCountry`/`cityToCountry` por día (antes solo pedía una lista de países a nivel de todo el viaje), infiriendo el país real por contexto aunque el nombre de ciudad sea ambiguo
+- [x] `ParsedDay` (OpenAPI + codegen) incluye los nuevos campos de país por día
+- [x] Los tres wizards (`trip-wizard.tsx`, `itinerary-wizard.tsx`, `traveler-trip-wizard.tsx`) envían `cityFromCountry`/`cityToCountry` al crear los días — antes se omitían del payload aunque backend y BD ya los soportaban
+- [x] Fallback: si el documento es de un solo país (`countries.length === 1`) y la IA no da país en algún día, se aplica ese país como respaldo (`use-itinerary-import.ts`, mismo patrón ya usado para hoteles)
+- [x] **Causa raíz del "sigue sin corregirse" tras editar el país a mano:** `geocodeCity()` (`artifacts/api-server/src/lib/geocoding.ts`) pegaba el país al texto libre de búsqueda (`"St. Louis, SN"`), que Mapbox no interpreta como filtro. Fix: usa el parámetro real `country=` de la API de Mapbox (código ISO-3166 alpha-2), normalizando tanto códigos (los que guardan los `<select>` de País origen/destino) como nombres completos en español (los que devuelve la IA), vía `COUNTRY_CODE_BY_NAME`/`COUNTRY_NAME_BY_CODE` (`@workspace/db/countries`)
+- [x] `pnpm run typecheck` limpio en todo el monorepo
+- [ ] Corrección retroactiva de datos: itinerario #266 y viaje #45 (Senegal) — país por día ya corregido a mano en la UI por Quique; falta re-geocodificar `trip_days` con la lógica nueva (script preparado en `fix-senegal-map-v2.js`, pendiente de que Quique lo ejecute desde su terminal — el sandbox de este entorno bloquea escrituras directas a la base de producción)
+- [ ] Verificación visual: tras re-geocodificar, el mapa del viaje de Senegal muestra los 10 días agrupados en Senegal (y España en el tramo de vuelo)
+- [ ] Verificación con un nuevo viaje creado desde PDF con nombres de ciudad ambiguos: confirmar que el país se rellena solo y el mapa no salta de continente
+
 ### Bug — "Siguiente" desactivado en el paso 3 (Datos del viaje) del wizard aunque los campos se vean rellenos (2026-08-28)
 > Reportado por Quique: en `/traveler/trips/new`, paso 3, con todos los campos aparentemente completos, el botón "Siguiente" seguía desactivado.
 

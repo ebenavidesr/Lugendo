@@ -20,7 +20,11 @@ export interface ParsedDay {
   /** @nullable */
   cityFrom?: string | null;
   /** @nullable */
+  cityFromCountry?: string | null;
+  /** @nullable */
   cityTo?: string | null;
+  /** @nullable */
+  cityToCountry?: string | null;
   transport?: TransportMode | null;
   /** @nullable */
   description?: string | null;

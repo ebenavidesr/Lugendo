@@ -6429,7 +6429,11 @@ components:
             type: string
         cityFrom:
           type: ["string", "null"]
+        cityFromCountry:
+          type: ["string", "null"]
         cityTo:
+          type: ["string", "null"]
+        cityToCountry:
           type: ["string", "null"]
         transport:
           $ref: "#/components/schemas/TransportMode"

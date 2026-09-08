@@ -235,7 +235,9 @@ Si el texto recibido contiene bloques con cabecera "### Pestaña: <nombre>", el 
       "title": "string o null - título COMPLETO del día, sin truncar aunque tenga varias localidades separadas por guión",
       "localities": ["cada localidad mencionada en el título del día"],
       "cityFrom": "string o null - ciudad de salida",
+      "cityFromCountry": "string o null - país de la ciudad de salida",
       "cityTo": "string o null - ciudad de llegada/principal del día",
+      "cityToCountry": "string o null - país de la ciudad de llegada/principal",
       "transport": "string o null - uno de: plane, ship, ferry, train, self_drive, car_driver, bus, motorcycle, bicycle, walking. null si no hay desplazamiento.",
       "description": "string o null - descripción narrativa del día (usa la prosa, no solo la tabla)",
       "meals": "string o null - régimen de comidas normalizado",
@@ -259,6 +261,7 @@ Si el texto recibido contiene bloques con cabecera "### Pestaña: <nombre>", el 
 - dayNumber empieza en 1 y es secuencial. numDays debe coincidir con la duración declarada del documento (ej. "17 DÍAS" en el título).
 - Días de vuelo/llegada sin actividades propias ("Día 1.- VUELOS ESPAÑA-COLOMBO"): crea el día igualmente, con parsedActivities vacío o una única actividad tipo "Vuelo". No los omitas ni fusiones.
 - title: guarda el título completo multilocalidad (ej. "GIRITALE-POLONNARUWA-SAFARI P.N.MINNERIYA-SIGIRIYA") y extrae cada localidad en localities.
+- cityFromCountry/cityToCountry: identifica el país real de cada ciudad usando el contexto del documento (título, itinerario general, "countries"), no solo el nombre de la ciudad — muchos nombres de ciudad son ambiguos entre países (ej. "Saint-Louis" existe en Senegal y en EE.UU.). Si el viaje completo transcurre en un solo país, rellena ese país en todos los días salvo los tramos explícitos de origen/regreso en otro país (ej. el vuelo de salida desde España). Nunca lo dejes vacío si el país es inferible del documento.
 
 ## Hoteles (orden de prioridad)
 1. Fuente primaria: columna de alojamiento de la tabla resumen — es el hotel oficial del día.
@@ -301,6 +304,7 @@ Normaliza: "D" → "Desayuno"; "CE" o "C" → "Cena"; "D, CE" → "Desayuno y ce
 - ¿numDays coincide con la duración declarada y con days.length?
 - ¿Todos los días tienen hotel O una explicación (día de vuelo) en notas/actividades?
 - ¿Todos los días con desarrollo narrativo tienen al menos una actividad?
+- ¿Todos los días tienen cityFromCountry/cityToCountry rellenos cuando el país es inferible del documento?
 - ¿Se cruzaron tabla resumen y listado de hoteles por ciudad (no solo copiar uno)?
 - ¿Hay checklist/notas capturadas, o el documento realmente no las tenía?
 - ¿Ninguna cláusula legal se coló en notas o recomendaciones?

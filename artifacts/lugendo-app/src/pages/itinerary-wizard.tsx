@@ -391,7 +391,9 @@ export default function ItineraryWizard() {
           data: {
             dayNumber: day.dayNumber,
             ...(day.cityFrom ? { cityFrom: day.cityFrom } : {}),
+            ...(parsedDay?.cityFromCountry ? { cityFromCountry: parsedDay.cityFromCountry } : {}),
             ...(day.cityTo ? { cityTo: day.cityTo } : {}),
+            ...(parsedDay?.cityToCountry ? { cityToCountry: parsedDay.cityToCountry } : {}),
             ...(day.transport ? { transport: day.transport } : {}),
             ...(wizardDesc ? { description: wizardDesc } : day.description ? { description: day.description } : {}),
             ...(parsedDay?.meals ? { meals: parsedDay.meals } : {}),
