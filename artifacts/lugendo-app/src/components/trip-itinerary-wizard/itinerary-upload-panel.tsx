@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Upload, FileText, X, Check } from "lucide-react";
 import type { ParsedItinerary } from "@workspace/api-client-react";
+import { Textarea } from "@/components/ui/textarea";
 
 // Shared between trip-wizard.tsx and traveler-trip-wizard.tsx — see task #142.
 
@@ -19,7 +21,7 @@ export function ItineraryModePicker({ mode, onChange }: { mode: NewItineraryMode
             {m === "scratch" ? "Desde cero" : "Subir archivo"}
           </div>
           <div className="text-[11px] text-muted-foreground">
-            {m === "scratch" ? "Rellena los campos manualmente" : "PDF, Word, Excel o texto — la IA extrae la estructura"}
+            {m === "scratch" ? "Rellena los campos manualmente" : "Sube un archivo o pega texto — la IA extrae la estructura"}
           </div>
         </button>
       ))}
@@ -34,6 +36,7 @@ export function ItineraryUploadPanel({
   parsedItinerary,
   onFileChange,
   onClearFile,
+  onSelectFile,
   onParse,
 }: {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -42,12 +45,38 @@ export function ItineraryUploadPanel({
   parsedItinerary: ParsedItinerary | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearFile: () => void;
+  onSelectFile: (file: File) => void;
   onParse: () => void;
 }) {
+  const [mode, setMode] = useState<"upload" | "paste">("upload");
+  const [pastedText, setPastedText] = useState("");
+
+  const usePastedText = () => {
+    const text = pastedText.trim();
+    if (!text) return;
+    onSelectFile(new File([text], "Texto pegado.txt", { type: "text/plain" }));
+  };
+
   return (
     <div className="space-y-3 pt-2 border-t border-border">
       <input ref={fileInputRef} type="file" accept=".pdf,.txt,.doc,.docx,.md,.xlsx" className="hidden" onChange={onFileChange} />
-      {!pdfFile ? (
+
+      {!pdfFile && (
+        <div className="flex gap-1 p-1 rounded-[10px] w-fit" style={{ background: "#ECD5B8" }}>
+          {(["upload", "paste"] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className="px-3 py-1.5 rounded-[7px] text-[12px] font-medium transition-colors"
+              style={{ background: mode === m ? "white" : "transparent", color: mode === m ? "#2D1F0E" : "#7A5C3A" }}
+            >
+              {m === "upload" ? "Subir archivo" : "Pegar texto"}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!pdfFile && mode === "upload" && (
         <button
           onClick={() => fileInputRef.current?.click()}
           className="w-full p-8 rounded-[12px] border-2 border-dashed text-center transition-all hover:bg-[#FAF2EB]"
@@ -57,7 +86,29 @@ export function ItineraryUploadPanel({
           <div className="text-[13px] font-medium mb-0.5" style={{ color: "#2D1F0E" }}>Haz clic para subir un archivo</div>
           <div className="text-[11px] text-muted-foreground">PDF, Word, Excel o texto — máx. 10 MB</div>
         </button>
-      ) : (
+      )}
+
+      {!pdfFile && mode === "paste" && (
+        <div className="space-y-2">
+          <Textarea
+            placeholder="Pega aquí el texto del itinerario — por ejemplo, el cuerpo de un correo de la agencia — o escríbelo a mano…"
+            rows={8}
+            value={pastedText}
+            onChange={e => setPastedText(e.target.value)}
+            className="text-[13px]"
+          />
+          <button
+            onClick={usePastedText}
+            disabled={!pastedText.trim()}
+            className="w-full py-2.5 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-40"
+            style={{ background: "#C4793A", color: "#FAF2EB" }}
+          >
+            Usar este texto
+          </button>
+        </div>
+      )}
+
+      {pdfFile && (
         <div className="p-4 rounded-[12px] border border-border flex items-center gap-3" style={{ background: "#FAF2EB" }}>
           <div className="w-9 h-9 rounded-[8px] flex items-center justify-center flex-shrink-0" style={{ background: "#FDECEA" }}>
             <FileText className="w-4 h-4" style={{ color: "#C0392B" }} />
@@ -66,7 +117,7 @@ export function ItineraryUploadPanel({
             <div className="text-[13px] font-medium truncate" style={{ color: "#2D1F0E" }}>{pdfFile.name}</div>
             <div className="text-[11px] text-muted-foreground">{(pdfFile.size / 1024).toFixed(0)} KB</div>
           </div>
-          <button onClick={onClearFile}>
+          <button onClick={() => { setPastedText(""); onClearFile(); }}>
             <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
           </button>
         </div>

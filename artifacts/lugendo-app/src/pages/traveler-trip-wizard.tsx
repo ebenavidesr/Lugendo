@@ -124,11 +124,15 @@ export default function TravelerTripWizard() {
   const nextStep = () => setStep(s => Math.min(s + 1, 4) as Step);
   const prevStep = () => setStep(s => Math.max(s - 1, 1) as Step);
 
+  const applyFile = (file: File) => {
+    itineraryImport.selectFile(file);
+    set({ parsedItinerary: null });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    itineraryImport.selectFile(file);
-    set({ parsedItinerary: null });
+    applyFile(file);
   };
 
   const handleParsePdf = async () => {
@@ -405,6 +409,7 @@ export default function TravelerTripWizard() {
                 parsedItinerary={data.parsedItinerary}
                 onFileChange={handleFileChange}
                 onClearFile={() => { itineraryImport.clearFile(); set({ parsedItinerary: null }); }}
+                onSelectFile={applyFile}
                 onParse={handleParsePdf}
               />
             )}
