@@ -1,11 +1,29 @@
 import { and, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { db, tripsTable, tripDaysTable, itinerariesTable, countryAdvisoriesTable } from "@workspace/db";
+import { COUNTRY_NAME_BY_CODE } from "@workspace/db/countries";
 import { logger } from "./logger";
 import { scrapeCountryAdvisory, buildAdvisoryUrl } from "./travel-advisory-scraper";
 
 export const SPAIN = "España";
 const HORIZON_DAYS = 15;
 const STALE_MS = 20 * 60 * 60 * 1000; // 20 hours
+
+// trip_days.cityFromCountry/cityToCountry can hold either a 2-letter ISO code (from the
+// País origen/destino <select>s) or a full Spanish name (from AI itinerary extraction) --
+// same inconsistency already handled in geocoding.ts for the map. Without normalizing here,
+// a code like "SN" is treated as a distinct "country" from "Senegal": it gets its own
+// Ministry lookup with a meaningless `trc=SN`, which never matches a real country page and
+// falls back to scraping the entire page body as one unformatted blob (see
+// extractFallbackText in travel-advisory-scraper.ts) -- shown as a bogus extra advisory card
+// alongside the real, properly formatted one for "Senegal".
+function normalizeCountryName(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length === 2) {
+    const name = COUNTRY_NAME_BY_CODE[trimmed.toUpperCase()];
+    if (name) return name;
+  }
+  return trimmed;
+}
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
@@ -46,8 +64,8 @@ export async function getCountriesNeedingRefresh(): Promise<string[]> {
     .from(tripDaysTable)
     .where(inArray(tripDaysTable.tripId, tripIds));
   for (const r of dayCountryRows) {
-    if (r.cityFromCountry) countries.add(r.cityFromCountry);
-    if (r.cityToCountry) countries.add(r.cityToCountry);
+    if (r.cityFromCountry) countries.add(normalizeCountryName(r.cityFromCountry));
+    if (r.cityToCountry) countries.add(normalizeCountryName(r.cityToCountry));
   }
 
   if (itineraryIds.length > 0) {
@@ -55,7 +73,7 @@ export async function getCountriesNeedingRefresh(): Promise<string[]> {
       .select({ countries: itinerariesTable.countries })
       .from(itinerariesTable)
       .where(inArray(itinerariesTable.id, itineraryIds));
-    for (const r of itinRows) if (r.countries) for (const c of r.countries) countries.add(c);
+    for (const r of itinRows) if (r.countries) for (const c of r.countries) countries.add(normalizeCountryName(c));
   }
 
   countries.delete(SPAIN);
@@ -77,8 +95,8 @@ export async function getTripCountries(tripId: number): Promise<string[]> {
     .from(tripDaysTable)
     .where(eq(tripDaysTable.tripId, tripId));
   for (const r of dayCountryRows) {
-    if (r.cityFromCountry) countries.add(r.cityFromCountry);
-    if (r.cityToCountry) countries.add(r.cityToCountry);
+    if (r.cityFromCountry) countries.add(normalizeCountryName(r.cityFromCountry));
+    if (r.cityToCountry) countries.add(normalizeCountryName(r.cityToCountry));
   }
 
   if (trip?.itineraryId) {
@@ -86,7 +104,7 @@ export async function getTripCountries(tripId: number): Promise<string[]> {
       .select({ countries: itinerariesTable.countries })
       .from(itinerariesTable)
       .where(eq(itinerariesTable.id, trip.itineraryId));
-    if (itin?.countries) for (const c of itin.countries) countries.add(c);
+    if (itin?.countries) for (const c of itin.countries) countries.add(normalizeCountryName(c));
   }
 
   countries.delete(SPAIN);

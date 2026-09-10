@@ -99,6 +99,14 @@ function extractSections($: cheerio.CheerioAPI): AdvisorySection[] {
 // Fallback selectors for pages where the accordion structure above isn't found (unexpected
 // markup change, or a country page that genuinely only has the generic disclaimer). Kept as a
 // plain-text extraction so the feature degrades instead of failing outright.
+//
+// Deliberately NOT falling back further to $("body").text() when none of these match: that
+// case in practice only ever fires for an invalid `trc` param (e.g. a 2-letter country code
+// slipping through instead of the full Spanish name -- see normalizeCountryName in
+// travel-advisory-refresh.ts), which lands on a generic page with no country-specific content.
+// Scraping the whole body there produced an unformatted, useless blob stored as if it were a
+// real advisory. Returning "" here makes scrapeCountryAdvisory throw instead, so the
+// row gets `lastError` and the UI shows the normal "no se pudo obtener contenido" empty state.
 const FALLBACK_SELECTORS = [".single__textDetalleRV", ".single__text.panel", "#DeltaPlaceHolderMain"];
 
 function extractFallbackText($: cheerio.CheerioAPI): string {
@@ -109,7 +117,7 @@ function extractFallbackText($: cheerio.CheerioAPI): string {
       if (text.length > 0) return text;
     }
   }
-  return cleanText($("body").text());
+  return "";
 }
 
 export async function scrapeCountryAdvisory(countryName: string): Promise<ScrapedAdvisory> {
