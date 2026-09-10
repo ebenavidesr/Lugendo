@@ -157,10 +157,10 @@ export default function TravelerTripWizard() {
     try {
       const result = await useAsTemplate.mutateAsync({ code });
       qc.invalidateQueries({ queryKey: ["/api/me/trips"] });
-      toast({ title: "¡Viaje creado a partir de la foto compartida!" });
+      toast({ title: "¡Viaje creado a partir del viaje compartido!" });
       setPendingClaim({ tripId: result.tripId, navigateTo: `/traveler/trips/${result.tripId}` });
     } catch {
-      toast({ variant: "destructive", title: "Código no válido o la foto ya no está disponible" });
+      toast({ variant: "destructive", title: "Código no válido o el viaje compartido ya no está disponible" });
     } finally {
       setIsUsingPhoto(false);
     }
@@ -286,7 +286,7 @@ export default function TravelerTripWizard() {
           <div className="space-y-4">
             <div>
               <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>¿Cómo quieres empezar?</h2>
-              <p className="text-[13px] text-muted-foreground">Crea tu propio viaje o usa una foto compartida como plantilla.</p>
+              <p className="text-[13px] text-muted-foreground">Crea tu propio viaje o usa un viaje compartido como plantilla.</p>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
@@ -314,8 +314,8 @@ export default function TravelerTripWizard() {
                 <div className="w-10 h-10 rounded-[10px] flex items-center justify-center mb-3" style={{ background: "#F3E6D8" }}>
                   <Camera className="w-5 h-5" style={{ color: "#8B4420" }} />
                 </div>
-                <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Usar una foto compartida</div>
-                <div className="text-[12px] text-muted-foreground">Alguien te compartió una foto de su viaje y quieres usarla como plantilla.</div>
+                <div className="text-[14px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Usar un viaje compartido</div>
+                <div className="text-[12px] text-muted-foreground">Alguien te compartió su viaje y quieres usarlo como plantilla.</div>
               </button>
             </div>
           </div>
@@ -327,11 +327,11 @@ export default function TravelerTripWizard() {
           return (
             <div className="space-y-4">
               <div>
-                <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Introduce el código de la foto</h2>
+                <h2 className="text-[17px] font-medium mb-1" style={{ color: "#2D1F0E" }}>Introduce el código del viaje</h2>
                 <p className="text-[13px] text-muted-foreground">Lo encontrarás en el enlace que te compartieron.</p>
               </div>
               <div>
-                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de foto</label>
+                <label className="text-[12px] font-medium block mb-1.5" style={{ color: "#2D1F0E" }}>Código de viaje</label>
                 <Input
                   placeholder="Ej. ABC123XYZ"
                   value={data.photoCode}
@@ -727,7 +727,7 @@ export default function TravelerTripWizard() {
           labels={STEP_LABELS}
           current={step}
           collapseFrom={joinMode ? 2 : undefined}
-          collapseLabel={data.origin === "photo" ? "Foto" : "Unirse"}
+          collapseLabel={data.origin === "photo" ? "Compartido" : "Unirse"}
         />
 
         <div className="min-h-[260px]">

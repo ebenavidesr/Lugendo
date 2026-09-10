@@ -73,7 +73,7 @@
   --foreground: 25 52% 12%;        /* Noche #2D1F0E */
   --border: 33 38% 80%;            /* #E5D4BF */
 
-  --card: 34 58% 82%;              /* Duna #ECD5B8 — superficie de tarjeta (#175/#176: antes blanco puro) */
+  --card: 0 0% 100%;                /* Blanco — tarjetas por defecto (guía UX §2: Arena/tarjetas se combina con blanco/Arena; Duna es solo para "tarjetas destacadas y superficies secundarias", no el token global. #176 lo puso en Duna por error, afectando toda la app; revertido) */
   --card-foreground: 25 52% 12%;
   --card-border: 33 38% 80%;
 

@@ -6,6 +6,20 @@ Marca cada ítem a medida que lo pruebes. Actualiza este archivo cuando una feat
 
 ## Sprint actual
 
+### Bug — Fondo de tarjetas (`--card`) en Duna por toda la app, deviando de la combinación aprobada en la guía UX (2026-09-10)
+> Reportado por Quique: "en algún momento has cambiado los colores de la UI y hay que volver a la versión original... revisa la documentación de UX para volver a la versión validada en el brand book." Investigación: `Lugendo_Brand_Guidelines_v1.docx` y `Lugendo_UXUI_v1.docx` (`attached_assets/`) listan la combinación aprobada "Arena #FAF2EB / Noche — Pantallas principales, **tarjetas**, formularios" y reservan "Duna #ECD5B8 — **tarjetas destacadas**, superficies secundarias" para un caso más específico. El commit `34201d5` (#176, 2026-08-24) puso el token global `--card` en Duna, aplicando ese tono a *todas* las tarjetas de la app (paneles, tablas, stat cards, tarjetas de búsqueda…) en vez de solo a las destacadas — ya se había detectado parcialmente (nota del 2026-08-29 más abajo, "tarjetas de día vuelven a blanco") pero solo se corrigió en las tarjetas de día, no globalmente.
+- [x] `index.css`: `--card` vuelto a blanco (`0 0% 100%`), token global — `--background` se queda en Arena exacto (ese cambio del #176 sí estaba alineado con la guía)
+- [x] `pnpm run typecheck` limpio
+- [x] Verificado en navegador: login (`/login`) y buscador público (`/buscar`) muestran tarjetas blancas sobre fondo Arena
+- [ ] Verificación visual en el resto de pantallas autenticadas (Dashboard, Viajes, Itinerarios, Equipo, ficha de viaje) — pendiente por falta de credenciales de login funcionales en local (ver nota sobre `admin@lugendo.io` en este archivo)
+
+### Bug — Paso 1 del wizard "Nuevo viaje" (viajero) decía "Usar una foto compartida" cuando la opción es usar un viaje compartido como plantilla (2026-09-10)
+> Reportado por Quique con captura de `/traveler/trips/new`. Investigación: la funcionalidad (`trip_photo_shares`, ruta `/foto/:code`, hook `useUseTripPhotoAsTemplate`) nunca implicó una foto/imagen real — es un snapshot JSON de solo texto del itinerario (nombre, fechas, ciudades, hoteles, actividades por día) que se comparte por código para usarlo como plantilla; el nombre "foto" viene de una metáfora ("instantánea de tu viaje") tomada demasiado al pie de la letra desde la tarea #141 original, y se coló en el copy visible.
+- [x] Textos visibles corregidos en `traveler-trip-wizard.tsx`: "Usar una foto compartida" → "Usar un viaje compartido", descripción de la tarjeta, subtítulo del paso 1, título/label del paso 2 ("código de la foto" → "código del viaje"), los dos toasts de éxito/error, y la etiqueta del stepper colapsado ("Foto" → "Compartido")
+- [x] `pnpm run typecheck` limpio
+- [ ] Verificación visual en navegador del wizard completo — pendiente por falta de credenciales de viajero funcionales en local (la cuenta desechable `e2e-transit-t116@lugendo.io` documentada más abajo ya no es válida)
+- [ ] Nota para Quique: el mismo nombre "foto" sigue en la tabla `trip_photo_shares`, la ruta pública `/foto/:code`, el hook `useUseTripPhotoAsTemplate`, variables internas (`photoCode`) y el OpenAPI spec — no tocado en este fix (solo texto visible); si quieres el renombrado completo a "viaje compartido" en backend/rutas/DB, dímelo y lo dejo en cola en `BACKLOG.md`
+
 ### Bug — El mapa del viaje mostraba ubicaciones en otros continentes (país nunca se rellenaba al extraer el itinerario por IA) (2026-09-08)
 > Reportado por Quique: en el viaje "Fin de año en Senegal con visita a Guembeul", el mapa mostraba pines en España, Sudamérica y Norteamérica. Investigación: el país de cada día nunca se rellenaba (ni por IA al leer el PDF ni en los wizards), así que Mapbox geocodificaba solo por nombre de ciudad — nombres ambiguos como "St. Louis" (existe en Senegal y en EE. UU.), "Saloum" o "Petite Côte" resolvían a la ciudad homónima equivocada en otro continente. Además, al añadir el país manualmente desde "Editar día" el mapa seguía sin corregirse: el filtro de país de Mapbox se pasaba pegado al texto de búsqueda en vez de como parámetro de filtro real, así que no restringía nada.
 
