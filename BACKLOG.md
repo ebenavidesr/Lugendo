@@ -15,6 +15,7 @@
 | #177 | Navegación unificada del front del viajero + componente `StatCard` único — implementado: `TravelerHeader` compartido en las 5 páginas, "Salir" con texto separado, `StatCard` con variantes default/compact en Dashboard/perfil/detalle de viaje; pendiente de verificación visual en producción (sin credenciales locales) | 🟡 Media | Viajeros | Yo |
 | #178 | Filtros de Itinerarios/Viajes/Equipo + Región como desplegable — implementado: `ItineraryTripFilterBar` (Nombre/Agencia/Región + Limpiar), filtro de Agencia en Equipo con relación histórica vía `trip_shares`; hallazgo colateral sin resolver: `GET /users` apenas muestra viajeros a roles no-admin (agencyId casi nunca poblado); pendiente verificación visual en producción | 🟡 Media | Itinerarios | Yo |
 | #180 | Explorar viajes: sección "viajes a tus destinos deseados" (cruza países "Quiero visitar" del perfil con itinerarios publicados) | 🟢 Baja | Viajeros | Yo |
+| #181 | Renombrar "foto compartida" a "viaje compartido" en backend — tabla `trip_photo_shares`, rutas (`/foto/:code`, `/trip-photos/:code`), hook `useUseTripPhotoAsTemplate`, variables internas y OpenAPI; el copy visible ya se corrigió el 2026-09-10 (ver `TESTING.md`), esto es el resto de la capa de datos/backend | 🟡 Media | Viajes · Viajeros | Yo |
 | #2 | País desde lista y defaults del día | 🟢 Baja | Itinerarios | — |
 | #4 | Aplicar lógica misma ciudad al crear hotel nuevo — en curso | 🔴 Alta | Hoteles | — |
 | #5 | Asignación bulk de hoteles en todos los días del viaje — en curso | 🔴 Alta | Hoteles | — |
