@@ -9,6 +9,7 @@ if (!process.env.RESEND_API_KEY) {
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM_ADDRESS || "Lugendo <hola@lugendo.io>";
 const EMAIL_FROM_NOREPLY = process.env.EMAIL_FROM_NOREPLY_ADDRESS || "Lugendo <no-reply@lugendo.io>";
+const ADMIN_ALERT_EMAIL = process.env.ADMIN_ALERT_EMAIL || "ebenavidesr@gmail.com";
 
 type EmailType = EmailSendLog["type"];
 
@@ -399,6 +400,30 @@ export async function sendAgencyOnboardingEmail(opts: {
       `,
       ctaText: "Activar mi cuenta",
       ctaUrl: activateUrl,
+    }),
+  });
+}
+
+// Internal ops alert (not traveler/agency-facing): fires when the Ministry advisory scraper
+// can't get a country's content (see travel-advisory-refresh.ts / travel-advisory-scraper.ts).
+// Sent to a fixed admin inbox rather than any recipient the caller supplies.
+export async function sendTravelAdvisoryFailureEmail(opts: {
+  countryName: string;
+  errorMessage: string;
+}): Promise<void> {
+  const { countryName, errorMessage } = opts;
+  await sendEmail({
+    to: ADMIN_ALERT_EMAIL,
+    from: EMAIL_FROM_NOREPLY,
+    type: "travel_advisory_scrape_failed",
+    subject: `Viaja Seguro: no se pudo obtener la ficha de ${countryName}`,
+    html: renderBaseTemplate({
+      title: "Fallo al obtener una ficha de seguridad de viaje",
+      bodyHtml: `
+        <p style="margin:0 0 8px"><strong>País:</strong> ${escapeHtml(countryName)}</p>
+        <div style="background:#fff;border-radius:10px;padding:16px 20px;margin-bottom:16px;font-size:13px;color:#2D1F0E;white-space:pre-wrap;font-family:monospace">${escapeHtml(errorMessage)}</div>
+        <p style="margin:0;font-size:12px;color:#9C7A58">"Viaja Seguro" no mostrará información oficial para este país hasta que la siguiente comprobación tenga éxito.</p>
+      `,
     }),
   });
 }

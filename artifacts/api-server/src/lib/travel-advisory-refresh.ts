@@ -3,6 +3,7 @@ import { db, tripsTable, tripDaysTable, itinerariesTable, countryAdvisoriesTable
 import { COUNTRY_NAME_BY_CODE } from "@workspace/db/countries";
 import { logger } from "./logger";
 import { scrapeCountryAdvisory, buildAdvisoryUrl } from "./travel-advisory-scraper";
+import { sendTravelAdvisoryFailureEmail } from "./email";
 
 export const SPAIN = "España";
 const HORIZON_DAYS = 15;
@@ -113,13 +114,14 @@ export async function getTripCountries(tripId: number): Promise<string[]> {
 
 export async function refreshCountryAdvisory(countryName: string): Promise<void> {
   const now = new Date();
+
+  const [existing] = await db
+    .select({ contentHash: countryAdvisoriesTable.contentHash, lastError: countryAdvisoriesTable.lastError })
+    .from(countryAdvisoriesTable)
+    .where(eq(countryAdvisoriesTable.countryName, countryName));
+
   try {
     const scraped = await scrapeCountryAdvisory(countryName);
-
-    const [existing] = await db
-      .select({ contentHash: countryAdvisoriesTable.contentHash })
-      .from(countryAdvisoriesTable)
-      .where(eq(countryAdvisoriesTable.countryName, countryName));
 
     const changed = existing !== undefined && existing.contentHash !== scraped.contentHash;
 
@@ -163,6 +165,17 @@ export async function refreshCountryAdvisory(countryName: string): Promise<void>
         target: countryAdvisoriesTable.countryName,
         set: { lastCheckedAt: now, lastError: message },
       });
+
+    // Only alert on a NEW failure (first time this country fails, or the error text changed) --
+    // otherwise a persistently-broken country would re-email the admin every hourly batch run
+    // (and every stale on-demand check) forever.
+    if (existing?.lastError !== message) {
+      try {
+        await sendTravelAdvisoryFailureEmail({ countryName, errorMessage: message });
+      } catch (emailErr) {
+        logger.error({ countryName, err: emailErr instanceof Error ? emailErr.message : String(emailErr) }, "travel advisory failure alert email failed to send");
+      }
+    }
   }
 }
 
